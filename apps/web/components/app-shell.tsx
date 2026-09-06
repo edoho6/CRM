@@ -9,6 +9,7 @@ import {
   Leaf,
   LogOut,
   Menu,
+  Receipt,
   Sprout,
   Users,
   X,
@@ -16,6 +17,8 @@ import {
 import { Link, usePathname } from '@clinic/i18n/navigation';
 import { Button, cn } from '@clinic/ui';
 import { LanguageSwitcher } from './language-switcher';
+import { GlobalSearch } from '@/features/quick-bar/global-search';
+import { QuickCreateMenu } from '@/features/quick-bar/quick-create-menu';
 
 const NAV_ITEMS = [
   { href: '/', labelKey: 'dashboard', icon: LayoutDashboard, exact: true },
@@ -23,6 +26,7 @@ const NAV_ITEMS = [
   { href: '/calendar', labelKey: 'calendar', icon: CalendarDays, exact: false },
   { href: '/encounters', labelKey: 'encounters', icon: ClipboardList, exact: false },
   { href: '/inventory', labelKey: 'inventory', icon: Sprout, exact: false },
+  { href: '/billing', labelKey: 'billing', icon: Receipt, exact: false },
 ] as const;
 
 export function AppShell({
@@ -90,21 +94,27 @@ export function AppShell({
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        {/* Mobile header */}
-        <header className="flex items-center justify-between gap-2 border-b border-ink-200 bg-white px-4 py-2.5 lg:hidden">
-          <div className="flex items-center gap-2">
+        {/* Top bar, on every screen and every size: the quick-create "+" and the
+            global search live here so they are never more than one click away. */}
+        <header className="flex items-center justify-between gap-2 border-b border-ink-200 bg-white px-4 py-2.5">
+          <div className="flex min-w-0 items-center gap-2">
             <Button
               variant="ghost"
               size="icon"
+              className="lg:hidden"
               onClick={() => setMobileOpen((open) => !open)}
               aria-expanded={mobileOpen}
               aria-label={t('mainMenu')}
             >
-              {mobileOpen ? <Menu className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              <Menu className="h-5 w-5" />
             </Button>
-            <span className="truncate text-sm font-semibold text-ink-900">{clinicName}</span>
+            <span className="truncate text-sm font-semibold text-ink-900 lg:hidden">{clinicName}</span>
           </div>
-          <LanguageSwitcher />
+          <div className="flex shrink-0 items-center gap-1.5">
+            <GlobalSearch />
+            <QuickCreateMenu />
+            <LanguageSwitcher className="hidden sm:inline-flex lg:hidden" />
+          </div>
         </header>
 
         {mobileOpen ? (

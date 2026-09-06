@@ -443,6 +443,83 @@ export interface DashboardLayoutRow {
   updated_at: string;
 }
 
+export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'partially_paid' | 'cancelled';
+export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded';
+export type PaymentMethod = 'card' | 'cash' | 'bank_transfer' | 'bit' | 'other';
+
+export interface ClinicPaymentSettings {
+  id: string;
+  clinic_id: string;
+  provider: 'grow';
+  environment: 'sandbox' | 'production';
+  grow_user_id: string | null;
+  grow_page_code: string | null;
+  grow_api_key: string | null;
+  issue_invoice_via_provider: boolean;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Invoice {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  encounter_id: string | null;
+  appointment_id: string | null;
+  invoice_number: number;
+  status: InvoiceStatus;
+  currency: string;
+  subtotal: number;
+  total: number;
+  amount_paid: number;
+  issued_at: string | null;
+  due_date: string | null;
+  notes: string | null;
+  payment_url: string | null;
+  provider_invoice_url: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface InvoiceItem {
+  id: string;
+  clinic_id: string;
+  invoice_id: string;
+  description: string;
+  quantity: number;
+  unit_price: number;
+  line_total: number;
+  source_table: string | null;
+  source_id: string | null;
+  sequence: number;
+}
+
+export interface Payment {
+  id: string;
+  clinic_id: string;
+  invoice_id: string;
+  amount: number;
+  method: PaymentMethod;
+  status: PaymentStatus;
+  provider: 'grow' | 'manual';
+  provider_process_id: string | null;
+  provider_process_token: string | null;
+  provider_transaction_id: string | null;
+  paid_at: string | null;
+  raw_response: Record<string, unknown> | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface InvoiceWithDetails extends Invoice {
+  items: InvoiceItem[];
+  payments: Payment[];
+  patient: Pick<Patient, 'id' | 'full_name' | 'phone' | 'email'> | null;
+}
+
 export interface PatientPortalAccess {
   id: string;
   clinic_id: string;

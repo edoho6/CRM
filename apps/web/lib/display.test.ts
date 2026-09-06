@@ -9,9 +9,12 @@ import {
 } from './display';
 
 /**
- * Naming rules for bilingual reference data. The requirement these encode: a
- * practitioner must be able to find a herb by whichever of its four names is in
- * their head, and must never see a blank row because one language is missing.
+ * Naming rules for reference data.
+ *
+ * Herbs and formulas are named in English and Chinese whatever the interface
+ * language is: that is how the materia medica is shared internationally and how
+ * a supplier labels a jar. The tests below pin that behaviour so a future
+ * "translate everything" change cannot quietly undo it.
  */
 describe('herb naming', () => {
   const fullyNamed = {
@@ -21,22 +24,25 @@ describe('herb naming', () => {
     hebrew_name: 'חואנג צ׳י',
   };
 
-  it('prefers the reader’s language', () => {
-    expect(herbPrimaryName(fullyNamed, 'he')).toBe('חואנג צ׳י');
+  it('shows the English name in both interface languages', () => {
+    expect(herbPrimaryName(fullyNamed, 'he')).toBe('Astragalus root');
     expect(herbPrimaryName(fullyNamed, 'en')).toBe('Astragalus root');
   });
 
-  it('falls back to pinyin when the localised name is missing', () => {
-    expect(herbPrimaryName({ ...fullyNamed, hebrew_name: null }, 'he')).toBe('Huang Qi');
+  it('falls back to pinyin, then Chinese, when there is no English name', () => {
+    expect(herbPrimaryName({ ...fullyNamed, english_name: null }, 'he')).toBe('Huang Qi');
+    expect(
+      herbPrimaryName({ ...fullyNamed, english_name: null, pinyin_name: null }, 'he'),
+    ).toBe('黄芪');
   });
 
-  it('never returns an empty string when any name exists', () => {
+  it('uses a Hebrew name only when nothing else exists', () => {
     expect(
       herbPrimaryName(
-        { pinyin_name: null, chinese_name: '黄芪', english_name: null, hebrew_name: null },
+        { pinyin_name: null, chinese_name: null, english_name: null, hebrew_name: 'חואנג צ׳י' },
         'he',
       ),
-    ).toBe('黄芪');
+    ).toBe('חואנג צ׳י');
   });
 
   it('returns an empty string for a missing herb rather than throwing', () => {
@@ -44,23 +50,33 @@ describe('herb naming', () => {
     expect(herbPrimaryName(undefined, 'en')).toBe('');
   });
 
-  it('keeps pinyin visible as the secondary line without repeating the primary', () => {
+  it('shows pinyin and Chinese underneath, never repeating the primary', () => {
     expect(herbSecondaryName(fullyNamed, 'he')).toBe('Huang Qi · 黄芪');
-    // In English the primary is the English name, so pinyin still shows.
     expect(herbSecondaryName(fullyNamed, 'en')).toBe('Huang Qi · 黄芪');
-    // When pinyin *is* the primary it must not be repeated underneath itself.
-    expect(herbSecondaryName({ ...fullyNamed, hebrew_name: null }, 'he')).toBe('黄芪');
+    // When pinyin is promoted to primary it must not also appear beneath itself.
+    expect(herbSecondaryName({ ...fullyNamed, english_name: null }, 'he')).toBe('黄芪');
   });
 });
 
 describe('formula naming', () => {
-  it('follows the same fallback chain', () => {
+  it('follows the same English-then-pinyin chain', () => {
     expect(
       formulaPrimaryName(
         { name_pinyin: 'Xiao Yao San', name_chinese: null, name_english: null, name_hebrew: null },
         'he',
       ),
     ).toBe('Xiao Yao San');
+    expect(
+      formulaPrimaryName(
+        {
+          name_pinyin: 'Xiao Yao San',
+          name_chinese: '逍遥散',
+          name_english: 'Free and Easy Wanderer',
+          name_hebrew: 'שיאו יאו סאן',
+        },
+        'he',
+      ),
+    ).toBe('Free and Easy Wanderer');
   });
 });
 

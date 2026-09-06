@@ -64,6 +64,7 @@
     "calendar": "Calendar",
     "encounters": "Treatments",
     "inventory": "Herb inventory",
+    "billing": "Billing",
     "herbs": "Herb catalogue",
     "formulas": "Formulas",
     "batches": "Stock batches",
@@ -358,6 +359,102 @@
       "auricular": "Auricular",
       "herbal_formula": "Herbal formula",
       "dietary_advice": "Dietary advice"
+    }
+  },
+  "billing": {
+    "title": "Billing",
+    "invoice": "Invoice",
+    "invoiceNumber": "Invoice #{number}",
+    "new": "New invoice",
+    "createFromEncounter": "Create invoice from treatment",
+    "empty": "No invoices yet",
+    "emptyBody": "Create an invoice from a treatment, or a blank one for a patient.",
+    "items": "Invoice lines",
+    "addItem": "Add line",
+    "description": "Description",
+    "quantity": "Qty",
+    "unitPrice": "Unit price",
+    "lineTotal": "Line total",
+    "subtotal": "Subtotal",
+    "total": "Total",
+    "paid": "Paid",
+    "outstanding": "Outstanding",
+    "status": {
+      "draft": "Draft",
+      "sent": "Sent",
+      "paid": "Paid",
+      "partially_paid": "Partially paid",
+      "cancelled": "Cancelled"
+    },
+    "payment": {
+      "title": "Payments",
+      "empty": "No payments recorded",
+      "createLink": "Create payment link",
+      "creatingLink": "Creating link…",
+      "openLink": "Open payment page",
+      "copyLink": "Copy link",
+      "copied": "Link copied",
+      "recordManual": "Record manual payment",
+      "amount": "Amount",
+      "method": "Method",
+      "methods": {
+        "card": "Card",
+        "cash": "Cash",
+        "bank_transfer": "Bank transfer",
+        "bit": "Bit",
+        "other": "Other"
+      },
+      "statuses": {
+        "pending": "Pending",
+        "paid": "Paid",
+        "failed": "Failed",
+        "refunded": "Refunded"
+      }
+    },
+    "cancel": "Cancel invoice",
+    "cancelConfirm": "Cancel this invoice? It cannot be restored.",
+    "errors": {
+      "notConfigured": "Grow is not connected yet. Finish the setup in settings.",
+      "phoneRequired": "Grow needs a valid Israeli mobile number for the patient.",
+      "nothingToCharge": "This invoice has nothing left to charge.",
+      "providerFailed": "Grow rejected the request. Check the connection details."
+    },
+    "settings": {
+      "title": "Payment settings — Grow",
+      "intro": "Grow (Meshulam) issues each business a User ID and a payment Page Code. Find them in the developer area of your Grow account.",
+      "environment": "Environment",
+      "sandbox": "Sandbox (testing)",
+      "production": "Production (real charges)",
+      "userId": "User ID",
+      "pageCode": "Page Code",
+      "isActive": "Enable payments through Grow",
+      "saved": "Settings saved",
+      "webhookTitle": "Notification URL (webhook)",
+      "webhookBody": "Grow calls this address after each payment, so it must be reachable from the internet. While running locally it is not, which means payment updates only arrive once the app is deployed."
+    }
+  },
+  "quickBar": {
+    "create": "Quick create",
+    "createTitle": "What would you like to create?",
+    "search": "Quick search",
+    "searchTitle": "Search everything",
+    "searchPlaceholder": "Patient name, phone, or herb name…",
+    "searchHint": "Open from any screen with Ctrl+K",
+    "typeToSearch": "Start typing to search",
+    "noResults": "Nothing found for \"{query}\"",
+    "searching": "Searching…",
+    "groups": {
+      "patients": "Patients",
+      "herbs": "Herbs",
+      "formulas": "Formulas"
+    },
+    "actions": {
+      "newPatient": "New patient",
+      "newAppointment": "New appointment",
+      "newEncounter": "New treatment",
+      "receiveStock": "Receive stock",
+      "newHerb": "New herb",
+      "newFormula": "New formula"
     }
   },
   "documents": {

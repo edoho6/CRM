@@ -14,6 +14,7 @@ import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
 import { EncounterForm } from '@/features/encounters/encounter-form';
 import { DispensePanel } from '@/features/inventory/dispense-panel';
+import { CreateInvoiceButton } from '@/features/billing/create-invoice-button';
 
 const FORMULA_SELECT =
   '*, items:herb_formula_items(*, herb:herbs(id, pinyin_name, chinese_name, english_name, hebrew_name, default_unit))';
@@ -95,7 +96,10 @@ export default async function EncounterPage({
           ) : null
         }
         actions={
-          <Badge tone={isSigned ? 'success' : 'warning'}>{t(`status.${encounter.status}`)}</Badge>
+          <>
+            <CreateInvoiceButton encounterId={encounter.id} />
+            <Badge tone={isSigned ? 'success' : 'warning'}>{t(`status.${encounter.status}`)}</Badge>
+          </>
         }
       />
 

@@ -3,10 +3,14 @@ import type { Locale } from '@clinic/domain';
 /**
  * Naming helpers.
  *
- * A herb has up to four names and a practitioner may know it by any of them. The
- * rule is: show the name in the reader's language when it exists, but always keep
- * pinyin visible as the secondary line, because pinyin is the identifier the
- * profession actually shares.
+ * Herbs and formulas are named in English and Chinese regardless of which
+ * language the interface is in. That is deliberate: the materia medica is shared
+ * internationally in those two forms, a supplier's label is in Chinese, and a
+ * Hebrew transliteration is a local convenience rather than an identifier. Pinyin
+ * rides along as the romanised form the profession speaks in.
+ *
+ * The `locale` argument is kept so callers stay uniform and so a future language
+ * with its own established herb naming can be honoured without touching them.
  */
 
 interface HerbNames {
@@ -16,22 +20,22 @@ interface HerbNames {
   hebrew_name?: string | null;
 }
 
-export function herbPrimaryName(herb: HerbNames | null | undefined, locale: Locale): string {
+/* eslint-disable @typescript-eslint/no-unused-vars */
+export function herbPrimaryName(herb: HerbNames | null | undefined, _locale?: Locale): string {
   if (!herb) return '';
-  const localised = locale === 'he' ? herb.hebrew_name : herb.english_name;
   return (
-    localised?.trim() ||
-    herb.pinyin_name?.trim() ||
     herb.english_name?.trim() ||
-    herb.hebrew_name?.trim() ||
+    herb.pinyin_name?.trim() ||
     herb.chinese_name?.trim() ||
+    herb.hebrew_name?.trim() ||
     ''
   );
 }
 
-export function herbSecondaryName(herb: HerbNames | null | undefined, locale: Locale): string {
+/** Pinyin and Chinese characters, shown under the English name. */
+export function herbSecondaryName(herb: HerbNames | null | undefined, _locale?: Locale): string {
   if (!herb) return '';
-  const primary = herbPrimaryName(herb, locale);
+  const primary = herbPrimaryName(herb);
   const parts = [herb.pinyin_name, herb.chinese_name]
     .map((value) => value?.trim())
     .filter((value): value is string => Boolean(value) && value !== primary);
@@ -53,27 +57,27 @@ interface FormulaNames {
   name_hebrew?: string | null;
 }
 
-export function formulaPrimaryName(formula: FormulaNames | null | undefined, locale: Locale): string {
+/** Same English-and-Chinese rule as herbs — a formula is a classical text name. */
+export function formulaPrimaryName(formula: FormulaNames | null | undefined, _locale?: Locale): string {
   if (!formula) return '';
-  const localised = locale === 'he' ? formula.name_hebrew : formula.name_english;
   return (
-    localised?.trim() ||
-    formula.name_pinyin?.trim() ||
     formula.name_english?.trim() ||
-    formula.name_hebrew?.trim() ||
+    formula.name_pinyin?.trim() ||
     formula.name_chinese?.trim() ||
+    formula.name_hebrew?.trim() ||
     ''
   );
 }
 
-export function formulaSecondaryName(formula: FormulaNames | null | undefined, locale: Locale): string {
+export function formulaSecondaryName(formula: FormulaNames | null | undefined, _locale?: Locale): string {
   if (!formula) return '';
-  const primary = formulaPrimaryName(formula, locale);
+  const primary = formulaPrimaryName(formula);
   const parts = [formula.name_pinyin, formula.name_chinese]
     .map((value) => value?.trim())
     .filter((value): value is string => Boolean(value) && value !== primary);
   return parts.join(' · ');
 }
+/* eslint-enable @typescript-eslint/no-unused-vars */
 
 export function appointmentTypeName(
   type: { name_he?: string | null; name_en?: string | null } | null | undefined,

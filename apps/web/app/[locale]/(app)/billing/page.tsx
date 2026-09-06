@@ -1,0 +1,130 @@
+import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
+import { Receipt, Settings } from 'lucide-react';
+import { Badge, Button, EmptyState, Table, TableWrapper, Td, Th, Tr } from '@clinic/ui';
+import { Link } from '@clinic/i18n/navigation';
+import type { Invoice, Patient } from '@clinic/db/types';
+import { PageHeader } from '@/components/app-shell';
+import { getClinicScope } from '@/lib/session';
+
+type InvoiceRow = Invoice & { patient: Pick<Patient, 'id' | 'full_name'> | null };
+
+function statusTone(status: Invoice['status']) {
+  switch (status) {
+    case 'paid':
+      return 'success' as const;
+    case 'partially_paid':
+      return 'warning' as const;
+    case 'cancelled':
+      return 'muted' as const;
+    case 'sent':
+      return 'info' as const;
+    default:
+      return 'neutral' as const;
+  }
+}
+
+export default async function BillingPage({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
+  setRequestLocale(locale);
+
+  const t = await getTranslations('billing');
+  const tc = await getTranslations('common');
+  const tPatients = await getTranslations('patients');
+  const format = await getFormatter();
+
+  const scope = await getClinicScope();
+  if (!scope) return null;
+
+  const { data } = await scope.supabase
+    .from('invoices')
+    .select('*, patient:patients(id, full_name)')
+    .order('created_at', { ascending: false })
+    .limit(200)
+    .returns<InvoiceRow[]>();
+
+  const invoices = data ?? [];
+
+  return (
+    <>
+      <PageHeader
+        title={t('title')}
+        actions={
+          <Button asChild variant="secondary">
+            <Link href="/billing/settings">
+              <Settings className="h-4 w-4" />
+              {t('settings.title')}
+            </Link>
+          </Button>
+        }
+      />
+
+      {invoices.length === 0 ? (
+        <EmptyState
+          icon={<Receipt className="h-8 w-8" />}
+          title={t('empty')}
+          description={t('emptyBody')}
+        />
+      ) : (
+        <TableWrapper>
+          <Table>
+            <thead>
+              <tr>
+                <Th>{t('invoice')}</Th>
+                <Th>{tPatients('title')}</Th>
+                <Th>{tc('date')}</Th>
+                <Th>{t('total')}</Th>
+                <Th>{t('paid')}</Th>
+                <Th>{tc('status')}</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {invoices.map((invoice) => (
+                <Tr key={invoice.id}>
+                  <Td>
+                    <Link
+                      href={`/billing/${invoice.id}`}
+                      className="font-medium text-jade-800 underline-offset-2 hover:underline"
+                      dir="ltr"
+                    >
+                      #{invoice.invoice_number}
+                    </Link>
+                  </Td>
+                  <Td>
+                    {invoice.patient ? (
+                      <Link
+                        href={`/patients/${invoice.patient.id}`}
+                        className="text-ink-800 underline-offset-2 hover:underline"
+                      >
+                        {invoice.patient.full_name}
+                      </Link>
+                    ) : (
+                      '—'
+                    )}
+                  </Td>
+                  <Td>
+                    <span dir="ltr" className="tabular-nums">
+                      {format.dateTime(new Date(invoice.created_at), 'short')}
+                    </span>
+                  </Td>
+                  <Td>
+                    <span dir="ltr" className="tabular-nums">
+                      {format.number(Number(invoice.total), 'currency')}
+                    </span>
+                  </Td>
+                  <Td>
+                    <span dir="ltr" className="tabular-nums text-ink-600">
+                      {format.number(Number(invoice.amount_paid), 'currency')}
+                    </span>
+                  </Td>
+                  <Td>
+                    <Badge tone={statusTone(invoice.status)}>{t(`status.${invoice.status}`)}</Badge>
+                  </Td>
+                </Tr>
+              ))}
+            </tbody>
+          </Table>
+        </TableWrapper>
+      )}
+    </>
+  );
+}

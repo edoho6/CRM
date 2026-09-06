@@ -64,6 +64,7 @@
     "calendar": "יומן",
     "encounters": "טיפולים",
     "inventory": "מלאי צמחים",
+    "billing": "חיוב",
     "herbs": "קטלוג צמחים",
     "formulas": "נוסחאות",
     "batches": "אצוות מלאי",
@@ -358,6 +359,102 @@
       "auricular": "דיקור אוזן",
       "herbal_formula": "נוסחת צמחים",
       "dietary_advice": "הנחיות תזונה"
+    }
+  },
+  "billing": {
+    "title": "חיוב וחשבוניות",
+    "invoice": "חשבונית",
+    "invoiceNumber": "חשבונית מס׳ {number}",
+    "new": "חשבונית חדשה",
+    "createFromEncounter": "יצירת חשבונית מהטיפול",
+    "empty": "אין עדיין חשבוניות",
+    "emptyBody": "אפשר ליצור חשבונית מתוך טיפול, או חשבונית ריקה למטופל.",
+    "items": "שורות החשבונית",
+    "addItem": "הוספת שורה",
+    "description": "תיאור",
+    "quantity": "כמות",
+    "unitPrice": "מחיר ליחידה",
+    "lineTotal": "סה״כ שורה",
+    "subtotal": "סכום ביניים",
+    "total": "סה״כ לתשלום",
+    "paid": "שולם",
+    "outstanding": "יתרה לתשלום",
+    "status": {
+      "draft": "טיוטה",
+      "sent": "נשלחה",
+      "paid": "שולמה",
+      "partially_paid": "שולמה חלקית",
+      "cancelled": "בוטלה"
+    },
+    "payment": {
+      "title": "תשלומים",
+      "empty": "לא נרשמו תשלומים",
+      "createLink": "יצירת קישור תשלום",
+      "creatingLink": "יוצר קישור…",
+      "openLink": "פתיחת דף התשלום",
+      "copyLink": "העתקת הקישור",
+      "copied": "הקישור הועתק",
+      "recordManual": "רישום תשלום ידני",
+      "amount": "סכום",
+      "method": "אמצעי תשלום",
+      "methods": {
+        "card": "אשראי",
+        "cash": "מזומן",
+        "bank_transfer": "העברה בנקאית",
+        "bit": "ביט",
+        "other": "אחר"
+      },
+      "statuses": {
+        "pending": "ממתין",
+        "paid": "שולם",
+        "failed": "נכשל",
+        "refunded": "הוחזר"
+      }
+    },
+    "cancel": "ביטול החשבונית",
+    "cancelConfirm": "לבטל את החשבונית? לא ניתן לשחזר.",
+    "errors": {
+      "notConfigured": "חיבור ל‑Grow עדיין לא הוגדר. יש להשלים את ההגדרות במסך ההגדרות.",
+      "phoneRequired": "ל‑Grow נדרש מספר טלפון נייד תקין של המטופל.",
+      "nothingToCharge": "אין יתרה לחיוב בחשבונית הזו.",
+      "providerFailed": "Grow דחתה את הבקשה. יש לבדוק את פרטי החיבור."
+    },
+    "settings": {
+      "title": "הגדרות סליקה — Grow",
+      "intro": "Grow (משולם) מנפיקה לכל עסק מזהה ייחודי וקוד עמוד תשלום. אפשר למצוא אותם באזור המפתחים בחשבון Grow שלכם.",
+      "environment": "סביבה",
+      "sandbox": "בדיקות (Sandbox)",
+      "production": "ייצור (חיובים אמיתיים)",
+      "userId": "מזהה עסק (User ID)",
+      "pageCode": "קוד עמוד תשלום (Page Code)",
+      "isActive": "הפעלת סליקה דרך Grow",
+      "saved": "ההגדרות נשמרו",
+      "webhookTitle": "כתובת ההתראה (Webhook)",
+      "webhookBody": "יש להזין את הכתובת הזו בחשבון Grow, או לוודא שהיא נגישה מהאינטרנט. בזמן פיתוח מקומי היא לא נגישה מבחוץ, ולכן עדכוני תשלום לא יגיעו עד לפריסה לשרת."
+    }
+  },
+  "quickBar": {
+    "create": "יצירה מהירה",
+    "createTitle": "מה ליצור?",
+    "search": "חיפוש מהיר",
+    "searchTitle": "חיפוש בכל המערכת",
+    "searchPlaceholder": "שם מטופל, טלפון או שם צמח…",
+    "searchHint": "אפשר לפתוח בכל מסך עם Ctrl+K",
+    "typeToSearch": "התחילו להקליד כדי לחפש",
+    "noResults": "לא נמצאו תוצאות עבור \"{query}\"",
+    "searching": "מחפש…",
+    "groups": {
+      "patients": "מטופלים",
+      "herbs": "צמחים",
+      "formulas": "נוסחאות"
+    },
+    "actions": {
+      "newPatient": "מטופל חדש",
+      "newAppointment": "תור חדש",
+      "newEncounter": "טיפול חדש",
+      "receiveStock": "קליטת מלאי",
+      "newHerb": "צמח חדש",
+      "newFormula": "נוסחה חדשה"
     }
   },
   "documents": {
