@@ -28,3 +28,12 @@ export {
   TabsContent,
 } from './menu';
 export { TableWrapper, Table, Th, Td, Tr } from './table';
+export { SortableTable, SortTh, SortBody } from './sortable-table';
+export {
+  compareSortValues,
+  parseSortValues,
+  sortCollator,
+  type SortValue,
+  type SortValues,
+  type SortDirection,
+} from './sort-compare';

@@ -14,8 +14,10 @@ import {
   Field,
   FieldGrid,
   Select,
+  SortBody,
+  SortTh,
+  SortableTable,
   Spinner,
-  Table,
   TableWrapper,
   Td,
   Th,
@@ -173,21 +175,29 @@ export function DocumentsPanel({
         <EmptyState icon={<FileText className="h-8 w-8" />} title={t('empty')} description={t('emptyBody')} />
       ) : (
         <TableWrapper>
-          <Table>
+          <SortableTable defaultSortKey="uploaded" defaultSortDirection="desc">
             <thead>
               <tr>
-                <Th>{tc('name')}</Th>
-                <Th>{t('fields.category')}</Th>
-                <Th>{t('uploadedAt')}</Th>
-                <Th>{tc('status')}</Th>
+                <SortTh sortKey="name">{tc('name')}</SortTh>
+                <SortTh sortKey="category">{t('fields.category')}</SortTh>
+                <SortTh sortKey="uploaded">{t('uploadedAt')}</SortTh>
+                <SortTh sortKey="shared">{tc('status')}</SortTh>
                 <Th>{tc('actions')}</Th>
               </tr>
             </thead>
-            <tbody>
+            <SortBody locale={locale}>
               {documents.map((document) => {
                 const isRowPending = isPending && pendingId === document.id;
                 return (
-                  <Tr key={document.id}>
+                  <Tr
+                    key={document.id}
+                    sort={{
+                      name: document.file_name,
+                      category: t(`categories.${document.category}`),
+                      uploaded: new Date(document.created_at).getTime(),
+                      shared: document.shared_with_patient,
+                    }}
+                  >
                     <Td>
                       <span className="flex items-center gap-2">
                         <FileText className="h-4 w-4 shrink-0 text-ink-400" aria-hidden />
@@ -238,8 +248,8 @@ export function DocumentsPanel({
                   </Tr>
                 );
               })}
-            </tbody>
-          </Table>
+            </SortBody>
+          </SortableTable>
         </TableWrapper>
       )}
     </div>

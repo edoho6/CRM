@@ -1,6 +1,16 @@
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
 import { Package, PackagePlus } from 'lucide-react';
-import { Badge, Button, EmptyState, Table, TableWrapper, Td, Th, Tr } from '@clinic/ui';
+import {
+  Badge,
+  Button,
+  EmptyState,
+  SortBody,
+  SortTh,
+  SortableTable,
+  TableWrapper,
+  Td,
+  Tr,
+} from '@clinic/ui';
 import { Link } from '@clinic/i18n/navigation';
 import type { HerbBatchWithHerb } from '@clinic/db/types';
 import type { Locale } from '@clinic/domain';
@@ -64,24 +74,34 @@ export default async function BatchesPage({ params }: { params: Promise<{ locale
         />
       ) : (
         <TableWrapper>
-          <Table>
+          <SortableTable defaultSortKey="expiry">
             <thead>
               <tr>
-                <Th>{tc('name')}</Th>
-                <Th>{t('batchNumber')}</Th>
-                <Th>{t('quantityRemaining')}</Th>
-                <Th>{t('expiryDate')}</Th>
-                <Th>{t('supplier')}</Th>
-                <Th>{t('storageLocation')}</Th>
+                <SortTh sortKey="name">{tc('name')}</SortTh>
+                <SortTh sortKey="batch">{t('batchNumber')}</SortTh>
+                <SortTh sortKey="remaining">{t('quantityRemaining')}</SortTh>
+                <SortTh sortKey="expiry">{t('expiryDate')}</SortTh>
+                <SortTh sortKey="supplier">{t('supplier')}</SortTh>
+                <SortTh sortKey="location">{t('storageLocation')}</SortTh>
               </tr>
             </thead>
-            <tbody>
+            <SortBody locale={locale}>
               {batches.map((batch) => {
                 const expiry = batch.expiry_date ? new Date(batch.expiry_date) : null;
                 const expired = expiry !== null && expiry < now;
                 const expiringSoon = expiry !== null && !expired && expiry < warningDate;
                 return (
-                  <Tr key={batch.id}>
+                  <Tr
+                    key={batch.id}
+                    sort={{
+                      name: batch.herb ? herbPrimaryName(batch.herb, locale as Locale) : null,
+                      batch: batch.batch_number,
+                      remaining: Number(batch.quantity_remaining),
+                      expiry: expiry ? expiry.getTime() : null,
+                      supplier: batch.supplier?.name ?? null,
+                      location: batch.storage_location,
+                    }}
+                  >
                     <Td>
                       {batch.herb ? (
                         <Link
@@ -123,8 +143,8 @@ export default async function BatchesPage({ params }: { params: Promise<{ locale
                   </Tr>
                 );
               })}
-            </tbody>
-          </Table>
+            </SortBody>
+          </SortableTable>
         </TableWrapper>
       )}
     </>

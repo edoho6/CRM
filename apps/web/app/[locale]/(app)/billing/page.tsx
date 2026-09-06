@@ -1,6 +1,16 @@
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
 import { Receipt, Settings } from 'lucide-react';
-import { Badge, Button, EmptyState, Table, TableWrapper, Td, Th, Tr } from '@clinic/ui';
+import {
+  Badge,
+  Button,
+  EmptyState,
+  SortBody,
+  SortTh,
+  SortableTable,
+  TableWrapper,
+  Td,
+  Tr,
+} from '@clinic/ui';
 import { Link } from '@clinic/i18n/navigation';
 import type { Invoice, Patient } from '@clinic/db/types';
 import { PageHeader } from '@/components/app-shell';
@@ -66,20 +76,30 @@ export default async function BillingPage({ params }: { params: Promise<{ locale
         />
       ) : (
         <TableWrapper>
-          <Table>
+          <SortableTable defaultSortKey="date" defaultSortDirection="desc">
             <thead>
               <tr>
-                <Th>{t('invoice')}</Th>
-                <Th>{tPatients('title')}</Th>
-                <Th>{tc('date')}</Th>
-                <Th>{t('total')}</Th>
-                <Th>{t('paid')}</Th>
-                <Th>{tc('status')}</Th>
+                <SortTh sortKey="number">{t('invoice')}</SortTh>
+                <SortTh sortKey="patient">{tPatients('title')}</SortTh>
+                <SortTh sortKey="date">{tc('date')}</SortTh>
+                <SortTh sortKey="total">{t('total')}</SortTh>
+                <SortTh sortKey="paid">{t('paid')}</SortTh>
+                <SortTh sortKey="status">{tc('status')}</SortTh>
               </tr>
             </thead>
-            <tbody>
+            <SortBody locale={locale}>
               {invoices.map((invoice) => (
-                <Tr key={invoice.id}>
+                <Tr
+                  key={invoice.id}
+                  sort={{
+                    number: invoice.invoice_number,
+                    patient: invoice.patient?.full_name ?? null,
+                    date: new Date(invoice.created_at).getTime(),
+                    total: Number(invoice.total),
+                    paid: Number(invoice.amount_paid),
+                    status: t(`status.${invoice.status}`),
+                  }}
+                >
                   <Td>
                     <Link
                       href={`/billing/${invoice.id}`}
@@ -121,8 +141,8 @@ export default async function BillingPage({ params }: { params: Promise<{ locale
                   </Td>
                 </Tr>
               ))}
-            </tbody>
-          </Table>
+            </SortBody>
+          </SortableTable>
         </TableWrapper>
       )}
     </>

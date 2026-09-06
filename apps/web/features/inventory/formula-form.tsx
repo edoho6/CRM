@@ -18,7 +18,15 @@ import {
   Spinner,
   Textarea,
 } from '@clinic/ui';
-import { FORMULA_CATEGORIES, HERB_UNITS, type FormulaCategory, type HerbUnit, type Locale } from '@clinic/domain';
+import {
+  FORMULA_CATEGORIES,
+  FORMULA_TCM_CATEGORIES,
+  HERB_UNITS,
+  type FormulaCategory,
+  type FormulaTcmCategory,
+  type HerbUnit,
+  type Locale,
+} from '@clinic/domain';
 import { useRouter } from '@clinic/i18n/navigation';
 import type { Herb, HerbFormulaWithItems } from '@clinic/db/types';
 import { herbPrimaryName, herbSecondaryName } from '@/lib/display';
@@ -47,6 +55,7 @@ export function FormulaForm({
   const t = useTranslations('inventory.formulas');
   const tf = useTranslations('inventory.formulas.fields');
   const tCategory = useTranslations('inventory.formulas.category');
+  const tFormulaTcm = useTranslations('inventory.formulaTcmCategory');
   const tUnit = useTranslations('inventory.unit');
   const tc = useTranslations('common');
   const locale = useLocale() as Locale;
@@ -60,8 +69,14 @@ export function FormulaForm({
   const [nameEnglish, setNameEnglish] = useState(formula?.name_english ?? '');
   const [nameHebrew, setNameHebrew] = useState(formula?.name_hebrew ?? '');
   const [category, setCategory] = useState<FormulaCategory>(formula?.category ?? 'custom');
+  const [tcmCategory, setTcmCategory] = useState<FormulaTcmCategory | ''>(formula?.tcm_category ?? '');
+  const [sourceText, setSourceText] = useState(formula?.source_text ?? '');
+  const [actions, setActions] = useState(formula?.actions ?? '');
   const [description, setDescription] = useState(formula?.description ?? '');
   const [indications, setIndications] = useState(formula?.indications ?? '');
+  const [contraindications, setContraindications] = useState(formula?.contraindications ?? '');
+  const [modifications, setModifications] = useState(formula?.modifications ?? '');
+  const [dosageNotes, setDosageNotes] = useState(formula?.dosage_notes ?? '');
   const [isActive, setIsActive] = useState(formula?.is_active ?? true);
   const [items, setItems] = useState<ItemRow[]>(
     formula?.items?.length
@@ -103,8 +118,14 @@ export function FormulaForm({
       name_english: nameEnglish,
       name_hebrew: nameHebrew,
       category,
+      tcm_category: tcmCategory,
+      source_text: sourceText,
+      actions,
       description,
       indications,
+      contraindications,
+      modifications,
+      dosage_notes: dosageNotes,
       is_active: isActive,
       items: validItems.map((item) => ({
         herb_id: item.herb_id,
@@ -120,7 +141,8 @@ export function FormulaForm({
         setError(tc('errorGeneric'));
         return;
       }
-      router.push('/inventory/formulas');
+      const id = result.data?.id ?? formula?.id;
+      router.push(id ? `/inventory/formulas/${id}` : '/inventory/formulas');
       router.refresh();
     });
   }
@@ -174,22 +196,25 @@ export function FormulaForm({
                   ))}
                 </Select>
               </Field>
-            </FieldGrid>
-            <FieldGrid className="mt-4">
-              <Field label={tf('description')} htmlFor="description">
-                <Textarea
-                  id="description"
-                  rows={2}
-                  value={description}
-                  onChange={(event) => setDescription(event.target.value)}
-                />
+              <Field label={tf('tcmCategory')} htmlFor="tcm_category">
+                <Select
+                  id="tcm_category"
+                  value={tcmCategory}
+                  onChange={(event) => setTcmCategory(event.target.value as FormulaTcmCategory | '')}
+                >
+                  <option value="">—</option>
+                  {FORMULA_TCM_CATEGORIES.map((value) => (
+                    <option key={value} value={value}>
+                      {tFormulaTcm(value)}
+                    </option>
+                  ))}
+                </Select>
               </Field>
-              <Field label={tf('indications')} htmlFor="indications">
-                <Textarea
-                  id="indications"
-                  rows={2}
-                  value={indications}
-                  onChange={(event) => setIndications(event.target.value)}
+              <Field label={tf('sourceText')} htmlFor="source_text" hint="Shang Han Lun">
+                <LtrInput
+                  id="source_text"
+                  value={sourceText}
+                  onChange={(event) => setSourceText(event.target.value)}
                 />
               </Field>
             </FieldGrid>
@@ -197,6 +222,59 @@ export function FormulaForm({
               <Checkbox checked={isActive} onChange={(event) => setIsActive(event.target.checked)} />
               {tc('active')}
             </label>
+          </Section>
+
+          <Section title={t('clinical')}>
+            <div className="space-y-4">
+              <Field label={tf('actions')} htmlFor="actions">
+                <Textarea
+                  id="actions"
+                  rows={3}
+                  value={actions}
+                  onChange={(event) => setActions(event.target.value)}
+                />
+              </Field>
+              <Field label={tf('indications')} htmlFor="indications">
+                <Textarea
+                  id="indications"
+                  rows={3}
+                  value={indications}
+                  onChange={(event) => setIndications(event.target.value)}
+                />
+              </Field>
+              <Field label={tf('contraindications')} htmlFor="contraindications">
+                <Textarea
+                  id="contraindications"
+                  rows={3}
+                  value={contraindications}
+                  onChange={(event) => setContraindications(event.target.value)}
+                />
+              </Field>
+              <Field label={tf('modifications')} htmlFor="modifications">
+                <Textarea
+                  id="modifications"
+                  rows={2}
+                  value={modifications}
+                  onChange={(event) => setModifications(event.target.value)}
+                />
+              </Field>
+              <FieldGrid>
+                <Field label={tf('dosageNotes')} htmlFor="dosage_notes">
+                  <Input
+                    id="dosage_notes"
+                    value={dosageNotes}
+                    onChange={(event) => setDosageNotes(event.target.value)}
+                  />
+                </Field>
+                <Field label={tf('description')} htmlFor="description">
+                  <Input
+                    id="description"
+                    value={description}
+                    onChange={(event) => setDescription(event.target.value)}
+                  />
+                </Field>
+              </FieldGrid>
+            </div>
           </Section>
 
           <Section
@@ -245,6 +323,15 @@ export function FormulaForm({
                       </option>
                     ))}
                   </Select>
+                  {/* Preparation notes belong on the line, not in a general
+                      comment: "decoct first" applies to this herb only. */}
+                  <Input
+                    aria-label={t('itemNotes')}
+                    placeholder={t('itemNotes')}
+                    className="w-44"
+                    value={item.notes}
+                    onChange={(event) => updateItem(index, { notes: event.target.value })}
+                  />
                   <button
                     type="button"
                     aria-label={t('removeItem')}

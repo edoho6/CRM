@@ -18,6 +18,7 @@ export default async function NewFormulaPage({ params }: { params: Promise<{ loc
     .select('*')
     .eq('is_active', true)
     .order('pinyin_name', { ascending: true })
+    .limit(2000)
     .returns<Herb[]>();
 
   return (

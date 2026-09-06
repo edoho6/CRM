@@ -1,6 +1,16 @@
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
 import { AlertTriangle, PackagePlus, Sprout } from 'lucide-react';
-import { Badge, Button, EmptyState, Table, TableWrapper, Td, Th, Tr } from '@clinic/ui';
+import {
+  Badge,
+  Button,
+  EmptyState,
+  SortBody,
+  SortTh,
+  SortableTable,
+  TableWrapper,
+  Td,
+  Tr,
+} from '@clinic/ui';
 import { Link } from '@clinic/i18n/navigation';
 import type { HerbStockLevel } from '@clinic/db/types';
 import type { Locale } from '@clinic/domain';
@@ -76,22 +86,32 @@ export default async function InventoryOverviewPage({
         />
       ) : (
         <TableWrapper>
-          <Table>
+          <SortableTable defaultSortKey="status" defaultSortDirection="desc">
             <thead>
               <tr>
-                <Th>{tc('name')}</Th>
-                <Th>{tHerbs('inStock')}</Th>
-                <Th>{tHerbs('fields.reorderThreshold')}</Th>
-                <Th>{tBatches('expiryDate')}</Th>
-                <Th>{tc('status')}</Th>
+                <SortTh sortKey="name">{tc('name')}</SortTh>
+                <SortTh sortKey="stock">{tHerbs('inStock')}</SortTh>
+                <SortTh sortKey="threshold">{tHerbs('fields.reorderThreshold')}</SortTh>
+                <SortTh sortKey="expiry">{tBatches('expiryDate')}</SortTh>
+                <SortTh sortKey="status">{tc('status')}</SortTh>
               </tr>
             </thead>
-            <tbody>
+            <SortBody locale={locale}>
               {levels.map((level) => {
                 const remaining = Number(level.total_remaining);
                 const secondary = herbSecondaryName(level, locale as Locale);
                 return (
-                  <Tr key={level.herb_id}>
+                  <Tr
+                    key={level.herb_id}
+                    sort={{
+                      name: herbPrimaryName(level, locale as Locale),
+                      stock: remaining,
+                      threshold: level.reorder_threshold === null ? null : Number(level.reorder_threshold),
+                      expiry: level.nearest_expiry ? new Date(level.nearest_expiry).getTime() : null,
+                      // Ascending puts healthy stock first, descending the trouble.
+                      status: remaining <= 0 ? 2 : level.is_below_threshold ? 1 : 0,
+                    }}
+                  >
                     <Td>
                       <Link
                         href={`/inventory/herbs/${level.herb_id}`}
@@ -140,8 +160,8 @@ export default async function InventoryOverviewPage({
                   </Tr>
                 );
               })}
-            </tbody>
-          </Table>
+            </SortBody>
+          </SortableTable>
         </TableWrapper>
       )}
     </>

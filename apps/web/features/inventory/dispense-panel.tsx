@@ -14,11 +14,12 @@ import {
   Input,
   LtrInput,
   Select,
+  SortBody,
+  SortTh,
+  SortableTable,
   Spinner,
-  Table,
   TableWrapper,
   Td,
-  Th,
   Tr,
 } from '@clinic/ui';
 import type { Locale } from '@clinic/domain';
@@ -325,16 +326,22 @@ export function DispensePanel({
                     </span>
                   </div>
                   <TableWrapper className="rounded-lg">
-                    <Table>
+                    <SortableTable>
                       <thead>
                         <tr>
-                          <Th>{tc('name')}</Th>
-                          <Th>{tc('quantity')}</Th>
+                          <SortTh sortKey="name">{tc('name')}</SortTh>
+                          <SortTh sortKey="quantity">{tc('quantity')}</SortTh>
                         </tr>
                       </thead>
-                      <tbody>
+                      <SortBody locale={locale}>
                         {record.items.map((item) => (
-                          <Tr key={item.id}>
+                          <Tr
+                            key={item.id}
+                            sort={{
+                              name: herbPrimaryName(item.herb, locale),
+                              quantity: Number(item.quantity),
+                            }}
+                          >
                             <Td>{herbPrimaryName(item.herb, locale)}</Td>
                             <Td>
                               <span dir="ltr" className="tabular-nums">
@@ -343,8 +350,8 @@ export function DispensePanel({
                             </Td>
                           </Tr>
                         ))}
-                      </tbody>
-                    </Table>
+                      </SortBody>
+                    </SortableTable>
                   </TableWrapper>
                   {record.notes ? (
                     <p className="mt-1 text-xs text-ink-500">{record.notes}</p>

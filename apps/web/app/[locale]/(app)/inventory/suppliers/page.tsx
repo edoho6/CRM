@@ -1,6 +1,6 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Truck } from 'lucide-react';
-import { Badge, EmptyState, Table, TableWrapper, Td, Th, Tr } from '@clinic/ui';
+import { Badge, EmptyState, SortBody, SortTh, SortableTable, TableWrapper, Td, Tr } from '@clinic/ui';
 import type { Supplier } from '@clinic/db/types';
 import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
@@ -35,19 +35,28 @@ export default async function SuppliersPage({ params }: { params: Promise<{ loca
         <EmptyState icon={<Truck className="h-8 w-8" />} title={t('empty')} />
       ) : (
         <TableWrapper>
-          <Table>
+          <SortableTable defaultSortKey="name">
             <thead>
               <tr>
-                <Th>{tc('name')}</Th>
-                <Th>{t('contactName')}</Th>
-                <Th>{tPatients('phone')}</Th>
-                <Th>{tPatients('email')}</Th>
-                <Th>{tc('status')}</Th>
+                <SortTh sortKey="name">{tc('name')}</SortTh>
+                <SortTh sortKey="contact">{t('contactName')}</SortTh>
+                <SortTh sortKey="phone">{tPatients('phone')}</SortTh>
+                <SortTh sortKey="email">{tPatients('email')}</SortTh>
+                <SortTh sortKey="status">{tc('status')}</SortTh>
               </tr>
             </thead>
-            <tbody>
+            <SortBody locale={locale}>
               {suppliers.map((supplier) => (
-                <Tr key={supplier.id}>
+                <Tr
+                  key={supplier.id}
+                  sort={{
+                    name: supplier.name,
+                    contact: supplier.contact_name,
+                    phone: supplier.phone,
+                    email: supplier.email,
+                    status: supplier.is_active ? 0 : 1,
+                  }}
+                >
                   <Td className="font-medium text-ink-900">{supplier.name}</Td>
                   <Td>{supplier.contact_name ?? '—'}</Td>
                   <Td>
@@ -73,8 +82,8 @@ export default async function SuppliersPage({ params }: { params: Promise<{ loca
                   </Td>
                 </Tr>
               ))}
-            </tbody>
-          </Table>
+            </SortBody>
+          </SortableTable>
         </TableWrapper>
       )}
     </>

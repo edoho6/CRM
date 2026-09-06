@@ -2,6 +2,7 @@ import { z } from 'zod';
 import {
   CHANNELS,
   FORMULA_CATEGORIES,
+  FORMULA_TCM_CATEGORIES,
   HERB_CATEGORIES,
   HERB_UNITS,
   STOCK_MOVEMENT_TYPES,
@@ -68,8 +69,16 @@ export const herbFormulaFormSchema = z.object({
   name_english: optionalText(160),
   name_hebrew: optionalText(160),
   category: z.enum(FORMULA_CATEGORIES).default('custom'),
+  /** Traditional grouping, the formula-level counterpart of a herb's tcm_category. */
+  tcm_category: optionalEnum(FORMULA_TCM_CATEGORIES),
+  /** Where the formula comes from, e.g. "Shang Han Lun". */
+  source_text: optionalText(300),
+  actions: optionalText(2000),
   description: optionalText(2000),
   indications: optionalText(2000),
+  contraindications: optionalText(2000),
+  modifications: optionalText(2000),
+  dosage_notes: optionalText(500),
   is_active: z.boolean().default(true),
   items: z.array(formulaItemSchema).min(1, { error: 'formula_needs_at_least_one_herb' }),
 });

@@ -1,6 +1,16 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { UserPlus, Users } from 'lucide-react';
-import { Badge, Button, EmptyState, Table, TableWrapper, Td, Th, Tr } from '@clinic/ui';
+import {
+  Badge,
+  Button,
+  EmptyState,
+  SortBody,
+  SortTh,
+  SortableTable,
+  TableWrapper,
+  Td,
+  Tr,
+} from '@clinic/ui';
 import { Link } from '@clinic/i18n/navigation';
 import type { Patient } from '@clinic/db/types';
 import { PageHeader } from '@/components/app-shell';
@@ -81,21 +91,30 @@ export default async function PatientsPage({
         />
       ) : (
         <TableWrapper>
-          <Table>
+          <SortableTable defaultSortKey="name">
             <thead>
               <tr>
-                <Th>{t('fields.fullName')}</Th>
-                <Th>{t('fields.phone')}</Th>
-                <Th>{t('age')}</Th>
-                <Th>{t('fields.city')}</Th>
-                <Th>{tc('status')}</Th>
+                <SortTh sortKey="name">{t('fields.fullName')}</SortTh>
+                <SortTh sortKey="phone">{t('fields.phone')}</SortTh>
+                <SortTh sortKey="age">{t('age')}</SortTh>
+                <SortTh sortKey="city">{t('fields.city')}</SortTh>
+                <SortTh sortKey="status">{tc('status')}</SortTh>
               </tr>
             </thead>
-            <tbody>
+            <SortBody locale={locale}>
               {patients.map((patient) => {
                 const age = ageFromDateOfBirth(patient.date_of_birth);
                 return (
-                  <Tr key={patient.id}>
+                  <Tr
+                    key={patient.id}
+                    sort={{
+                      name: patient.full_name,
+                      phone: patient.phone,
+                      age,
+                      city: patient.city,
+                      status: patient.is_active ? 0 : 1,
+                    }}
+                  >
                     <Td>
                       <Link
                         href={`/patients/${patient.id}`}
@@ -123,8 +142,8 @@ export default async function PatientsPage({
                   </Tr>
                 );
               })}
-            </tbody>
-          </Table>
+            </SortBody>
+          </SortableTable>
         </TableWrapper>
       )}
     </>

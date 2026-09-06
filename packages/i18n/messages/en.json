@@ -568,9 +568,11 @@
         "stock": "Stock"
       },
       "filters": {
-        "allCategories": "All categories",
-        "needsReview": "Needs review only"
-      }
+        "title": "Filters"
+      },
+      "count": "{count, plural, =0 {No herbs} one {1 herb} other {# herbs}}",
+      "usedIn": "Appears in formulas",
+      "usedInEmpty": "This herb is not part of any saved formula"
     },
     "category": {
       "raw_herb": "Raw herb",
@@ -623,7 +625,12 @@
         "classical": "Classical",
         "modified": "Modified",
         "custom": "Custom"
-      }
+      },
+      "count": "{count, plural, =0 {No formulas} one {1 formula} other {# formulas}}",
+      "searchPlaceholder": "Search by pinyin, Chinese, English or source",
+      "nature": "Nature & taste",
+      "clinical": "Clinical",
+      "itemNotes": "Preparation note"
     },
     "batches": {
       "title": "Stock batches",

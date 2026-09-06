@@ -8,7 +8,9 @@ import {
   CardBody,
   DetailRow,
   EmptyState,
-  Table,
+  SortBody,
+  SortTh,
+  SortableTable,
   TableWrapper,
   Td,
   Th,
@@ -169,17 +171,23 @@ export default async function PatientDetailPage({
       <EmptyState title={t('noEncounters')} />
     ) : (
       <TableWrapper>
-        <Table>
+        <SortableTable defaultSortKey="date" defaultSortDirection="desc">
           <thead>
             <tr>
-              <Th>{tc('date')}</Th>
-              <Th>{tc('status')}</Th>
+              <SortTh sortKey="date">{tc('date')}</SortTh>
+              <SortTh sortKey="status">{tc('status')}</SortTh>
               <Th />
             </tr>
           </thead>
-          <tbody>
+          <SortBody locale={locale}>
             {encounters.map((encounter) => (
-              <Tr key={encounter.id}>
+              <Tr
+                key={encounter.id}
+                sort={{
+                  date: new Date(encounter.encounter_date).getTime(),
+                  status: tEnc(`status.${encounter.status}`),
+                }}
+              >
                 <Td>
                   <span dir="ltr">
                     {format.dateTime(new Date(encounter.encounter_date), 'short')}
@@ -200,8 +208,8 @@ export default async function PatientDetailPage({
                 </Td>
               </Tr>
             ))}
-          </tbody>
-        </Table>
+          </SortBody>
+        </SortableTable>
       </TableWrapper>
     );
 
@@ -210,17 +218,24 @@ export default async function PatientDetailPage({
       <EmptyState title={t('noAppointments')} />
     ) : (
       <TableWrapper>
-        <Table>
+        <SortableTable defaultSortKey="date" defaultSortDirection="desc">
           <thead>
             <tr>
-              <Th>{tc('date')}</Th>
-              <Th>{tApp('type')}</Th>
-              <Th>{tc('status')}</Th>
+              <SortTh sortKey="date">{tc('date')}</SortTh>
+              <SortTh sortKey="type">{tApp('type')}</SortTh>
+              <SortTh sortKey="status">{tc('status')}</SortTh>
             </tr>
           </thead>
-          <tbody>
+          <SortBody locale={locale}>
             {appointments.map((appointment) => (
-              <Tr key={appointment.id}>
+              <Tr
+                key={appointment.id}
+                sort={{
+                  date: new Date(appointment.start_at).getTime(),
+                  type: appointmentTypeName(appointment.appointment_type, locale as Locale),
+                  status: tApp(`status.${appointment.status}`),
+                }}
+              >
                 <Td>
                   <span dir="ltr">
                     {format.dateTime(new Date(appointment.start_at), 'dateTime')}
@@ -234,8 +249,8 @@ export default async function PatientDetailPage({
                 </Td>
               </Tr>
             ))}
-          </tbody>
-        </Table>
+          </SortBody>
+        </SortableTable>
       </TableWrapper>
     );
 

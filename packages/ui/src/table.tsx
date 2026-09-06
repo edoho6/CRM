@@ -39,6 +39,29 @@ export function Td({ className, ...props }: React.TdHTMLAttributes<HTMLTableCell
   );
 }
 
-export function Tr({ className, ...props }: React.HTMLAttributes<HTMLTableRowElement>) {
-  return <tr className={cn('transition-colors hover:bg-ink-50/70', className)} {...props} />;
+/**
+ * A table row.
+ *
+ * `sort` carries the comparable value of each cell — a date as a timestamp, a
+ * quantity as a number, a name as a string — for `SortBody` to order by.
+ *
+ * It travels as a `data-sort` attribute rather than as a React prop because the
+ * rows are built in Server Components: by the time they reach the client
+ * sorter, `Tr` has already run on the server and only the plain `<tr>` element
+ * survives. Attributes survive that crossing; props do not.
+ */
+export function Tr({
+  className,
+  sort,
+  ...props
+}: React.HTMLAttributes<HTMLTableRowElement> & {
+  sort?: Record<string, string | number | boolean | null | undefined>;
+}) {
+  return (
+    <tr
+      className={cn('transition-colors hover:bg-ink-50/70', className)}
+      data-sort={sort ? JSON.stringify(sort) : undefined}
+      {...props}
+    />
+  );
 }

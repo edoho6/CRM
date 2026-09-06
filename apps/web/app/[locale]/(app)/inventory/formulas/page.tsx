@@ -1,43 +1,78 @@
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
 import { FlaskConical, Plus } from 'lucide-react';
-import { Badge, Button, EmptyState, Table, TableWrapper, Td, Th, Tr } from '@clinic/ui';
+import {
+  Badge,
+  Button,
+  EmptyState,
+  SortBody,
+  SortTh,
+  SortableTable,
+  TableWrapper,
+  Td,
+  Tr,
+} from '@clinic/ui';
 import { Link } from '@clinic/i18n/navigation';
 import type { HerbFormulaWithItems } from '@clinic/db/types';
 import type { Locale } from '@clinic/domain';
 import { PageHeader } from '@/components/app-shell';
+import { TcmChip } from '@/components/tcm-chip';
 import { getClinicScope } from '@/lib/session';
-import { formulaPrimaryName, formulaSecondaryName } from '@/lib/display';
+import { formulaChineseName, formulaPrimaryName, herbPrimaryName } from '@/lib/display';
 import { InventoryNav } from '@/features/inventory/inventory-nav';
+import { HerbSearch } from '@/features/inventory/herb-search';
+import { FormulaFilters } from '@/features/inventory/formula-filters';
+import {
+  parseFormulaFilters,
+  type FormulaSearchParams,
+} from '@/features/inventory/formula-filter-params';
 
 export default async function FormulasPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string }>;
+  searchParams: Promise<FormulaSearchParams>;
 }) {
   const { locale } = await params;
+  const filters = parseFormulaFilters(await searchParams);
   setRequestLocale(locale);
 
   const t = await getTranslations('inventory.formulas');
   const tCategory = await getTranslations('inventory.formulas.category');
+  const tFormulaTcm = await getTranslations('inventory.formulaTcmCategory');
+  const tReview = await getTranslations('inventory.review');
   const tc = await getTranslations('common');
   const format = await getFormatter();
 
   const scope = await getClinicScope();
   if (!scope) return null;
 
-  const { data } = await scope.supabase
+  let query = scope.supabase
     .from('herb_formulas')
-    .select('*, items:herb_formula_items(*, herb:herbs(id, pinyin_name, chinese_name, english_name, hebrew_name, default_unit))')
+    .select(
+      '*, items:herb_formula_items(*, herb:herbs(id, pinyin_name, chinese_name, english_name, hebrew_name, default_unit))',
+    )
     .order('name_pinyin', { ascending: true })
-    .limit(300)
-    .returns<HerbFormulaWithItems[]>();
+    .limit(1000);
 
+  if (filters.q) {
+    const escaped = filters.q.replace(/[%,()]/g, ' ');
+    query = query.or(
+      `name_pinyin.ilike.%${escaped}%,name_chinese.ilike.%${escaped}%,name_english.ilike.%${escaped}%,name_hebrew.ilike.%${escaped}%,source_text.ilike.%${escaped}%`,
+    );
+  }
+  if (filters.cat.length) query = query.in('tcm_category', filters.cat);
+  if (filters.kind.length) query = query.in('category', filters.kind);
+  if (filters.review) query = query.eq('needs_review', true);
+
+  const { data } = await query.returns<HerbFormulaWithItems[]>();
   const formulas = data ?? [];
 
   return (
     <>
       <PageHeader
         title={t('title')}
+        description={t('count', { count: formulas.length })}
         actions={
           <Button asChild>
             <Link href="/inventory/formulas/new">
@@ -49,11 +84,16 @@ export default async function FormulasPage({
       />
       <InventoryNav />
 
+      <div className="mb-4 space-y-3">
+        <HerbSearch initialQuery={filters.q} placeholder={t('searchPlaceholder')} />
+        <FormulaFilters filters={filters} />
+      </div>
+
       {formulas.length === 0 ? (
         <EmptyState
           icon={<FlaskConical className="h-8 w-8" />}
-          title={t('empty')}
-          description={t('emptyBody')}
+          title={filters.q ? tc('noResults') : t('empty')}
+          description={filters.q ? undefined : t('emptyBody')}
           action={
             <Button asChild size="sm">
               <Link href="/inventory/formulas/new">{t('new')}</Link>
@@ -62,54 +102,100 @@ export default async function FormulasPage({
         />
       ) : (
         <TableWrapper>
-          <Table>
+          <SortableTable defaultSortKey="name">
             <thead>
               <tr>
-                <Th>{tc('name')}</Th>
-                <Th>{t('fields.category')}</Th>
-                <Th>{t('items')}</Th>
-                <Th>{t('totalWeight')}</Th>
-                <Th>{tc('status')}</Th>
+                <SortTh sortKey="name">{tc('name')}</SortTh>
+                <SortTh sortKey="cat">{t('fields.tcmCategory')}</SortTh>
+                <SortTh sortKey="source">{t('fields.sourceText')}</SortTh>
+                <SortTh sortKey="items">{t('items')}</SortTh>
+                <SortTh sortKey="weight">{t('totalWeight')}</SortTh>
+                <SortTh sortKey="status">{tc('status')}</SortTh>
               </tr>
             </thead>
-            <tbody>
+            <SortBody locale={locale}>
               {formulas.map((formula) => {
-                const secondary = formulaSecondaryName(formula, locale as Locale);
+                const chinese = formulaChineseName(formula);
                 const total = formula.items.reduce((sum, item) => sum + Number(item.dosage), 0);
+                // A one-line preview of the prescription, so the list itself
+                // answers "which formula was the one with Chai Hu in it?".
+                const preview = formula.items
+                  .slice()
+                  .sort((a, b) => a.sequence - b.sequence)
+                  .slice(0, 5)
+                  .map((item) => herbPrimaryName(item.herb, locale as Locale))
+                  .filter(Boolean)
+                  .join(' · ');
                 return (
-                  <Tr key={formula.id}>
+                  <Tr
+                    key={formula.id}
+                    sort={{
+                      name: formulaPrimaryName(formula, locale as Locale),
+                      cat: formula.tcm_category ? tFormulaTcm(formula.tcm_category) : null,
+                      source: formula.source_text,
+                      items: formula.items.length,
+                      weight: total,
+                      status: formula.needs_review ? 2 : formula.is_active ? 0 : 1,
+                    }}
+                  >
                     <Td>
                       <Link
                         href={`/inventory/formulas/${formula.id}`}
-                        className="font-medium text-jade-800 underline-offset-2 hover:underline"
+                        className="flex items-baseline gap-2 underline-offset-2 hover:underline"
                       >
-                        {formulaPrimaryName(formula, locale as Locale)}
+                        <span className="text-base font-semibold text-jade-800">
+                          {formulaPrimaryName(formula, locale as Locale)}
+                        </span>
+                        {chinese ? <span className="text-base text-ink-600">{chinese}</span> : null}
                       </Link>
-                      {secondary ? (
+                      {formula.name_english ? (
                         <span className="block text-xs text-ink-500" dir="ltr">
-                          {secondary}
+                          {formula.name_english}
+                        </span>
+                      ) : null}
+                      {preview ? (
+                        <span className="mt-0.5 block text-xs text-ink-400" dir="ltr">
+                          {preview}
+                          {formula.items.length > 5 ? ' …' : ''}
                         </span>
                       ) : null}
                     </Td>
-                    <Td>{tCategory(formula.category)}</Td>
+                    <Td>
+                      {formula.tcm_category ? (
+                        <TcmChip scale="formulaTcmCategory" value={formula.tcm_category}>
+                          {tFormulaTcm(formula.tcm_category)}
+                        </TcmChip>
+                      ) : (
+                        <span className="text-ink-400">—</span>
+                      )}
+                      <span className="mt-1 block text-xs text-ink-400">{tCategory(formula.category)}</span>
+                    </Td>
+                    <Td>
+                      <span className="text-xs text-ink-600 italic" dir="ltr">
+                        {formula.source_text ?? '—'}
+                      </span>
+                    </Td>
                     <Td>
                       <span className="tabular-nums">{formula.items.length}</span>
                     </Td>
                     <Td>
-                      <span dir="ltr" className="tabular-nums">
-                        {format.number(total)}
+                      <span dir="ltr" className="font-semibold tabular-nums">
+                        {format.number(total)} g
                       </span>
                     </Td>
                     <Td>
-                      <Badge tone={formula.is_active ? 'success' : 'muted'}>
-                        {formula.is_active ? tc('active') : tc('inactive')}
-                      </Badge>
+                      <span className="flex flex-wrap gap-1">
+                        <Badge tone={formula.is_active ? 'success' : 'muted'}>
+                          {formula.is_active ? tc('active') : tc('inactive')}
+                        </Badge>
+                        {formula.needs_review ? <Badge tone="warning">{tReview('badge')}</Badge> : null}
+                      </span>
                     </Td>
                   </Tr>
                 );
               })}
-            </tbody>
-          </Table>
+            </SortBody>
+          </SortableTable>
         </TableWrapper>
       )}
     </>

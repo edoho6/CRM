@@ -568,9 +568,11 @@
         "stock": "מלאי"
       },
       "filters": {
-        "allCategories": "כל הקטגוריות",
-        "needsReview": "דורשים אימות בלבד"
-      }
+        "title": "סינון"
+      },
+      "count": "{count, plural, =0 {אין צמחים} one {צמח אחד} two {שני צמחים} other {# צמחים}}",
+      "usedIn": "מופיע בפורמולות",
+      "usedInEmpty": "הצמח לא מופיע באף פורמולה שמורה"
     },
     "category": {
       "raw_herb": "צמח גולמי",
@@ -623,7 +625,12 @@
         "classical": "קלאסית",
         "modified": "מותאמת",
         "custom": "אישית"
-      }
+      },
+      "count": "{count, plural, =0 {אין פורמולות} one {פורמולה אחת} two {שתי פורמולות} other {# פורמולות}}",
+      "searchPlaceholder": "חיפוש לפי פינין, סינית, אנגלית או מקור",
+      "nature": "טבע וטעם",
+      "clinical": "מידע קליני",
+      "itemNotes": "הערת הכנה"
     },
     "batches": {
       "title": "אצוות מלאי",

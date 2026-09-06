@@ -9,34 +9,47 @@ import {
   CardHeader,
   CardTitle,
   DetailRow,
-  Table,
+  SortBody,
+  SortTh,
+  SortableTable,
   TableWrapper,
   Td,
-  Th,
   Tr,
 } from '@clinic/ui';
 import { Link } from '@clinic/i18n/navigation';
-import type { Herb, HerbBatch, HerbStockLevel, StockMovement, Supplier } from '@clinic/db/types';
+import type {
+  Herb,
+  HerbBatch,
+  HerbFormula,
+  HerbStockLevel,
+  StockMovement,
+  Supplier,
+} from '@clinic/db/types';
+import type { HerbUnit, Locale } from '@clinic/domain';
 import { PageHeader } from '@/components/app-shell';
+import { TcmChip, TcmChips } from '@/components/tcm-chip';
 import { getClinicScope } from '@/lib/session';
-import { herbBotanicalName, herbChineseName, herbPrimaryName } from '@/lib/display';
+import {
+  formulaChineseName,
+  formulaPrimaryName,
+  herbBotanicalName,
+  herbChineseName,
+  herbPrimaryName,
+} from '@/lib/display';
 import { InventoryNav } from '@/features/inventory/inventory-nav';
 import { HerbImageCard } from '@/features/inventory/herb-image-card';
 
 type BatchRow = HerbBatch & { supplier: Pick<Supplier, 'id' | 'name'> | null };
 
-function Chips({ values, render }: { values: string[]; render: (value: string) => string }) {
-  if (values.length === 0) return <span className="text-ink-400">—</span>;
-  return (
-    <span className="flex flex-wrap gap-1">
-      {values.map((value) => (
-        <Badge key={value} tone="neutral">
-          {render(value)}
-        </Badge>
-      ))}
-    </span>
-  );
-}
+type FormulaUse = {
+  dosage: number;
+  unit: HerbUnit;
+  notes: string | null;
+  formula: Pick<
+    HerbFormula,
+    'id' | 'name_pinyin' | 'name_chinese' | 'name_english' | 'name_hebrew' | 'tcm_category' | 'category' | 'is_active'
+  > | null;
+};
 
 function Prose({ text }: { text: string | null }) {
   if (!text) return <span className="text-ink-400">—</span>;
@@ -55,9 +68,11 @@ export default async function HerbDetailPage({
   const ts = await getTranslations('inventory.herbs.sections');
   const tBatches = await getTranslations('inventory.batches');
   const tMovements = await getTranslations('inventory.movements');
+  const tFormulas = await getTranslations('inventory.formulas');
   const tCategory = await getTranslations('inventory.category');
   const tUnit = await getTranslations('inventory.unit');
   const tTcm = await getTranslations('inventory.tcmCategory');
+  const tFormulaTcm = await getTranslations('inventory.formulaTcmCategory');
   const tTemp = await getTranslations('inventory.temperature');
   const tTaste = await getTranslations('inventory.taste');
   const tChannel = await getTranslations('inventory.channel');
@@ -71,7 +86,7 @@ export default async function HerbDetailPage({
   const { data: herb } = await scope.supabase.from('herbs').select('*').eq('id', id).maybeSingle<Herb>();
   if (!herb) notFound();
 
-  const [levelResult, batchesResult, movementsResult] = await Promise.all([
+  const [levelResult, batchesResult, movementsResult, usesResult] = await Promise.all([
     scope.supabase.from('herb_stock_levels').select('*').eq('herb_id', id).maybeSingle<HerbStockLevel>(),
     scope.supabase
       .from('herb_batches')
@@ -86,15 +101,27 @@ export default async function HerbDetailPage({
       .order('created_at', { ascending: false })
       .limit(100)
       .returns<StockMovement[]>(),
+    // The reverse of the formula page's ingredient list: every prescription this
+    // herb takes part in, with the dose it contributes there.
+    scope.supabase
+      .from('herb_formula_items')
+      .select(
+        'dosage, unit, notes, formula:herb_formulas(id, name_pinyin, name_chinese, name_english, name_hebrew, tcm_category, category, is_active)',
+      )
+      .eq('herb_id', id)
+      .returns<FormulaUse[]>(),
   ]);
 
   const level = levelResult.data;
   const batches = batchesResult.data ?? [];
   const movements = movementsResult.data ?? [];
+  const uses = (usesResult.data ?? []).filter((use) => use.formula);
   const remaining = Number(level?.total_remaining ?? 0);
   const chinese = herbChineseName(herb);
   const botanical = herbBotanicalName(herb);
   const primary = herbPrimaryName(herb);
+  const tastes = herb.tastes ?? [];
+  const channels = herb.channels ?? [];
 
   const dosage =
     herb.dosage_min_g !== null || herb.dosage_max_g !== null
@@ -150,6 +177,60 @@ export default async function HerbDetailPage({
         </p>
       ) : null}
 
+      {/* The three things a practitioner reaches for before anything else: how
+          much to give, how hot or cold it runs, and which group it belongs to.
+          They sit above the fold so the answer never costs a scroll. */}
+      <section className="mb-5 rounded-card border border-ink-200 bg-white p-4">
+        <div className="flex flex-wrap items-center gap-x-8 gap-y-4">
+          <div>
+            <p className="text-xs font-medium text-ink-500">{t('fields.dosageRange')}</p>
+            {dosage ? (
+              <p dir="ltr" className="text-3xl leading-tight font-bold tabular-nums text-jade-800">
+                {dosage}
+              </p>
+            ) : (
+              <p className="text-3xl leading-tight font-bold text-ink-300">—</p>
+            )}
+            {herb.dosage_notes ? (
+              <p className="mt-0.5 max-w-md text-xs text-ink-600">{herb.dosage_notes}</p>
+            ) : null}
+          </div>
+
+          <div className="h-12 w-px shrink-0 bg-ink-100" aria-hidden />
+
+          <div className="flex flex-wrap items-start gap-x-8 gap-y-3">
+            <div>
+              <p className="mb-1 text-xs font-medium text-ink-500">{t('fields.temperature')}</p>
+              {herb.temperature ? (
+                <TcmChip scale="temperature" value={herb.temperature}>
+                  {tTemp(herb.temperature)}
+                </TcmChip>
+              ) : (
+                <span className="text-ink-400">—</span>
+              )}
+            </div>
+            <div>
+              <p className="mb-1 text-xs font-medium text-ink-500">{t('fields.tastes')}</p>
+              <TcmChips scale="taste" values={tastes} render={(value) => tTaste(value as never)} />
+            </div>
+            <div>
+              <p className="mb-1 text-xs font-medium text-ink-500">{t('fields.channels')}</p>
+              <TcmChips scale="channel" values={channels} render={(value) => tChannel(value as never)} />
+            </div>
+            <div>
+              <p className="mb-1 text-xs font-medium text-ink-500">{t('fields.tcmCategory')}</p>
+              {herb.tcm_category ? (
+                <TcmChip scale="tcmCategory" value={herb.tcm_category}>
+                  {tTcm(herb.tcm_category)}
+                </TcmChip>
+              ) : (
+                <span className="text-ink-400">—</span>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
         <div className="space-y-5">
           <HerbImageCard
@@ -176,6 +257,9 @@ export default async function HerbDetailPage({
                   </span>
                 </DetailRow>
                 <DetailRow label={t('fields.category')}>{tCategory(herb.category)}</DetailRow>
+                <DetailRow label={t('fields.pharmaceuticalName')}>
+                  <span dir="ltr">{herb.pharmaceutical_name ?? '—'}</span>
+                </DetailRow>
                 <DetailRow label={t('fields.reorderThreshold')}>
                   {herb.reorder_threshold === null ? '—' : format.number(Number(herb.reorder_threshold))}
                 </DetailRow>
@@ -188,57 +272,91 @@ export default async function HerbDetailPage({
           <Card>
             <CardHeader>
               <CardTitle>{ts('nature')}</CardTitle>
-              {herb.tcm_category ? <Badge tone="info">{tTcm(herb.tcm_category)}</Badge> : null}
             </CardHeader>
             <CardBody>
-              <dl className="grid grid-cols-1 gap-x-6 sm:grid-cols-2">
-                <DetailRow label={t('fields.pharmaceuticalName')}>
-                  <span dir="ltr">{herb.pharmaceutical_name ?? '—'}</span>
-                </DetailRow>
-                <DetailRow label={t('fields.temperature')}>
-                  {herb.temperature ? tTemp(herb.temperature) : '—'}
-                </DetailRow>
-                <DetailRow label={t('fields.tastes')}>
-                  <Chips values={herb.tastes ?? []} render={(value) => tTaste(value as never)} />
-                </DetailRow>
-                <DetailRow label={t('fields.channels')}>
-                  <Chips values={herb.channels ?? []} render={(value) => tChannel(value as never)} />
-                </DetailRow>
-                {herb.properties ? (
-                  <DetailRow label={t('fields.properties')} className="sm:col-span-2">
-                    {herb.properties}
-                  </DetailRow>
-                ) : null}
-              </dl>
-              <dl className="mt-2 border-t border-ink-100 pt-2">
+              <dl>
                 <DetailRow label={t('fields.functions')}>
                   <Prose text={herb.functions} />
                 </DetailRow>
                 <DetailRow label={t('fields.indications')}>
                   <Prose text={herb.indications} />
                 </DetailRow>
+                <DetailRow label={t('fields.cautions')}>
+                  <Prose text={herb.cautions} />
+                </DetailRow>
+                {herb.properties ? (
+                  <DetailRow label={t('fields.properties')}>{herb.properties}</DetailRow>
+                ) : null}
               </dl>
             </CardBody>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle>{ts('dosage')}</CardTitle>
-              {dosage ? (
-                <span className="text-sm font-semibold tabular-nums" dir="ltr">
-                  {dosage}
-                </span>
-              ) : null}
+              <CardTitle>{t('usedIn')}</CardTitle>
+              <span className="text-xs text-ink-500">{uses.length}</span>
             </CardHeader>
-            <CardBody>
-              <dl>
-                {herb.dosage_notes ? (
-                  <DetailRow label={t('fields.dosageNotes')}>{herb.dosage_notes}</DetailRow>
-                ) : null}
-                <DetailRow label={t('fields.cautions')}>
-                  <Prose text={herb.cautions} />
-                </DetailRow>
-              </dl>
+            <CardBody className="p-0">
+              {uses.length === 0 ? (
+                <p className="px-4 py-6 text-center text-sm text-ink-400">{t('usedInEmpty')}</p>
+              ) : (
+                <TableWrapper className="rounded-none border-0">
+                  <SortableTable defaultSortKey="name">
+                    <thead>
+                      <tr>
+                        <SortTh sortKey="name">{tc('name')}</SortTh>
+                        <SortTh sortKey="cat">{tFormulas('fields.tcmCategory')}</SortTh>
+                        <SortTh sortKey="dose">{tFormulas('dosage')}</SortTh>
+                      </tr>
+                    </thead>
+                    <SortBody locale={locale}>
+                      {uses.map((use) => {
+                        const formula = use.formula!;
+                        const formulaChinese = formulaChineseName(formula);
+                        return (
+                          <Tr
+                            key={formula.id}
+                            sort={{
+                              name: formulaPrimaryName(formula, locale as Locale),
+                              cat: formula.tcm_category ? tFormulaTcm(formula.tcm_category) : null,
+                              dose: Number(use.dosage),
+                            }}
+                          >
+                            <Td>
+                              <Link
+                                href={`/inventory/formulas/${formula.id}`}
+                                className="font-medium text-jade-800 underline-offset-2 hover:underline"
+                              >
+                                {formulaPrimaryName(formula, locale as Locale)}
+                              </Link>
+                              {formulaChinese ? (
+                                <span className="ms-2 text-ink-600">{formulaChinese}</span>
+                              ) : null}
+                              {use.notes ? (
+                                <span className="block text-xs text-ink-500">{use.notes}</span>
+                              ) : null}
+                            </Td>
+                            <Td>
+                              {formula.tcm_category ? (
+                                <TcmChip scale="formulaTcmCategory" value={formula.tcm_category} size="sm">
+                                  {tFormulaTcm(formula.tcm_category)}
+                                </TcmChip>
+                              ) : (
+                                <span className="text-ink-400">—</span>
+                              )}
+                            </Td>
+                            <Td>
+                              <span dir="ltr" className="font-semibold tabular-nums">
+                                {format.number(Number(use.dosage))} {tUnit(use.unit)}
+                              </span>
+                            </Td>
+                          </Tr>
+                        );
+                      })}
+                    </SortBody>
+                  </SortableTable>
+                </TableWrapper>
+              )}
             </CardBody>
           </Card>
 
@@ -251,20 +369,28 @@ export default async function HerbDetailPage({
                 <p className="px-4 py-6 text-center text-sm text-ink-400">{tBatches('empty')}</p>
               ) : (
                 <TableWrapper className="rounded-none border-0">
-                  <Table>
+                  <SortableTable defaultSortKey="expiry">
                     <thead>
                       <tr>
-                        <Th>{tBatches('batchNumber')}</Th>
-                        <Th>{tBatches('quantityRemaining')}</Th>
-                        <Th>{tBatches('expiryDate')}</Th>
-                        <Th>{tBatches('supplier')}</Th>
+                        <SortTh sortKey="batch">{tBatches('batchNumber')}</SortTh>
+                        <SortTh sortKey="remaining">{tBatches('quantityRemaining')}</SortTh>
+                        <SortTh sortKey="expiry">{tBatches('expiryDate')}</SortTh>
+                        <SortTh sortKey="supplier">{tBatches('supplier')}</SortTh>
                       </tr>
                     </thead>
-                    <tbody>
+                    <SortBody locale={locale}>
                       {batches.map((batch) => {
                         const expired = batch.expiry_date && new Date(batch.expiry_date) < new Date();
                         return (
-                          <Tr key={batch.id}>
+                          <Tr
+                            key={batch.id}
+                            sort={{
+                              batch: batch.batch_number,
+                              remaining: Number(batch.quantity_remaining),
+                              expiry: batch.expiry_date ? new Date(batch.expiry_date).getTime() : null,
+                              supplier: batch.supplier?.name ?? null,
+                            }}
+                          >
                             <Td>
                               <span dir="ltr">{batch.batch_number ?? '—'}</span>
                             </Td>
@@ -287,8 +413,8 @@ export default async function HerbDetailPage({
                           </Tr>
                         );
                       })}
-                    </tbody>
-                  </Table>
+                    </SortBody>
+                  </SortableTable>
                 </TableWrapper>
               )}
             </CardBody>
@@ -303,19 +429,26 @@ export default async function HerbDetailPage({
                 <p className="px-4 py-6 text-center text-sm text-ink-400">{tMovements('empty')}</p>
               ) : (
                 <TableWrapper className="rounded-none border-0">
-                  <Table>
+                  <SortableTable defaultSortKey="date" defaultSortDirection="desc">
                     <thead>
                       <tr>
-                        <Th>{tc('date')}</Th>
-                        <Th>{tMovements('type')}</Th>
-                        <Th>{tc('quantity')}</Th>
+                        <SortTh sortKey="date">{tc('date')}</SortTh>
+                        <SortTh sortKey="type">{tMovements('type')}</SortTh>
+                        <SortTh sortKey="quantity">{tc('quantity')}</SortTh>
                       </tr>
                     </thead>
-                    <tbody>
+                    <SortBody locale={locale}>
                       {movements.map((movement) => {
                         const quantity = Number(movement.quantity);
                         return (
-                          <Tr key={movement.id}>
+                          <Tr
+                            key={movement.id}
+                            sort={{
+                              date: new Date(movement.created_at).getTime(),
+                              type: tMovements(`kind.${movement.movement_type}`),
+                              quantity,
+                            }}
+                          >
                             <Td>
                               <span dir="ltr" className="tabular-nums">
                                 {format.dateTime(new Date(movement.created_at), 'short')}
@@ -334,8 +467,8 @@ export default async function HerbDetailPage({
                           </Tr>
                         );
                       })}
-                    </tbody>
-                  </Table>
+                    </SortBody>
+                  </SortableTable>
                 </TableWrapper>
               )}
             </CardBody>

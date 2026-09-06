@@ -1,6 +1,6 @@
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
 import { ClipboardList } from 'lucide-react';
-import { Badge, EmptyState, Table, TableWrapper, Td, Th, Tr } from '@clinic/ui';
+import { Badge, EmptyState, SortBody, SortTh, SortableTable, TableWrapper, Td, Tr } from '@clinic/ui';
 import { Link } from '@clinic/i18n/navigation';
 import type { Encounter, Patient } from '@clinic/db/types';
 import { PageHeader } from '@/components/app-shell';
@@ -44,17 +44,24 @@ export default async function EncountersPage({
         <EmptyState icon={<ClipboardList className="h-8 w-8" />} title={t('empty')} />
       ) : (
         <TableWrapper>
-          <Table>
+          <SortableTable defaultSortKey="date" defaultSortDirection="desc">
             <thead>
               <tr>
-                <Th>{tc('date')}</Th>
-                <Th>{tPatients('title')}</Th>
-                <Th>{tc('status')}</Th>
+                <SortTh sortKey="date">{tc('date')}</SortTh>
+                <SortTh sortKey="patient">{tPatients('title')}</SortTh>
+                <SortTh sortKey="status">{tc('status')}</SortTh>
               </tr>
             </thead>
-            <tbody>
+            <SortBody locale={locale}>
               {encounters.map((encounter) => (
-                <Tr key={encounter.id}>
+                <Tr
+                  key={encounter.id}
+                  sort={{
+                    date: new Date(encounter.encounter_date).getTime(),
+                    patient: encounter.patient?.full_name ?? null,
+                    status: t(`status.${encounter.status}`),
+                  }}
+                >
                   <Td>
                     <Link
                       href={`/encounters/${encounter.id}`}
@@ -83,8 +90,8 @@ export default async function EncountersPage({
                   </Td>
                 </Tr>
               ))}
-            </tbody>
-          </Table>
+            </SortBody>
+          </SortableTable>
         </TableWrapper>
       )}
     </>
