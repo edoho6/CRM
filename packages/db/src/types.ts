@@ -271,6 +271,7 @@ export interface Herb {
   chinese_name: string | null;
   english_name: string | null;
   hebrew_name: string | null;
+  botanical_name: string | null;
   category: HerbCategory;
   default_unit: HerbUnit;
   properties: string | null;
@@ -291,6 +292,7 @@ export interface HerbStockLevel {
   chinese_name: string | null;
   english_name: string | null;
   hebrew_name: string | null;
+  botanical_name: string | null;
   category: HerbCategory;
   default_unit: HerbUnit;
   reorder_threshold: number | null;

@@ -1,6 +1,6 @@
 {
   "common": {
-    "appName": "Marpe",
+    "appName": "Herbalist",
     "appTagline": "Chinese medicine clinic management",
     "save": "Save",
     "saving": "Saving…",
@@ -454,7 +454,13 @@
       "newEncounter": "New treatment",
       "receiveStock": "Receive stock",
       "newHerb": "New herb",
-      "newFormula": "New formula"
+      "newFormula": "New formula",
+      "newInvoice": "New invoice"
+    },
+    "groupLabels": {
+      "patients": "Patient",
+      "herbs": "Herb",
+      "formulas": "Formula"
     }
   },
   "documents": {
@@ -513,7 +519,8 @@
         "cautions": "Cautions and contraindications",
         "reorderThreshold": "Reorder threshold",
         "reorderQuantity": "Reorder quantity",
-        "isActive": "Active in catalogue"
+        "isActive": "Active in catalogue",
+        "botanicalName": "Botanical name"
       },
       "nameRequired": "Fill in at least one name"
     },

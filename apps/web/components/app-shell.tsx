@@ -96,7 +96,7 @@ export function AppShell({
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Top bar, on every screen and every size: the quick-create "+" and the
             global search live here so they are never more than one click away. */}
-        <header className="flex items-center justify-between gap-2 border-b border-ink-200 bg-white px-4 py-2.5">
+        <header className="flex items-center justify-between gap-2 border-b border-ink-200 bg-white px-4 py-2">
           <div className="flex min-w-0 items-center gap-2">
             <Button
               variant="ghost"

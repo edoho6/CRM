@@ -1,6 +1,6 @@
 {
   "common": {
-    "appName": "מרפא",
+    "appName": "הרבליסט",
     "appTagline": "ניהול קליניקה לרפואה סינית",
     "save": "שמירה",
     "saving": "שומר…",
@@ -66,7 +66,7 @@
     "inventory": "מלאי צמחים",
     "billing": "חיוב",
     "herbs": "קטלוג צמחים",
-    "formulas": "נוסחאות",
+    "formulas": "פורמולות",
     "batches": "אצוות מלאי",
     "suppliers": "ספקים",
     "settings": "הגדרות",
@@ -357,7 +357,7 @@
       "gua_sha": "גואה שא",
       "tuina": "טווינא",
       "auricular": "דיקור אוזן",
-      "herbal_formula": "נוסחת צמחים",
+      "herbal_formula": "פורמולת צמחים",
       "dietary_advice": "הנחיות תזונה"
     }
   },
@@ -446,7 +446,7 @@
     "groups": {
       "patients": "מטופלים",
       "herbs": "צמחים",
-      "formulas": "נוסחאות"
+      "formulas": "פורמולות"
     },
     "actions": {
       "newPatient": "מטופל חדש",
@@ -454,7 +454,13 @@
       "newEncounter": "טיפול חדש",
       "receiveStock": "קליטת מלאי",
       "newHerb": "צמח חדש",
-      "newFormula": "נוסחה חדשה"
+      "newFormula": "פורמולה חדשה",
+      "newInvoice": "חשבונית חדשה"
+    },
+    "groupLabels": {
+      "patients": "מטופל",
+      "herbs": "צמח",
+      "formulas": "פורמולה"
     }
   },
   "documents": {
@@ -513,7 +519,8 @@
         "cautions": "אזהרות והתוויות נגד",
         "reorderThreshold": "סף להזמנה חוזרת",
         "reorderQuantity": "כמות להזמנה",
-        "isActive": "פעיל בקטלוג"
+        "isActive": "פעיל בקטלוג",
+        "botanicalName": "שם בוטני"
       },
       "nameRequired": "יש למלא לפחות שם אחד"
     },
@@ -523,7 +530,7 @@
       "powder": "אבקה",
       "pill": "כדורים",
       "tincture": "תמצית",
-      "patent_formula_product": "נוסחה מוכנה",
+      "patent_formula_product": "פורמולה מוכנה",
       "external_application": "שימוש חיצוני"
     },
     "unit": {
@@ -535,14 +542,14 @@
       "packet": "שקית"
     },
     "formulas": {
-      "title": "נוסחאות",
-      "new": "נוסחה חדשה",
-      "edit": "עריכת נוסחה",
-      "created": "הנוסחה נשמרה",
-      "updated": "הנוסחה עודכנה",
-      "empty": "אין עדיין נוסחאות",
-      "emptyBody": "נוסחה היא רשימת צמחים עם מינון, שאפשר לנפק בלחיצה אחת בזמן טיפול.",
-      "items": "הרכב הנוסחה",
+      "title": "פורמולות",
+      "new": "פורמולה חדשה",
+      "edit": "עריכת פורמולה",
+      "created": "הפורמולה נשמרה",
+      "updated": "הפורמולה עודכנה",
+      "empty": "אין עדיין פורמולות",
+      "emptyBody": "פורמולה היא רשימת צמחים עם מינון, שאפשר לנפק בלחיצה אחת בזמן טיפול.",
+      "items": "הרכב הפורמולה",
       "addItem": "הוספת צמח",
       "removeItem": "הסרה",
       "selectHerb": "בחירת צמח",
@@ -608,9 +615,9 @@
       "title": "ניפוק צמחים",
       "dispense": "ניפוק",
       "dispensed": "הצמחים נופקו והמלאי עודכן",
-      "fromFormula": "מתוך נוסחה",
+      "fromFormula": "מתוך פורמולה",
       "adHoc": "רשימה חופשית",
-      "selectFormula": "בחירת נוסחה",
+      "selectFormula": "בחירת פורמולה",
       "multiplier": "מכפיל (מספר מנות)",
       "multiplierHint": "לדוגמה 7 עבור שבוע טיפול",
       "preview": "תצוגה מקדימה של הניפוק",
@@ -645,7 +652,7 @@
     "insufficientStock": "אין מספיק מלאי להשלמת הניפוק",
     "appointmentOverlap": "התור חופף לתור קיים",
     "encounterLocked": "לא ניתן לערוך רשומה חתומה",
-    "formulaOrItemsRequired": "יש לבחור נוסחה או להוסיף צמחים",
+    "formulaOrItemsRequired": "יש לבחור פורמולה או להוסיף צמחים",
     "quantityCannotBeZero": "הכמות לא יכולה להיות אפס",
     "endMustBeAfterStart": "שעת הסיום חייבת להיות אחרי שעת ההתחלה"
   }

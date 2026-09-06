@@ -51,6 +51,7 @@ export function HerbForm({ herb }: { herb?: Herb }) {
       chinese_name: herb?.chinese_name ?? '',
       english_name: herb?.english_name ?? '',
       hebrew_name: herb?.hebrew_name ?? '',
+      botanical_name: herb?.botanical_name ?? '',
       category: herb?.category ?? 'granule',
       default_unit: herb?.default_unit ?? 'gram',
       properties: herb?.properties ?? '',
@@ -98,6 +99,16 @@ export function HerbForm({ herb }: { herb?: Herb }) {
               </Field>
               <Field label={tf('hebrewName')} htmlFor="hebrew_name">
                 <Input id="hebrew_name" {...register('hebrew_name')} />
+              </Field>
+              {/* The binomial identifies the plant unambiguously, so it gets the
+                  full row rather than sharing one with a common name. */}
+              <Field
+                label={tf('botanicalName')}
+                htmlFor="botanical_name"
+                hint="Astragalus membranaceus (Radix)"
+                className="sm:col-span-2"
+              >
+                <LtrInput id="botanical_name" className="italic" {...register('botanical_name')} />
               </Field>
             </FieldGrid>
           </Section>

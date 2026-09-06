@@ -3,6 +3,8 @@ import {
   ageFromDateOfBirth,
   appointmentTypeName,
   formulaPrimaryName,
+  herbBotanicalName,
+  herbChineseName,
   herbPrimaryName,
   herbSecondaryName,
   patientFullName,
@@ -11,9 +13,10 @@ import {
 /**
  * Naming rules for reference data.
  *
- * Herbs and formulas are named in English and Chinese whatever the interface
- * language is: that is how the materia medica is shared internationally and how
- * a supplier labels a jar. The tests below pin that behaviour so a future
+ * Three names, three jobs: pinyin is what the practitioner says and leads;
+ * Chinese characters are what the supplier's label shows and sit beside it; the
+ * botanical binomial identifies the plant and stands alone. The interface
+ * language does not change any of that, and these tests pin it so a future
  * "translate everything" change cannot quietly undo it.
  */
 describe('herb naming', () => {
@@ -22,24 +25,31 @@ describe('herb naming', () => {
     chinese_name: '黄芪',
     english_name: 'Astragalus root',
     hebrew_name: 'חואנג צ׳י',
+    botanical_name: 'Astragalus membranaceus (Radix)',
   };
 
-  it('shows the English name in both interface languages', () => {
-    expect(herbPrimaryName(fullyNamed, 'he')).toBe('Astragalus root');
-    expect(herbPrimaryName(fullyNamed, 'en')).toBe('Astragalus root');
+  it('leads with pinyin in both interface languages', () => {
+    expect(herbPrimaryName(fullyNamed, 'he')).toBe('Huang Qi');
+    expect(herbPrimaryName(fullyNamed, 'en')).toBe('Huang Qi');
   });
 
-  it('falls back to pinyin, then Chinese, when there is no English name', () => {
-    expect(herbPrimaryName({ ...fullyNamed, english_name: null }, 'he')).toBe('Huang Qi');
+  it('falls back to English, then Chinese, when there is no pinyin', () => {
+    expect(herbPrimaryName({ ...fullyNamed, pinyin_name: null }, 'he')).toBe('Astragalus root');
     expect(
-      herbPrimaryName({ ...fullyNamed, english_name: null, pinyin_name: null }, 'he'),
+      herbPrimaryName({ ...fullyNamed, pinyin_name: null, english_name: null }, 'he'),
     ).toBe('黄芪');
   });
 
   it('uses a Hebrew name only when nothing else exists', () => {
     expect(
       herbPrimaryName(
-        { pinyin_name: null, chinese_name: null, english_name: null, hebrew_name: 'חואנג צ׳י' },
+        {
+          pinyin_name: null,
+          chinese_name: null,
+          english_name: null,
+          hebrew_name: 'חואנג צ׳י',
+          botanical_name: null,
+        },
         'he',
       ),
     ).toBe('חואנג צ׳י');
@@ -48,18 +58,38 @@ describe('herb naming', () => {
   it('returns an empty string for a missing herb rather than throwing', () => {
     expect(herbPrimaryName(null, 'he')).toBe('');
     expect(herbPrimaryName(undefined, 'en')).toBe('');
+    expect(herbChineseName(null)).toBe('');
+    expect(herbBotanicalName(undefined)).toBe('');
   });
 
-  it('shows pinyin and Chinese underneath, never repeating the primary', () => {
-    expect(herbSecondaryName(fullyNamed, 'he')).toBe('Huang Qi · 黄芪');
-    expect(herbSecondaryName(fullyNamed, 'en')).toBe('Huang Qi · 黄芪');
-    // When pinyin is promoted to primary it must not also appear beneath itself.
-    expect(herbSecondaryName({ ...fullyNamed, english_name: null }, 'he')).toBe('黄芪');
+  it('exposes the Chinese and botanical names separately', () => {
+    expect(herbChineseName(fullyNamed)).toBe('黄芪');
+    expect(herbBotanicalName(fullyNamed)).toBe('Astragalus membranaceus (Radix)');
+  });
+
+  it('never repeats the primary name in the Chinese slot', () => {
+    // A herb with only Chinese characters has them promoted to primary; showing
+    // them again beside themselves would be noise.
+    const chineseOnly = {
+      pinyin_name: null,
+      english_name: null,
+      hebrew_name: null,
+      botanical_name: null,
+      chinese_name: '黄芪',
+    };
+    expect(herbPrimaryName(chineseOnly)).toBe('黄芪');
+    expect(herbChineseName(chineseOnly)).toBe('');
+  });
+
+  it('packs the supporting names into one line for compact places', () => {
+    expect(herbSecondaryName(fullyNamed, 'he')).toBe(
+      '黄芪 · Astragalus membranaceus (Radix) · Astragalus root',
+    );
   });
 });
 
 describe('formula naming', () => {
-  it('follows the same English-then-pinyin chain', () => {
+  it('leads with the classical pinyin name', () => {
     expect(
       formulaPrimaryName(
         { name_pinyin: 'Xiao Yao San', name_chinese: null, name_english: null, name_hebrew: null },
@@ -73,6 +103,20 @@ describe('formula naming', () => {
           name_chinese: '逍遥散',
           name_english: 'Free and Easy Wanderer',
           name_hebrew: 'שיאו יאו סאן',
+        },
+        'he',
+      ),
+    ).toBe('Xiao Yao San');
+  });
+
+  it('falls back to English when there is no pinyin', () => {
+    expect(
+      formulaPrimaryName(
+        {
+          name_pinyin: null,
+          name_chinese: null,
+          name_english: 'Free and Easy Wanderer',
+          name_hebrew: null,
         },
         'he',
       ),

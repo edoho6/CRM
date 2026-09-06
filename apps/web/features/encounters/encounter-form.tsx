@@ -74,14 +74,27 @@ function toState(note: TcmNote | null): NoteState {
   };
 }
 
+/**
+ * The treatment record.
+ *
+ * The layout follows the order of a consultation rather than the order of the
+ * database: the complaint and what you concluded from it fill the main column,
+ * while the two things you look at and record at the couch — tongue and pulse —
+ * sit in the side column next to the herbs you dispense from those findings.
+ *
+ * The dispensing panel is passed in rather than imported so this component stays
+ * a pure form and the side column can hold anything.
+ */
 export function EncounterForm({
   encounterId,
   note,
   isSigned,
+  dispensePanel,
 }: {
   encounterId: string;
   note: TcmNote | null;
   isSigned: boolean;
+  dispensePanel?: React.ReactNode;
 }) {
   const t = useTranslations('encounters');
   const tf = useTranslations('encounters.fields');
@@ -166,8 +179,89 @@ export function EncounterForm({
     });
   }
 
+  const examinationCard = (
+    <Card>
+      <CardBody>
+        <Section title={t('sections.examination')}>
+          <div className="space-y-4">
+            <Field label={tf('tongueBodyColor')} htmlFor="tongue_body_color">
+              <Input
+                id="tongue_body_color"
+                disabled={disabled}
+                value={state.tongue_body_color}
+                onChange={(event) => set('tongue_body_color', event.target.value)}
+              />
+            </Field>
+            <Field label={tf('tongueShape')} htmlFor="tongue_shape">
+              <Input
+                id="tongue_shape"
+                disabled={disabled}
+                value={state.tongue_shape}
+                onChange={(event) => set('tongue_shape', event.target.value)}
+              />
+            </Field>
+            <Field label={tf('tongueCoating')} htmlFor="tongue_coating">
+              <Input
+                id="tongue_coating"
+                disabled={disabled}
+                value={state.tongue_coating}
+                onChange={(event) => set('tongue_coating', event.target.value)}
+              />
+            </Field>
+            <Field label={tf('tongueNotes')} htmlFor="tongue_notes">
+              <Textarea
+                id="tongue_notes"
+                rows={2}
+                disabled={disabled}
+                value={state.tongue_notes}
+                onChange={(event) => set('tongue_notes', event.target.value)}
+              />
+            </Field>
+
+            <div className="border-t border-ink-100 pt-4">
+              <Field label={tf('pulseLeft')} htmlFor="pulse_left">
+                <Input
+                  id="pulse_left"
+                  disabled={disabled}
+                  value={state.pulse_left}
+                  onChange={(event) => set('pulse_left', event.target.value)}
+                />
+              </Field>
+            </div>
+            <Field label={tf('pulseRight')} htmlFor="pulse_right">
+              <Input
+                id="pulse_right"
+                disabled={disabled}
+                value={state.pulse_right}
+                onChange={(event) => set('pulse_right', event.target.value)}
+              />
+            </Field>
+            <Field label={tf('pulseQualities')} htmlFor="pulse_qualities" hint="wiry, thready">
+              <Input
+                id="pulse_qualities"
+                disabled={disabled}
+                value={state.pulse_qualities}
+                onChange={(event) => set('pulse_qualities', event.target.value)}
+              />
+            </Field>
+            <Field label={tf('pulseNotes')} htmlFor="pulse_notes">
+              <Textarea
+                id="pulse_notes"
+                rows={2}
+                disabled={disabled}
+                value={state.pulse_notes}
+                onChange={(event) => set('pulse_notes', event.target.value)}
+              />
+            </Field>
+          </div>
+        </Section>
+      </CardBody>
+    </Card>
+  );
+
   return (
-    <div className="space-y-4">
+    <div className="grid gap-5 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+      <div className="space-y-4">
       {isSigned ? (
         <Alert tone="info" title={t('lockedNotice')} />
       ) : null}
@@ -201,83 +295,6 @@ export function EncounterForm({
                 />
               </Field>
             </div>
-          </Section>
-
-          <Section title={t('sections.examination')}>
-            <FieldGrid columns={3}>
-              <Field label={tf('tongueBodyColor')} htmlFor="tongue_body_color">
-                <Input
-                  id="tongue_body_color"
-                  disabled={disabled}
-                  value={state.tongue_body_color}
-                  onChange={(event) => set('tongue_body_color', event.target.value)}
-                />
-              </Field>
-              <Field label={tf('tongueShape')} htmlFor="tongue_shape">
-                <Input
-                  id="tongue_shape"
-                  disabled={disabled}
-                  value={state.tongue_shape}
-                  onChange={(event) => set('tongue_shape', event.target.value)}
-                />
-              </Field>
-              <Field label={tf('tongueCoating')} htmlFor="tongue_coating">
-                <Input
-                  id="tongue_coating"
-                  disabled={disabled}
-                  value={state.tongue_coating}
-                  onChange={(event) => set('tongue_coating', event.target.value)}
-                />
-              </Field>
-              <Field label={tf('pulseLeft')} htmlFor="pulse_left">
-                <Input
-                  id="pulse_left"
-                  disabled={disabled}
-                  value={state.pulse_left}
-                  onChange={(event) => set('pulse_left', event.target.value)}
-                />
-              </Field>
-              <Field label={tf('pulseRight')} htmlFor="pulse_right">
-                <Input
-                  id="pulse_right"
-                  disabled={disabled}
-                  value={state.pulse_right}
-                  onChange={(event) => set('pulse_right', event.target.value)}
-                />
-              </Field>
-              <Field
-                label={tf('pulseQualities')}
-                htmlFor="pulse_qualities"
-                hint="wiry, thready"
-              >
-                <Input
-                  id="pulse_qualities"
-                  disabled={disabled}
-                  value={state.pulse_qualities}
-                  onChange={(event) => set('pulse_qualities', event.target.value)}
-                />
-              </Field>
-            </FieldGrid>
-            <FieldGrid className="mt-4">
-              <Field label={tf('tongueNotes')} htmlFor="tongue_notes">
-                <Textarea
-                  id="tongue_notes"
-                  rows={2}
-                  disabled={disabled}
-                  value={state.tongue_notes}
-                  onChange={(event) => set('tongue_notes', event.target.value)}
-                />
-              </Field>
-              <Field label={tf('pulseNotes')} htmlFor="pulse_notes">
-                <Textarea
-                  id="pulse_notes"
-                  rows={2}
-                  disabled={disabled}
-                  value={state.pulse_notes}
-                  onChange={(event) => set('pulse_notes', event.target.value)}
-                />
-              </Field>
-            </FieldGrid>
           </Section>
 
           <Section title={t('sections.differentiation')}>
@@ -388,6 +405,14 @@ export function EncounterForm({
           </Button>
         </div>
       ) : null}
+      </div>
+
+      {/* Side column: what you observe at the couch, and what you hand over
+          because of it. */}
+      <div className="space-y-4">
+        {examinationCard}
+        {dispensePanel}
+      </div>
     </div>
   );
 }

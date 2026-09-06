@@ -3,18 +3,28 @@ import { Slot } from '@radix-ui/react-slot';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from './cn';
 
+/**
+ * Every enabled button lifts slightly and casts a shadow on hover, and settles
+ * back on press. That is the affordance: the movement answers "can I click
+ * this?" before the click, and a disabled button stays flat so the answer is
+ * visibly no.
+ */
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-colors ' +
+  'inline-flex items-center justify-center gap-2 rounded-lg font-medium select-none ' +
+    'transition-all duration-150 ease-out cursor-pointer ' +
+    'hover:-translate-y-px hover:shadow-md active:translate-y-0 active:shadow-sm ' +
     'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-jade-600 ' +
-    'disabled:pointer-events-none disabled:opacity-50 select-none',
+    'disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none disabled:translate-y-0 ' +
+    'disabled:cursor-not-allowed',
   {
     variants: {
       variant: {
-        primary: 'bg-jade-600 text-white hover:bg-jade-700 active:bg-jade-800',
-        secondary: 'bg-white text-ink-800 border border-ink-200 hover:bg-ink-50 active:bg-ink-100',
-        ghost: 'text-ink-700 hover:bg-ink-100 active:bg-ink-200',
-        danger: 'bg-red-600 text-white hover:bg-red-700 active:bg-red-800',
-        link: 'text-jade-700 underline-offset-4 hover:underline',
+        primary: 'bg-jade-600 text-white hover:bg-jade-700 active:bg-jade-800 shadow-xs',
+        secondary:
+          'bg-white text-ink-800 border border-ink-200 hover:bg-ink-50 hover:border-ink-300 active:bg-ink-100 shadow-xs',
+        ghost: 'text-ink-700 hover:bg-ink-100 hover:shadow-sm active:bg-ink-200',
+        danger: 'bg-red-600 text-white hover:bg-red-700 active:bg-red-800 shadow-xs',
+        link: 'text-jade-700 underline-offset-4 hover:underline hover:translate-y-0 hover:shadow-none',
       },
       size: {
         sm: 'h-8 px-3 text-sm',

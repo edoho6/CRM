@@ -53,3 +53,4 @@ pnpm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 billing_migration_to_run.sql
+botanical_migration_to_run.sql

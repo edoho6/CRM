@@ -103,25 +103,28 @@ export default async function EncounterPage({
         }
       />
 
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-        <EncounterForm encounterId={encounter.id} note={noteResult.data ?? null} isSigned={isSigned} />
+      {isSigned && encounter.signed_at ? (
+        <Card className="mb-4">
+          <CardHeader>
+            <CardTitle>{t('status.signed')}</CardTitle>
+          </CardHeader>
+          <CardBody>
+            <p className="text-sm text-ink-600" dir="auto">
+              {t('signedAt', {
+                date: format.dateTime(new Date(encounter.signed_at), 'dateTime'),
+              })}
+            </p>
+          </CardBody>
+        </Card>
+      ) : null}
 
-        <div className="space-y-4">
-          {isSigned && encounter.signed_at ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>{t('status.signed')}</CardTitle>
-              </CardHeader>
-              <CardBody>
-                <p className="text-sm text-ink-600" dir="auto">
-                  {t('signedAt', {
-                    date: format.dateTime(new Date(encounter.signed_at), 'dateTime'),
-                  })}
-                </p>
-              </CardBody>
-            </Card>
-          ) : null}
-
+      {/* The form owns the two-column layout: tongue, pulse and dispensing all
+          belong to the same side column, so it places them together. */}
+      <EncounterForm
+        encounterId={encounter.id}
+        note={noteResult.data ?? null}
+        isSigned={isSigned}
+        dispensePanel={
           <DispensePanel
             encounterId={encounter.id}
             formulas={formulasResult.data ?? []}
@@ -129,8 +132,8 @@ export default async function EncounterPage({
             records={dispensingResult.data ?? []}
             disabled={isSigned}
           />
-        </div>
-      </div>
+        }
+      />
     </>
   );
 }

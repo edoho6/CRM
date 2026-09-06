@@ -18,25 +18,51 @@ interface HerbNames {
   chinese_name?: string | null;
   english_name?: string | null;
   hebrew_name?: string | null;
+  botanical_name?: string | null;
 }
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
+
+/**
+ * The headline name: pinyin.
+ *
+ * Pinyin is what the practitioner says out loud and what a formula is written
+ * in, so it leads. Chinese characters sit beside it and the botanical binomial
+ * stands on its own line, because those answer different questions — what the
+ * supplier's label says, and which plant this actually is.
+ */
 export function herbPrimaryName(herb: HerbNames | null | undefined, _locale?: Locale): string {
   if (!herb) return '';
   return (
-    herb.english_name?.trim() ||
     herb.pinyin_name?.trim() ||
+    herb.english_name?.trim() ||
     herb.chinese_name?.trim() ||
     herb.hebrew_name?.trim() ||
     ''
   );
 }
 
-/** Pinyin and Chinese characters, shown under the English name. */
+/** The Chinese characters, shown next to the pinyin. */
+export function herbChineseName(herb: HerbNames | null | undefined): string {
+  if (!herb) return '';
+  const chinese = herb.chinese_name?.trim() ?? '';
+  return chinese === herbPrimaryName(herb) ? '' : chinese;
+}
+
+/** The Latin binomial, kept on its own line as the unambiguous identifier. */
+export function herbBotanicalName(herb: HerbNames | null | undefined): string {
+  return herb?.botanical_name?.trim() ?? '';
+}
+
+/**
+ * Supporting line for compact places (search results, pickers) where there is
+ * room for one line rather than three: Chinese, then the botanical name, then
+ * the English common name if it adds anything.
+ */
 export function herbSecondaryName(herb: HerbNames | null | undefined, _locale?: Locale): string {
   if (!herb) return '';
   const primary = herbPrimaryName(herb);
-  const parts = [herb.pinyin_name, herb.chinese_name]
+  const parts = [herb.chinese_name, herb.botanical_name, herb.english_name]
     .map((value) => value?.trim())
     .filter((value): value is string => Boolean(value) && value !== primary);
   return parts.join(' · ');
@@ -57,22 +83,28 @@ interface FormulaNames {
   name_hebrew?: string | null;
 }
 
-/** Same English-and-Chinese rule as herbs — a formula is a classical text name. */
+/** Pinyin leads here too: a formula is known by its classical name, Xiao Yao San. */
 export function formulaPrimaryName(formula: FormulaNames | null | undefined, _locale?: Locale): string {
   if (!formula) return '';
   return (
-    formula.name_english?.trim() ||
     formula.name_pinyin?.trim() ||
+    formula.name_english?.trim() ||
     formula.name_chinese?.trim() ||
     formula.name_hebrew?.trim() ||
     ''
   );
 }
 
+export function formulaChineseName(formula: FormulaNames | null | undefined): string {
+  if (!formula) return '';
+  const chinese = formula.name_chinese?.trim() ?? '';
+  return chinese === formulaPrimaryName(formula) ? '' : chinese;
+}
+
 export function formulaSecondaryName(formula: FormulaNames | null | undefined, _locale?: Locale): string {
   if (!formula) return '';
   const primary = formulaPrimaryName(formula);
-  const parts = [formula.name_pinyin, formula.name_chinese]
+  const parts = [formula.name_chinese, formula.name_english]
     .map((value) => value?.trim())
     .filter((value): value is string => Boolean(value) && value !== primary);
   return parts.join(' · ');

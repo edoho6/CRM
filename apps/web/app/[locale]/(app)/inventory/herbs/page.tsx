@@ -6,7 +6,7 @@ import type { Herb } from '@clinic/db/types';
 import type { Locale } from '@clinic/domain';
 import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
-import { herbPrimaryName, herbSecondaryName } from '@/lib/display';
+import { herbBotanicalName, herbChineseName, herbPrimaryName } from '@/lib/display';
 import { InventoryNav } from '@/features/inventory/inventory-nav';
 import { HerbSearch } from '@/features/inventory/herb-search';
 
@@ -84,19 +84,33 @@ export default async function HerbsPage({
             </thead>
             <tbody>
               {herbs.map((herb) => {
-                const secondary = herbSecondaryName(herb, locale as Locale);
+                const chinese = herbChineseName(herb);
+                const botanical = herbBotanicalName(herb);
                 return (
                   <Tr key={herb.id}>
                     <Td>
+                      {/* Pinyin leads at full size with the Chinese characters
+                          beside it; the botanical binomial gets its own line,
+                          because it answers a different question. */}
                       <Link
                         href={`/inventory/herbs/${herb.id}`}
-                        className="font-medium text-jade-800 underline-offset-2 hover:underline"
+                        className="flex items-baseline gap-2 underline-offset-2 hover:underline"
                       >
-                        {herbPrimaryName(herb, locale as Locale)}
+                        <span className="text-base font-semibold text-jade-800">
+                          {herbPrimaryName(herb, locale as Locale)}
+                        </span>
+                        {chinese ? (
+                          <span className="text-base text-ink-600">{chinese}</span>
+                        ) : null}
                       </Link>
-                      {secondary ? (
-                        <span className="block text-xs text-ink-500" dir="ltr">
-                          {secondary}
+                      {botanical ? (
+                        <span className="mt-0.5 block text-xs text-ink-500 italic" dir="ltr">
+                          {botanical}
+                        </span>
+                      ) : null}
+                      {herb.english_name ? (
+                        <span className="block text-xs text-ink-400" dir="ltr">
+                          {herb.english_name}
                         </span>
                       ) : null}
                     </Td>

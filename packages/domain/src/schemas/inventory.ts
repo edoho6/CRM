@@ -9,6 +9,7 @@ export const herbFormSchema = z
     chinese_name: optionalText(120),
     english_name: optionalText(160),
     hebrew_name: optionalText(160),
+    botanical_name: optionalText(200),
     category: z.enum(HERB_CATEGORIES).default('granule'),
     default_unit: z.enum(HERB_UNITS).default('gram'),
     /** Temperature/taste/channel notes kept as free text — practitioners phrase these differently. */
