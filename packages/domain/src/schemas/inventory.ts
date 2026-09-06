@@ -1,6 +1,21 @@
 import { z } from 'zod';
-import { FORMULA_CATEGORIES, HERB_CATEGORIES, HERB_UNITS, STOCK_MOVEMENT_TYPES } from '../enums';
+import {
+  CHANNELS,
+  FORMULA_CATEGORIES,
+  HERB_CATEGORIES,
+  HERB_UNITS,
+  STOCK_MOVEMENT_TYPES,
+  TASTES,
+  TCM_CATEGORIES,
+  TEMPERATURES,
+} from '../enums';
 import { optionalDate, optionalNumber, optionalText, positiveQuantity, requiredText, uuidField } from './common';
+
+/** `''` from an unselected <select> becomes null rather than failing the enum. */
+const optionalEnum = <T extends readonly [string, ...string[]]>(values: T) =>
+  z
+    .union([z.enum(values), z.literal(''), z.null(), z.undefined()])
+    .transform((value) => (value ? value : null));
 
 /** Master catalogue entry for a single herb / granule / patent product. */
 export const herbFormSchema = z
@@ -10,12 +25,21 @@ export const herbFormSchema = z
     english_name: optionalText(160),
     hebrew_name: optionalText(160),
     botanical_name: optionalText(200),
+    pharmaceutical_name: optionalText(200),
     category: z.enum(HERB_CATEGORIES).default('granule'),
     default_unit: z.enum(HERB_UNITS).default('gram'),
-    /** Temperature/taste/channel notes kept as free text — practitioners phrase these differently. */
+    tcm_category: optionalEnum(TCM_CATEGORIES),
+    temperature: optionalEnum(TEMPERATURES),
+    tastes: z.array(z.enum(TASTES)).default([]),
+    channels: z.array(z.enum(CHANNELS)).default([]),
+    /** Free-text nature notes kept for anything the structured fields don't capture. */
     properties: optionalText(500),
-    functions: optionalText(1000),
-    cautions: optionalText(1000),
+    functions: optionalText(2000),
+    indications: optionalText(2000),
+    cautions: optionalText(2000),
+    dosage_min_g: optionalNumber,
+    dosage_max_g: optionalNumber,
+    dosage_notes: optionalText(500),
     reorder_threshold: optionalNumber,
     reorder_quantity: optionalNumber,
     is_active: z.boolean().default(true),

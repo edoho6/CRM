@@ -101,3 +101,112 @@ export type DispensingStatus = (typeof DISPENSING_STATUSES)[number];
 
 export const AUDIT_ACTIONS = ['insert', 'update', 'delete', 'sign'] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
+
+/* ---------------------------------------------------------------------------
+ * Materia medica vocabulary
+ * ---------------------------------------------------------------------------
+ * These follow the standard textbook groupings (Bensky, Chinese Herbal
+ * Medicine: Materia Medica), which is how practitioners were taught to think
+ * about herbs and therefore how they expect to filter a catalogue.
+ */
+
+export const TCM_CATEGORIES = [
+  'release_exterior_warm',
+  'release_exterior_cool',
+  'clear_heat_drain_fire',
+  'clear_heat_cool_blood',
+  'clear_heat_dry_dampness',
+  'clear_heat_relieve_toxicity',
+  'clear_deficient_heat',
+  'clear_summer_heat',
+  'downward_draining',
+  'moist_laxative',
+  'harsh_expellant',
+  'drain_dampness',
+  'dispel_wind_dampness',
+  'aromatic_transform_dampness',
+  'transform_phlegm_cold',
+  'transform_phlegm_heat',
+  'relieve_cough_wheezing',
+  'relieve_food_stagnation',
+  'regulate_qi',
+  'stop_bleeding',
+  'invigorate_blood',
+  'warm_interior',
+  'tonify_qi',
+  'tonify_blood',
+  'tonify_yang',
+  'tonify_yin',
+  'stabilize_bind',
+  'calm_spirit_anchor',
+  'calm_spirit_nourish',
+  'aromatic_open_orifices',
+  'extinguish_wind',
+  'expel_parasites',
+  'external_application',
+  'other',
+] as const;
+export type TcmCategory = (typeof TCM_CATEGORIES)[number];
+
+export const TEMPERATURES = [
+  'hot',
+  'warm',
+  'slightly_warm',
+  'neutral',
+  'cool',
+  'slightly_cold',
+  'cold',
+  'very_cold',
+] as const;
+export type Temperature = (typeof TEMPERATURES)[number];
+
+export const TASTES = [
+  'sweet',
+  'bitter',
+  'acrid',
+  'sour',
+  'salty',
+  'bland',
+  'astringent',
+  'aromatic',
+] as const;
+export type Taste = (typeof TASTES)[number];
+
+export const CHANNELS = [
+  'lung',
+  'large_intestine',
+  'stomach',
+  'spleen',
+  'heart',
+  'small_intestine',
+  'bladder',
+  'kidney',
+  'pericardium',
+  'san_jiao',
+  'gallbladder',
+  'liver',
+] as const;
+export type Channel = (typeof CHANNELS)[number];
+
+export const FORMULA_TCM_CATEGORIES = [
+  'release_exterior',
+  'clear_heat',
+  'purge',
+  'harmonize',
+  'treat_dryness',
+  'expel_dampness',
+  'warm_interior',
+  'tonify',
+  'regulate_qi',
+  'invigorate_blood',
+  'stop_bleeding',
+  'stabilize_bind',
+  'calm_spirit',
+  'open_orifices',
+  'extinguish_wind',
+  'treat_phlegm',
+  'reduce_food_stagnation',
+  'expel_parasites',
+  'other',
+] as const;
+export type FormulaTcmCategory = (typeof FORMULA_TCM_CATEGORIES)[number];

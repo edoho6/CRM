@@ -86,7 +86,7 @@ registerWidget(
     type: 'low-stock',
     displayName: { he: 'מלאי צמחים נמוך', en: 'Low herb stock' },
     icon: 'PackageMinus',
-    defaultLayout: { w: 4, h: 4, minW: 3, minH: 2 },
+    defaultSize: 'sm',
     defaultConfig: {},
     component: LowStockWidget,
     singleton: true,

@@ -1,81 +1,20 @@
 import { describe, expect, it } from 'vitest';
 import type { DashboardLayout } from '@clinic/domain/widgets';
 import {
-  DASHBOARD_COLS,
-  fromGridLayout,
+  SIZE_CLASSES,
+  createInstanceId,
+  isWidgetSize,
   layoutsEqual,
-  nextAvailableY,
+  nextSize,
   parseStoredLayout,
-  toGridLayout,
-  toLogicalX,
-  toPhysicalX,
 } from './layout-utils';
 
 /**
- * The mirroring maths is the part of the dashboard most likely to break silently:
- * a wrong sign puts every widget off-screen in one language only, which is exactly
- * the kind of bug that survives testing in the other language.
+ * The layout model is an ordered list with a size per widget. The part most
+ * likely to bite silently is the upgrade path: dashboards saved by the previous
+ * coordinate-based grid must come back in the same visual order, or a user
+ * loses the arrangement they built without any error to tell them why.
  */
-describe('RTL coordinate mirroring', () => {
-  it('leaves left-to-right coordinates untouched', () => {
-    expect(toPhysicalX(3, 4, 'ltr')).toBe(3);
-    expect(toLogicalX(3, 4, 'ltr')).toBe(3);
-  });
-
-  it('mirrors across the grid in right-to-left', () => {
-    // A 4-wide widget at logical x=0 must render hard against the right edge.
-    expect(toPhysicalX(0, 4, 'rtl')).toBe(DASHBOARD_COLS - 4);
-    expect(toPhysicalX(DASHBOARD_COLS - 4, 4, 'rtl')).toBe(0);
-  });
-
-  it('round-trips in both directions', () => {
-    for (const dir of ['ltr', 'rtl'] as const) {
-      for (let x = 0; x <= 8; x += 1) {
-        const width = 4;
-        expect(toLogicalX(toPhysicalX(x, width, dir), width, dir)).toBe(x);
-      }
-    }
-  });
-
-  it('never produces a negative column', () => {
-    expect(toPhysicalX(11, 6, 'rtl')).toBe(0);
-  });
-});
-
-describe('grid layout conversion', () => {
-  const layout: DashboardLayout = [
-    { id: 'a', type: 'note', x: 0, y: 0, w: 4, h: 3 },
-    { id: 'b', type: 'low-stock', x: 4, y: 0, w: 8, h: 3 },
-  ];
-
-  it('applies per-type size constraints', () => {
-    const grid = toGridLayout(layout, 'ltr', { note: { minW: 2, minH: 2 } });
-    expect(grid[0]).toMatchObject({ i: 'a', x: 0, minW: 2, minH: 2 });
-    expect(grid[1]).toMatchObject({ i: 'b', x: 4 });
-  });
-
-  it('survives a full round trip through the grid in Hebrew', () => {
-    const grid = toGridLayout(layout, 'rtl', {});
-    const back = fromGridLayout(grid, layout, 'rtl');
-    expect(layoutsEqual(back, layout)).toBe(true);
-  });
-
-  it('keeps widgets the grid did not report', () => {
-    const back = fromGridLayout([{ i: 'a', x: 0, y: 0, w: 4, h: 3 }], layout, 'ltr');
-    expect(back).toHaveLength(2);
-    expect(back.map((item) => item.id).sort()).toEqual(['a', 'b']);
-  });
-
-  it('preserves widget config through a move', () => {
-    const withConfig: DashboardLayout = [
-      { id: 'a', type: 'note', x: 0, y: 0, w: 4, h: 3, config: { html: '<p>hi</p>' } },
-    ];
-    const back = fromGridLayout([{ i: 'a', x: 2, y: 1, w: 4, h: 3 }], withConfig, 'ltr');
-    expect(back[0]!.config).toEqual({ html: '<p>hi</p>' });
-    expect(back[0]!.x).toBe(2);
-  });
-});
-
 describe('parseStoredLayout', () => {
   it('returns an empty layout for anything that is not an array', () => {
     expect(parseStoredLayout(null)).toEqual([]);
@@ -83,34 +22,144 @@ describe('parseStoredLayout', () => {
     expect(parseStoredLayout('[]')).toEqual([]);
   });
 
+  it('accepts the current shape unchanged and in order', () => {
+    const stored = [
+      { id: 'a', type: 'note', size: 'md', config: { html: '<p>hi</p>' } },
+      { id: 'b', type: 'low-stock', size: 'sm' },
+    ];
+    expect(parseStoredLayout(stored)).toEqual(stored);
+  });
+
   it('drops entries missing an id or type rather than rendering a broken widget', () => {
     const parsed = parseStoredLayout([
-      { id: 'a', type: 'note', x: 0, y: 0, w: 4, h: 3 },
+      { id: 'a', type: 'note', size: 'md' },
       { id: 'b' },
       { type: 'low-stock' },
       null,
+      'junk',
     ]);
     expect(parsed).toHaveLength(1);
     expect(parsed[0]!.id).toBe('a');
   });
 
-  it('repairs missing or invalid geometry with sane defaults', () => {
-    const parsed = parseStoredLayout([{ id: 'a', type: 'note' }]);
-    expect(parsed[0]).toMatchObject({ x: 0, y: 0, w: 4, h: 3 });
+  it('defaults an unknown size to md', () => {
+    expect(parseStoredLayout([{ id: 'a', type: 'note', size: 'huge' }])[0]!.size).toBe('md');
+    expect(parseStoredLayout([{ id: 'a', type: 'note' }])[0]!.size).toBe('md');
+  });
+
+  it('ignores a duplicated id so one widget cannot render twice', () => {
+    const parsed = parseStoredLayout([
+      { id: 'a', type: 'note', size: 'md' },
+      { id: 'a', type: 'note', size: 'lg' },
+    ]);
+    expect(parsed).toHaveLength(1);
+    expect(parsed[0]!.size).toBe('md');
+  });
+
+  describe('upgrading a layout saved by the old pixel grid', () => {
+    const legacy = [
+      // Deliberately out of visual order: the grid stored them as they were added.
+      { id: 'low', type: 'low-stock', x: 6, y: 2, w: 6, h: 4 },
+      { id: 'today', type: 'today-appointments', x: 0, y: 0, w: 6, h: 4 },
+      { id: 'quick', type: 'quick-actions', x: 9, y: 0, w: 3, h: 2 },
+      { id: 'stats', type: 'patient-stats', x: 6, y: 0, w: 3, h: 2 },
+      { id: 'upcoming', type: 'upcoming-appointments', x: 0, y: 4, w: 6, h: 4 },
+    ];
+
+    it('orders by row, then column, so the arrangement survives', () => {
+      expect(parseStoredLayout(legacy).map((item) => item.id)).toEqual([
+        'today',
+        'stats',
+        'quick',
+        'low',
+        'upcoming',
+      ]);
+    });
+
+    it('maps the old width onto the nearest size preset', () => {
+      const bySize = Object.fromEntries(parseStoredLayout(legacy).map((item) => [item.id, item.size]));
+      expect(bySize).toEqual({
+        today: 'lg',
+        stats: 'sm',
+        quick: 'sm',
+        low: 'lg',
+        upcoming: 'lg',
+      });
+    });
+
+    it('carries widget config across the upgrade', () => {
+      const parsed = parseStoredLayout([{ id: 'n', type: 'note', x: 0, y: 0, w: 4, h: 3, config: { html: 'x' } }]);
+      expect(parsed[0]).toEqual({ id: 'n', type: 'note', size: 'md', config: { html: 'x' } });
+    });
+
+    it('never leaks the old coordinates into the new model', () => {
+      const parsed = parseStoredLayout(legacy);
+      for (const item of parsed) {
+        expect(item).not.toHaveProperty('x');
+        expect(item).not.toHaveProperty('w');
+      }
+    });
   });
 });
 
-describe('nextAvailableY', () => {
-  it('returns 0 for an empty dashboard', () => {
-    expect(nextAvailableY([])).toBe(0);
+describe('nextSize', () => {
+  it('cycles through all four sizes and wraps', () => {
+    expect(nextSize('sm')).toBe('md');
+    expect(nextSize('md')).toBe('lg');
+    expect(nextSize('lg')).toBe('xl');
+    expect(nextSize('xl')).toBe('sm');
   });
 
-  it('places a new widget below the lowest existing one', () => {
-    expect(
-      nextAvailableY([
-        { id: 'a', type: 'note', x: 0, y: 0, w: 4, h: 3 },
-        { id: 'b', type: 'note', x: 4, y: 2, w: 4, h: 5 },
-      ]),
-    ).toBe(7);
+  it('respects the sizes a widget allows', () => {
+    expect(nextSize('lg', ['lg', 'xl'])).toBe('xl');
+    expect(nextSize('xl', ['lg', 'xl'])).toBe('lg');
+  });
+
+  it('steps into the allowed set when the current size is outside it', () => {
+    expect(nextSize('sm', ['lg', 'xl'])).toBe('lg');
+  });
+});
+
+describe('layoutsEqual', () => {
+  const layout: DashboardLayout = [
+    { id: 'a', type: 'note', size: 'md', config: { html: 'x' } },
+    { id: 'b', type: 'low-stock', size: 'sm' },
+  ];
+
+  it('is true for an identical arrangement', () => {
+    expect(layoutsEqual(layout, JSON.parse(JSON.stringify(layout)))).toBe(true);
+  });
+
+  it('is order-sensitive, because order is the position', () => {
+    expect(layoutsEqual(layout, [layout[1]!, layout[0]!])).toBe(false);
+  });
+
+  it('notices a size change and a config change', () => {
+    expect(layoutsEqual(layout, [{ ...layout[0]!, size: 'lg' }, layout[1]!])).toBe(false);
+    expect(layoutsEqual(layout, [{ ...layout[0]!, config: { html: 'y' } }, layout[1]!])).toBe(false);
+  });
+});
+
+describe('sizes', () => {
+  it('recognises exactly the four presets', () => {
+    expect(isWidgetSize('sm')).toBe(true);
+    expect(isWidgetSize('xl')).toBe(true);
+    expect(isWidgetSize('huge')).toBe(false);
+    expect(isWidgetSize(3)).toBe(false);
+  });
+
+  it('has a full Tailwind class string for every size, so nothing is purged', () => {
+    for (const size of ['sm', 'md', 'lg', 'xl'] as const) {
+      expect(SIZE_CLASSES[size]).toMatch(/xl:col-span-\d+/);
+    }
+  });
+});
+
+describe('createInstanceId', () => {
+  it('prefixes with the type and is unique across calls', () => {
+    const a = createInstanceId('note');
+    const b = createInstanceId('note');
+    expect(a.startsWith('note-')).toBe(true);
+    expect(a).not.toBe(b);
   });
 });

@@ -117,11 +117,19 @@
     "resetLayout": "Reset to default layout",
     "resetConfirm": "Reset the layout? Your personal arrangement will be lost.",
     "layoutSaved": "Layout saved",
-    "editHint": "Drag widgets to rearrange them and pull the corner to resize. Changes save automatically.",
+    "editHint": "Drag a widget by its header to rearrange, and click the size to cycle it. Changes save automatically.",
     "emptyTitle": "Your dashboard is empty",
     "emptyBody": "Add widgets to build a home screen that fits how you work.",
     "allWidgetsAdded": "Every widget is already on your dashboard",
-    "alreadyAdded": "Already added"
+    "alreadyAdded": "Already added",
+    "resize": "Resize",
+    "saveFailed": "The layout could not be saved. Changes were not stored.",
+    "sizes": {
+      "sm": "Small",
+      "md": "Medium",
+      "lg": "Large",
+      "xl": "Full width"
+    }
   },
   "widgets": {
     "note": {
@@ -162,6 +170,26 @@
       "name": "Upcoming appointments",
       "description": "What's booked over the next few days.",
       "empty": "Nothing booked yet"
+    },
+    "treatmentKpis": {
+      "name": "Treatments — today, week, month",
+      "today": "Today",
+      "week": "This week",
+      "month": "This month",
+      "yesterday": "yesterday",
+      "lastWeek": "last week",
+      "lastMonth": "last month",
+      "vsPrevious": "vs {period}",
+      "treatmentCount": "{count, plural, =0 {No treatments} one {1 treatment} other {# treatments}}",
+      "noTreatmentsToday": "No treatments recorded today",
+      "byDayThisWeek": "Treatments by day, this week",
+      "byDayThisMonth": "Treatments by day, this month"
+    },
+    "revenue": {
+      "name": "Revenue this month",
+      "collectedThisMonth": "Collected this month",
+      "outstanding": "Outstanding",
+      "invoicesThisMonth": "Invoices this month"
     }
   },
   "patients": {
@@ -520,9 +548,29 @@
         "reorderThreshold": "Reorder threshold",
         "reorderQuantity": "Reorder quantity",
         "isActive": "Active in catalogue",
-        "botanicalName": "Botanical name"
+        "botanicalName": "Botanical name",
+        "pharmaceuticalName": "Pharmaceutical name (Latin)",
+        "tcmCategory": "Traditional category",
+        "temperature": "Nature (temperature)",
+        "tastes": "Tastes",
+        "channels": "Channels",
+        "indications": "Indications",
+        "dosageRange": "Dosage range (g, decoction)",
+        "dosageMin": "Minimum",
+        "dosageMax": "Maximum",
+        "dosageNotes": "Dosage notes"
       },
-      "nameRequired": "Fill in at least one name"
+      "nameRequired": "Fill in at least one name",
+      "sections": {
+        "identity": "Identity",
+        "nature": "Nature and actions",
+        "dosage": "Dosage and safety",
+        "stock": "Stock"
+      },
+      "filters": {
+        "allCategories": "All categories",
+        "needsReview": "Needs review only"
+      }
     },
     "category": {
       "raw_herb": "Raw herb",
@@ -563,7 +611,13 @@
         "nameHebrew": "Hebrew name",
         "category": "Type",
         "description": "Description",
-        "indications": "Indications"
+        "indications": "Indications",
+        "tcmCategory": "Traditional category",
+        "sourceText": "Classical source",
+        "actions": "Actions",
+        "contraindications": "Contraindications",
+        "modifications": "Common modifications",
+        "dosageNotes": "Dosage notes"
       },
       "category": {
         "classical": "Classical",
@@ -627,6 +681,113 @@
       "dispensedAt": "Dispensed on",
       "dispensedBy": "Dispensed by",
       "totalCost": "Total cost"
+    },
+    "tcmCategory": {
+      "release_exterior_warm": "Release the exterior — warm, acrid",
+      "release_exterior_cool": "Release the exterior — cool, acrid",
+      "clear_heat_drain_fire": "Clear heat — drain fire",
+      "clear_heat_cool_blood": "Clear heat — cool the blood",
+      "clear_heat_dry_dampness": "Clear heat — dry dampness",
+      "clear_heat_relieve_toxicity": "Clear heat — relieve toxicity",
+      "clear_deficient_heat": "Clear deficiency heat",
+      "clear_summer_heat": "Clear summer heat",
+      "downward_draining": "Downward draining (purgatives)",
+      "moist_laxative": "Moist laxatives",
+      "harsh_expellant": "Harsh expellants",
+      "drain_dampness": "Drain dampness",
+      "dispel_wind_dampness": "Dispel wind-dampness",
+      "aromatic_transform_dampness": "Aromatic, transform dampness",
+      "transform_phlegm_cold": "Transform cold phlegm",
+      "transform_phlegm_heat": "Transform hot phlegm",
+      "relieve_cough_wheezing": "Relieve cough and wheezing",
+      "relieve_food_stagnation": "Relieve food stagnation",
+      "regulate_qi": "Regulate qi",
+      "stop_bleeding": "Stop bleeding",
+      "invigorate_blood": "Invigorate the blood",
+      "warm_interior": "Warm the interior",
+      "tonify_qi": "Tonify qi",
+      "tonify_blood": "Tonify blood",
+      "tonify_yang": "Tonify yang",
+      "tonify_yin": "Tonify yin",
+      "stabilize_bind": "Stabilize and bind",
+      "calm_spirit_anchor": "Calm the spirit — anchor",
+      "calm_spirit_nourish": "Calm the spirit — nourish",
+      "aromatic_open_orifices": "Aromatic, open the orifices",
+      "extinguish_wind": "Extinguish wind, stop tremors",
+      "expel_parasites": "Expel parasites",
+      "external_application": "External application",
+      "other": "Other"
+    },
+    "temperature": {
+      "hot": "Hot",
+      "warm": "Warm",
+      "slightly_warm": "Slightly warm",
+      "neutral": "Neutral",
+      "cool": "Cool",
+      "slightly_cold": "Slightly cold",
+      "cold": "Cold",
+      "very_cold": "Very cold"
+    },
+    "taste": {
+      "sweet": "Sweet",
+      "bitter": "Bitter",
+      "acrid": "Acrid",
+      "sour": "Sour",
+      "salty": "Salty",
+      "bland": "Bland",
+      "astringent": "Astringent",
+      "aromatic": "Aromatic"
+    },
+    "channel": {
+      "lung": "Lung",
+      "large_intestine": "Large intestine",
+      "stomach": "Stomach",
+      "spleen": "Spleen",
+      "heart": "Heart",
+      "small_intestine": "Small intestine",
+      "bladder": "Bladder",
+      "kidney": "Kidney",
+      "pericardium": "Pericardium",
+      "san_jiao": "San jiao",
+      "gallbladder": "Gallbladder",
+      "liver": "Liver"
+    },
+    "formulaTcmCategory": {
+      "release_exterior": "Release the exterior",
+      "clear_heat": "Clear heat",
+      "purge": "Purge",
+      "harmonize": "Harmonize",
+      "treat_dryness": "Treat dryness",
+      "expel_dampness": "Expel dampness",
+      "warm_interior": "Warm the interior",
+      "tonify": "Tonify",
+      "regulate_qi": "Regulate qi",
+      "invigorate_blood": "Invigorate blood",
+      "stop_bleeding": "Stop bleeding",
+      "stabilize_bind": "Stabilize and bind",
+      "calm_spirit": "Calm the spirit",
+      "open_orifices": "Open the orifices",
+      "extinguish_wind": "Extinguish wind",
+      "treat_phlegm": "Treat phlegm",
+      "reduce_food_stagnation": "Reduce food stagnation",
+      "expel_parasites": "Expel parasites",
+      "other": "Other"
+    },
+    "review": {
+      "badge": "Needs review",
+      "hint": "Loaded from the bundled catalogue and not yet confirmed by a practitioner. Editing the actions, indications, cautions or dosage clears this flag.",
+      "allClear": "Reviewed",
+      "countHint": "{count} herbs awaiting review"
+    },
+    "image": {
+      "title": "Image",
+      "upload": "Upload image",
+      "replace": "Replace image",
+      "remove": "Remove image",
+      "none": "No image yet",
+      "hint": "JPG or PNG, up to 5MB. The image is public.",
+      "attribution": "Credit / source",
+      "uploaded": "Image saved"
     }
   },
   "portal": {

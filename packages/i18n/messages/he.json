@@ -117,11 +117,19 @@
     "resetLayout": "איפוס לפריסת ברירת המחדל",
     "resetConfirm": "לאפס את הפריסה? כל השינויים האישיים יימחקו.",
     "layoutSaved": "הפריסה נשמרה",
-    "editHint": "אפשר לגרור רכיבים כדי לסדר אותם, ולמתוח את הפינה כדי לשנות גודל. השמירה אוטומטית.",
+    "editHint": "גוררים רכיב מהכותרת שלו כדי לסדר, ולוחצים על הגודל כדי להחליף. השמירה אוטומטית.",
     "emptyTitle": "הלוח ריק",
     "emptyBody": "אפשר להוסיף רכיבים כדי לבנות את מסך הבית שמתאים לכם.",
     "allWidgetsAdded": "כל הרכיבים כבר נמצאים על הלוח",
-    "alreadyAdded": "כבר נוסף"
+    "alreadyAdded": "כבר נוסף",
+    "resize": "שינוי גודל",
+    "saveFailed": "שמירת הפריסה נכשלה. השינויים לא נשמרו.",
+    "sizes": {
+      "sm": "קטן",
+      "md": "בינוני",
+      "lg": "גדול",
+      "xl": "רוחב מלא"
+    }
   },
   "widgets": {
     "note": {
@@ -162,6 +170,26 @@
       "name": "התורים הקרובים",
       "description": "התורים הבאים בימים הקרובים.",
       "empty": "אין תורים קרובים"
+    },
+    "treatmentKpis": {
+      "name": "טיפולים — היום, השבוע, החודש",
+      "today": "היום",
+      "week": "השבוע",
+      "month": "החודש",
+      "yesterday": "אתמול",
+      "lastWeek": "שבוע שעבר",
+      "lastMonth": "חודש שעבר",
+      "vsPrevious": "לעומת {period}",
+      "treatmentCount": "{count, plural, =0 {אין טיפולים} one {טיפול אחד} two {שני טיפולים} other {# טיפולים}}",
+      "noTreatmentsToday": "לא תועדו טיפולים היום",
+      "byDayThisWeek": "טיפולים לפי יום, השבוע",
+      "byDayThisMonth": "טיפולים לפי יום, החודש"
+    },
+    "revenue": {
+      "name": "הכנסות החודש",
+      "collectedThisMonth": "נגבה החודש",
+      "outstanding": "יתרות פתוחות",
+      "invoicesThisMonth": "חשבוניות החודש"
     }
   },
   "patients": {
@@ -520,9 +548,29 @@
         "reorderThreshold": "סף להזמנה חוזרת",
         "reorderQuantity": "כמות להזמנה",
         "isActive": "פעיל בקטלוג",
-        "botanicalName": "שם בוטני"
+        "botanicalName": "שם בוטני",
+        "pharmaceuticalName": "שם פרמצבטי (לטיני)",
+        "tcmCategory": "קטגוריה מסורתית",
+        "temperature": "טבע (טמפרטורה)",
+        "tastes": "טעמים",
+        "channels": "מרידיאנים",
+        "indications": "התוויות",
+        "dosageRange": "טווח מינון (גרם, מרתח)",
+        "dosageMin": "מינימום",
+        "dosageMax": "מקסימום",
+        "dosageNotes": "הערות מינון"
       },
-      "nameRequired": "יש למלא לפחות שם אחד"
+      "nameRequired": "יש למלא לפחות שם אחד",
+      "sections": {
+        "identity": "זיהוי",
+        "nature": "טבע ופעולה",
+        "dosage": "מינון ובטיחות",
+        "stock": "מלאי"
+      },
+      "filters": {
+        "allCategories": "כל הקטגוריות",
+        "needsReview": "דורשים אימות בלבד"
+      }
     },
     "category": {
       "raw_herb": "צמח גולמי",
@@ -563,7 +611,13 @@
         "nameHebrew": "שם בעברית",
         "category": "סוג",
         "description": "תיאור",
-        "indications": "התוויות"
+        "indications": "התוויות",
+        "tcmCategory": "קטגוריה מסורתית",
+        "sourceText": "מקור קלאסי",
+        "actions": "פעולות",
+        "contraindications": "התוויות נגד",
+        "modifications": "התאמות נפוצות",
+        "dosageNotes": "הערות מינון"
       },
       "category": {
         "classical": "קלאסית",
@@ -627,6 +681,113 @@
       "dispensedAt": "נופק בתאריך",
       "dispensedBy": "נופק על ידי",
       "totalCost": "עלות כוללת"
+    },
+    "tcmCategory": {
+      "release_exterior_warm": "משחררי חיצון — חמים",
+      "release_exterior_cool": "משחררי חיצון — קרירים",
+      "clear_heat_drain_fire": "מנקי חום — מנקזי אש",
+      "clear_heat_cool_blood": "מנקי חום — מקררי דם",
+      "clear_heat_dry_dampness": "מנקי חום — מייבשי לחות",
+      "clear_heat_relieve_toxicity": "מנקי חום — מסירי רעילות",
+      "clear_deficient_heat": "מנקי חום מחוסר",
+      "clear_summer_heat": "מנקי חום קיץ",
+      "downward_draining": "משלשלים",
+      "moist_laxative": "משלשלים מרטיבים",
+      "harsh_expellant": "משלשלים חריפים",
+      "drain_dampness": "מנקזי לחות",
+      "dispel_wind_dampness": "מפזרי רוח־לחות",
+      "aromatic_transform_dampness": "ארומטיים ממירי לחות",
+      "transform_phlegm_cold": "ממירי ליחה — קור",
+      "transform_phlegm_heat": "ממירי ליחה — חום",
+      "relieve_cough_wheezing": "מרגיעי שיעול וקוצר נשימה",
+      "relieve_food_stagnation": "מסירי הצטברות מזון",
+      "regulate_qi": "מווסתי צ׳י",
+      "stop_bleeding": "עוצרי דימום",
+      "invigorate_blood": "מניעי דם",
+      "warm_interior": "מחממי פנים",
+      "tonify_qi": "מחזקי צ׳י",
+      "tonify_blood": "מחזקי דם",
+      "tonify_yang": "מחזקי יאנג",
+      "tonify_yin": "מחזקי יין",
+      "stabilize_bind": "מייצבים וקושרים",
+      "calm_spirit_anchor": "מרגיעי שן — מעגנים",
+      "calm_spirit_nourish": "מרגיעי שן — מזינים",
+      "aromatic_open_orifices": "ארומטיים פותחי פתחים",
+      "extinguish_wind": "מכבי רוח ועוצרי רעד",
+      "expel_parasites": "מגרשי טפילים",
+      "external_application": "לשימוש חיצוני",
+      "other": "אחר"
+    },
+    "temperature": {
+      "hot": "חם מאוד",
+      "warm": "חם",
+      "slightly_warm": "מעט חם",
+      "neutral": "ניטרלי",
+      "cool": "קריר",
+      "slightly_cold": "מעט קר",
+      "cold": "קר",
+      "very_cold": "קר מאוד"
+    },
+    "taste": {
+      "sweet": "מתוק",
+      "bitter": "מר",
+      "acrid": "חריף",
+      "sour": "חמוץ",
+      "salty": "מלוח",
+      "bland": "תפל",
+      "astringent": "עפיץ",
+      "aromatic": "ארומטי"
+    },
+    "channel": {
+      "lung": "ריאות",
+      "large_intestine": "מעי גס",
+      "stomach": "קיבה",
+      "spleen": "טחול",
+      "heart": "לב",
+      "small_intestine": "מעי דק",
+      "bladder": "שלפוחית",
+      "kidney": "כליות",
+      "pericardium": "קרום הלב",
+      "san_jiao": "סאן ג׳יאו",
+      "gallbladder": "כיס מרה",
+      "liver": "כבד"
+    },
+    "formulaTcmCategory": {
+      "release_exterior": "משחררות חיצון",
+      "clear_heat": "מנקות חום",
+      "purge": "משלשלות",
+      "harmonize": "מהרמנות",
+      "treat_dryness": "מטפלות ביובש",
+      "expel_dampness": "מסלקות לחות",
+      "warm_interior": "מחממות פנים",
+      "tonify": "מחזקות",
+      "regulate_qi": "מווסתות צ׳י",
+      "invigorate_blood": "מניעות דם",
+      "stop_bleeding": "עוצרות דימום",
+      "stabilize_bind": "מייצבות וקושרות",
+      "calm_spirit": "מרגיעות שן",
+      "open_orifices": "פותחות פתחים",
+      "extinguish_wind": "מכבות רוח",
+      "treat_phlegm": "מטפלות בליחה",
+      "reduce_food_stagnation": "מפחיתות הצטברות מזון",
+      "expel_parasites": "מגרשות טפילים",
+      "other": "אחר"
+    },
+    "review": {
+      "badge": "דורש אימות",
+      "hint": "נטען מהקטלוג המובנה ולא אומת עדיין על ידי מטפל. עריכה של הפעולות, ההתוויות, האזהרות או המינון מסירה את הסימון.",
+      "allClear": "מאומת",
+      "countHint": "{count} צמחים ממתינים לאימות"
+    },
+    "image": {
+      "title": "תמונה",
+      "upload": "העלאת תמונה",
+      "replace": "החלפת תמונה",
+      "remove": "הסרת תמונה",
+      "none": "אין עדיין תמונה",
+      "hint": "JPG או PNG, עד 5MB. התמונה ציבורית.",
+      "attribution": "קרדיט / מקור",
+      "uploaded": "התמונה נשמרה"
     }
   },
   "portal": {

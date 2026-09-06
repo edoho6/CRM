@@ -1,6 +1,8 @@
 import type {
   AppointmentStatus,
   AuditAction,
+  Channel,
+  FormulaTcmCategory,
   DispensingStatus,
   DocumentCategory,
   EncounterStatus,
@@ -14,6 +16,9 @@ import type {
   PurchaseOrderStatus,
   Sex,
   StockMovementType,
+  Taste,
+  TcmCategory,
+  Temperature,
   TreatmentModality,
 } from '@clinic/domain';
 
@@ -272,6 +277,19 @@ export interface Herb {
   english_name: string | null;
   hebrew_name: string | null;
   botanical_name: string | null;
+  pharmaceutical_name: string | null;
+  tcm_category: TcmCategory | null;
+  temperature: Temperature | null;
+  tastes: Taste[];
+  channels: Channel[];
+  indications: string | null;
+  dosage_min_g: number | null;
+  dosage_max_g: number | null;
+  dosage_notes: string | null;
+  image_url: string | null;
+  image_attribution: string | null;
+  needs_review: boolean;
+  data_source: string | null;
   category: HerbCategory;
   default_unit: HerbUnit;
   properties: string | null;
@@ -293,6 +311,9 @@ export interface HerbStockLevel {
   english_name: string | null;
   hebrew_name: string | null;
   botanical_name: string | null;
+  tcm_category: TcmCategory | null;
+  image_url: string | null;
+  needs_review: boolean;
   category: HerbCategory;
   default_unit: HerbUnit;
   reorder_threshold: number | null;
@@ -314,6 +335,15 @@ export interface HerbFormula {
   category: FormulaCategory;
   description: string | null;
   indications: string | null;
+  tcm_category: FormulaTcmCategory | null;
+  source_text: string | null;
+  actions: string | null;
+  contraindications: string | null;
+  modifications: string | null;
+  dosage_notes: string | null;
+  image_url: string | null;
+  needs_review: boolean;
+  data_source: string | null;
   is_active: boolean;
   created_by: string | null;
   created_at: string;

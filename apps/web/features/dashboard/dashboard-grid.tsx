@@ -1,67 +1,72 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { GridLayout, noCompactor, useContainerWidth } from 'react-grid-layout';
+import {
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  arrayMove,
+  rectSortingStrategy,
+  sortableKeyboardCoordinates,
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { useLocale, useTranslations } from 'next-intl';
 import { Check, LayoutGrid, RotateCcw } from 'lucide-react';
 import { Alert, Button, EmptyState, cn } from '@clinic/ui';
-import type { DashboardLayout, DashboardWidgetInstance } from '@clinic/domain/widgets';
+import type { DashboardLayout, DashboardWidgetInstance, WidgetSize } from '@clinic/domain/widgets';
 import type { Locale } from '@clinic/domain';
 import { AddWidgetDialog } from './add-widget-dialog';
 import { DEFAULT_DASHBOARD_LAYOUT } from './default-layout';
 import {
-  DASHBOARD_COLS,
-  DASHBOARD_MARGIN,
-  DASHBOARD_ROW_HEIGHT,
+  SIZE_CLASSES,
+  SIZE_MIN_HEIGHT,
   createInstanceId,
-  fromGridLayout,
   layoutsEqual,
-  nextAvailableY,
-  toGridLayout,
+  nextSize,
 } from './layout-utils';
 import { saveDashboardLayout } from './actions';
 import { getWidgetDefinition } from './widgets';
 import { WidgetFrame } from './widget-frame';
 
 const SAVE_DEBOUNCE_MS = 800;
-const DESKTOP_QUERY = '(min-width: 768px)';
 
 /**
  * The customisable dashboard.
  *
- * Two deliberate decisions here:
+ * A CSS grid in reading order, with drag-to-reorder and a size cycle per widget.
+ * Nothing here computes a pixel position: the browser lays the grid out, which is
+ * what makes it impossible for two widgets to overlap and makes Hebrew work with
+ * no mirroring at all — the grid simply flows from the start edge.
  *
- * 1. Below 768px the grid is replaced by a plain stacked list. The grid library
- *    would otherwise recompact the layout to fit a narrow screen and fire
- *    `onLayoutChange`, silently overwriting the arrangement the user built on
- *    their desktop.
- *
- * 2. Saving is debounced and automatic. A "save layout" button is one more thing
- *    to forget, and the cost of a lost drag is an annoyed user rebuilding their
- *    dashboard.
+ * Saving is debounced and automatic. A "save layout" button is one more thing
+ * to forget, and the cost of a lost drag is an annoyed user rebuilding their
+ * dashboard.
  */
 export function DashboardGrid({ initialLayout }: { initialLayout: DashboardLayout }) {
   const t = useTranslations('dashboard');
   const locale = useLocale() as Locale;
-  const isRtl = locale === 'he';
-  const dir = isRtl ? 'rtl' : 'ltr';
 
   const [layout, setLayout] = useState<DashboardLayout>(initialLayout);
   const [isEditing, setIsEditing] = useState(false);
-  const [isDesktop, setIsDesktop] = useState(true);
   const [saveError, setSaveError] = useState(false);
 
-  const { width, containerRef, mounted } = useContainerWidth();
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSaved = useRef<DashboardLayout>(initialLayout);
 
-  useEffect(() => {
-    const media = window.matchMedia(DESKTOP_QUERY);
-    const update = () => setIsDesktop(media.matches);
-    update();
-    media.addEventListener('change', update);
-    return () => media.removeEventListener('change', update);
-  }, []);
+  const sensors = useSensors(
+    // A small distance threshold keeps a plain click on the header from
+    // starting a drag.
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
 
   const persist = useCallback((next: DashboardLayout) => {
     if (saveTimer.current) clearTimeout(saveTimer.current);
@@ -77,7 +82,6 @@ export function DashboardGrid({ initialLayout }: { initialLayout: DashboardLayou
     }, SAVE_DEBOUNCE_MS);
   }, []);
 
-  // Flush a pending save if the user navigates away mid-debounce.
   useEffect(() => {
     return () => {
       if (saveTimer.current) clearTimeout(saveTimer.current);
@@ -92,26 +96,18 @@ export function DashboardGrid({ initialLayout }: { initialLayout: DashboardLayou
     [persist],
   );
 
-  const constraints = useMemo(() => {
-    const result: Record<string, { minW?: number; minH?: number; maxW?: number; maxH?: number }> = {};
-    for (const item of layout) {
-      const definition = getWidgetDefinition(item.type);
-      if (!definition) continue;
-      const { minW, minH, maxW, maxH } = definition.defaultLayout;
-      result[item.type] = { minW, minH, maxW, maxH };
-    }
-    return result;
-  }, [layout]);
+  const ids = useMemo(() => layout.map((item) => item.id), [layout]);
 
-  const gridLayout = useMemo(() => toGridLayout(layout, dir, constraints), [layout, dir, constraints]);
-
-  const handleGridChange = useCallback(
-    (next: readonly { i: string; x: number; y: number; w: number; h: number }[]) => {
-      const converted = fromGridLayout(next, layout, dir);
-      if (layoutsEqual(converted, layout)) return;
-      update(converted);
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event;
+      if (!over || active.id === over.id) return;
+      const from = layout.findIndex((item) => item.id === active.id);
+      const to = layout.findIndex((item) => item.id === over.id);
+      if (from === -1 || to === -1) return;
+      update(arrayMove(layout, from, to));
     },
-    [layout, dir, update],
+    [layout, update],
   );
 
   const handleConfigChange = useCallback(
@@ -122,21 +118,29 @@ export function DashboardGrid({ initialLayout }: { initialLayout: DashboardLayou
   );
 
   const handleRemove = useCallback(
+    (instanceId: string) => update(layout.filter((item) => item.id !== instanceId)),
+    [layout, update],
+  );
+
+  const handleResize = useCallback(
     (instanceId: string) => {
-      update(layout.filter((item) => item.id !== instanceId));
+      update(
+        layout.map((item) => {
+          if (item.id !== instanceId) return item;
+          const allowed = getWidgetDefinition(item.type)?.allowedSizes;
+          return { ...item, size: nextSize(item.size, allowed) };
+        }),
+      );
     },
     [layout, update],
   );
 
   const handleAdd = useCallback(
-    (definition: { type: string; defaultLayout: { w: number; h: number }; defaultConfig: unknown }) => {
+    (definition: { type: string; defaultSize: WidgetSize; defaultConfig: unknown }) => {
       const instance: DashboardWidgetInstance = {
         id: createInstanceId(definition.type),
         type: definition.type,
-        x: 0,
-        y: nextAvailableY(layout),
-        w: definition.defaultLayout.w,
-        h: definition.defaultLayout.h,
+        size: definition.defaultSize,
         config: definition.defaultConfig,
       };
       update([...layout, instance]);
@@ -150,61 +154,18 @@ export function DashboardGrid({ initialLayout }: { initialLayout: DashboardLayou
     update(DEFAULT_DASHBOARD_LAYOUT);
   }, [t, update]);
 
-  const renderWidget = useCallback(
-    (item: DashboardWidgetInstance) => {
-      const definition = getWidgetDefinition(item.type);
-      if (!definition) {
-        // A layout referencing a widget type that no longer exists must not blank
-        // the dashboard — show a placeholder the user can remove.
-        return (
-          <WidgetFrame
-            title={item.type}
-            isEditing={isEditing}
-            onRemove={() => handleRemove(item.id)}
-          >
-            <p className="text-sm text-ink-400">{item.type}</p>
-          </WidgetFrame>
-        );
-      }
-
-      const WidgetComponent = definition.component;
-      const parsed = definition.configSchema
-        ? definition.configSchema.safeParse(item.config ?? definition.defaultConfig)
-        : null;
-      const config = parsed && parsed.success ? parsed.data : (item.config ?? definition.defaultConfig);
-
-      return (
-        <WidgetFrame
-          title={definition.displayName[locale] ?? definition.type}
-          isEditing={isEditing}
-          onRemove={() => handleRemove(item.id)}
-        >
-          <WidgetComponent
-            instanceId={item.id}
-            config={config}
-            isEditing={isEditing}
-            onConfigChange={(next: unknown) => handleConfigChange(item.id, next)}
-          />
-        </WidgetFrame>
-      );
-    },
-    [handleConfigChange, handleRemove, isEditing, locale],
-  );
-
   const toolbar = (
     <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
       <div className="flex flex-wrap items-center gap-2">
         <AddWidgetDialog layout={layout} onAdd={handleAdd} />
-        {isDesktop ? (
-          <Button
-            variant={isEditing ? 'primary' : 'secondary'}
-            size="sm"
-            onClick={() => setIsEditing((value) => !value)}
-          >
-            {isEditing ? <Check className="h-4 w-4" /> : <LayoutGrid className="h-4 w-4" />}
-            {isEditing ? t('doneEditing') : t('editLayout')}
-          </Button>
-        ) : null}
+        <Button
+          variant={isEditing ? 'primary' : 'secondary'}
+          size="sm"
+          onClick={() => setIsEditing((value) => !value)}
+        >
+          {isEditing ? <Check className="h-4 w-4" /> : <LayoutGrid className="h-4 w-4" />}
+          {isEditing ? t('doneEditing') : t('editLayout')}
+        </Button>
         {isEditing ? (
           <Button variant="ghost" size="sm" onClick={handleReset}>
             <RotateCcw className="h-4 w-4" />
@@ -235,52 +196,99 @@ export function DashboardGrid({ initialLayout }: { initialLayout: DashboardLayou
 
       {saveError ? (
         <Alert tone="danger" className="mb-3">
-          {t('layoutSaved')}
+          {t('saveFailed')}
         </Alert>
       ) : null}
 
-      {/* Stacked, non-draggable rendering on small screens. */}
-      {!isDesktop ? (
-        <div className="space-y-3">
-          {layout.map((item) => (
-            <div key={item.id} style={{ minHeight: item.h * DASHBOARD_ROW_HEIGHT }}>
-              {renderWidget(item)}
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div ref={containerRef} className={cn(isEditing && 'dashboard-editing')}>
-          {mounted && width > 0 ? (
-            <GridLayout
-              width={width}
-              layout={gridLayout}
-              onLayoutChange={handleGridChange}
-              // The layout is already computed (and RTL-mirrored) by hand in
-              // layout-utils.ts. Automatic compaction would recompute positions
-              // itself and could disagree with that math, which is what produced
-              // overlapping widgets — so every arrangement here is exactly what
-              // was asked for, nothing more.
-              compactor={noCompactor}
-              gridConfig={{
-                cols: DASHBOARD_COLS,
-                rowHeight: DASHBOARD_ROW_HEIGHT,
-                margin: DASHBOARD_MARGIN,
-                containerPadding: [0, 0],
-              }}
-              dragConfig={{
-                enabled: isEditing,
-                handle: '.widget-drag-handle',
-                bounded: false,
-              }}
-              resizeConfig={{ enabled: isEditing, handles: ['se'] }}
-            >
-              {layout.map((item) => (
-                <div key={item.id}>{renderWidget(item)}</div>
-              ))}
-            </GridLayout>
-          ) : null}
-        </div>
-      )}
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext items={ids} strategy={rectSortingStrategy}>
+          <div className={cn('grid grid-cols-1 gap-4 md:grid-cols-6 xl:grid-cols-12', isEditing && 'dashboard-editing')}>
+            {layout.map((item) => (
+              <SortableWidget
+                key={item.id}
+                item={item}
+                locale={locale}
+                isEditing={isEditing}
+                onRemove={() => handleRemove(item.id)}
+                onResize={() => handleResize(item.id)}
+                onConfigChange={(config) => handleConfigChange(item.id, config)}
+              />
+            ))}
+          </div>
+        </SortableContext>
+      </DndContext>
+    </div>
+  );
+}
+
+function SortableWidget({
+  item,
+  locale,
+  isEditing,
+  onRemove,
+  onResize,
+  onConfigChange,
+}: {
+  item: DashboardWidgetInstance;
+  locale: Locale;
+  isEditing: boolean;
+  onRemove: () => void;
+  onResize: () => void;
+  onConfigChange: (config: unknown) => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: item.id,
+    disabled: !isEditing,
+  });
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  const definition = getWidgetDefinition(item.type);
+
+  let body: React.ReactNode;
+  let title: React.ReactNode = item.type;
+
+  if (!definition) {
+    // A layout referencing a widget type that no longer exists must not blank
+    // the dashboard — show a placeholder the user can remove.
+    body = <p className="text-sm text-ink-400">{item.type}</p>;
+  } else {
+    const WidgetComponent = definition.component;
+    const parsed = definition.configSchema
+      ? definition.configSchema.safeParse(item.config ?? definition.defaultConfig)
+      : null;
+    const config = parsed && parsed.success ? parsed.data : (item.config ?? definition.defaultConfig);
+    title = definition.displayName[locale] ?? definition.type;
+    body = (
+      <WidgetComponent
+        instanceId={item.id}
+        config={config}
+        isEditing={isEditing}
+        size={item.size}
+        onConfigChange={onConfigChange}
+      />
+    );
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn(SIZE_CLASSES[item.size], SIZE_MIN_HEIGHT[item.size], isDragging && 'z-30 opacity-90')}
+    >
+      <WidgetFrame
+        title={title}
+        isEditing={isEditing}
+        size={item.size}
+        onRemove={onRemove}
+        onResize={onResize}
+        dragHandle={{ attributes, listeners: listeners as never }}
+      >
+        {body}
+      </WidgetFrame>
     </div>
   );
 }

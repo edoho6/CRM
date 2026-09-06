@@ -71,7 +71,7 @@ registerWidget(
     type: 'note',
     displayName: { he: 'תיבת טקסט', en: 'Text box' },
     icon: 'StickyNote',
-    defaultLayout: { w: 4, h: 3, minW: 2, minH: 2 },
+    defaultSize: 'md',
     defaultConfig: { html: '' },
     configSchema: noteConfigSchema,
     component: NoteWidget,

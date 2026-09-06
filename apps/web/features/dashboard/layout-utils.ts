@@ -1,102 +1,65 @@
-import type { DashboardLayout, DashboardWidgetInstance } from '@clinic/domain/widgets';
-
-/** Columns used by the desktop dashboard grid. */
-export const DASHBOARD_COLS = 12;
-export const DASHBOARD_ROW_HEIGHT = 76;
-export const DASHBOARD_MARGIN: [number, number] = [16, 16];
+import {
+  WIDGET_SIZES,
+  type DashboardLayout,
+  type DashboardWidgetInstance,
+  type WidgetSize,
+} from '@clinic/domain/widgets';
 
 /**
- * Mirroring between stored and displayed coordinates.
+ * Dashboard layout helpers.
  *
- * Layouts are persisted in *logical* coordinates, where x = 0 is the reading-start
- * edge. The grid library only knows physical left-to-right pixels, so in Hebrew the
- * two are mirrored on the way in and back again on the way out.
- *
- * Storing logical coordinates means one saved dashboard looks right in both
- * languages — switching to English does not scramble the arrangement.
+ * The layout is an ordered list; the browser's CSS grid places it. That removes
+ * the two things that made the previous pixel-grid fragile: coordinates that had
+ * to be mirrored for Hebrew, and a compaction step that could disagree with them.
  */
-export function toPhysicalX(logicalX: number, width: number, dir: 'rtl' | 'ltr'): number {
-  if (dir === 'ltr') return logicalX;
-  return Math.max(0, DASHBOARD_COLS - logicalX - width);
+
+/** Column span per size on the 12-column desktop grid. */
+export const SIZE_COLUMNS: Record<WidgetSize, number> = { sm: 3, md: 4, lg: 6, xl: 12 };
+
+/**
+ * Tailwind needs complete class names in source to emit them, so the span
+ * classes are spelled out per size rather than built from a number.
+ */
+export const SIZE_CLASSES: Record<WidgetSize, string> = {
+  sm: 'md:col-span-3 xl:col-span-3',
+  md: 'md:col-span-3 xl:col-span-4',
+  lg: 'md:col-span-6 xl:col-span-6',
+  xl: 'md:col-span-6 xl:col-span-12',
+};
+
+/** Minimum heights so a row of mixed widgets reads as one row, not a staircase. */
+export const SIZE_MIN_HEIGHT: Record<WidgetSize, string> = {
+  sm: 'min-h-56',
+  md: 'min-h-56',
+  lg: 'min-h-72',
+  xl: 'min-h-40',
+};
+
+export function isWidgetSize(value: unknown): value is WidgetSize {
+  return typeof value === 'string' && (WIDGET_SIZES as readonly string[]).includes(value);
 }
 
-export function toLogicalX(physicalX: number, width: number, dir: 'rtl' | 'ltr'): number {
-  if (dir === 'ltr') return physicalX;
-  return Math.max(0, DASHBOARD_COLS - physicalX - width);
+/** The next size in the cycle, restricted to what the widget allows. */
+export function nextSize(current: WidgetSize, allowed: readonly WidgetSize[] = WIDGET_SIZES): WidgetSize {
+  const order = WIDGET_SIZES.filter((size) => allowed.includes(size));
+  if (order.length === 0) return current;
+  const index = order.indexOf(current);
+  return order[(index + 1) % order.length] ?? order[0]!;
 }
 
-export interface GridLayoutItem {
-  i: string;
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-  minW?: number;
-  minH?: number;
-  maxW?: number;
-  maxH?: number;
-}
-
-export function toGridLayout(
-  layout: DashboardLayout,
-  dir: 'rtl' | 'ltr',
-  constraints: Record<string, { minW?: number; minH?: number; maxW?: number; maxH?: number }>,
-): GridLayoutItem[] {
-  return layout.map((item) => ({
-    i: item.id,
-    x: toPhysicalX(item.x, item.w, dir),
-    y: item.y,
-    w: item.w,
-    h: item.h,
-    ...(constraints[item.type] ?? {}),
-  }));
-}
-
-export function fromGridLayout(
-  gridItems: readonly { i: string; x: number; y: number; w: number; h: number }[],
-  previous: DashboardLayout,
-  dir: 'rtl' | 'ltr',
-): DashboardLayout {
-  const byId = new Map(previous.map((item) => [item.id, item]));
-  const next: DashboardLayout = [];
-
-  for (const gridItem of gridItems) {
-    const original = byId.get(gridItem.i);
-    if (!original) continue;
-    next.push({
-      ...original,
-      x: toLogicalX(gridItem.x, gridItem.w, dir),
-      y: gridItem.y,
-      w: gridItem.w,
-      h: gridItem.h,
-    });
-  }
-
-  // Preserve anything the grid did not report (defensive: never drop a widget
-  // because of a transient render).
-  for (const item of previous) {
-    if (!next.some((entry) => entry.id === item.id)) {
-      next.push(item);
-    }
-  }
-
-  return next;
-}
-
-/** True when two layouts describe the same arrangement, ignoring key order. */
+/** True when two layouts describe the same arrangement. */
 export function layoutsEqual(a: DashboardLayout, b: DashboardLayout): boolean {
   if (a.length !== b.length) return false;
-  const serialise = (layout: DashboardLayout) =>
-    layout
-      .map((item) => `${item.id}:${item.type}:${item.x},${item.y},${item.w},${item.h}:${JSON.stringify(item.config ?? null)}`)
-      .sort()
-      .join('|');
-  return serialise(a) === serialise(b);
-}
-
-/** Finds the first free row so a newly added widget lands below existing ones. */
-export function nextAvailableY(layout: DashboardLayout): number {
-  return layout.reduce((max, item) => Math.max(max, item.y + item.h), 0);
+  return a.every((item, index) => {
+    const other = b[index];
+    return (
+      other !== undefined &&
+      item.id === other.id &&
+      item.type === other.type &&
+      item.size === other.size &&
+      JSON.stringify(item.config ?? null) === JSON.stringify(other.config ?? null)
+    );
+  });
 }
 
 export function createInstanceId(type: string): string {
@@ -107,23 +70,72 @@ export function createInstanceId(type: string): string {
   return `${type}-${random}`;
 }
 
-/** Guards against a malformed or hand-edited `layout` column. */
+/** Maps a legacy pixel-grid width (in 12 columns) onto the nearest size preset. */
+function sizeFromLegacyWidth(width: number): WidgetSize {
+  if (width <= 3) return 'sm';
+  if (width <= 4) return 'md';
+  if (width <= 6) return 'lg';
+  return 'xl';
+}
+
+interface LegacyInstance {
+  id?: unknown;
+  type?: unknown;
+  size?: unknown;
+  config?: unknown;
+  x?: unknown;
+  y?: unknown;
+  w?: unknown;
+}
+
+/**
+ * Guards against a malformed or hand-edited `layout` column, and upgrades
+ * layouts saved by the previous coordinate-based grid: their `w` becomes a size
+ * and their (y, x) order becomes the list order, so nobody loses an arrangement
+ * because the model changed underneath it.
+ */
 export function parseStoredLayout(value: unknown): DashboardLayout {
   if (!Array.isArray(value)) return [];
+
+  const entries = value
+    .filter((entry): entry is LegacyInstance => Boolean(entry) && typeof entry === 'object')
+    .filter((entry) => typeof entry.id === 'string' && typeof entry.type === 'string');
+
+  const isLegacy = entries.some((entry) => !isWidgetSize(entry.size) && typeof entry.w === 'number');
+
+  const ordered = isLegacy
+    ? [...entries].sort((a, b) => {
+        const ay = typeof a.y === 'number' ? a.y : 0;
+        const by = typeof b.y === 'number' ? b.y : 0;
+        if (ay !== by) return ay - by;
+        const ax = typeof a.x === 'number' ? a.x : 0;
+        const bx = typeof b.x === 'number' ? b.x : 0;
+        return ax - bx;
+      })
+    : entries;
+
+  const seen = new Set<string>();
   const parsed: DashboardLayout = [];
-  for (const entry of value) {
-    if (!entry || typeof entry !== 'object') continue;
-    const candidate = entry as Partial<DashboardWidgetInstance>;
-    if (typeof candidate.id !== 'string' || typeof candidate.type !== 'string') continue;
-    parsed.push({
-      id: candidate.id,
-      type: candidate.type,
-      x: Number.isFinite(candidate.x) ? Number(candidate.x) : 0,
-      y: Number.isFinite(candidate.y) ? Number(candidate.y) : 0,
-      w: Number.isFinite(candidate.w) ? Math.max(1, Number(candidate.w)) : 4,
-      h: Number.isFinite(candidate.h) ? Math.max(1, Number(candidate.h)) : 3,
-      config: candidate.config,
-    });
+
+  for (const entry of ordered) {
+    const id = entry.id as string;
+    if (seen.has(id)) continue;
+    seen.add(id);
+
+    const size: WidgetSize = isWidgetSize(entry.size)
+      ? entry.size
+      : typeof entry.w === 'number'
+        ? sizeFromLegacyWidth(entry.w)
+        : 'md';
+
+    const instance: DashboardWidgetInstance = {
+      id,
+      type: entry.type as string,
+      size,
+    };
+    if (entry.config !== undefined) instance.config = entry.config;
+    parsed.push(instance);
   }
+
   return parsed;
 }

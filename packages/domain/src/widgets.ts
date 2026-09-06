@@ -9,7 +9,14 @@ import type { Locale, MembershipRole } from './enums';
  * chart, a revenue tile, a waiting-list panel) means writing a component and
  * calling `registerWidget()`. It must never require touching the grid, the
  * persistence layer, or the dashboard page itself.
+ *
+ * Layout model: an *ordered list* of widgets, each with a size. The grid is a CSS
+ * grid that flows in reading order, so there are no coordinates to mirror for
+ * Hebrew and nothing that can overlap — the browser lays it out.
  */
+
+export const WIDGET_SIZES = ['sm', 'md', 'lg', 'xl'] as const;
+export type WidgetSize = (typeof WIDGET_SIZES)[number];
 
 /** One widget placed on a user's dashboard, as persisted in `dashboard_layouts.layout`. */
 export interface DashboardWidgetInstance<TConfig = unknown> {
@@ -17,19 +24,13 @@ export interface DashboardWidgetInstance<TConfig = unknown> {
   id: string;
   /** Matches `WidgetDefinition.type` in the registry. */
   type: string;
-  /** Grid column offset. */
-  x: number;
-  /** Grid row offset. */
-  y: number;
-  /** Width in grid columns. */
-  w: number;
-  /** Height in grid rows. */
-  h: number;
+  /** Column span preset; position is the array order. */
+  size: WidgetSize;
   /** Widget-specific settings, validated by `WidgetDefinition.configSchema`. */
   config?: TConfig;
 }
 
-/** The full persisted dashboard for one user. */
+/** The full persisted dashboard for one user, in display order. */
 export type DashboardLayout = DashboardWidgetInstance[];
 
 /** Props every widget component receives from the grid host. */
@@ -40,15 +41,8 @@ export interface WidgetProps<TConfig = unknown> {
   onConfigChange: (config: TConfig) => void;
   /** True while the user is in dashboard edit mode (drag handles visible). */
   isEditing: boolean;
-}
-
-export interface WidgetSizeConstraints {
-  w: number;
-  h: number;
-  minW?: number;
-  minH?: number;
-  maxW?: number;
-  maxH?: number;
+  /** Current size, so a widget can choose a compact or full presentation. */
+  size: WidgetSize;
 }
 
 export interface WidgetDefinition<TConfig = unknown> {
@@ -59,7 +53,9 @@ export interface WidgetDefinition<TConfig = unknown> {
   description?: Record<Locale, string>;
   /** Lucide icon name, resolved by the UI layer so this package stays icon-library agnostic. */
   icon?: string;
-  defaultLayout: WidgetSizeConstraints;
+  defaultSize: WidgetSize;
+  /** Sizes the widget looks right at. Defaults to all four. */
+  allowedSizes?: readonly WidgetSize[];
   defaultConfig: TConfig;
   /** Validates `config` before it is persisted or handed to the component. */
   configSchema?: ZodType<TConfig>;
@@ -81,12 +77,3 @@ export type AnyWidgetDefinition = WidgetDefinition<any>;
 export function defineWidget<TConfig>(definition: WidgetDefinition<TConfig>): WidgetDefinition<TConfig> {
   return definition;
 }
-
-/** Grid geometry shared by the dashboard host and the persistence layer. */
-export const DASHBOARD_GRID = {
-  /** Columns per responsive breakpoint. */
-  cols: { lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 },
-  breakpoints: { lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 },
-  rowHeight: 72,
-  margin: [16, 16] as [number, number],
-} as const;
