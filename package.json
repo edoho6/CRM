@@ -1,0 +1,31 @@
+{
+  "name": "clinic-crm",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@9.15.4",
+  "engines": {
+    "node": ">=20.9.0"
+  },
+  "scripts": {
+    "dev": "turbo run dev",
+    "dev:web": "turbo run dev --filter=@clinic/web",
+    "dev:portal": "turbo run dev --filter=@clinic/portal",
+    "build": "turbo run build",
+    "start": "turbo run start",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "clean": "turbo run clean && rimraf node_modules",
+    "format": "prettier --write \"**/*.{ts,tsx,mjs,md,json,css,sql}\"",
+    "db:types": "supabase gen types typescript --project-id $SUPABASE_PROJECT_ID > packages/db/src/database.types.ts",
+    "db:push": "supabase db push",
+    "db:reset": "supabase db reset"
+  },
+  "devDependencies": {
+    "prettier": "^3.4.2",
+    "rimraf": "^6.0.1",
+    "supabase": "^2.116.0",
+    "turbo": "2.10.12",
+    "typescript": "5.9.3"
+  }
+}

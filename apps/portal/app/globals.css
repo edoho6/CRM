@@ -1,0 +1,52 @@
+@import 'tailwindcss';
+
+/* The portal shares the clinic's palette so it feels like the same practice,
+   but ships none of the staff app's grid, editor or calendar CSS — patients are
+   mostly on phones and should not download what they cannot use. */
+
+@theme {
+  --color-jade-50: #f0fdf6;
+  --color-jade-100: #dcfce9;
+  --color-jade-200: #bbf7d4;
+  --color-jade-300: #86efb6;
+  --color-jade-400: #4ade90;
+  --color-jade-500: #22c573;
+  --color-jade-600: #16a25c;
+  --color-jade-700: #15803c;
+  --color-jade-800: #166533;
+  --color-jade-900: #14532b;
+
+  --color-ink-50: #f7f8f8;
+  --color-ink-100: #eef0f1;
+  --color-ink-200: #d9dde0;
+  --color-ink-300: #b8c0c5;
+  --color-ink-400: #8d989f;
+  --color-ink-500: #6b7780;
+  --color-ink-600: #545e66;
+  --color-ink-700: #454d53;
+  --color-ink-800: #3b4146;
+  --color-ink-900: #23272a;
+
+  --font-sans:
+    'Assistant', 'Rubik', 'Heebo', 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue',
+    Arial, 'Noto Sans Hebrew', sans-serif;
+
+  --radius-card: 0.875rem;
+}
+
+@layer base {
+  body {
+    background-color: var(--color-ink-50);
+    color: var(--color-ink-900);
+    font-family: var(--font-sans);
+  }
+
+  :where(input, textarea, select, button):focus-visible {
+    outline: 2px solid var(--color-jade-600);
+    outline-offset: 1px;
+  }
+
+  ::placeholder {
+    color: var(--color-ink-400);
+  }
+}

@@ -1,0 +1,54 @@
+# dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# next.js
+.next/
+out/
+build/
+dist/
+
+# turbo
+.turbo/
+
+# production
+*.tsbuildinfo
+next-env.d.ts
+
+# environment — NEVER commit real credentials
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# supabase local
+supabase/.temp/
+supabase/.branches/
+
+# Generated convenience file: all migrations concatenated for pasting into the
+# Supabase SQL editor. Regenerate it rather than committing it, so it can never
+# drift out of step with supabase/migrations/.
+all_migrations_combined.sql
+
+# testing
+coverage/
+playwright-report/
+test-results/
+blob-report/
+.playwright/
+
+# editor / OS
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
