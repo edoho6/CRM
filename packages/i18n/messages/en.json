@@ -65,7 +65,7 @@
     "encounters": "Treatments",
     "inventory": "Herb inventory",
     "billing": "Billing",
-    "herbs": "Herb catalogue",
+    "herbs": "Herbs",
     "formulas": "Formulas",
     "batches": "Stock batches",
     "suppliers": "Suppliers",
@@ -543,7 +543,7 @@
     "title": "Herb inventory",
     "overview": "Stock overview",
     "herbs": {
-      "title": "Herb catalogue",
+      "title": "Herbs",
       "new": "New herb",
       "edit": "Edit herb",
       "created": "Herb added to the catalogue",
@@ -573,7 +573,7 @@
         "tastes": "Tastes",
         "channels": "Channels",
         "indications": "Indications",
-        "dosageRange": "Dosage range (g, decoction)",
+        "dosageRange": "Dosage",
         "dosageMin": "Minimum",
         "dosageMax": "Maximum",
         "dosageNotes": "Dosage notes"
@@ -649,7 +649,8 @@
       "searchPlaceholder": "Search by pinyin, Chinese, English or source",
       "nature": "Nature & taste",
       "clinical": "Clinical",
-      "itemNotes": "Preparation note"
+      "itemNotes": "Preparation note",
+      "herbCount": "Herbs"
     },
     "batches": {
       "title": "Stock batches",
@@ -836,7 +837,8 @@
         "low": "Nothing is near its threshold",
         "out": "Nothing has run out",
         "to_order": "The order list is empty"
-      }
+      },
+      "available": "Available"
     },
     "tabs": {
       "in_stock": "In stock",
@@ -926,7 +928,7 @@
         "identity": "Identity"
       },
       "fields": {
-        "code": "Code",
+        "code": "Point",
         "channel": "Channel",
         "pinyin": "Pinyin",
         "chinese": "Chinese",
@@ -936,8 +938,13 @@
         "actions": "Actions",
         "indications": "Indications",
         "needling": "Needling",
-        "cautions": "Cautions"
-      }
+        "cautions": "Cautions",
+        "chineseName": "Chinese",
+        "bodyArea": "Body area"
+      },
+      "allAreas": "All areas",
+      "filterByChannel": "Filter by channel",
+      "filterByArea": "Filter by area"
     },
     "pointChannel": {
       "lung": "Lung (LU)",
@@ -955,6 +962,30 @@
       "ren": "Ren Mai (REN)",
       "du": "Du Mai (DU)",
       "extra": "Extra points"
+    },
+    "bodyArea": {
+      "head": "Head",
+      "face": "Face",
+      "ear": "Ear",
+      "neck": "Neck",
+      "shoulder": "Shoulder",
+      "chest": "Chest",
+      "abdomen": "Abdomen",
+      "upper_back": "Upper back",
+      "lower_back": "Lower back",
+      "sacrum": "Sacrum",
+      "buttock": "Buttock",
+      "hip": "Hip",
+      "upper_arm": "Upper arm",
+      "elbow": "Elbow",
+      "forearm": "Forearm",
+      "wrist": "Wrist",
+      "hand": "Hand",
+      "thigh": "Thigh",
+      "knee": "Knee",
+      "lower_leg": "Lower leg",
+      "ankle": "Ankle",
+      "foot": "Foot"
     }
   }
 }

@@ -1,5 +1,12 @@
 import { z } from 'zod';
-import { BODY_VIEWS, HERB_UNITS, ORDER_LIST_STATUSES, POINT_CHANNELS, POINT_REGIONS } from '../enums';
+import {
+  BODY_VIEWS,
+  HERB_UNITS,
+  ORDER_LIST_STATUSES,
+  POINT_BODY_AREAS,
+  POINT_CHANNELS,
+  POINT_REGIONS,
+} from '../enums';
 import { optionalNumber, optionalText, positiveQuantity, requiredText, uuidField } from './common';
 
 /**
@@ -37,6 +44,9 @@ export const acupuncturePointFormSchema = z.object({
   y: optionalNumber,
   bilateral: z.boolean().default(true),
   default_region: z.enum(POINT_REGIONS).default('upper'),
+  body_area: z
+    .union([z.enum(POINT_BODY_AREAS), z.literal(''), z.null(), z.undefined()])
+    .transform((value) => (value ? value : null)),
   location: optionalText(2000),
   actions: optionalText(2000),
   indications: optionalText(2000),

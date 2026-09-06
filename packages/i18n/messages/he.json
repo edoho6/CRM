@@ -65,7 +65,7 @@
     "encounters": "טיפולים",
     "inventory": "מלאי צמחים",
     "billing": "חיוב",
-    "herbs": "קטלוג צמחים",
+    "herbs": "צמחים",
     "formulas": "פורמולות",
     "batches": "אצוות מלאי",
     "suppliers": "ספקים",
@@ -543,18 +543,18 @@
     "title": "מלאי צמחים",
     "overview": "סקירת מלאי",
     "herbs": {
-      "title": "קטלוג צמחים",
+      "title": "צמחים",
       "new": "צמח חדש",
       "edit": "עריכת צמח",
       "created": "הצמח נוסף לקטלוג",
       "updated": "פרטי הצמח עודכנו",
       "empty": "הקטלוג ריק",
       "emptyBody": "אפשר להוסיף צמחים ידנית או להתחיל מרשימת הצמחים הנפוצה שנטענה עם המערכת.",
-      "searchPlaceholder": "חיפוש לפי פינין, סינית, אנגלית או עברית",
+      "searchPlaceholder": "חיפוש לפי Pinyin, סינית, אנגלית או עברית",
       "inStock": "במלאי",
       "belowThreshold": "מתחת לסף",
       "fields": {
-        "pinyinName": "שם בפינין",
+        "pinyinName": "שם ב-Pinyin",
         "chineseName": "שם בסינית",
         "englishName": "שם באנגלית",
         "hebrewName": "שם בעברית",
@@ -573,7 +573,7 @@
         "tastes": "טעמים",
         "channels": "מרידיאנים",
         "indications": "התוויות",
-        "dosageRange": "טווח מינון (גרם, מרתח)",
+        "dosageRange": "מינון",
         "dosageMin": "מינימום",
         "dosageMax": "מקסימום",
         "dosageNotes": "הערות מינון"
@@ -626,7 +626,7 @@
       "totalWeight": "משקל כולל",
       "needsHerb": "יש להוסיף לפחות צמח אחד",
       "fields": {
-        "namePinyin": "שם בפינין",
+        "namePinyin": "שם ב-Pinyin",
         "nameChinese": "שם בסינית",
         "nameEnglish": "שם באנגלית",
         "nameHebrew": "שם בעברית",
@@ -646,10 +646,11 @@
         "custom": "אישית"
       },
       "count": "{count, plural, =0 {אין פורמולות} one {פורמולה אחת} two {שתי פורמולות} other {# פורמולות}}",
-      "searchPlaceholder": "חיפוש לפי פינין, סינית, אנגלית או מקור",
+      "searchPlaceholder": "חיפוש לפי Pinyin, סינית, אנגלית או מקור",
       "nature": "טבע וטעם",
       "clinical": "מידע קליני",
-      "itemNotes": "הערת הכנה"
+      "itemNotes": "הערת הכנה",
+      "herbCount": "מספר צמחים"
     },
     "batches": {
       "title": "אצוות מלאי",
@@ -836,7 +837,8 @@
         "low": "שום דבר לא מתקרב לסף",
         "out": "שום דבר לא אזל",
         "to_order": "רשימת ההזמנות ריקה"
-      }
+      },
+      "available": "זמין במלאי"
     },
     "tabs": {
       "in_stock": "נמצא במלאי",
@@ -915,7 +917,7 @@
       "title": "נקודות דיקור",
       "empty": "אין נקודות במאגר",
       "emptyBody": "הרץ את קובץ ה-SQL של קטלוג הנקודות כדי לטעון את 361 הנקודות.",
-      "searchPlaceholder": "חיפוש לפי קוד, פינין, סינית או אנגלית",
+      "searchPlaceholder": "חיפוש לפי קוד, Pinyin, סינית או אנגלית",
       "allChannels": "כל המרידיאנים",
       "midlinePoint": "נקודת אמצע",
       "useInTreatment": "לבחירת הנקודה בטיפול, השתמש בבורר הנקודות בדף הטיפול.",
@@ -926,9 +928,9 @@
         "identity": "זיהוי"
       },
       "fields": {
-        "code": "קוד",
+        "code": "שם הנקודה",
         "channel": "מרידיאן",
-        "pinyin": "פינין",
+        "pinyin": "Pinyin",
         "chinese": "סינית",
         "english": "אנגלית",
         "region": "אזור",
@@ -936,8 +938,13 @@
         "actions": "פעולות",
         "indications": "התוויות",
         "needling": "טכניקת דקירה",
-        "cautions": "אזהרות"
-      }
+        "cautions": "אזהרות",
+        "chineseName": "סינית",
+        "bodyArea": "אזור בגוף"
+      },
+      "allAreas": "כל האזורים",
+      "filterByChannel": "סינון לפי מרידיאן",
+      "filterByArea": "סינון לפי אזור"
     },
     "pointChannel": {
       "lung": "ריאה (LU)",
@@ -955,6 +962,30 @@
       "ren": "רן מאי (REN)",
       "du": "דו מאי (DU)",
       "extra": "נקודות נוספות"
+    },
+    "bodyArea": {
+      "head": "ראש",
+      "face": "פנים",
+      "ear": "אוזן",
+      "neck": "צוואר",
+      "shoulder": "כתף",
+      "chest": "חזה",
+      "abdomen": "בטן",
+      "upper_back": "גב עליון",
+      "lower_back": "גב תחתון",
+      "sacrum": "עצה",
+      "buttock": "ישבן",
+      "hip": "ירך (מפרק)",
+      "upper_arm": "זרוע",
+      "elbow": "מרפק",
+      "forearm": "אמה",
+      "wrist": "שורש כף היד",
+      "hand": "כף יד",
+      "thigh": "ירך",
+      "knee": "ברך",
+      "lower_leg": "שוק",
+      "ankle": "קרסול",
+      "foot": "כף רגל"
     }
   }
 }

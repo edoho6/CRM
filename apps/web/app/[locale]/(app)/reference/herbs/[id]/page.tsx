@@ -40,6 +40,9 @@ import { ReferenceNav } from '@/features/reference/reference-nav';
 import { HerbImageCard } from '@/features/inventory/herb-image-card';
 import { AddToOrderButton } from '@/features/inventory/stock-controls';
 
+/** Where a chip on this page sends you: the same herb list, filtered. */
+const HERBS_PATH = '/reference/herbs';
+
 type BatchRow = HerbBatch & { supplier: Pick<Supplier, 'id' | 'name'> | null };
 
 type FormulaUse = {
@@ -190,48 +193,82 @@ export default async function HerbDetailPage({
       <section className="mb-5 rounded-card border border-ink-200 bg-white p-4">
         <div className="flex flex-wrap items-center gap-x-8 gap-y-4">
           <div>
-            <p className="text-xs font-medium text-ink-500">{t('fields.dosageRange')}</p>
+            <p className="text-xs font-medium text-ink-600">{t('fields.dosageRange')}</p>
             {dosage ? (
               <p dir="ltr" className="text-3xl leading-tight font-bold tabular-nums text-jade-800">
                 {dosage}
               </p>
             ) : (
-              <p className="text-3xl leading-tight font-bold text-ink-300">—</p>
+              <p className="text-3xl leading-tight font-bold text-ink-400">—</p>
             )}
-            {herb.dosage_notes ? (
-              <p className="mt-0.5 max-w-md text-xs text-ink-600">{herb.dosage_notes}</p>
-            ) : null}
           </div>
 
           <div className="h-12 w-px shrink-0 bg-ink-100" aria-hidden />
 
+          {/* Every chip is a link into the list filtered by that value, which
+              turns reading an entry into browsing: "warm" on this herb is one
+              click from every other warm herb. */}
           <div className="flex flex-wrap items-start gap-x-8 gap-y-3">
             <div>
-              <p className="mb-1 text-xs font-medium text-ink-500">{t('fields.temperature')}</p>
+              <p className="mb-1 text-xs font-medium text-ink-600">{t('fields.temperature')}</p>
               {herb.temperature ? (
-                <TcmChip scale="temperature" value={herb.temperature}>
+                <TcmChip
+                  scale="temperature"
+                  value={herb.temperature}
+                  href={{ pathname: HERBS_PATH, query: { temp: herb.temperature } }}
+                >
                   {tTemp(herb.temperature)}
                 </TcmChip>
               ) : (
-                <span className="text-ink-400">—</span>
+                <span className="text-ink-500">—</span>
               )}
             </div>
             <div>
-              <p className="mb-1 text-xs font-medium text-ink-500">{t('fields.tastes')}</p>
-              <TcmChips scale="taste" values={tastes} render={(value) => tTaste(value as never)} />
+              <p className="mb-1 text-xs font-medium text-ink-600">{t('fields.tastes')}</p>
+              <TcmChips
+                scale="taste"
+                values={tastes}
+                render={(value) => tTaste(value as never)}
+                hrefFor={(value) => ({ pathname: HERBS_PATH, query: { taste: value } })}
+              />
             </div>
             <div>
-              <p className="mb-1 text-xs font-medium text-ink-500">{t('fields.channels')}</p>
-              <TcmChips scale="channel" values={channels} render={(value) => tChannel(value as never)} />
+              <p className="mb-1 text-xs font-medium text-ink-600">{t('fields.channels')}</p>
+              <TcmChips
+                scale="channel"
+                values={channels}
+                render={(value) => tChannel(value as never)}
+                hrefFor={(value) => ({ pathname: HERBS_PATH, query: { chan: value } })}
+              />
             </div>
             <div>
-              <p className="mb-1 text-xs font-medium text-ink-500">{t('fields.tcmCategory')}</p>
+              <p className="mb-1 text-xs font-medium text-ink-600">{t('fields.tcmCategory')}</p>
               {herb.tcm_category ? (
-                <TcmChip scale="tcmCategory" value={herb.tcm_category}>
+                <TcmChip
+                  scale="tcmCategory"
+                  value={herb.tcm_category}
+                  href={{ pathname: HERBS_PATH, query: { cat: herb.tcm_category } }}
+                >
                   {tTcm(herb.tcm_category)}
                 </TcmChip>
               ) : (
-                <span className="text-ink-400">—</span>
+                <span className="text-ink-500">—</span>
+              )}
+            </div>
+
+            {/* Which prescriptions this herb belongs to reads as another of its
+                properties, so it sits on the same line as the rest of them. */}
+            <div>
+              <p className="mb-1 text-xs font-medium text-ink-600">{t('usedIn')}</p>
+              {uses.length > 0 ? (
+                <a
+                  href="#used-in"
+                  className="inline-flex items-baseline gap-1 text-ink-800 underline-offset-2 hover:text-jade-800 hover:underline"
+                >
+                  <span className="text-xl font-semibold tabular-nums">{uses.length}</span>
+                </a>
+              ) : (
+                <span className="text-ink-500">—</span>
               )}
             </div>
           </div>
@@ -247,54 +284,22 @@ export default async function HerbDetailPage({
             alt={primary}
           />
 
-          {tracksInventory ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>{ts('stock')}</CardTitle>
-                {level?.is_below_threshold ? (
-                  <Badge tone={remaining <= 0 ? 'danger' : 'warning'}>{t('belowThreshold')}</Badge>
-                ) : level?.is_stocked ? (
-                  <Badge tone="success">{t('inStock')}</Badge>
-                ) : (
-                  <Badge tone="muted">{t('notStocked')}</Badge>
-                )}
-              </CardHeader>
-              <CardBody className="space-y-3">
-                <dl>
-                  <DetailRow label={t('inStock')}>
-                    <span dir="ltr" className="text-base font-semibold tabular-nums">
-                      {format.number(remaining)} {tUnit(herb.default_unit)}
-                    </span>
-                  </DetailRow>
-                  <DetailRow label={t('fields.category')}>{tCategory(herb.category)}</DetailRow>
-                  <DetailRow label={t('fields.reorderThreshold')}>
-                    {herb.reorder_threshold === null ? '—' : format.number(Number(herb.reorder_threshold))}
-                  </DetailRow>
-                </dl>
-                <AddToOrderButton
-                  herbId={herb.id}
-                  unit={herb.default_unit}
-                  suggestedQuantity={
-                    herb.reorder_quantity === null ? null : Number(herb.reorder_quantity)
-                  }
-                />
-              </CardBody>
-            </Card>
-          ) : (
-            <Card>
-              <CardHeader>
-                <CardTitle>{ts('identity')}</CardTitle>
-              </CardHeader>
-              <CardBody>
-                <dl>
-                  <DetailRow label={t('fields.category')}>{tCategory(herb.category)}</DetailRow>
-                  <DetailRow label={t('fields.pharmaceuticalName')}>
-                    <span dir="ltr">{herb.pharmaceutical_name ?? '—'}</span>
-                  </DetailRow>
-                </dl>
-              </CardBody>
-            </Card>
-          )}
+          <Card>
+            <CardHeader>
+              <CardTitle>{ts('identity')}</CardTitle>
+            </CardHeader>
+            <CardBody>
+              <dl>
+                <DetailRow label={t('fields.category')}>{tCategory(herb.category)}</DetailRow>
+                <DetailRow label={t('fields.pharmaceuticalName')}>
+                  <span dir="ltr">{herb.pharmaceutical_name ?? '—'}</span>
+                </DetailRow>
+                {herb.dosage_notes ? (
+                  <DetailRow label={t('fields.dosageNotes')}>{herb.dosage_notes}</DetailRow>
+                ) : null}
+              </dl>
+            </CardBody>
+          </Card>
         </div>
 
         <div className="space-y-5">
@@ -320,9 +325,45 @@ export default async function HerbDetailPage({
             </CardBody>
           </Card>
 
+          {/* Stock sits directly under what the herb does, because "can I give
+              this" and "have I got any" are read one after the other. */}
+          {tracksInventory ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>{ts('stock')}</CardTitle>
+                {level?.is_below_threshold ? (
+                  <Badge tone={remaining <= 0 ? 'danger' : 'warning'}>{t('belowThreshold')}</Badge>
+                ) : level?.is_stocked ? (
+                  <Badge tone="success">{t('inStock')}</Badge>
+                ) : (
+                  <Badge tone="muted">{t('notStocked')}</Badge>
+                )}
+              </CardHeader>
+              <CardBody className="flex flex-wrap items-end justify-between gap-3">
+                <dl className="grid grid-cols-2 gap-x-6">
+                  <DetailRow label={t('inStock')}>
+                    <span dir="ltr" className="text-base font-semibold tabular-nums">
+                      {format.number(remaining)} {tUnit(herb.default_unit)}
+                    </span>
+                  </DetailRow>
+                  <DetailRow label={t('fields.reorderThreshold')}>
+                    {herb.reorder_threshold === null ? '—' : format.number(Number(herb.reorder_threshold))}
+                  </DetailRow>
+                </dl>
+                <AddToOrderButton
+                  herbId={herb.id}
+                  unit={herb.default_unit}
+                  suggestedQuantity={
+                    herb.reorder_quantity === null ? null : Number(herb.reorder_quantity)
+                  }
+                />
+              </CardBody>
+            </Card>
+          ) : null}
+
           <Card>
             <CardHeader>
-              <CardTitle>{t('usedIn')}</CardTitle>
+              <CardTitle id="used-in">{t('usedIn')}</CardTitle>
               <span className="text-xs text-ink-500">{uses.length}</span>
             </CardHeader>
             <CardBody className="p-0">

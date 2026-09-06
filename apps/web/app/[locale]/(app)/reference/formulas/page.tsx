@@ -19,7 +19,7 @@ import { TcmChip } from '@/components/tcm-chip';
 import { getClinicScope } from '@/lib/session';
 import { formulaChineseName, formulaPrimaryName, herbPrimaryName } from '@/lib/display';
 import { ReferenceNav } from '@/features/reference/reference-nav';
-import { HerbSearch } from '@/features/inventory/herb-search';
+import { CatalogueSearch } from '@/features/reference/catalogue-search';
 import { FormulaFilters } from '@/features/inventory/formula-filters';
 import {
   parseFormulaFilters,
@@ -38,7 +38,6 @@ export default async function FormulasPage({
   setRequestLocale(locale);
 
   const t = await getTranslations('inventory.formulas');
-  const tCategory = await getTranslations('inventory.formulas.category');
   const tFormulaTcm = await getTranslations('inventory.formulaTcmCategory');
   const tReview = await getTranslations('inventory.review');
   const tc = await getTranslations('common');
@@ -85,7 +84,7 @@ export default async function FormulasPage({
       <ReferenceNav />
 
       <div className="mb-4 space-y-3">
-        <HerbSearch initialQuery={filters.q} placeholder={t('searchPlaceholder')} />
+        <CatalogueSearch initialQuery={filters.q} placeholder={t('searchPlaceholder')} />
         <FormulaFilters filters={filters} />
       </div>
 
@@ -108,9 +107,8 @@ export default async function FormulasPage({
                 <SortTh sortKey="name">{tc('name')}</SortTh>
                 <SortTh sortKey="cat">{t('fields.tcmCategory')}</SortTh>
                 <SortTh sortKey="source">{t('fields.sourceText')}</SortTh>
-                <SortTh sortKey="items">{t('items')}</SortTh>
+                <SortTh sortKey="items">{t('herbCount')}</SortTh>
                 <SortTh sortKey="weight">{t('totalWeight')}</SortTh>
-                <SortTh sortKey="status">{tc('status')}</SortTh>
               </tr>
             </thead>
             <SortBody locale={locale}>
@@ -135,7 +133,6 @@ export default async function FormulasPage({
                       source: formula.source_text,
                       items: formula.items.length,
                       weight: total,
-                      status: formula.needs_review ? 2 : formula.is_active ? 0 : 1,
                     }}
                   >
                     <Td>
@@ -168,7 +165,6 @@ export default async function FormulasPage({
                       ) : (
                         <span className="text-ink-400">—</span>
                       )}
-                      <span className="mt-1 block text-xs text-ink-400">{tCategory(formula.category)}</span>
                     </Td>
                     <Td>
                       <span className="text-xs text-ink-600 italic" dir="ltr">
@@ -181,14 +177,6 @@ export default async function FormulasPage({
                     <Td>
                       <span dir="ltr" className="font-semibold tabular-nums">
                         {format.number(total)} g
-                      </span>
-                    </Td>
-                    <Td>
-                      <span className="flex flex-wrap gap-1">
-                        <Badge tone={formula.is_active ? 'success' : 'muted'}>
-                          {formula.is_active ? tc('active') : tc('inactive')}
-                        </Badge>
-                        {formula.needs_review ? <Badge tone="warning">{tReview('badge')}</Badge> : null}
                       </span>
                     </Td>
                   </Tr>

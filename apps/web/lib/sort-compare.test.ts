@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { compareSortValues, parseSortValues, sortCollator } from '@clinic/ui/sort-compare';
+import {
+  compareSortValues,
+  nextSortState,
+  parseSortValues,
+  sortCollator,
+} from '@clinic/ui/sort-compare';
 
 const collator = sortCollator('en');
 
@@ -57,5 +62,40 @@ describe('parseSortValues', () => {
     expect(parseSortValues('not json')).toEqual({});
     expect(parseSortValues('null')).toEqual({});
     expect(parseSortValues('"a string"')).toEqual({});
+  });
+});
+
+describe('nextSortState', () => {
+  it('sorts a newly clicked column ascending', () => {
+    expect(nextSortState({ key: null, direction: 'asc' }, 'name')).toEqual({
+      key: 'name',
+      direction: 'asc',
+    });
+    expect(nextSortState({ key: 'dose', direction: 'desc' }, 'name')).toEqual({
+      key: 'name',
+      direction: 'asc',
+    });
+  });
+
+  it('flips direction when the same column is clicked again', () => {
+    const first = nextSortState({ key: null, direction: 'asc' }, 'name');
+    const second = nextSortState(first, 'name');
+    const third = nextSortState(second, 'name');
+    expect(second.direction).toBe('desc');
+    expect(third.direction).toBe('asc');
+  });
+
+  /**
+   * The regression this function exists for: the flip used to live inside a
+   * React state updater, which StrictMode calls twice, so Z→A never happened.
+   * Applying it twice must land somewhere different from applying it once.
+   */
+  it('is pure, so calling it twice is not the same as calling it once', () => {
+    const start = { key: 'name', direction: 'asc' } as const;
+    const once = nextSortState(start, 'name');
+    const twice = nextSortState(nextSortState(start, 'name'), 'name');
+    expect(once.direction).toBe('desc');
+    expect(twice.direction).toBe('asc');
+    expect(nextSortState(start, 'name')).toEqual(once);
   });
 });

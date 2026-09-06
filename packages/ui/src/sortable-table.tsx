@@ -6,6 +6,7 @@ import { cn } from './cn';
 import { Table, Th } from './table';
 import {
   compareSortValues,
+  nextSortState,
   parseSortValues,
   sortCollator,
   type SortDirection,
@@ -47,21 +48,29 @@ export function SortableTable({
   defaultSortKey?: string | null;
   defaultSortDirection?: SortDirection;
 }) {
-  const [activeKey, setActiveKey] = React.useState<string | null>(defaultSortKey);
-  const [direction, setDirection] = React.useState<SortDirection>(defaultSortDirection);
+  /**
+   * Key and direction are one piece of state, not two.
+   *
+   * They were two, and `toggle` flipped the direction from inside the key's
+   * updater — a side effect in a function React is free to call more than once.
+   * Under StrictMode it does exactly that, so every flip happened twice and
+   * cancelled itself: the second click on a column appeared to do nothing and
+   * the table would only ever sort A→Z. Deriving both from one pure update
+   * removes the possibility.
+   */
+  const [sort, setSort] = React.useState<{ key: string | null; direction: SortDirection }>({
+    key: defaultSortKey,
+    direction: defaultSortDirection,
+  });
 
   const toggle = React.useCallback((key: string) => {
-    setActiveKey((current) => {
-      if (current === key) {
-        setDirection((value) => (value === 'asc' ? 'desc' : 'asc'));
-        return current;
-      }
-      setDirection('asc');
-      return key;
-    });
+    setSort((current) => nextSortState(current, key));
   }, []);
 
-  const value = React.useMemo(() => ({ activeKey, direction, toggle }), [activeKey, direction, toggle]);
+  const value = React.useMemo(
+    () => ({ activeKey: sort.key, direction: sort.direction, toggle }),
+    [sort, toggle],
+  );
 
   return (
     <SortContext.Provider value={value}>

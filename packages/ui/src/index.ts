@@ -31,9 +31,11 @@ export { TableWrapper, Table, Th, Td, Tr } from './table';
 export { SortableTable, SortTh, SortBody } from './sortable-table';
 export {
   compareSortValues,
+  nextSortState,
   parseSortValues,
   sortCollator,
   type SortValue,
   type SortValues,
   type SortDirection,
+  type SortState,
 } from './sort-compare';

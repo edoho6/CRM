@@ -42,6 +42,7 @@ export default async function PointDetailPage({
   const t = await getTranslations('reference.points');
   const tChannel = await getTranslations('reference.pointChannel');
   const tRegion = await getTranslations('encounters.region');
+  const tArea = await getTranslations('reference.bodyArea');
   const tReview = await getTranslations('inventory.review');
   const tc = await getTranslations('common');
 
@@ -190,10 +191,11 @@ export default async function PointDetailPage({
                 <DetailRow label={t('fields.english')}>
                   <span dir="ltr">{point.english_name ?? '—'}</span>
                 </DetailRow>
-                <DetailRow label={t('fields.region')}>
-                  {tRegion(point.default_region)}
+                <DetailRow label={t('fields.bodyArea')}>
+                  {point.body_area ? tArea(point.body_area) : '—'}
                   {!point.bilateral ? ` · ${t('midlinePoint')}` : ''}
                 </DetailRow>
+                <DetailRow label={t('fields.region')}>{tRegion(point.default_region)}</DetailRow>
               </dl>
             </CardBody>
           </Card>

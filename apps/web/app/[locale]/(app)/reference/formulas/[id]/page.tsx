@@ -160,59 +160,52 @@ export default async function FormulaDetailPage({
       <section className="mb-5 rounded-card border border-ink-200 bg-white p-4">
         <div className="flex flex-wrap items-center gap-x-8 gap-y-4">
           <div>
-            <p className="text-xs font-medium text-ink-500">{t('totalWeight')}</p>
+            <p className="text-xs font-medium text-ink-600">{t('totalWeight')}</p>
             <p dir="ltr" className="text-3xl leading-tight font-bold tabular-nums text-jade-800">
               {format.number(totalWeight)} g
             </p>
-            {formula.dosage_notes ? (
-              <p className="mt-0.5 max-w-md text-xs text-ink-600">{formula.dosage_notes}</p>
-            ) : null}
           </div>
 
           <div className="h-12 w-px shrink-0 bg-ink-100" aria-hidden />
 
           <div className="flex flex-wrap items-start gap-x-8 gap-y-3">
             <div>
-              <p className="mb-1 text-xs font-medium text-ink-500">{t('items')}</p>
+              <p className="mb-1 text-xs font-medium text-ink-600">{t('herbCount')}</p>
               <p className="text-xl font-semibold tabular-nums text-ink-800">{items.length}</p>
             </div>
             <div>
-              <p className="mb-1 text-xs font-medium text-ink-500">{tf('tcmCategory')}</p>
+              <p className="mb-1 text-xs font-medium text-ink-600">{tf('tcmCategory')}</p>
               {formula.tcm_category ? (
-                <TcmChip scale="formulaTcmCategory" value={formula.tcm_category}>
+                <TcmChip
+                  scale="formulaTcmCategory"
+                  value={formula.tcm_category}
+                  href={{ pathname: '/reference/formulas', query: { cat: formula.tcm_category } }}
+                >
                   {tFormulaTcm(formula.tcm_category)}
                 </TcmChip>
               ) : (
-                <span className="text-ink-400">—</span>
+                <span className="text-ink-500">—</span>
               )}
             </div>
-            <div>
-              <p className="mb-1 text-xs font-medium text-ink-500">{tf('category')}</p>
-              <Badge tone="neutral">{tCategory(formula.category)}</Badge>
-            </div>
-            <div>
-              <p className="mb-1 text-xs font-medium text-ink-500">{tc('status')}</p>
-              <Badge tone={formula.is_active ? 'success' : 'muted'}>
-                {formula.is_active ? tc('active') : tc('inactive')}
-              </Badge>
-            </div>
+            {/* Stock for a formula is the weight it would take off the shelf,
+                not an abstract dose count: grams are what gets weighed out. */}
             {tracksInventory ? (
               <div>
-                <p className="mb-1 text-xs font-medium text-ink-500">{tStock('dosesAvailable')}</p>
+                <p className="mb-1 text-xs font-medium text-ink-600">{tStock('available')}</p>
                 <p
                   dir="ltr"
                   className={
                     !stock || Number(stock.doses_available) <= 0
-                      ? 'text-xl font-semibold tabular-nums text-red-600'
+                      ? 'text-xl font-semibold tabular-nums text-red-700'
                       : stock.is_below_threshold
                         ? 'text-xl font-semibold tabular-nums text-amber-700'
                         : 'text-xl font-semibold tabular-nums text-jade-700'
                   }
                 >
-                  {format.number(Number(stock?.doses_available ?? 0))}
+                  {format.number(Number(stock?.doses_available ?? 0) * totalWeight)} g
                 </p>
                 {stock && stock.missing_count > 0 ? (
-                  <p className="text-xs text-red-600">
+                  <p className="text-xs text-red-700">
                     {tStock('missingCount', { count: stock.missing_count })}
                   </p>
                 ) : null}
@@ -222,8 +215,8 @@ export default async function FormulaDetailPage({
         </div>
       </section>
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-        <div className="space-y-5">
+      <div className="space-y-5">
+        <div>
           <Card>
             <CardHeader>
               <CardTitle>{t('items')}</CardTitle>
@@ -337,7 +330,7 @@ export default async function FormulaDetailPage({
           </Card>
         </div>
 
-        <div className="space-y-5">
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
           <Card>
             <CardHeader>
               <CardTitle>{t('clinical')}</CardTitle>

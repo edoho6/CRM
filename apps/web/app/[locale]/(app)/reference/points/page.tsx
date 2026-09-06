@@ -1,7 +1,6 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { MapPin } from 'lucide-react';
 import {
-  Badge,
   EmptyState,
   SortBody,
   SortTh,
@@ -12,7 +11,7 @@ import {
 } from '@clinic/ui';
 import { Link } from '@clinic/i18n/navigation';
 import type { AcupuncturePoint } from '@clinic/db/types';
-import { POINT_CHANNELS } from '@clinic/domain';
+import { POINT_BODY_AREAS, POINT_CHANNELS } from '@clinic/domain';
 import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
 import { ReferenceNav } from '@/features/reference/reference-nav';
@@ -23,16 +22,15 @@ export default async function PointsPage({
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ q?: string; channel?: string }>;
+  searchParams: Promise<{ q?: string; channel?: string; area?: string }>;
 }) {
   const { locale } = await params;
-  const { q = '', channel = '' } = await searchParams;
+  const { q = '', channel = '', area = '' } = await searchParams;
   setRequestLocale(locale);
 
   const t = await getTranslations('reference.points');
   const tChannel = await getTranslations('reference.pointChannel');
-  const tRegion = await getTranslations('encounters.region');
-  const tReview = await getTranslations('inventory.review');
+  const tArea = await getTranslations('reference.bodyArea');
   const tc = await getTranslations('common');
 
   const scope = await getClinicScope();
@@ -55,6 +53,9 @@ export default async function PointsPage({
   if (channel && (POINT_CHANNELS as readonly string[]).includes(channel)) {
     query = query.eq('channel', channel);
   }
+  if (area && (POINT_BODY_AREAS as readonly string[]).includes(area)) {
+    query = query.eq('body_area', area);
+  }
 
   const { data } = await query.returns<AcupuncturePoint[]>();
   const points = data ?? [];
@@ -65,7 +66,7 @@ export default async function PointsPage({
       <ReferenceNav />
 
       <div className="mb-4">
-        <PointSearch initialQuery={term} channel={channel} />
+        <PointSearch initialQuery={term} channel={channel} area={area} />
       </div>
 
       {points.length === 0 ? (
@@ -80,10 +81,11 @@ export default async function PointsPage({
             <thead>
               <tr>
                 <SortTh sortKey="code">{t('fields.code')}</SortTh>
-                <SortTh sortKey="name">{tc('name')}</SortTh>
+                <SortTh sortKey="pinyin">{t('fields.pinyin')}</SortTh>
+                <SortTh sortKey="chinese">{t('fields.chineseName')}</SortTh>
+                <SortTh sortKey="english">{t('fields.english')}</SortTh>
                 <SortTh sortKey="channel">{t('fields.channel')}</SortTh>
-                <SortTh sortKey="region">{t('fields.region')}</SortTh>
-                <SortTh sortKey="status">{tc('status')}</SortTh>
+                <SortTh sortKey="area">{t('fields.bodyArea')}</SortTh>
               </tr>
             </thead>
             <SortBody locale={locale}>
@@ -91,13 +93,14 @@ export default async function PointsPage({
                 <Tr
                   key={point.id}
                   sort={{
-                    // Channel first, then number, so ascending "code" reads as a
+                    // Channel first, then number, so ascending "point" reads as a
                     // channel walked in order rather than LU1, LU10, LU11, LU2.
                     code: `${point.channel} ${String(point.point_number ?? 0).padStart(3, '0')}`,
-                    name: point.pinyin_name,
+                    pinyin: point.pinyin_name,
+                    chinese: point.chinese_name,
+                    english: point.english_name,
                     channel: tChannel(point.channel),
-                    region: tRegion(point.default_region),
-                    status: point.needs_review ? 1 : 0,
+                    area: point.body_area ? tArea(point.body_area) : null,
                   }}
                 >
                   <Td>
@@ -110,35 +113,45 @@ export default async function PointsPage({
                     </Link>
                   </Td>
                   <Td>
-                    <span className="flex flex-wrap items-baseline gap-2">
-                      {point.pinyin_name ? (
-                        <span dir="ltr" className="font-medium text-ink-800">
-                          {point.pinyin_name}
-                        </span>
-                      ) : null}
-                      {point.chinese_name ? (
-                        <span className="text-ink-600">{point.chinese_name}</span>
-                      ) : null}
-                    </span>
+                    {point.pinyin_name ? (
+                      <span dir="ltr" className="font-medium text-ink-800">
+                        {point.pinyin_name}
+                      </span>
+                    ) : (
+                      <span className="text-ink-500">—</span>
+                    )}
+                  </Td>
+                  <Td>
+                    {point.chinese_name ? (
+                      <span className="text-base text-ink-800">{point.chinese_name}</span>
+                    ) : (
+                      <span className="text-ink-500">—</span>
+                    )}
+                  </Td>
+                  <Td>
                     {point.english_name ? (
-                      <span className="block text-xs text-ink-400" dir="ltr">
+                      <span dir="ltr" className="text-ink-600">
                         {point.english_name}
                       </span>
-                    ) : null}
+                    ) : (
+                      <span className="text-ink-500">—</span>
+                    )}
                   </Td>
                   <Td>{tChannel(point.channel)}</Td>
                   <Td>
-                    <span className="text-ink-600">{tRegion(point.default_region)}</span>
-                    {!point.bilateral ? (
-                      <span className="block text-xs text-ink-400">{t('midlinePoint')}</span>
-                    ) : null}
-                  </Td>
-                  <Td>
-                    {point.needs_review ? (
-                      <Badge tone="warning">{tReview('badge')}</Badge>
+                    {point.body_area ? (
+                      <Link
+                        href={{ pathname: '/reference/points', query: { area: point.body_area } }}
+                        className="text-ink-700 underline-offset-2 hover:text-jade-800 hover:underline"
+                      >
+                        {tArea(point.body_area)}
+                      </Link>
                     ) : (
-                      <Badge tone="success">{tReview('allClear')}</Badge>
+                      <span className="text-ink-500">—</span>
                     )}
+                    {!point.bilateral ? (
+                      <span className="block text-xs text-ink-500">{t('midlinePoint')}</span>
+                    ) : null}
                   </Td>
                 </Tr>
               ))}

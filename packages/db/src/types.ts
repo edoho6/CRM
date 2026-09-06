@@ -14,6 +14,7 @@ import type {
   MembershipRole,
   NeedleTechnique,
   OrderListStatus,
+  PointBodyArea,
   PointChannel,
   PointRegion,
   PointSide,
@@ -635,6 +636,8 @@ export interface AcupuncturePoint {
   y: number | null;
   bilateral: boolean;
   default_region: PointRegion;
+  /** Anatomical region, for looking a point up by body part. */
+  body_area: PointBodyArea | null;
   location: string | null;
   actions: string | null;
   indications: string | null;

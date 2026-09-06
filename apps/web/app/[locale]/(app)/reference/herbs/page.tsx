@@ -19,7 +19,7 @@ import { TcmChip, TcmChips } from '@/components/tcm-chip';
 import { getClinicScope } from '@/lib/session';
 import { herbBotanicalName, herbChineseName, herbPrimaryName } from '@/lib/display';
 import { ReferenceNav } from '@/features/reference/reference-nav';
-import { HerbSearch } from '@/features/inventory/herb-search';
+import { CatalogueSearch } from '@/features/reference/catalogue-search';
 import { HerbFilters } from '@/features/inventory/herb-filters';
 import { parseHerbFilters, type HerbSearchParams } from '@/features/inventory/herb-filter-params';
 
@@ -35,7 +35,6 @@ export default async function HerbsPage({
   setRequestLocale(locale);
 
   const t = await getTranslations('inventory.herbs');
-  const tCategory = await getTranslations('inventory.category');
   const tUnit = await getTranslations('inventory.unit');
   const tTcm = await getTranslations('inventory.tcmCategory');
   const tTemp = await getTranslations('inventory.temperature');
@@ -118,7 +117,7 @@ export default async function HerbsPage({
       <ReferenceNav />
 
       <div className="mb-4 space-y-3">
-        <HerbSearch initialQuery={filters.q} />
+        <CatalogueSearch initialQuery={filters.q} placeholder={t('searchPlaceholder')} />
         <HerbFilters filters={filters} />
       </div>
 
@@ -139,7 +138,6 @@ export default async function HerbsPage({
                 <SortTh sortKey="taste">{t('fields.tastes')}</SortTh>
                 <SortTh sortKey="dose">{t('fields.dosageRange')}</SortTh>
                 {tracksInventory ? <SortTh sortKey="stock">{t('inStock')}</SortTh> : null}
-                <SortTh sortKey="status">{tc('status')}</SortTh>
               </tr>
             </thead>
             <SortBody locale={locale}>
@@ -167,7 +165,6 @@ export default async function HerbsPage({
                       // Herbs the clinic does not stock sort below the ones it
                       // does, rather than tying with the ones that ran out.
                       stock: stock ? stock.remaining : null,
-                      status: herb.needs_review ? 2 : herb.is_active ? 0 : 1,
                     }}
                   >
                     <Td>
@@ -200,6 +197,11 @@ export default async function HerbsPage({
                             </span>
                             {chinese ? <span className="text-base text-ink-600">{chinese}</span> : null}
                           </Link>
+                          {herb.needs_review ? (
+                            <Badge tone="warning" className="mt-0.5">
+                              {tReview('badge')}
+                            </Badge>
+                          ) : null}
                           {botanical ? (
                             <span className="mt-0.5 block text-xs text-ink-500 italic" dir="ltr">
                               {botanical}
@@ -242,7 +244,6 @@ export default async function HerbsPage({
                       ) : (
                         <span className="text-ink-400">—</span>
                       )}
-                      <span className="block text-xs text-ink-400">{tCategory(herb.category)}</span>
                     </Td>
                     {tracksInventory ? (
                       <Td>
@@ -264,15 +265,6 @@ export default async function HerbsPage({
                         )}
                       </Td>
                     ) : null}
-                    <Td>
-                      <span className="flex flex-wrap gap-1">
-                        <Badge tone={herb.is_active ? 'success' : 'muted'}>
-                          {herb.is_active ? tc('active') : tc('inactive')}
-                        </Badge>
-                        {herb.needs_review ? <Badge tone="warning">{tReview('badge')}</Badge> : null}
-                      </span>
-                      <span className="sr-only">{tUnit(herb.default_unit)}</span>
-                    </Td>
                   </Tr>
                 );
               })}

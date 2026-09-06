@@ -40,6 +40,27 @@ export function sortCollator(locale?: string): Intl.Collator {
   return new Intl.Collator(locale, { numeric: true, sensitivity: 'base' });
 }
 
+export interface SortState {
+  key: string | null;
+  direction: SortDirection;
+}
+
+/**
+ * What clicking a column header does.
+ *
+ * A pure function of the current state, so it can be unit-tested and so React
+ * is free to call it as many times as it likes. It was once a pair of separate
+ * state updates with the flip hidden inside one of them, which StrictMode
+ * double-invoked into a no-op — the table would only ever sort ascending.
+ *
+ * A new column always starts ascending: clicking "Name" should give A→Z
+ * whatever the previous column was doing.
+ */
+export function nextSortState(current: SortState, key: string): SortState {
+  if (current.key !== key) return { key, direction: 'asc' };
+  return { key, direction: current.direction === 'asc' ? 'desc' : 'asc' };
+}
+
 /** Parses the `data-sort` attribute a row carries, tolerating anything malformed. */
 export function parseSortValues(raw: string | undefined | null): SortValues {
   if (!raw) return {};

@@ -97,6 +97,41 @@ export type PointChannel = (typeof POINT_CHANNELS)[number];
 export const BODY_VIEWS = ['front', 'back'] as const;
 export type BodyView = (typeof BODY_VIEWS)[number];
 
+/**
+ * Where on the body a point actually is.
+ *
+ * Distinct from `POINT_REGIONS`, which is the bucket a treatment note files a
+ * point under. "Upper" covers the scalp, the ear, the shoulder and a fingertip
+ * alike, which is fine for writing a prescription and useless for looking a
+ * point up. This is the one a practitioner searches by. Ordered head to foot,
+ * so a filter bar reads like a body rather than an alphabet.
+ */
+export const POINT_BODY_AREAS = [
+  'head',
+  'face',
+  'ear',
+  'neck',
+  'shoulder',
+  'chest',
+  'abdomen',
+  'upper_back',
+  'lower_back',
+  'sacrum',
+  'buttock',
+  'hip',
+  'upper_arm',
+  'elbow',
+  'forearm',
+  'wrist',
+  'hand',
+  'thigh',
+  'knee',
+  'lower_leg',
+  'ankle',
+  'foot',
+] as const;
+export type PointBodyArea = (typeof POINT_BODY_AREAS)[number];
+
 /** Where a line on the order list stands. */
 export const ORDER_LIST_STATUSES = ['pending', 'ordered', 'received'] as const;
 export type OrderListStatus = (typeof ORDER_LIST_STATUSES)[number];
