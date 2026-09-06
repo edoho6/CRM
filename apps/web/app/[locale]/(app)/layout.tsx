@@ -49,6 +49,9 @@ export default async function AppLayout({
     <AppShell
       clinicName={context.clinic.name}
       userName={context.profile?.full_name ?? ''}
+      // A clinic that holds no stock never sees the stock room at all — the
+      // setting is read once here rather than checked on every screen.
+      tracksInventory={context.clinic.tracks_inventory !== false}
       onSignOut={handleSignOut}
     >
       {children}

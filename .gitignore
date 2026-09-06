@@ -31,6 +31,7 @@ supabase/.branches/
 # drift out of step with supabase/migrations/.
 all_migrations_combined.sql
 herb_database_to_run.sql
+stock_and_points_to_run.sql
 
 # testing
 coverage/

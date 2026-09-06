@@ -16,11 +16,22 @@ import {
   Spinner,
   Textarea,
 } from '@clinic/ui';
-import { TREATMENT_MODALITIES, type TreatmentModality } from '@clinic/domain';
+import { TREATMENT_MODALITIES, type BodyView, type TreatmentModality } from '@clinic/domain';
 import { useRouter } from '@clinic/i18n/navigation';
 import type { TcmNote } from '@clinic/db/types';
-import { PointsEditor, type PointRow } from './points-editor';
+import { BodyMap, type MappedPoint } from '@/features/reference/body-map';
+import { PointsEditor, type PointOption, type PointRow } from './points-editor';
 import { saveEncounterNote, signEncounter } from './actions';
+
+/** Everything the body chart needs to draw one catalogued point. */
+export interface PointPosition {
+  code: string;
+  label: string;
+  view: BodyView;
+  x: number;
+  y: number;
+  bilateral: boolean;
+}
 
 interface NoteState {
   chief_complaint: string;
@@ -63,7 +74,17 @@ function toState(note: TcmNote | null): NoteState {
     modalities_used: note?.modalities_used ?? [],
     points_used: (note?.points_used ?? []).map((point) => ({
       point: point.point,
-      side: point.side,
+      point_id: point.point_id ?? null,
+      // Notes written before regions existed carry a side instead; left and
+      // right map across cleanly, and anything else starts in the upper bucket
+      // where the practitioner can move it.
+      region:
+        point.region ??
+        (point.side === 'left' || point.side === 'right'
+          ? point.side
+          : point.side === 'midline'
+            ? 'center'
+            : 'upper'),
       technique: point.technique,
       retention_minutes: point.retention_minutes ?? '',
       notes: point.notes ?? '',
@@ -89,11 +110,17 @@ export function EncounterForm({
   encounterId,
   note,
   isSigned,
+  pointCatalogue,
+  pointPositions,
   dispensePanel,
 }: {
   encounterId: string;
   note: TcmNote | null;
   isSigned: boolean;
+  /** The whole point catalogue, for instant autocomplete with no round trip. */
+  pointCatalogue: PointOption[];
+  /** Where each catalogued point sits on the body chart, keyed by point id. */
+  pointPositions: Record<string, PointPosition>;
   dispensePanel?: React.ReactNode;
 }) {
   const t = useTranslations('encounters');
@@ -135,13 +162,38 @@ export function EncounterForm({
         .filter((point) => point.point.trim())
         .map((point) => ({
           point: point.point.trim(),
-          side: point.side,
+          point_id: point.point_id,
+          region: point.region,
           technique: point.technique,
           retention_minutes: point.retention_minutes === '' ? null : point.retention_minutes,
           notes: point.notes || null,
         })),
     };
   }
+
+  /**
+   * The dots on the chart, rebuilt from the prescription on every keystroke.
+   * Only points chosen from the catalogue have a position; free text is carried
+   * in the note but has nowhere to be drawn.
+   */
+  const mappedPoints: MappedPoint[] = state.points_used.flatMap((row, index) => {
+    if (!row.point_id) return [];
+    const position = pointPositions[row.point_id];
+    if (!position || position.x === null || position.y === null) return [];
+    return [
+      {
+        key: `${row.point_id}:${index}`,
+        pointId: row.point_id,
+        code: position.code,
+        label: position.label,
+        view: position.view,
+        x: position.x,
+        y: position.y,
+        bilateral: position.bilateral,
+        region: row.region,
+      },
+    ];
+  });
 
   function handleSave() {
     setStatus('idle');
@@ -348,12 +400,22 @@ export function EncounterForm({
                 </div>
               </Field>
 
-              <Field label={tf('pointsUsed')}>
-                <PointsEditor
-                  value={state.points_used}
-                  disabled={disabled}
-                  onChange={(rows) => set('points_used', rows)}
-                />
+              <Field label={tf('pointsUsed')} hint={t('points.hint')}>
+                <div className="grid gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,1fr)]">
+                  <PointsEditor
+                    value={state.points_used}
+                    catalogue={pointCatalogue}
+                    disabled={disabled}
+                    onChange={(rows) => set('points_used', rows)}
+                  />
+                  {/* The chart is a mirror of the list, not a second input: it
+                      reflects what has been chosen so a gap in the prescription
+                      is visible rather than deduced. */}
+                  <BodyMap
+                    points={mappedPoints}
+                    onSelect={(point) => router.push(`/reference/points/${point.pointId}`)}
+                  />
+                </div>
               </Field>
 
               <Field label={tf('treatmentNotes')} htmlFor="treatment_notes">

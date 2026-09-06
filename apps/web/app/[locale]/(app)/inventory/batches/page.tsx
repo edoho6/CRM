@@ -105,7 +105,7 @@ export default async function BatchesPage({ params }: { params: Promise<{ locale
                     <Td>
                       {batch.herb ? (
                         <Link
-                          href={`/inventory/herbs/${batch.herb.id}`}
+                          href={`/reference/herbs/${batch.herb.id}`}
                           className="font-medium text-jade-800 underline-offset-2 hover:underline"
                         >
                           {herbPrimaryName(batch.herb, locale as Locale)}

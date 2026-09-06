@@ -1,6 +1,7 @@
 import type {
   AppointmentStatus,
   AuditAction,
+  BodyView,
   Channel,
   FormulaTcmCategory,
   DispensingStatus,
@@ -12,6 +13,9 @@ import type {
   Locale,
   MembershipRole,
   NeedleTechnique,
+  OrderListStatus,
+  PointChannel,
+  PointRegion,
   PointSide,
   PurchaseOrderStatus,
   Sex,
@@ -40,6 +44,8 @@ export interface Clinic {
   phone: string | null;
   email: string | null;
   tax_id: string | null;
+  /** False for a clinic that prescribes without holding stock. */
+  tracks_inventory: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -203,10 +209,18 @@ export interface Encounter {
   updated_at: string;
 }
 
-/** A point recorded in `tcm_notes.points_used`. */
+/**
+ * A point recorded in `tcm_notes.points_used`.
+ *
+ * `point_id` is present only when the entry came from the catalogue; free text
+ * is always allowed and simply does not appear on the body map. `side` survives
+ * for notes written before regions replaced it.
+ */
 export interface RecordedPoint {
   point: string;
-  side: PointSide;
+  point_id?: string | null;
+  region?: PointRegion;
+  side?: PointSide;
   technique: NeedleTechnique;
   retention_minutes?: number | null;
   notes?: string | null;
@@ -321,8 +335,39 @@ export interface HerbStockLevel {
   is_active: boolean;
   total_remaining: number;
   batch_count: number;
+  /** Every batch ever received, including emptied ones. */
+  batch_count_total: number;
   nearest_expiry: string | null;
   is_below_threshold: boolean;
+  /** Received at least once, or given a reorder threshold: this herb lives in the stock room. */
+  is_stocked: boolean;
+}
+
+/**
+ * A formula's stock position, from the `formula_stock_levels` view.
+ *
+ * A formula holds nothing itself; what it has is a ceiling set by its scarcest
+ * ingredient, which is why the figure is doses rather than grams.
+ */
+export interface FormulaStockLevel {
+  formula_id: string;
+  clinic_id: string;
+  name_pinyin: string | null;
+  name_chinese: string | null;
+  name_english: string | null;
+  name_hebrew: string | null;
+  tcm_category: FormulaTcmCategory | null;
+  category: FormulaCategory;
+  needs_review: boolean;
+  is_active: boolean;
+  reorder_threshold_doses: number | null;
+  item_count: number;
+  /** Ingredients with nothing left — the reason the formula cannot be made. */
+  missing_count: number;
+  doses_available: number;
+  any_ingredient_stocked: boolean;
+  is_below_threshold: boolean;
+  is_stocked: boolean;
 }
 
 export interface HerbFormula {
@@ -341,6 +386,8 @@ export interface HerbFormula {
   contraindications: string | null;
   modifications: string | null;
   dosage_notes: string | null;
+  /** Low-stock threshold in whole doses, since a formula has no batches. */
+  reorder_threshold_doses: number | null;
   image_url: string | null;
   needs_review: boolean;
   data_source: string | null;
@@ -561,4 +608,64 @@ export interface PatientPortalAccess {
   invited_at: string;
   activated_at: string | null;
   is_active: boolean;
+}
+
+/**
+ * A point in the acupuncture catalogue.
+ *
+ * `x`/`y` are schematic coordinates on the body diagram (200 wide, 520 tall,
+ * midline at 100); a bilateral point is mirrored by the renderer. They exist to
+ * show which points a treatment used, not to locate one on a patient.
+ *
+ * The clinical text fields ship empty and are filled in by hand later, which is
+ * what `needs_review` tracks.
+ */
+export interface AcupuncturePoint {
+  id: string;
+  clinic_id: string;
+  code: string;
+  channel: PointChannel;
+  point_number: number | null;
+  pinyin_name: string | null;
+  chinese_name: string | null;
+  english_name: string | null;
+  hebrew_name: string | null;
+  body_view: BodyView;
+  x: number | null;
+  y: number | null;
+  bilateral: boolean;
+  default_region: PointRegion;
+  location: string | null;
+  actions: string | null;
+  indications: string | null;
+  needling: string | null;
+  cautions: string | null;
+  point_categories: string[];
+  needs_review: boolean;
+  data_source: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+/** One line on the order list. Exactly one of herb_id / formula_id is set. */
+export interface OrderListEntry {
+  id: string;
+  clinic_id: string;
+  herb_id: string | null;
+  formula_id: string | null;
+  quantity: number | null;
+  unit: HerbUnit | 'dose';
+  supplier_id: string | null;
+  status: OrderListStatus;
+  notes: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface OrderListEntryWithTarget extends OrderListEntry {
+  herb: Pick<Herb, 'id' | 'pinyin_name' | 'chinese_name' | 'english_name' | 'hebrew_name' | 'default_unit'> | null;
+  formula: Pick<HerbFormula, 'id' | 'name_pinyin' | 'name_chinese' | 'name_english' | 'name_hebrew'> | null;
+  supplier: Pick<Supplier, 'id' | 'name'> | null;
 }

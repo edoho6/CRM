@@ -2,7 +2,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import type { Herb } from '@clinic/db/types';
 import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
-import { InventoryNav } from '@/features/inventory/inventory-nav';
+import { ReferenceNav } from '@/features/reference/reference-nav';
 import { FormulaForm } from '@/features/inventory/formula-form';
 
 export default async function NewFormulaPage({ params }: { params: Promise<{ locale: string }> }) {
@@ -24,7 +24,7 @@ export default async function NewFormulaPage({ params }: { params: Promise<{ loc
   return (
     <>
       <PageHeader title={t('new')} />
-      <InventoryNav />
+      <ReferenceNav />
       <FormulaForm herbs={herbs ?? []} />
     </>
   );

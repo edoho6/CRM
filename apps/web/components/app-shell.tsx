@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import {
+  BookOpen,
+  Boxes,
   CalendarDays,
   ClipboardList,
   LayoutDashboard,
@@ -10,7 +12,7 @@ import {
   LogOut,
   Menu,
   Receipt,
-  Sprout,
+  Settings,
   Users,
   X,
 } from 'lucide-react';
@@ -20,24 +22,32 @@ import { LanguageSwitcher } from './language-switcher';
 import { GlobalSearch } from '@/features/quick-bar/global-search';
 import { QuickCreateMenu } from '@/features/quick-bar/quick-create-menu';
 
+/**
+ * The reference library and the stock room are separate destinations, because
+ * they answer different questions: "what is this herb" versus "have I got any".
+ * A clinic that holds no stock never sees the second one.
+ */
 const NAV_ITEMS = [
-  { href: '/', labelKey: 'dashboard', icon: LayoutDashboard, exact: true },
-  { href: '/patients', labelKey: 'patients', icon: Users, exact: false },
-  { href: '/calendar', labelKey: 'calendar', icon: CalendarDays, exact: false },
-  { href: '/encounters', labelKey: 'encounters', icon: ClipboardList, exact: false },
-  { href: '/inventory', labelKey: 'inventory', icon: Sprout, exact: false },
-  { href: '/billing', labelKey: 'billing', icon: Receipt, exact: false },
+  { href: '/', labelKey: 'dashboard', icon: LayoutDashboard, exact: true, stockOnly: false },
+  { href: '/patients', labelKey: 'patients', icon: Users, exact: false, stockOnly: false },
+  { href: '/calendar', labelKey: 'calendar', icon: CalendarDays, exact: false, stockOnly: false },
+  { href: '/encounters', labelKey: 'encounters', icon: ClipboardList, exact: false, stockOnly: false },
+  { href: '/reference', labelKey: 'reference', icon: BookOpen, exact: false, stockOnly: false },
+  { href: '/inventory', labelKey: 'inventory', icon: Boxes, exact: false, stockOnly: true },
+  { href: '/billing', labelKey: 'billing', icon: Receipt, exact: false, stockOnly: false },
 ] as const;
 
 export function AppShell({
   children,
   clinicName,
   userName,
+  tracksInventory,
   onSignOut,
 }: {
   children: React.ReactNode;
   clinicName: string;
   userName: string;
+  tracksInventory: boolean;
   onSignOut: () => Promise<void>;
 }) {
   const t = useTranslations('nav');
@@ -46,7 +56,7 @@ export function AppShell({
 
   const nav = (
     <nav className="flex flex-col gap-0.5" aria-label={t('mainMenu')}>
-      {NAV_ITEMS.map((item) => {
+      {NAV_ITEMS.filter((item) => tracksInventory || !item.stockOnly).map((item) => {
         const isActive = item.exact ? pathname === item.href : pathname.startsWith(item.href);
         return (
           <Link
@@ -83,6 +93,12 @@ export function AppShell({
         </div>
         <div className="flex-1 overflow-y-auto p-3">{nav}</div>
         <div className="space-y-2 border-t border-ink-100 p-3">
+          <Button asChild variant="ghost" size="sm" className="w-full justify-start">
+            <Link href="/settings">
+              <Settings className="h-4 w-4" />
+              {t('settings')}
+            </Link>
+          </Button>
           <LanguageSwitcher className="w-full justify-center" />
           <form action={onSignOut}>
             <Button type="submit" variant="ghost" size="sm" className="w-full justify-start">

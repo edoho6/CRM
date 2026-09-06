@@ -174,7 +174,7 @@ export function GlobalSearch() {
           primary: herbPrimaryName(herb),
           chinese: herbChineseName(herb),
           secondary: herbBotanicalName(herb) || (herb.english_name ?? ''),
-          href: `/inventory/herbs/${herb.id}`,
+          href: `/reference/herbs/${herb.id}`,
         });
       }
 
@@ -186,7 +186,7 @@ export function GlobalSearch() {
           primary: formulaPrimaryName(formula),
           chinese: formulaChineseName(formula),
           secondary: formula.name_english ?? '',
-          href: `/inventory/formulas/${formula.id}`,
+          href: `/reference/formulas/${formula.id}`,
         });
       }
 

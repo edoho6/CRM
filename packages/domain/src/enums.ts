@@ -62,6 +62,45 @@ export type NeedleTechnique = (typeof NEEDLE_TECHNIQUES)[number];
 export const POINT_SIDES = ['left', 'right', 'bilateral', 'midline'] as const;
 export type PointSide = (typeof POINT_SIDES)[number];
 
+/**
+ * Where on the body a point was needled, as the treatment note groups them.
+ *
+ * One axis, not two: a prescription is written as "upper, lower, left, right,
+ * centre", and asking for a level *and* a side would make the practitioner
+ * answer the same question twice. The catalogue suggests the bucket; the
+ * practitioner has the last word.
+ */
+export const POINT_REGIONS = ['upper', 'lower', 'left', 'right', 'center'] as const;
+export type PointRegion = (typeof POINT_REGIONS)[number];
+
+/** The fourteen channels the point catalogue is organised by. */
+export const POINT_CHANNELS = [
+  'lung',
+  'large_intestine',
+  'stomach',
+  'spleen',
+  'heart',
+  'small_intestine',
+  'bladder',
+  'kidney',
+  'pericardium',
+  'san_jiao',
+  'gallbladder',
+  'liver',
+  'ren',
+  'du',
+  'extra',
+] as const;
+export type PointChannel = (typeof POINT_CHANNELS)[number];
+
+/** Which of the two body drawings a point is shown on. */
+export const BODY_VIEWS = ['front', 'back'] as const;
+export type BodyView = (typeof BODY_VIEWS)[number];
+
+/** Where a line on the order list stands. */
+export const ORDER_LIST_STATUSES = ['pending', 'ordered', 'received'] as const;
+export type OrderListStatus = (typeof ORDER_LIST_STATUSES)[number];
+
 /** Physical form the herb is stocked in. */
 export const HERB_CATEGORIES = [
   'raw_herb',

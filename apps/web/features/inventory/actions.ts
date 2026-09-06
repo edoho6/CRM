@@ -1,12 +1,17 @@
 'use server';
 
 import {
+  clinicSettingsSchema,
   dispenseRequestSchema,
+  formulaThresholdUpdateSchema,
   herbFormSchema,
   herbFormulaFormSchema,
+  orderListEntrySchema,
+  prescriptionRequestSchema,
   receiveBatchSchema,
   stockAdjustmentSchema,
   supplierFormSchema,
+  thresholdUpdateSchema,
 } from '@clinic/domain';
 import { getClinicScope } from '@/lib/session';
 import { actionError, actionOk, type ActionResult } from '@/lib/errors';
@@ -190,4 +195,156 @@ export async function dispenseHerbs(input: unknown): Promise<ActionResult<{ id: 
 
   if (error) return actionError(error);
   return actionOk({ id: data as string });
+}
+
+/**
+ * Records a prescription without touching stock.
+ *
+ * The counterpart to `dispenseHerbs` for a clinic that holds nothing: same
+ * request shape, but the database function writes the record and its lines
+ * without allocating batches or moving the ledger, because there is nothing to
+ * move. Without this a stockless clinic could not record a prescription at all.
+ */
+export async function recordPrescription(input: unknown): Promise<ActionResult<{ id: string }>> {
+  const scope = await getClinicScope();
+  if (!scope) return actionError(new Error('unauthorized'));
+
+  const parsed = prescriptionRequestSchema.safeParse(input);
+  if (!parsed.success) return actionError(new Error('validation'));
+
+  const { data, error } = await scope.supabase.rpc('record_prescription', {
+    p_encounter_id: parsed.data.encounter_id,
+    p_formula_id: parsed.data.formula_id,
+    p_items: parsed.data.items,
+    p_multiplier: parsed.data.multiplier,
+    p_notes: parsed.data.notes,
+  });
+
+  if (error) return actionError(error);
+  return actionOk({ id: data as string });
+}
+
+/** Sets what counts as low stock for one herb, edited straight from the table. */
+export async function setHerbThreshold(herbId: string, input: unknown): Promise<ActionResult> {
+  const scope = await getClinicScope();
+  if (!scope) return actionError(new Error('unauthorized'));
+
+  const parsed = thresholdUpdateSchema.safeParse(input);
+  if (!parsed.success) return actionError(new Error('validation'));
+
+  const { error } = await scope.supabase.from('herbs').update(parsed.data).eq('id', herbId);
+  if (error) return actionError(error);
+  return actionOk();
+}
+
+/** The same, for a formula — where "low" is counted in whole doses. */
+export async function setFormulaThreshold(formulaId: string, input: unknown): Promise<ActionResult> {
+  const scope = await getClinicScope();
+  if (!scope) return actionError(new Error('unauthorized'));
+
+  const parsed = formulaThresholdUpdateSchema.safeParse(input);
+  if (!parsed.success) return actionError(new Error('validation'));
+
+  const { error } = await scope.supabase
+    .from('herb_formulas')
+    .update(parsed.data)
+    .eq('id', formulaId);
+  if (error) return actionError(error);
+  return actionOk();
+}
+
+/**
+ * Adds a herb or formula to the order list, or tops up the line already there.
+ *
+ * Adding the same thing twice is a normal thing to do — you notice it is low on
+ * Monday and again on Thursday — so it updates the existing line rather than
+ * producing two, which the partial unique index enforces underneath.
+ */
+export async function addToOrderList(input: unknown): Promise<ActionResult<{ id: string }>> {
+  const scope = await getClinicScope();
+  if (!scope) return actionError(new Error('unauthorized'));
+
+  const parsed = orderListEntrySchema.safeParse(input);
+  if (!parsed.success) return actionError(new Error('validation'));
+
+  const target = parsed.data.herb_id
+    ? { column: 'herb_id' as const, value: parsed.data.herb_id }
+    : { column: 'formula_id' as const, value: parsed.data.formula_id as string };
+
+  const { data: existing } = await scope.supabase
+    .from('order_list')
+    .select('id')
+    .eq(target.column, target.value)
+    .neq('status', 'received')
+    .maybeSingle<{ id: string }>();
+
+  if (existing) {
+    const { error } = await scope.supabase
+      .from('order_list')
+      .update({
+        quantity: parsed.data.quantity,
+        unit: parsed.data.unit,
+        supplier_id: parsed.data.supplier_id,
+        notes: parsed.data.notes,
+      })
+      .eq('id', existing.id);
+    if (error) return actionError(error);
+    return actionOk({ id: existing.id });
+  }
+
+  const { data, error } = await scope.supabase
+    .from('order_list')
+    .insert({
+      ...parsed.data,
+      clinic_id: scope.context.clinic.id,
+      created_by: scope.context.membership.user_id,
+    })
+    .select('id')
+    .single<{ id: string }>();
+
+  if (error) return actionError(error);
+  return actionOk({ id: data.id });
+}
+
+export async function updateOrderListEntry(id: string, input: unknown): Promise<ActionResult> {
+  const scope = await getClinicScope();
+  if (!scope) return actionError(new Error('unauthorized'));
+
+  const parsed = orderListEntrySchema.safeParse(input);
+  if (!parsed.success) return actionError(new Error('validation'));
+
+  const { error } = await scope.supabase.from('order_list').update(parsed.data).eq('id', id);
+  if (error) return actionError(error);
+  return actionOk();
+}
+
+export async function removeFromOrderList(id: string): Promise<ActionResult> {
+  const scope = await getClinicScope();
+  if (!scope) return actionError(new Error('unauthorized'));
+
+  const { error } = await scope.supabase.from('order_list').delete().eq('id', id);
+  if (error) return actionError(error);
+  return actionOk();
+}
+
+/**
+ * Clinic-wide settings.
+ *
+ * Turning stock tracking off hides the stock room; it never deletes a batch or
+ * a ledger entry, so turning it back on restores exactly what was there.
+ */
+export async function saveClinicSettings(input: unknown): Promise<ActionResult> {
+  const scope = await getClinicScope();
+  if (!scope) return actionError(new Error('unauthorized'));
+
+  const parsed = clinicSettingsSchema.safeParse(input);
+  if (!parsed.success) return actionError(new Error('validation'));
+
+  const { error } = await scope.supabase
+    .from('clinics')
+    .update(parsed.data)
+    .eq('id', scope.context.clinic.id);
+
+  if (error) return actionError(error);
+  return actionOk();
 }

@@ -3,6 +3,7 @@ import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/serve
 import { Badge, Card, CardBody, CardHeader, CardTitle } from '@clinic/ui';
 import { Link } from '@clinic/i18n/navigation';
 import type {
+  AcupuncturePoint,
   DispensingRecordWithItems,
   Encounter,
   Herb,
@@ -22,6 +23,24 @@ const FORMULA_SELECT =
 const DISPENSING_SELECT =
   '*, items:dispensing_items(*, herb:herbs(id, pinyin_name, chinese_name, english_name, hebrew_name)), ' +
   'formula:herb_formulas(id, name_pinyin, name_english, name_hebrew)';
+
+/** Only what the picker and the chart need — not the clinical prose. */
+const POINT_SELECT =
+  'id, code, pinyin_name, chinese_name, english_name, default_region, body_view, x, y, bilateral';
+
+type PointRow = Pick<
+  AcupuncturePoint,
+  | 'id'
+  | 'code'
+  | 'pinyin_name'
+  | 'chinese_name'
+  | 'english_name'
+  | 'default_region'
+  | 'body_view'
+  | 'x'
+  | 'y'
+  | 'bilateral'
+>;
 
 export default async function EncounterPage({
   params,
@@ -45,7 +64,7 @@ export default async function EncounterPage({
 
   if (!encounter) notFound();
 
-  const [noteResult, patientResult, dispensingResult, formulasResult, herbsResult] =
+  const [noteResult, patientResult, dispensingResult, formulasResult, herbsResult, pointsResult] =
     await Promise.all([
       scope.supabase
         .from('tcm_notes')
@@ -68,16 +87,57 @@ export default async function EncounterPage({
         .select(FORMULA_SELECT)
         .eq('is_active', true)
         .order('name_pinyin', { ascending: true })
+        .limit(1000)
         .returns<HerbFormulaWithItems[]>(),
       scope.supabase
         .from('herbs')
         .select('*')
         .eq('is_active', true)
         .order('pinyin_name', { ascending: true })
+        .limit(2000)
         .returns<Herb[]>(),
+      // The whole point catalogue travels to the client once. It is about 40 kB
+      // and buys autocomplete with no round trip per keystroke, which is what
+      // makes typing "LU7" mid-treatment feel like nothing at all.
+      scope.supabase
+        .from('acupuncture_points')
+        .select(POINT_SELECT)
+        .eq('is_active', true)
+        .limit(1000)
+        .returns<PointRow[]>(),
     ]);
 
   const isSigned = encounter.status === 'signed';
+  const points = pointsResult.data ?? [];
+
+  const pointCatalogue = points.map((point) => ({
+    id: point.id,
+    code: point.code,
+    pinyin: point.pinyin_name,
+    english: point.english_name,
+    chinese: point.chinese_name,
+    region: point.default_region,
+  }));
+
+  const pointPositions = Object.fromEntries(
+    points
+      .filter((point) => point.x !== null && point.y !== null)
+      .map((point) => [
+        point.id,
+        {
+          code: point.code,
+          label: point.pinyin_name ?? point.code,
+          view: point.body_view,
+          x: Number(point.x),
+          y: Number(point.y),
+          bilateral: point.bilateral,
+        },
+      ]),
+  );
+
+  // A clinic that keeps no stock still needs to record what it prescribed, so
+  // the same panel writes a prescription instead of allocating from batches.
+  const tracksInventory = scope.context.clinic.tracks_inventory !== false;
 
   return (
     <>
@@ -124,12 +184,15 @@ export default async function EncounterPage({
         encounterId={encounter.id}
         note={noteResult.data ?? null}
         isSigned={isSigned}
+        pointCatalogue={pointCatalogue}
+        pointPositions={pointPositions}
         dispensePanel={
           <DispensePanel
             encounterId={encounter.id}
             formulas={formulasResult.data ?? []}
             herbs={herbsResult.data ?? []}
             records={dispensingResult.data ?? []}
+            tracksInventory={tracksInventory}
             disabled={isSigned}
           />
         }

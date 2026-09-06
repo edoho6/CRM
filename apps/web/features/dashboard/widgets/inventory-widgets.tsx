@@ -51,7 +51,7 @@ function LowStockWidget() {
         return (
           <li key={row.herb_id}>
             <Link
-              href={`/inventory/herbs/${row.herb_id}`}
+              href={`/reference/herbs/${row.herb_id}`}
               className="flex items-center gap-2 py-2 transition-colors hover:bg-ink-50"
             >
               <AlertTriangle

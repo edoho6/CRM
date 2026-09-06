@@ -12,13 +12,13 @@ import {
   Tr,
 } from '@clinic/ui';
 import { Link } from '@clinic/i18n/navigation';
-import type { Herb } from '@clinic/db/types';
+import type { Herb, HerbStockLevel } from '@clinic/db/types';
 import { TEMPERATURES, type Locale } from '@clinic/domain';
 import { PageHeader } from '@/components/app-shell';
 import { TcmChip, TcmChips } from '@/components/tcm-chip';
 import { getClinicScope } from '@/lib/session';
 import { herbBotanicalName, herbChineseName, herbPrimaryName } from '@/lib/display';
-import { InventoryNav } from '@/features/inventory/inventory-nav';
+import { ReferenceNav } from '@/features/reference/reference-nav';
 import { HerbSearch } from '@/features/inventory/herb-search';
 import { HerbFilters } from '@/features/inventory/herb-filters';
 import { parseHerbFilters, type HerbSearchParams } from '@/features/inventory/herb-filter-params';
@@ -69,6 +69,38 @@ export default async function HerbsPage({
   const { data } = await query.returns<Herb[]>();
   const herbs = data ?? [];
 
+  /**
+   * The library says nothing about stock unless the clinic keeps any. When it
+   * does, the position is fetched separately and merged here rather than by
+   * querying the view: the filters above read columns (tastes, channels) that
+   * only the base table carries.
+   */
+  const tracksInventory = scope.context.clinic.tracks_inventory !== false;
+  let stockByHerb = new Map<string, { remaining: number; unit: string; low: boolean }>();
+  if (tracksInventory && herbs.length > 0) {
+    const { data: levels } = await scope.supabase
+      .from('herb_stock_levels')
+      .select('herb_id, total_remaining, default_unit, is_below_threshold, is_stocked')
+      .eq('is_stocked', true)
+      .limit(2000)
+      .returns<
+        Pick<
+          HerbStockLevel,
+          'herb_id' | 'total_remaining' | 'default_unit' | 'is_below_threshold' | 'is_stocked'
+        >[]
+      >();
+    stockByHerb = new Map(
+      (levels ?? []).map((level) => [
+        level.herb_id,
+        {
+          remaining: Number(level.total_remaining),
+          unit: level.default_unit,
+          low: level.is_below_threshold,
+        },
+      ]),
+    );
+  }
+
   return (
     <>
       <PageHeader
@@ -76,14 +108,14 @@ export default async function HerbsPage({
         description={t('count', { count: herbs.length })}
         actions={
           <Button asChild>
-            <Link href="/inventory/herbs/new">
+            <Link href="/reference/herbs/new">
               <Plus className="h-4 w-4" />
               {t('new')}
             </Link>
           </Button>
         }
       />
-      <InventoryNav />
+      <ReferenceNav />
 
       <div className="mb-4 space-y-3">
         <HerbSearch initialQuery={filters.q} />
@@ -106,6 +138,7 @@ export default async function HerbsPage({
                 <SortTh sortKey="temp">{t('fields.temperature')}</SortTh>
                 <SortTh sortKey="taste">{t('fields.tastes')}</SortTh>
                 <SortTh sortKey="dose">{t('fields.dosageRange')}</SortTh>
+                {tracksInventory ? <SortTh sortKey="stock">{t('inStock')}</SortTh> : null}
                 <SortTh sortKey="status">{tc('status')}</SortTh>
               </tr>
             </thead>
@@ -114,6 +147,7 @@ export default async function HerbsPage({
                 const chinese = herbChineseName(herb);
                 const botanical = herbBotanicalName(herb);
                 const tastes = herb.tastes ?? [];
+                const stock = stockByHerb.get(herb.id);
                 const dose =
                   herb.dosage_min_g !== null || herb.dosage_max_g !== null
                     ? `${herb.dosage_min_g !== null ? format.number(Number(herb.dosage_min_g)) : '?'}–${
@@ -130,6 +164,9 @@ export default async function HerbsPage({
                       temp: herb.temperature ? TEMPERATURES.indexOf(herb.temperature) : null,
                       taste: tastes.map((value) => tTaste(value)).join(' '),
                       dose: herb.dosage_min_g === null ? null : Number(herb.dosage_min_g),
+                      // Herbs the clinic does not stock sort below the ones it
+                      // does, rather than tying with the ones that ran out.
+                      stock: stock ? stock.remaining : null,
                       status: herb.needs_review ? 2 : herb.is_active ? 0 : 1,
                     }}
                   >
@@ -155,7 +192,7 @@ export default async function HerbsPage({
                               beside it; the botanical binomial gets its own line,
                               because it answers a different question. */}
                           <Link
-                            href={`/inventory/herbs/${herb.id}`}
+                            href={`/reference/herbs/${herb.id}`}
                             className="flex items-baseline gap-2 underline-offset-2 hover:underline"
                           >
                             <span className="text-base font-semibold text-jade-800">
@@ -207,6 +244,26 @@ export default async function HerbsPage({
                       )}
                       <span className="block text-xs text-ink-400">{tCategory(herb.category)}</span>
                     </Td>
+                    {tracksInventory ? (
+                      <Td>
+                        {stock ? (
+                          <span
+                            dir="ltr"
+                            className={
+                              stock.remaining <= 0
+                                ? 'font-semibold tabular-nums text-red-600'
+                                : stock.low
+                                  ? 'font-semibold tabular-nums text-amber-700'
+                                  : 'font-semibold tabular-nums text-jade-700'
+                            }
+                          >
+                            {format.number(stock.remaining)} {tUnit(stock.unit as never)}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-ink-400">{t('notStocked')}</span>
+                        )}
+                      </Td>
+                    ) : null}
                     <Td>
                       <span className="flex flex-wrap gap-1">
                         <Badge tone={herb.is_active ? 'success' : 'muted'}>

@@ -72,7 +72,9 @@
     "settings": "Settings",
     "signOut": "Sign out",
     "mainMenu": "Main menu",
-    "skipToContent": "Skip to content"
+    "skipToContent": "Skip to content",
+    "reference": "Reference",
+    "points": "Points"
   },
   "auth": {
     "signInTitle": "Sign in",
@@ -363,7 +365,9 @@
       "retention": "Retention (min)",
       "remove": "Remove point",
       "empty": "No points recorded",
-      "placeholder": "e.g. LI4"
+      "placeholder": "e.g. LI4",
+      "none": "None",
+      "hint": "Type a point code (LU7) or a name and the list opens. Free text is fine too."
     },
     "side": {
       "left": "Left",
@@ -387,6 +391,20 @@
       "auricular": "Auricular",
       "herbal_formula": "Herbal formula",
       "dietary_advice": "Dietary advice"
+    },
+    "region": {
+      "upper": "Upper",
+      "lower": "Lower",
+      "left": "Left",
+      "right": "Right",
+      "center": "Centre"
+    },
+    "bodyMap": {
+      "front": "Front",
+      "back": "Back",
+      "frontLabel": "{count, plural, =0 {Front view, no points} one {Front view, 1 point} other {Front view, # points}}",
+      "backLabel": "{count, plural, =0 {Back view, no points} one {Back view, 1 point} other {Back view, # points}}",
+      "disclaimer": "Schematic only — an illustration of the treatment, not an anatomical locator."
     }
   },
   "billing": {
@@ -572,7 +590,8 @@
       },
       "count": "{count, plural, =0 {No herbs} one {1 herb} other {# herbs}}",
       "usedIn": "Appears in formulas",
-      "usedInEmpty": "This herb is not part of any saved formula"
+      "usedInEmpty": "This herb is not part of any saved formula",
+      "notStocked": "Not stocked"
     },
     "category": {
       "raw_herb": "Raw herb",
@@ -687,7 +706,9 @@
       "empty": "No herbs dispensed in this treatment",
       "dispensedAt": "Dispensed on",
       "dispensedBy": "Dispensed by",
-      "totalCost": "Total cost"
+      "totalCost": "Total cost",
+      "prescriptionTitle": "Record a prescription",
+      "prescribe": "Record prescription"
     },
     "tcmCategory": {
       "release_exterior_warm": "Release the exterior — warm, acrid",
@@ -795,6 +816,50 @@
       "hint": "JPG or PNG, up to 5MB. The image is public.",
       "attribution": "Credit / source",
       "uploaded": "Image saved"
+    },
+    "stock": {
+      "title": "Stock",
+      "subtitle": "What is actually on the shelf",
+      "threshold": "Low-stock threshold",
+      "doses": "doses",
+      "dosesAvailable": "Doses available",
+      "missingIngredients": "Missing ingredients",
+      "formulaHint": "A formula holds no stock of its own — the figure is how many whole doses the scarcest ingredient still allows.",
+      "scopeNote": "Only items received into stock or given a threshold appear here. The rest of the catalogue lives in the reference library.",
+      "lowSummary": "{count, plural, one {1 item low} other {# items low}}",
+      "batches": "{count, plural, =0 {no batches} one {1 batch} other {# batches}}",
+      "missingCount": "{count, plural, one {1 ingredient out} other {# ingredients out}}",
+      "allIngredients": "{count, plural, one {1 ingredient, all present} other {all # ingredients present}}",
+      "emptyBody": "Receive a first batch to start tracking stock.",
+      "empty": {
+        "in_stock": "Nothing in stock yet",
+        "low": "Nothing is near its threshold",
+        "out": "Nothing has run out",
+        "to_order": "The order list is empty"
+      }
+    },
+    "tabs": {
+      "in_stock": "In stock",
+      "low": "Low stock",
+      "out": "Out of stock",
+      "to_order": "To order"
+    },
+    "order": {
+      "add": "Order",
+      "listed": "Listed",
+      "alreadyListed": "Already on the order list",
+      "kind": "Type",
+      "herb": "Herb",
+      "formula": "Formula",
+      "doses": "doses",
+      "notesPlaceholder": "Supplier, pack size…",
+      "empty": "The order list is empty",
+      "emptyBody": "Add herbs and formulas from the low-stock and out-of-stock tabs, or from a herb’s own page.",
+      "status": {
+        "pending": "To order",
+        "ordered": "Ordered",
+        "received": "Received"
+      }
     }
   },
   "portal": {
@@ -823,5 +888,73 @@
     "formulaOrItemsRequired": "Pick a formula or add herbs",
     "quantityCannotBeZero": "Quantity cannot be zero",
     "endMustBeAfterStart": "The end time must be after the start time"
+  },
+  "settings": {
+    "title": "Settings",
+    "subtitle": "Clinic-wide preferences",
+    "sections": {
+      "clinic": "Clinic",
+      "inventory": "Stock"
+    },
+    "fields": {
+      "name": "Clinic name"
+    },
+    "inventoryIntro": "Do you keep herb stock at the clinic?",
+    "tracksOn": {
+      "title": "Yes, I hold stock",
+      "body": "The stock room appears in the menu, and every herb and formula in the library shows what is on the shelf. Dispensing during a treatment deducts from it."
+    },
+    "tracksOff": {
+      "title": "No, I only prescribe",
+      "body": "Everything to do with stock disappears — the stock room, batches, suppliers and quantities. A treatment records what you prescribed without deducting anything."
+    },
+    "inventoryReversible": "Change it whenever you like. Turning it off hides your stock data rather than deleting it, so turning it back on restores exactly what was there."
+  },
+  "reference": {
+    "points": {
+      "title": "Acupuncture points",
+      "empty": "No points in the catalogue",
+      "emptyBody": "Run the point catalogue SQL file to load all 361 points.",
+      "searchPlaceholder": "Search by code, pinyin, Chinese or English",
+      "allChannels": "All channels",
+      "midlinePoint": "Midline point",
+      "useInTreatment": "To use this point in a treatment, pick it in the point selector on the treatment page.",
+      "noClinicalText": "The clinical reference for this point has not been filled in yet. The fields are ready — write your own notes, or wait for the catalogue.",
+      "count": "{count, plural, =0 {No points} one {1 point} other {# points}}",
+      "sections": {
+        "clinical": "Clinical",
+        "identity": "Identity"
+      },
+      "fields": {
+        "code": "Code",
+        "channel": "Channel",
+        "pinyin": "Pinyin",
+        "chinese": "Chinese",
+        "english": "English",
+        "region": "Region",
+        "location": "Location",
+        "actions": "Actions",
+        "indications": "Indications",
+        "needling": "Needling",
+        "cautions": "Cautions"
+      }
+    },
+    "pointChannel": {
+      "lung": "Lung (LU)",
+      "large_intestine": "Large Intestine (LI)",
+      "stomach": "Stomach (ST)",
+      "spleen": "Spleen (SP)",
+      "heart": "Heart (HT)",
+      "small_intestine": "Small Intestine (SI)",
+      "bladder": "Bladder (BL)",
+      "kidney": "Kidney (KI)",
+      "pericardium": "Pericardium (PC)",
+      "san_jiao": "San Jiao (SJ)",
+      "gallbladder": "Gallbladder (GB)",
+      "liver": "Liver (LR)",
+      "ren": "Ren Mai (REN)",
+      "du": "Du Mai (DU)",
+      "extra": "Extra points"
+    }
   }
 }

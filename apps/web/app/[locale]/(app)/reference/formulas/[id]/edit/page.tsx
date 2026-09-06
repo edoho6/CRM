@@ -5,7 +5,7 @@ import type { Locale } from '@clinic/domain';
 import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
 import { formulaPrimaryName } from '@/lib/display';
-import { InventoryNav } from '@/features/inventory/inventory-nav';
+import { ReferenceNav } from '@/features/reference/reference-nav';
 import { FormulaForm } from '@/features/inventory/formula-form';
 
 export default async function EditFormulaPage({
@@ -42,7 +42,7 @@ export default async function EditFormulaPage({
   return (
     <>
       <PageHeader title={t('edit')} description={formulaPrimaryName(formula, locale as Locale)} />
-      <InventoryNav />
+      <ReferenceNav />
       <FormulaForm formula={formula} herbs={herbs ?? []} />
     </>
   );

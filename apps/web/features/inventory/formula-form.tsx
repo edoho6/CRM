@@ -142,7 +142,7 @@ export function FormulaForm({
         return;
       }
       const id = result.data?.id ?? formula?.id;
-      router.push(id ? `/inventory/formulas/${id}` : '/inventory/formulas');
+      router.push(id ? `/reference/formulas/${id}` : '/reference/formulas');
       router.refresh();
     });
   }

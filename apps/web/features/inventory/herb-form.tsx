@@ -94,7 +94,7 @@ export function HerbForm({ herb }: { herb?: Herb }) {
         return;
       }
       const id = herb ? herb.id : (result.data as { id: string }).id;
-      router.push(`/inventory/herbs/${id}`);
+      router.push(`/reference/herbs/${id}`);
       router.refresh();
     });
   }

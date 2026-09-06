@@ -17,7 +17,7 @@ import {
   Tr,
 } from '@clinic/ui';
 import { Link } from '@clinic/i18n/navigation';
-import type { Herb, HerbFormula, HerbFormulaItem } from '@clinic/db/types';
+import type { FormulaStockLevel, Herb, HerbFormula, HerbFormulaItem } from '@clinic/db/types';
 import { TEMPERATURES, type Locale } from '@clinic/domain';
 import { PageHeader } from '@/components/app-shell';
 import { TcmChip, TcmChips } from '@/components/tcm-chip';
@@ -29,7 +29,7 @@ import {
   herbChineseName,
   herbPrimaryName,
 } from '@/lib/display';
-import { InventoryNav } from '@/features/inventory/inventory-nav';
+import { ReferenceNav } from '@/features/reference/reference-nav';
 
 /**
  * A formula's reference page, built on the same skeleton as a herb's: identity
@@ -78,6 +78,7 @@ export default async function FormulaDetailPage({
   const tTemp = await getTranslations('inventory.temperature');
   const tTaste = await getTranslations('inventory.taste');
   const tUnit = await getTranslations('inventory.unit');
+  const tStock = await getTranslations('inventory.stock');
   const tReview = await getTranslations('inventory.review');
   const tc = await getTranslations('common');
   const format = await getFormatter();
@@ -94,6 +95,22 @@ export default async function FormulaDetailPage({
     .maybeSingle<FormulaRow>();
 
   if (!formula) notFound();
+
+  // How many whole doses the shelf can still make, which is the only stock
+  // figure a formula can honestly report. Skipped entirely without a shelf.
+  const tracksInventory = scope.context.clinic.tracks_inventory !== false;
+  const { data: stock } = tracksInventory
+    ? await scope.supabase
+        .from('formula_stock_levels')
+        .select('doses_available, missing_count, item_count, is_below_threshold, is_stocked')
+        .eq('formula_id', id)
+        .maybeSingle<
+          Pick<
+            FormulaStockLevel,
+            'doses_available' | 'missing_count' | 'item_count' | 'is_below_threshold' | 'is_stocked'
+          >
+        >()
+    : { data: null };
 
   const items = [...(formula.items ?? [])].sort((a, b) => a.sequence - b.sequence);
   const totalWeight = items.reduce((sum, item) => sum + Number(item.dosage), 0);
@@ -124,14 +141,14 @@ export default async function FormulaDetailPage({
         }
         actions={
           <Button asChild variant="secondary">
-            <Link href={`/inventory/formulas/${formula.id}/edit`}>
+            <Link href={`/reference/formulas/${formula.id}/edit`}>
               <Pencil className="h-4 w-4" />
               {tc('edit')}
             </Link>
           </Button>
         }
       />
-      <InventoryNav />
+      <ReferenceNav />
 
       {formula.needs_review ? (
         <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
@@ -179,6 +196,28 @@ export default async function FormulaDetailPage({
                 {formula.is_active ? tc('active') : tc('inactive')}
               </Badge>
             </div>
+            {tracksInventory ? (
+              <div>
+                <p className="mb-1 text-xs font-medium text-ink-500">{tStock('dosesAvailable')}</p>
+                <p
+                  dir="ltr"
+                  className={
+                    !stock || Number(stock.doses_available) <= 0
+                      ? 'text-xl font-semibold tabular-nums text-red-600'
+                      : stock.is_below_threshold
+                        ? 'text-xl font-semibold tabular-nums text-amber-700'
+                        : 'text-xl font-semibold tabular-nums text-jade-700'
+                  }
+                >
+                  {format.number(Number(stock?.doses_available ?? 0))}
+                </p>
+                {stock && stock.missing_count > 0 ? (
+                  <p className="text-xs text-red-600">
+                    {tStock('missingCount', { count: stock.missing_count })}
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
           </div>
         </div>
       </section>
@@ -234,7 +273,7 @@ export default async function FormulaDetailPage({
                                       materia medica, the mirror of the herb
                                       page's list of formulas. */}
                                   <Link
-                                    href={`/inventory/herbs/${herb.id}`}
+                                    href={`/reference/herbs/${herb.id}`}
                                     className="flex items-baseline gap-2 underline-offset-2 hover:underline"
                                   >
                                     <span className="font-semibold text-jade-800">

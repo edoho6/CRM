@@ -1,11 +1,26 @@
 import { z } from 'zod';
-import { NEEDLE_TECHNIQUES, POINT_SIDES, TREATMENT_MODALITIES } from '../enums';
+import { NEEDLE_TECHNIQUES, POINT_REGIONS, POINT_SIDES, TREATMENT_MODALITIES } from '../enums';
 import { optionalNumber, optionalText, requiredText } from './common';
 
-/** One acupuncture point selected during a treatment, stored inside `tcm_notes.points_used`. */
+/**
+ * One acupuncture point selected during a treatment, stored inside
+ * `tcm_notes.points_used`.
+ *
+ * `point` is whatever the practitioner typed and is the only required part, so
+ * a point that is not in the catalogue — an extra point, an ashi point, a
+ * personal shorthand — can still be recorded. `point_id` is set only when the
+ * entry was chosen from the catalogue, and it is what lets the body map draw a
+ * dot and the note link through to the point's page.
+ *
+ * `side` is still read so notes written before regions existed keep opening.
+ */
 export const acupuncturePointSchema = z.object({
   point: requiredText(24),
-  side: z.enum(POINT_SIDES).default('bilateral'),
+  point_id: z
+    .union([z.string().uuid(), z.literal(''), z.null(), z.undefined()])
+    .transform((value) => (value ? value : null)),
+  region: z.enum(POINT_REGIONS).default('upper'),
+  side: z.enum(POINT_SIDES).optional(),
   technique: z.enum(NEEDLE_TECHNIQUES).default('even'),
   retention_minutes: optionalNumber,
   notes: optionalText(200),

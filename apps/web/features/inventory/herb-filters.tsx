@@ -9,7 +9,7 @@ import {
   type HerbFilters as HerbFilterState,
 } from './herb-filter-params';
 
-const PATH = '/inventory/herbs';
+const PATH = '/reference/herbs';
 
 /** The four materia medica axes a herb is looked up by, plus the review flag. */
 export async function HerbFilters({ filters }: { filters: HerbFilterState }) {

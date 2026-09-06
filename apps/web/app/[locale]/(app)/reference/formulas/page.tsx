@@ -18,7 +18,7 @@ import { PageHeader } from '@/components/app-shell';
 import { TcmChip } from '@/components/tcm-chip';
 import { getClinicScope } from '@/lib/session';
 import { formulaChineseName, formulaPrimaryName, herbPrimaryName } from '@/lib/display';
-import { InventoryNav } from '@/features/inventory/inventory-nav';
+import { ReferenceNav } from '@/features/reference/reference-nav';
 import { HerbSearch } from '@/features/inventory/herb-search';
 import { FormulaFilters } from '@/features/inventory/formula-filters';
 import {
@@ -75,14 +75,14 @@ export default async function FormulasPage({
         description={t('count', { count: formulas.length })}
         actions={
           <Button asChild>
-            <Link href="/inventory/formulas/new">
+            <Link href="/reference/formulas/new">
               <Plus className="h-4 w-4" />
               {t('new')}
             </Link>
           </Button>
         }
       />
-      <InventoryNav />
+      <ReferenceNav />
 
       <div className="mb-4 space-y-3">
         <HerbSearch initialQuery={filters.q} placeholder={t('searchPlaceholder')} />
@@ -96,7 +96,7 @@ export default async function FormulasPage({
           description={filters.q ? undefined : t('emptyBody')}
           action={
             <Button asChild size="sm">
-              <Link href="/inventory/formulas/new">{t('new')}</Link>
+              <Link href="/reference/formulas/new">{t('new')}</Link>
             </Button>
           }
         />
@@ -140,7 +140,7 @@ export default async function FormulasPage({
                   >
                     <Td>
                       <Link
-                        href={`/inventory/formulas/${formula.id}`}
+                        href={`/reference/formulas/${formula.id}`}
                         className="flex items-baseline gap-2 underline-offset-2 hover:underline"
                       >
                         <span className="text-base font-semibold text-jade-800">

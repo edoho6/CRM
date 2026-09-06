@@ -39,8 +39,8 @@ const QUICK_ACTIONS: QuickAction[] = [
   { key: 'newEncounter', href: '/patients', icon: Stethoscope },
   { key: 'newInvoice', href: '/billing', icon: Receipt },
   { key: 'receiveStock', href: '/inventory/batches/receive', icon: PackagePlus, startsGroup: true },
-  { key: 'newHerb', href: '/inventory/herbs/new', icon: Sprout },
-  { key: 'newFormula', href: '/inventory/formulas/new', icon: FlaskConical },
+  { key: 'newHerb', href: '/reference/herbs/new', icon: Sprout },
+  { key: 'newFormula', href: '/reference/formulas/new', icon: FlaskConical },
 ];
 
 const CLOSE_DELAY_MS = 180;

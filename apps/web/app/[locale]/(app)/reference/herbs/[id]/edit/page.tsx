@@ -5,7 +5,7 @@ import type { Locale } from '@clinic/domain';
 import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
 import { herbPrimaryName } from '@/lib/display';
-import { InventoryNav } from '@/features/inventory/inventory-nav';
+import { ReferenceNav } from '@/features/reference/reference-nav';
 import { HerbForm } from '@/features/inventory/herb-form';
 
 export default async function EditHerbPage({
@@ -31,7 +31,7 @@ export default async function EditHerbPage({
   return (
     <>
       <PageHeader title={t('edit')} description={herbPrimaryName(herb, locale as Locale)} />
-      <InventoryNav />
+      <ReferenceNav />
       <HerbForm herb={herb} />
     </>
   );

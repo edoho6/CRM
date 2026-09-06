@@ -36,8 +36,9 @@ import {
   herbChineseName,
   herbPrimaryName,
 } from '@/lib/display';
-import { InventoryNav } from '@/features/inventory/inventory-nav';
+import { ReferenceNav } from '@/features/reference/reference-nav';
 import { HerbImageCard } from '@/features/inventory/herb-image-card';
+import { AddToOrderButton } from '@/features/inventory/stock-controls';
 
 type BatchRow = HerbBatch & { supplier: Pick<Supplier, 'id' | 'name'> | null };
 
@@ -86,6 +87,10 @@ export default async function HerbDetailPage({
   const { data: herb } = await scope.supabase.from('herbs').select('*').eq('id', id).maybeSingle<Herb>();
   if (!herb) notFound();
 
+  // A clinic that keeps no stock is not asked to look at any: the three stock
+  // queries below are not merely hidden, they are never run.
+  const tracksInventory = scope.context.clinic.tracks_inventory !== false;
+
   const [levelResult, batchesResult, movementsResult, usesResult] = await Promise.all([
     scope.supabase.from('herb_stock_levels').select('*').eq('herb_id', id).maybeSingle<HerbStockLevel>(),
     scope.supabase
@@ -112,9 +117,9 @@ export default async function HerbDetailPage({
       .returns<FormulaUse[]>(),
   ]);
 
-  const level = levelResult.data;
-  const batches = batchesResult.data ?? [];
-  const movements = movementsResult.data ?? [];
+  const level = tracksInventory ? levelResult.data : null;
+  const batches = tracksInventory ? (batchesResult.data ?? []) : [];
+  const movements = tracksInventory ? (movementsResult.data ?? []) : [];
   const uses = (usesResult.data ?? []).filter((use) => use.formula);
   const remaining = Number(level?.total_remaining ?? 0);
   const chinese = herbChineseName(herb);
@@ -154,14 +159,16 @@ export default async function HerbDetailPage({
         }
         actions={
           <>
+            {tracksInventory ? (
+              <Button asChild variant="secondary">
+                <Link href={{ pathname: '/inventory/batches/receive', query: { herb: herb.id } }}>
+                  <PackagePlus className="h-4 w-4" />
+                  {tBatches('receive')}
+                </Link>
+              </Button>
+            ) : null}
             <Button asChild variant="secondary">
-              <Link href={{ pathname: '/inventory/batches/receive', query: { herb: herb.id } }}>
-                <PackagePlus className="h-4 w-4" />
-                {tBatches('receive')}
-              </Link>
-            </Button>
-            <Button asChild variant="secondary">
-              <Link href={`/inventory/herbs/${herb.id}/edit`}>
+              <Link href={`/reference/herbs/${herb.id}/edit`}>
                 <Pencil className="h-4 w-4" />
                 {tc('edit')}
               </Link>
@@ -169,7 +176,7 @@ export default async function HerbDetailPage({
           </>
         }
       />
-      <InventoryNav />
+      <ReferenceNav />
 
       {herb.needs_review ? (
         <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
@@ -240,32 +247,54 @@ export default async function HerbDetailPage({
             alt={primary}
           />
 
-          <Card>
-            <CardHeader>
-              <CardTitle>{ts('stock')}</CardTitle>
-              {level?.is_below_threshold ? (
-                <Badge tone={remaining <= 0 ? 'danger' : 'warning'}>{t('belowThreshold')}</Badge>
-              ) : (
-                <Badge tone="success">{t('inStock')}</Badge>
-              )}
-            </CardHeader>
-            <CardBody>
-              <dl>
-                <DetailRow label={t('inStock')}>
-                  <span dir="ltr" className="text-base font-semibold tabular-nums">
-                    {format.number(remaining)} {tUnit(herb.default_unit)}
-                  </span>
-                </DetailRow>
-                <DetailRow label={t('fields.category')}>{tCategory(herb.category)}</DetailRow>
-                <DetailRow label={t('fields.pharmaceuticalName')}>
-                  <span dir="ltr">{herb.pharmaceutical_name ?? '—'}</span>
-                </DetailRow>
-                <DetailRow label={t('fields.reorderThreshold')}>
-                  {herb.reorder_threshold === null ? '—' : format.number(Number(herb.reorder_threshold))}
-                </DetailRow>
-              </dl>
-            </CardBody>
-          </Card>
+          {tracksInventory ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>{ts('stock')}</CardTitle>
+                {level?.is_below_threshold ? (
+                  <Badge tone={remaining <= 0 ? 'danger' : 'warning'}>{t('belowThreshold')}</Badge>
+                ) : level?.is_stocked ? (
+                  <Badge tone="success">{t('inStock')}</Badge>
+                ) : (
+                  <Badge tone="muted">{t('notStocked')}</Badge>
+                )}
+              </CardHeader>
+              <CardBody className="space-y-3">
+                <dl>
+                  <DetailRow label={t('inStock')}>
+                    <span dir="ltr" className="text-base font-semibold tabular-nums">
+                      {format.number(remaining)} {tUnit(herb.default_unit)}
+                    </span>
+                  </DetailRow>
+                  <DetailRow label={t('fields.category')}>{tCategory(herb.category)}</DetailRow>
+                  <DetailRow label={t('fields.reorderThreshold')}>
+                    {herb.reorder_threshold === null ? '—' : format.number(Number(herb.reorder_threshold))}
+                  </DetailRow>
+                </dl>
+                <AddToOrderButton
+                  herbId={herb.id}
+                  unit={herb.default_unit}
+                  suggestedQuantity={
+                    herb.reorder_quantity === null ? null : Number(herb.reorder_quantity)
+                  }
+                />
+              </CardBody>
+            </Card>
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle>{ts('identity')}</CardTitle>
+              </CardHeader>
+              <CardBody>
+                <dl>
+                  <DetailRow label={t('fields.category')}>{tCategory(herb.category)}</DetailRow>
+                  <DetailRow label={t('fields.pharmaceuticalName')}>
+                    <span dir="ltr">{herb.pharmaceutical_name ?? '—'}</span>
+                  </DetailRow>
+                </dl>
+              </CardBody>
+            </Card>
+          )}
         </div>
 
         <div className="space-y-5">
@@ -324,7 +353,7 @@ export default async function HerbDetailPage({
                           >
                             <Td>
                               <Link
-                                href={`/inventory/formulas/${formula.id}`}
+                                href={`/reference/formulas/${formula.id}`}
                                 className="font-medium text-jade-800 underline-offset-2 hover:underline"
                               >
                                 {formulaPrimaryName(formula, locale as Locale)}
@@ -360,6 +389,10 @@ export default async function HerbDetailPage({
             </CardBody>
           </Card>
 
+          {/* Batches and the stock ledger belong to the shelf, not to the
+              materia medica: a clinic without one never sees either. */}
+          {tracksInventory ? (
+          <>
           <Card>
             <CardHeader>
               <CardTitle>{tBatches('title')}</CardTitle>
@@ -473,6 +506,8 @@ export default async function HerbDetailPage({
               )}
             </CardBody>
           </Card>
+          </>
+          ) : null}
         </div>
       </div>
     </>

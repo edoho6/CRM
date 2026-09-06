@@ -8,7 +8,7 @@ import {
   type FormulaFilters as FormulaFilterState,
 } from './formula-filter-params';
 
-const PATH = '/inventory/formulas';
+const PATH = '/reference/formulas';
 
 export async function FormulaFilters({ filters }: { filters: FormulaFilterState }) {
   const tf = await getTranslations('inventory.formulas.fields');

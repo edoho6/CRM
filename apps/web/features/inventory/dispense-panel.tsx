@@ -26,7 +26,7 @@ import type { Locale } from '@clinic/domain';
 import { useRouter } from '@clinic/i18n/navigation';
 import type { DispensingRecordWithItems, Herb, HerbFormulaWithItems } from '@clinic/db/types';
 import { formulaPrimaryName, herbPrimaryName, herbSecondaryName } from '@/lib/display';
-import { dispenseHerbs } from './actions';
+import { dispenseHerbs, recordPrescription } from './actions';
 
 interface AdHocRow {
   herb_id: string;
@@ -45,12 +45,15 @@ export function DispensePanel({
   formulas,
   herbs,
   records,
+  tracksInventory,
   disabled,
 }: {
   encounterId: string;
   formulas: HerbFormulaWithItems[];
   herbs: Herb[];
   records: DispensingRecordWithItems[];
+  /** False when the clinic holds no stock: the panel records a prescription instead. */
+  tracksInventory: boolean;
   disabled: boolean;
 }) {
   const t = useTranslations('inventory.dispensing');
@@ -121,7 +124,12 @@ export function DispensePanel({
     };
 
     startTransition(async () => {
-      const result = await dispenseHerbs(payload);
+      // Same payload either way. With no shelf there is nothing to allocate
+      // from and nothing that can come up short, so the write goes to the plain
+      // recorder rather than the allocator.
+      const result = tracksInventory
+        ? await dispenseHerbs(payload)
+        : await recordPrescription(payload);
       if (!result.ok) {
         setError(result.error);
         return;
@@ -153,7 +161,7 @@ export function DispensePanel({
       {!disabled ? (
         <Card>
           <CardHeader>
-            <CardTitle>{t('title')}</CardTitle>
+            <CardTitle>{tracksInventory ? t('title') : t('prescriptionTitle')}</CardTitle>
           </CardHeader>
           <CardBody className="space-y-4">
             {error ? <Alert tone="danger">{renderError()}</Alert> : null}
@@ -296,7 +304,7 @@ export function DispensePanel({
             <div className="flex justify-end">
               <Button onClick={handleDispense} disabled={isPending || preview.length === 0}>
                 {isPending ? <Spinner /> : <Sprout className="h-4 w-4" />}
-                {t('dispense')}
+                {tracksInventory ? t('dispense') : t('prescribe')}
               </Button>
             </div>
           </CardBody>

@@ -72,7 +72,9 @@
     "settings": "הגדרות",
     "signOut": "יציאה",
     "mainMenu": "תפריט ראשי",
-    "skipToContent": "דילוג לתוכן"
+    "skipToContent": "דילוג לתוכן",
+    "reference": "מאגר מידע",
+    "points": "נקודות דיקור"
   },
   "auth": {
     "signInTitle": "כניסה למערכת",
@@ -363,7 +365,9 @@
       "retention": "זמן החזקה (דק׳)",
       "remove": "הסרת נקודה",
       "empty": "לא נרשמו נקודות",
-      "placeholder": "לדוגמה LI4"
+      "placeholder": "לדוגמה LI4",
+      "none": "אין",
+      "hint": "הקלד קוד נקודה (LU7) או שם והרשימה תיפתח. אפשר גם להקליד טקסט חופשי."
     },
     "side": {
       "left": "שמאל",
@@ -387,6 +391,20 @@
       "auricular": "דיקור אוזן",
       "herbal_formula": "פורמולת צמחים",
       "dietary_advice": "הנחיות תזונה"
+    },
+    "region": {
+      "upper": "למעלה",
+      "lower": "למטה",
+      "left": "שמאל",
+      "right": "ימין",
+      "center": "מרכז"
+    },
+    "bodyMap": {
+      "front": "חזית",
+      "back": "גב",
+      "frontLabel": "{count, plural, =0 {חזית, ללא נקודות} one {חזית, נקודה אחת} other {חזית, # נקודות}}",
+      "backLabel": "{count, plural, =0 {גב, ללא נקודות} one {גב, נקודה אחת} other {גב, # נקודות}}",
+      "disclaimer": "סימון סכמטי בלבד — להמחשה של הטיפול, לא לאיתור אנטומי."
     }
   },
   "billing": {
@@ -572,7 +590,8 @@
       },
       "count": "{count, plural, =0 {אין צמחים} one {צמח אחד} two {שני צמחים} other {# צמחים}}",
       "usedIn": "מופיע בפורמולות",
-      "usedInEmpty": "הצמח לא מופיע באף פורמולה שמורה"
+      "usedInEmpty": "הצמח לא מופיע באף פורמולה שמורה",
+      "notStocked": "לא במלאי"
     },
     "category": {
       "raw_herb": "צמח גולמי",
@@ -687,7 +706,9 @@
       "empty": "לא נופקו צמחים בטיפול הזה",
       "dispensedAt": "נופק בתאריך",
       "dispensedBy": "נופק על ידי",
-      "totalCost": "עלות כוללת"
+      "totalCost": "עלות כוללת",
+      "prescriptionTitle": "רישום מרשם",
+      "prescribe": "רשום מרשם"
     },
     "tcmCategory": {
       "release_exterior_warm": "משחררי חיצון — חמים",
@@ -795,6 +816,50 @@
       "hint": "JPG או PNG, עד 5MB. התמונה ציבורית.",
       "attribution": "קרדיט / מקור",
       "uploaded": "התמונה נשמרה"
+    },
+    "stock": {
+      "title": "מלאי",
+      "subtitle": "מה שנמצא בקליניקה בפועל",
+      "threshold": "סף מלאי נמוך",
+      "doses": "מנות",
+      "dosesAvailable": "מנות אפשריות",
+      "missingIngredients": "מרכיבים חסרים",
+      "formulaHint": "לפורמולה אין מלאי משלה — המספר הוא כמה מנות שלמות אפשר להכין מהמרכיב שאזל ראשון.",
+      "scopeNote": "מוצגים רק פריטים שנקלטו למלאי או שהוגדר להם סף. שאר הקטלוג נמצא במאגר המידע.",
+      "lowSummary": "{count, plural, one {פריט אחד במלאי נמוך} two {שני פריטים במלאי נמוך} other {# פריטים במלאי נמוך}}",
+      "batches": "{count, plural, =0 {אין אצוות} one {אצווה אחת} two {שתי אצוות} other {# אצוות}}",
+      "missingCount": "{count, plural, one {מרכיב אחד אזל} two {שני מרכיבים אזלו} other {# מרכיבים אזלו}}",
+      "allIngredients": "{count, plural, one {מרכיב אחד, הכל קיים} other {כל # המרכיבים קיימים}}",
+      "emptyBody": "קלוט אצווה ראשונה כדי להתחיל לנהל מלאי.",
+      "empty": {
+        "in_stock": "אין כרגע שום דבר במלאי",
+        "low": "שום דבר לא מתקרב לסף",
+        "out": "שום דבר לא אזל",
+        "to_order": "רשימת ההזמנות ריקה"
+      }
+    },
+    "tabs": {
+      "in_stock": "נמצא במלאי",
+      "low": "מלאי נמוך",
+      "out": "לא במלאי",
+      "to_order": "צריך להזמין"
+    },
+    "order": {
+      "add": "להזמנה",
+      "listed": "ברשימה",
+      "alreadyListed": "כבר ברשימת ההזמנות",
+      "kind": "סוג",
+      "herb": "צמח",
+      "formula": "פורמולה",
+      "doses": "מנות",
+      "notesPlaceholder": "ספק, גודל אריזה…",
+      "empty": "רשימת ההזמנות ריקה",
+      "emptyBody": "הוסף צמחים ופורמולות מהטאבים של מלאי נמוך ולא במלאי, או מדף הצמח עצמו.",
+      "status": {
+        "pending": "להזמנה",
+        "ordered": "הוזמן",
+        "received": "התקבל"
+      }
     }
   },
   "portal": {
@@ -823,5 +888,73 @@
     "formulaOrItemsRequired": "יש לבחור פורמולה או להוסיף צמחים",
     "quantityCannotBeZero": "הכמות לא יכולה להיות אפס",
     "endMustBeAfterStart": "שעת הסיום חייבת להיות אחרי שעת ההתחלה"
+  },
+  "settings": {
+    "title": "הגדרות",
+    "subtitle": "הגדרות ברמת הקליניקה",
+    "sections": {
+      "clinic": "הקליניקה",
+      "inventory": "ניהול מלאי"
+    },
+    "fields": {
+      "name": "שם הקליניקה"
+    },
+    "inventoryIntro": "האם אתה מחזיק מלאי צמחים בקליניקה?",
+    "tracksOn": {
+      "title": "כן, אני מחזיק מלאי",
+      "body": "מסך המלאי יופיע בתפריט, וליד כל צמח ופורמולה במאגר יוצג מה יש ובכמה. ניפוק בטיפול יוריד מהמלאי."
+    },
+    "tracksOff": {
+      "title": "לא, אני רק רושם",
+      "body": "כל מה שקשור למלאי ייעלם — מסך המלאי, האצוות, הספקים והכמויות. בטיפול תרשום מרשם בלי שהמערכת תוריד מלאי."
+    },
+    "inventoryReversible": "אפשר לשנות בכל רגע. כיבוי מסתיר את נתוני המלאי ולא מוחק אותם — הדלקה מחזירה בדיוק את מה שהיה."
+  },
+  "reference": {
+    "points": {
+      "title": "נקודות דיקור",
+      "empty": "אין נקודות במאגר",
+      "emptyBody": "הרץ את קובץ ה-SQL של קטלוג הנקודות כדי לטעון את 361 הנקודות.",
+      "searchPlaceholder": "חיפוש לפי קוד, פינין, סינית או אנגלית",
+      "allChannels": "כל המרידיאנים",
+      "midlinePoint": "נקודת אמצע",
+      "useInTreatment": "לבחירת הנקודה בטיפול, השתמש בבורר הנקודות בדף הטיפול.",
+      "noClinicalText": "המידע הקליני על הנקודה עדיין לא הוזן. השדות מוכנים — אפשר למלא אותם ידנית או להמתין לטעינת המאגר.",
+      "count": "{count, plural, =0 {אין נקודות} one {נקודה אחת} two {שתי נקודות} other {# נקודות}}",
+      "sections": {
+        "clinical": "מידע קליני",
+        "identity": "זיהוי"
+      },
+      "fields": {
+        "code": "קוד",
+        "channel": "מרידיאן",
+        "pinyin": "פינין",
+        "chinese": "סינית",
+        "english": "אנגלית",
+        "region": "אזור",
+        "location": "מיקום אנטומי",
+        "actions": "פעולות",
+        "indications": "התוויות",
+        "needling": "טכניקת דקירה",
+        "cautions": "אזהרות"
+      }
+    },
+    "pointChannel": {
+      "lung": "ריאה (LU)",
+      "large_intestine": "מעי גס (LI)",
+      "stomach": "קיבה (ST)",
+      "spleen": "טחול (SP)",
+      "heart": "לב (HT)",
+      "small_intestine": "מעי דק (SI)",
+      "bladder": "שלפוחית השתן (BL)",
+      "kidney": "כליה (KI)",
+      "pericardium": "קרום הלב (PC)",
+      "san_jiao": "שלושת המחממים (SJ)",
+      "gallbladder": "כיס מרה (GB)",
+      "liver": "כבד (LR)",
+      "ren": "רן מאי (REN)",
+      "du": "דו מאי (DU)",
+      "extra": "נקודות נוספות"
+    }
   }
 }
