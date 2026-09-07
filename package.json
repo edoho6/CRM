@@ -20,9 +20,12 @@
     "db:types": "supabase gen types typescript --project-id $SUPABASE_PROJECT_ID > packages/db/src/database.types.ts",
     "db:push": "supabase db push",
     "db:reset": "supabase db reset",
-    "check:contrast": "node scripts/check-contrast.mjs"
+    "check:contrast": "node scripts/check-contrast.mjs",
+    "check:a11y": "node scripts/check-a11y.mjs"
   },
   "devDependencies": {
+    "axe-core": "^4.13.0",
+    "jsdom": "^30.0.1",
     "prettier": "^3.4.2",
     "rimraf": "^6.0.1",
     "supabase": "^2.116.0",

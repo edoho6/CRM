@@ -20,8 +20,11 @@ import { Link } from '@clinic/i18n/navigation';
 import type {
   Appointment,
   AppointmentType,
+  ConsentDocument,
   Encounter,
   Patient,
+  PatientConsentStatus,
+  PatientConsentWithDocument,
   PatientDocument,
   PatientMedicalHistory,
 } from '@clinic/db/types';
@@ -34,6 +37,7 @@ import { PatientTabs } from '@/features/patients/patient-tabs';
 import { MedicalHistoryForm } from '@/features/patients/medical-history-form';
 import { StartEncounterButton } from '@/features/encounters/start-encounter-button';
 import { DocumentsPanel } from '@/features/documents/documents-panel';
+import { ConsentPanel } from '@/features/consent/consent-panel';
 
 type AppointmentRow = Appointment & {
   appointment_type: Pick<AppointmentType, 'name_he' | 'name_en'> | null;
@@ -69,7 +73,15 @@ export default async function PatientDetailPage({
   // leaves the trace.
   await logRecordAccess(scope.supabase, 'patients', patient.id);
 
-  const [historyResult, encountersResult, appointmentsResult, documentsResult] = await Promise.all([
+  const [
+    historyResult,
+    encountersResult,
+    appointmentsResult,
+    documentsResult,
+    consentStatusResult,
+    consentHistoryResult,
+    consentDocumentsResult,
+  ] = await Promise.all([
     scope.supabase
       .from('patient_medical_history')
       .select('*')
@@ -95,6 +107,26 @@ export default async function PatientDetailPage({
       .eq('patient_id', id)
       .order('created_at', { ascending: false })
       .returns<PatientDocument[]>(),
+    scope.supabase
+      .from('patient_consent_status')
+      .select('*')
+      .eq('patient_id', id)
+      .returns<PatientConsentStatus[]>(),
+    scope.supabase
+      .from('patient_consents')
+      .select('*, document:consent_documents(kind, version, locale, title, published_at)')
+      .eq('patient_id', id)
+      .order('decided_at', { ascending: true })
+      .returns<PatientConsentWithDocument[]>(),
+    // Only the published documents, and only in the language being read: a
+    // consent should cite the text the patient was actually shown.
+    scope.supabase
+      .from('consent_documents')
+      .select('*')
+      .not('published_at', 'is', null)
+      .eq('locale', locale)
+      .order('version', { ascending: false })
+      .returns<ConsentDocument[]>(),
   ]);
 
   const history = historyResult.data ?? null;
@@ -297,6 +329,15 @@ export default async function PatientDetailPage({
         appointments={appointmentsPanel}
         documents={<DocumentsPanel patientId={patient.id} documents={documents} />}
         medical={<MedicalHistoryForm patientId={patient.id} history={history} />}
+        consent={
+          <ConsentPanel
+            patientId={patient.id}
+            patientName={patient.full_name}
+            statuses={consentStatusResult.data ?? []}
+            history={consentHistoryResult.data ?? []}
+            documents={consentDocumentsResult.data ?? []}
+          />
+        }
       />
     </>
   );

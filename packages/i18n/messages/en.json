@@ -76,7 +76,8 @@
     "reference": "Reference",
     "points": "Points",
     "sidebar": "Sidebar",
-    "accessibility": "Accessibility statement"
+    "accessibility": "Accessibility statement",
+    "syntheticBanner": "Development environment — every patient here is fictional. No real data is held here, and none should be entered."
   },
   "auth": {
     "signInTitle": "Sign in",
@@ -223,7 +224,8 @@
       "encounters": "Treatment history",
       "appointments": "Appointments",
       "documents": "Documents",
-      "medical": "Medical background"
+      "medical": "Medical background",
+      "consent": "Consent"
     },
     "fields": {
       "firstName": "First name",
@@ -917,7 +919,8 @@
     "nav": {
       "general": "General",
       "access": "Access log",
-      "billing": "Billing"
+      "billing": "Billing",
+      "consent": "Consent documents"
     },
     "access": {
       "title": "Access log",
@@ -1077,7 +1080,8 @@
       "labels": "Every form field has an associated label, and every error message is linked to its field and announced — not signalled by colour alone.",
       "rtl": "Full right-to-left Hebrew support, including menus, tables and dialogs mirroring correctly, while phone numbers and Latin codes keep their own direction.",
       "zoom": "The layout is built in relative units and stays usable at 200% text zoom.",
-      "motion": "No flashing animation, nothing that moves on its own, and no time limit on completing a form."
+      "motion": "No flashing animation, nothing that moves on its own, and no time limit on completing a form.",
+      "automated": "Automated checks run on every code change: contrast is measured from the stylesheet across 101 pairs, and axe checks labels, accessible names, heading order and direction."
     },
     "gapsTitle": "What is not finished",
     "gapsIntro": "This list is deliberately specific. A statement that claims full conformance and is wrong is worse than one that names its own limits.",
@@ -1085,7 +1089,8 @@
       "screenReaderAudit": "A full manual pass with a screen reader (NVDA or VoiceOver) has not been done yet. Fixes so far were driven by the code and by automated checks.",
       "bodyMap": "The acupuncture body chart is keyboard operable, but it is a schematic visual. The same information is fully available in the point list beside it.",
       "calendar": "The calendar view has not had a full accessibility pass. Every appointment is also reachable from the patient file.",
-      "pdf": "Uploaded documents are shown as they arrive. If a document we receive is not accessible, we cannot make it so after the fact."
+      "pdf": "Uploaded documents are shown as they arrive. If a document we receive is not accessible, we cannot make it so after the fact.",
+      "automatedScope": "The automated axe check currently covers the public pages only. The screens behind the login need a test environment with synthetic data, which is not yet in place."
     },
     "contactTitle": "Accessibility coordinator",
     "contactBody": "If something stops you using the system, we want to hear about it and will act on it. Accessibility reports are handled as a priority.",
@@ -1095,5 +1100,52 @@
     "placeholder": "Not filled in",
     "placeholderWarning": "The accessibility coordinator has not been named. Before this system serves patients, a name, email address and phone number must be entered here — a statement with no way to make contact does not meet the standard.",
     "updated": "Last updated: {date}"
+  },
+  "consent": {
+    "title": "Consent",
+    "intro": "Each consent records the exact version of the document the patient accepted, and when. Withdrawing is recorded as a new decision and does not erase the earlier one.",
+    "method": "How it was given",
+    "grant": "Record consent",
+    "withdraw": "Record withdrawal",
+    "neverAsked": "Never asked",
+    "noDocument": "No document published for this kind yet",
+    "grantedOn": "Given on {date}",
+    "withdrawnOn": "Withdrawn on {date}",
+    "version": "Version {version}",
+    "historyTitle": "Decision history",
+    "historyEmpty": "No decisions recorded",
+    "status": {
+      "granted": "Given",
+      "withdrawn": "Withdrawn",
+      "none": "None"
+    },
+    "kinds": {
+      "terms": "Terms of use",
+      "privacy": "Privacy notice",
+      "treatment": "Informed consent to treatment",
+      "marketing": "Marketing communications"
+    },
+    "methods": {
+      "in_person": "In person",
+      "portal": "Through the portal",
+      "paper_form": "Paper form",
+      "phone": "Phone",
+      "email": "Email"
+    },
+    "exportTitle": "Export the patient file",
+    "exportBody": "Downloads everything the clinic holds about this patient as one file: personal details, medical history, appointments, treatments, clinical notes, prescriptions, the document list, the consent history, and who accessed the record and when. Uploaded documents are listed by name and date; the files themselves are downloaded separately.",
+    "exportButton": "Download {name}’s file",
+    "documentsTitle": "Consent documents",
+    "documentsSubtitle": "The texts patients are asked to accept",
+    "immutableNote": "A published document cannot be edited — that is what lets a consent from two years ago still say exactly what was agreed. To correct one, publish a new version; the old one is kept.",
+    "notPublished": "Not published",
+    "noVersions": "No versions yet",
+    "publishNew": "Publish a new version",
+    "publish": "Publish",
+    "documentTitle": "Title",
+    "documentBody": "Document text",
+    "bodyHint": "The full text exactly as the patient will see it.",
+    "tooShort": "A title and a full text are both required.",
+    "publishWarning": "Once published the text cannot be edited. Make sure it is final — a correction means publishing a new version."
   }
 }

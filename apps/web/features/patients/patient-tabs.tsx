@@ -16,12 +16,14 @@ export function PatientTabs({
   appointments,
   documents,
   medical,
+  consent,
 }: {
   overview: React.ReactNode;
   encounters: React.ReactNode;
   appointments: React.ReactNode;
   documents: React.ReactNode;
   medical: React.ReactNode;
+  consent: React.ReactNode;
 }) {
   const t = useTranslations('patients.tabs');
 
@@ -33,12 +35,14 @@ export function PatientTabs({
         <TabsTrigger value="appointments">{t('appointments')}</TabsTrigger>
         <TabsTrigger value="documents">{t('documents')}</TabsTrigger>
         <TabsTrigger value="medical">{t('medical')}</TabsTrigger>
+        <TabsTrigger value="consent">{t('consent')}</TabsTrigger>
       </TabsList>
       <TabsContent value="overview">{overview}</TabsContent>
       <TabsContent value="encounters">{encounters}</TabsContent>
       <TabsContent value="appointments">{appointments}</TabsContent>
       <TabsContent value="documents">{documents}</TabsContent>
       <TabsContent value="medical">{medical}</TabsContent>
+      <TabsContent value="consent">{consent}</TabsContent>
     </Tabs>
   );
 }

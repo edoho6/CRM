@@ -1,0 +1,103 @@
+name: CI
+
+# Runs on every push and every pull request. Nothing here needs a database or a
+# secret: the checks that would need one are named in the summary step instead of
+# being quietly skipped.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Types, tests, build, accessibility
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    env:
+      # Placeholders, not secrets. The pages under test render without contacting
+      # Supabase — they only need the app to consider itself configured, so that
+      # the login form is what gets audited rather than the setup screen.
+      NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key-for-ci-only
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Types
+        run: pnpm typecheck
+
+      - name: Tests
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build
+
+      # Colour contrast is measured from the emitted stylesheet rather than
+      # estimated by eye. Israeli standard 5568 wants 4.5:1 for small text.
+      - name: Contrast (WCAG 2.1 AA)
+        run: pnpm check:contrast
+
+      - name: Start the built app
+        run: |
+          nohup pnpm --filter @clinic/web start > /tmp/web.log 2>&1 &
+          for i in $(seq 1 60); do
+            if curl -sf -o /dev/null http://localhost:3000/he/login; then
+              echo "up after ${i}s"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "the app did not start within 60s. Server log:"
+          cat /tmp/web.log
+          exit 1
+
+      # axe against the server-rendered markup of the public pages. What this
+      # does not cover is stated by the script itself and in SECURITY.md §12:
+      # everything behind the login needs a seeded staging database.
+      - name: Accessibility (axe, WCAG 2.1 AA)
+        run: pnpm check:a11y
+
+  dependencies:
+    name: Dependency scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # Fails on high and critical advisories. Moderate ones are reported in the
+      # log without blocking, because a build that cries wolf gets ignored and
+      # then the critical one gets ignored with it.
+      - name: Audit (high and critical block)
+        run: pnpm audit --audit-level high
+
+      - name: Audit (full report, advisory only)
+        if: always()
+        run: pnpm audit || true

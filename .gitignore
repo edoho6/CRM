@@ -34,6 +34,8 @@ all_migrations_combined.sql
 2_herbs_and_formulas_to_run.sql
 3_points_to_run.sql
 4_access_log_to_run.sql
+5_consent_to_run.sql
+6_synthetic_seed_to_run.sql
 
 # testing
 coverage/

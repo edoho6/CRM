@@ -81,6 +81,7 @@ const componentPairs = [
   { bg: 'jade-700', fg: 'white', where: 'primary button, active nav' },
   { bg: 'amber-50', fg: 'amber-900', where: 'review notice' },
   { bg: 'sky-50', fg: 'sky-900', where: 'information notice' },
+  { bg: 'amber-200', fg: 'amber-950', where: 'synthetic-data banner' },
 ];
 
 const AA_SMALL = 4.5;

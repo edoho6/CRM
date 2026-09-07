@@ -319,3 +319,18 @@ export const POINT_CATEGORIES = [
   'exit',
 ] as const;
 export type PointCategory = (typeof POINT_CATEGORIES)[number];
+
+/* ---------------------------------------------------------------------------
+ * Consent
+ * ---------------------------------------------------------------------------
+ * Marketing is its own kind from the outset. Bundling it with terms of use is
+ * what makes a consent unfree, and separating it later means going back to
+ * every patient to collect it again.
+ */
+
+export const CONSENT_KINDS = ['terms', 'privacy', 'treatment', 'marketing'] as const;
+export type ConsentKind = (typeof CONSENT_KINDS)[number];
+
+/** How a decision reached the clinic. A signature and a click are not the same evidence. */
+export const CONSENT_METHODS = ['in_person', 'portal', 'paper_form', 'phone', 'email'] as const;
+export type ConsentMethod = (typeof CONSENT_METHODS)[number];

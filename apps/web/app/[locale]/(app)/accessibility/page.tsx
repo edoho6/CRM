@@ -29,8 +29,17 @@ export default async function AccessibilityPage({
   const t = await getTranslations('accessibility');
   const format = await getFormatter();
 
-  const done = ['keyboard', 'contrast', 'landmarks', 'labels', 'rtl', 'zoom', 'motion'] as const;
-  const gaps = ['screenReaderAudit', 'bodyMap', 'calendar', 'pdf'] as const;
+  const done = [
+    'keyboard',
+    'contrast',
+    'landmarks',
+    'labels',
+    'rtl',
+    'zoom',
+    'motion',
+    'automated',
+  ] as const;
+  const gaps = ['screenReaderAudit', 'automatedScope', 'bodyMap', 'calendar', 'pdf'] as const;
 
   return (
     <>

@@ -1,0 +1,34 @@
+version: 2
+
+# Weekly rather than daily: a stream of pull requests nobody merges is worse than
+# a short list somebody reads. Security advisories are raised by GitHub as soon as
+# they are published regardless of this schedule.
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: sunday
+    open-pull-requests-limit: 5
+    groups:
+      # One pull request for the routine patch traffic, so the individually
+      # interesting upgrades stay visible next to it.
+      patches:
+        update-types: [patch]
+    ignore:
+      # Next, React and Tailwind are upgraded deliberately — each has broken
+      # something in a minor release before, and the runtime failures show up on
+      # a page rather than in the build.
+      - dependency-name: next
+        update-types: [version-update:semver-major, version-update:semver-minor]
+      - dependency-name: react
+        update-types: [version-update:semver-major]
+      - dependency-name: react-dom
+        update-types: [version-update:semver-major]
+      - dependency-name: tailwindcss
+        update-types: [version-update:semver-major]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly

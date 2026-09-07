@@ -3,6 +3,8 @@ import type {
   AuditAction,
   BodyView,
   Channel,
+  ConsentKind,
+  ConsentMethod,
   FormulaTcmCategory,
   DispensingStatus,
   DocumentCategory,
@@ -48,6 +50,12 @@ export interface Clinic {
   tax_id: string | null;
   /** False for a clinic that prescribes without holding stock. */
   tracks_inventory: boolean;
+  /**
+   * Marks a sandbox clinic holding fictional patients. Required before
+   * `seed_synthetic_data()` will write anything, and shown as a banner on every
+   * screen so a development database can never be mistaken for the real one.
+   */
+  is_synthetic: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -673,4 +681,61 @@ export interface OrderListEntryWithTarget extends OrderListEntry {
   herb: Pick<Herb, 'id' | 'pinyin_name' | 'chinese_name' | 'english_name' | 'hebrew_name' | 'default_unit'> | null;
   formula: Pick<HerbFormula, 'id' | 'name_pinyin' | 'name_chinese' | 'name_english' | 'name_hebrew'> | null;
   supplier: Pick<Supplier, 'id' | 'name'> | null;
+}
+
+/**
+ * A versioned consent text.
+ *
+ * Once `published_at` is set the body is frozen by a database trigger: editing
+ * the text a patient agreed to would make every consent citing it a lie.
+ */
+export interface ConsentDocument {
+  id: string;
+  clinic_id: string;
+  kind: ConsentKind;
+  version: number;
+  locale: Locale;
+  title: string;
+  body: string;
+  published_at: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * One consent decision, append-only.
+ *
+ * Withdrawing is a new row with `granted = false`, never an update — "she
+ * consented in March and withdrew in September" is the fact worth keeping.
+ */
+export interface PatientConsent {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  document_id: string | null;
+  kind: ConsentKind;
+  granted: boolean;
+  method: ConsentMethod;
+  decided_at: string;
+  notes: string | null;
+  recorded_by: string | null;
+  created_at: string;
+}
+
+export interface PatientConsentWithDocument extends PatientConsent {
+  document: Pick<ConsentDocument, 'kind' | 'version' | 'locale' | 'title' | 'published_at'> | null;
+}
+
+/** The standing answer per patient and kind, from `patient_consent_status`. */
+export interface PatientConsentStatus {
+  patient_id: string;
+  clinic_id: string;
+  kind: ConsentKind;
+  granted: boolean;
+  decided_at: string;
+  method: ConsentMethod;
+  document_id: string | null;
+  document_version: number | null;
+  document_title: string | null;
 }

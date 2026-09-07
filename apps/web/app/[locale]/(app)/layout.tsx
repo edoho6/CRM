@@ -52,6 +52,9 @@ export default async function AppLayout({
       // A clinic that holds no stock never sees the stock room at all — the
       // setting is read once here rather than checked on every screen.
       tracksInventory={context.clinic.tracks_inventory !== false}
+      // A sandbox clinic announces itself on every screen. Read here, once, for
+      // the same reason as the setting above.
+      isSynthetic={context.clinic.is_synthetic === true}
       onSignOut={handleSignOut}
     >
       {children}

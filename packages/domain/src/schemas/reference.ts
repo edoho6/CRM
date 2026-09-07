@@ -1,6 +1,8 @@
 import { z } from 'zod';
 import {
   BODY_VIEWS,
+  CONSENT_KINDS,
+  CONSENT_METHODS,
   HERB_UNITS,
   ORDER_LIST_STATUSES,
   POINT_BODY_AREAS,
@@ -116,3 +118,40 @@ export const prescriptionRequestSchema = z
   });
 
 export type PrescriptionRequestValues = z.input<typeof prescriptionRequestSchema>;
+
+/* ---------------------------------------------------------------------------
+ * Consent
+ * ------------------------------------------------------------------------- */
+
+/** Publishing a new version of a document. Once published the text is frozen. */
+export const consentDocumentSchema = z.object({
+  kind: z.enum(CONSENT_KINDS),
+  locale: z.enum(['he', 'en']).default('he'),
+  title: requiredText(200),
+  body: requiredText(50_000, 20),
+});
+
+export type ConsentDocumentValues = z.input<typeof consentDocumentSchema>;
+
+/**
+ * Recording one decision.
+ *
+ * `document_id` is required when granting — a consent that cites no text is the
+ * checkbox this system exists to replace. Withdrawing needs no document,
+ * because you can withdraw a consent given before the clinic versioned anything.
+ */
+export const patientConsentSchema = z
+  .object({
+    patient_id: uuidField,
+    document_id: z.union([uuidField, z.literal(''), z.null()]).transform((v) => (v ? v : null)),
+    kind: z.enum(CONSENT_KINDS),
+    granted: z.boolean(),
+    method: z.enum(CONSENT_METHODS).default('in_person'),
+    notes: optionalText(1000),
+  })
+  .refine((value) => !value.granted || Boolean(value.document_id), {
+    error: 'document_required_to_grant',
+    path: ['document_id'],
+  });
+
+export type PatientConsentValues = z.input<typeof patientConsentSchema>;

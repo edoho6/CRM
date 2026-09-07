@@ -26,10 +26,18 @@ Views used by the app (`herb_stock_levels`, `formula_stock_levels`,
 they run with the caller's rights and inherit the same policies. A view created
 the default way would have bypassed them.
 
-**Gap:** there are no automated tests proving isolation. The policies are
-correct by inspection, which is not the same thing. A test that signs in as
-clinic A and asserts zero rows from clinic B is the missing piece, and it is the
-highest-value test this repository does not yet have.
+Isolation is tested, not merely inspected. `supabase/tests/tenant_isolation.sql`
+builds two throwaway clinics plus a portal patient inside a transaction,
+impersonates each identity in turn, and asserts what each one cannot reach:
+another clinic's patients, medical history, clinical notes, herb catalogue and
+views; cross-clinic writes; a forged or edited audit entry. It then checks the
+portal patient — an auth user with no membership — sees their own file and their
+shared documents and nothing clinical, and that an anonymous caller sees nothing
+at all. Everything is rolled back, so it is safe to run against the live project
+and should be re-run after any migration that adds a table or touches a policy.
+
+**Gap:** it is run by hand in the SQL editor. Wiring it into CI needs a database
+CI can reach, which means the staging project of §12.
 
 ## 2 · Who may do what
 
@@ -177,16 +185,54 @@ The invoice schema has room for it.
 
 ## 10 · Consent
 
-**Gap — not built.** There is no record of a patient accepting terms of use or a
-privacy notice, no version of the document they accepted, and no separate,
-revocable marketing consent. Requirement 6 of the project brief is entirely
-outstanding, and it is a prerequisite for serving real patients.
+Consent points at a document, not at a concept. `consent_documents` holds the
+texts, versioned per kind and locale; `patient_consents` records each decision
+with the document id, the method (in person, portal, paper, phone, email) and the
+timestamp. So "what exactly did she agree to, and when" is answerable two years
+later.
+
+Two rules are enforced by the database rather than by the application:
+
+- A published document is frozen. `freeze_published_consent_document()` rejects
+  any change to its title, body, version or kind. Correcting one means publishing
+  the next version, which is what makes the version number mean anything.
+- Decisions are append-only. `block_consent_mutation()` rejects updates and
+  deletes, so withdrawing is a new row and "agreed in March, withdrew in
+  September" survives. The one exception is the cascade from a deleted patient —
+  see §11.
+
+Version numbers are allocated inside `publish_consent_document()` rather than
+read-then-written by the application, so two concurrent publishes cannot collide.
+
+Marketing is a separate kind from the outset. Bundling it with terms of use is
+what makes a consent unfree, and separating it later would mean re-collecting
+everything. `patient_consent_status` gives the standing answer per kind, which is
+the form the question is actually asked in.
+
+A patient may record their own decision through the portal
+(`patient_consents_patient_insert`, restricted to `method = 'portal'`), so
+"withdraw at any time" is a mechanism rather than a promise to email someone.
+
+Verified by `supabase/tests/consent_rules.sql`.
 
 ## 11 · Patient rights
 
-**Gap — not built.** There is no one-click export of a complete patient file and
-no deletion flow. `audit_log` and `access_activity` already hold the access
-history such an export would need to include.
+`GET /api/patients/[id]/export` returns the complete file as one JSON document:
+personal details, medical history, appointments, encounters, clinical notes,
+prescriptions, document metadata, the consent history, and the access history
+from `audit_log`. The export logs itself as an `export` action, so requesting a
+file is itself part of the record. Uploaded files are listed by name and date and
+downloaded separately; embedding them would make the export unusable in size.
+
+Deletion is a cascade from `patients`, and it works: the append-only rule on
+consents deliberately steps aside when the patient row is already gone, so a
+file's own audit rules cannot defeat the right to have it erased. The audit
+entries for the deletion itself are not cascaded, so the fact that a file was
+erased survives the erasure.
+
+**Gap:** there is no deletion *flow* in the interface — no button, no
+confirmation, no record of who asked. Today it is a `DELETE` in the SQL editor,
+which is a real gap once a patient can ask for it in writing.
 
 ## 12 · Development practice
 
@@ -196,31 +242,70 @@ production, which is acceptable only while no real patient data exists.
 
 **This is the gap to close first, before the first real patient is entered.**
 
-**Gap:** no synthetic seed script. Development uses whatever is in the database,
-which is exactly the habit that leads to real records in a dev environment.
+The half of that which does not depend on a second project is built.
+`seed_synthetic_data()` fills a clinic with fictional patients, appointments and
+treatment records: two dozen files, several visits each, tongue and pulse
+findings, signed records and one left in draft. The fictional details are
+unusable rather than merely invented — `.test` email addresses, phone numbers in
+an unallocated range, national ids that fail the check digit — because a
+realistic random phone number is eventually a real person's, and that only shows
+up when a stray reminder reaches them.
+
+The guard is a column rather than a convention. `clinics.is_synthetic` must be
+true before either `seed_synthetic_data()` or `purge_synthetic_data()` writes
+anything, and a flagged clinic carries an amber banner on every screen. So
+seeding production fails, and no one works in a sandbox for ten minutes without
+noticing.
 
 ## 13 · Accessibility
 
 Israeli standard 5568 (WCAG 2.1 AA). Colour contrast is measured, not estimated:
 `pnpm build && pnpm check:contrast` reads the emitted stylesheet and fails below
-4.5:1. The first run found three real failures, including white text on the
-primary button at 3.30:1.
+4.5:1 across 101 pairs. The first run found three real failures, including white
+text on the primary button at 3.30:1.
+
+`pnpm check:a11y` runs axe against the server-rendered markup of the public
+pages — labels, accessible names, heading order, `lang` and `dir`. It is checked
+against deliberately broken markup, so a clean result means something rather than
+meaning the harness is inert.
 
 Full status, including what has not been done, is on `/accessibility` — which is
 also the statement the standard requires. Its contact details are unfilled and
 visibly marked as such.
 
+**Gap:** the axe run covers four public pages. Everything behind the login is
+uncovered, and that is most of the application — it needs a staging database to
+render against, which is §12 again.
+
+## 14 · Continuous integration
+
+`.github/workflows/ci.yml` runs on every push and pull request: types, tests,
+build, contrast, then axe against the started application. A second job runs
+`pnpm audit`, failing on high and critical advisories and reporting moderate ones
+without blocking — a build that cries wolf gets ignored, and then the critical one
+is ignored with it. `.github/dependabot.yml` opens weekly grouped upgrades, with
+Next, React and Tailwind held back for deliberate handling.
+
+**Gap:** the repository has no remote, so none of this has executed yet. It runs
+on the first push.
+
+The tenant isolation and consent tests are not in CI either, for the same reason
+as everything else here: they need a database CI can reach.
+
 ---
 
 ## Summary of what blocks going live
 
-1. Consent records with document version and timestamp (§10)
-2. Patient file export and deletion (§11)
-3. A separate staging environment (§12)
-4. Tenant isolation tests (§1)
-5. Role separation in the RLS policies before a second user is invited (§2)
-6. MFA on the owner account (§2)
-7. Accessibility coordinator details on the statement (§13)
-8. A rehearsed backup restore (§7)
-9. Database registration under the Privacy Protection Law — a legal step, not a
+1. A separate staging environment (§12) — **the first one to close**, and now the
+   only thing standing between the tooling and the rule it exists to enforce
+2. A deletion flow in the interface, not only in SQL (§11)
+3. Role separation in the RLS policies before a second user is invited (§2)
+4. MFA on the owner account (§2)
+5. Accessibility coordinator details on the statement (§13)
+6. A rehearsed backup restore (§7)
+7. Database registration under the Privacy Protection Law — a legal step, not a
    technical one
+
+Closed since the first version of this document: consent records with document
+version and timestamp (§10), patient file export (§11), tenant isolation tests
+(§1), and the synthetic seed script (§12).

@@ -8,6 +8,7 @@ import {
   Boxes,
   CalendarDays,
   ClipboardList,
+  FlaskConical,
   LayoutDashboard,
   Leaf,
   LogOut,
@@ -43,12 +44,15 @@ export function AppShell({
   clinicName,
   userName,
   tracksInventory,
+  isSynthetic = false,
   onSignOut,
 }: {
   children: React.ReactNode;
   clinicName: string;
   userName: string;
   tracksInventory: boolean;
+  /** True for a sandbox clinic holding fictional patients. */
+  isSynthetic?: boolean;
   onSignOut: () => Promise<void>;
 }) {
   const t = useTranslations('nav');
@@ -130,6 +134,20 @@ export function AppShell({
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
+        {/* A sandbox database says so, on every screen, above everything else.
+            The whole value of the `is_synthetic` flag is that you cannot spend
+            ten minutes in the wrong environment without noticing — so this is
+            deliberately loud, and deliberately not dismissible. */}
+        {isSynthetic ? (
+          <p
+            role="status"
+            className="flex items-center justify-center gap-2 bg-amber-200 px-4 py-1.5 text-center text-xs font-semibold text-amber-950"
+          >
+            <FlaskConical className="h-3.5 w-3.5 shrink-0" aria-hidden />
+            {t('syntheticBanner')}
+          </p>
+        ) : null}
+
         {/* Top bar, on every screen and every size: the quick-create "+" and the
             global search live here so they are never more than one click away. */}
         <header className="flex items-center justify-between gap-2 border-b border-ink-200 bg-white px-4 py-2">
