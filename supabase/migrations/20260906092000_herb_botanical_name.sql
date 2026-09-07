@@ -29,6 +29,11 @@ create index if not exists herbs_botanical_trgm_idx
 -- Recreated rather than altered: a view's column list is fixed at creation, and
 -- every screen that reads stock levels expects the botanical name alongside.
 
+-- The dependent view is dropped first. It does not exist yet the first time
+-- this migration runs, which is what `if exists` is for; on a database that has
+-- already reached migration 094000 it does, and Postgres will refuse to drop
+-- what it stands on. Migration 094000 rebuilds it.
+drop view if exists public.formula_stock_levels;
 drop view if exists public.herb_stock_levels;
 
 create view public.herb_stock_levels
