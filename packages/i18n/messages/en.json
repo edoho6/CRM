@@ -268,16 +268,18 @@
     "contactActions": "Actions for {phone}",
     "sendWhatsApp": "Send a WhatsApp message",
     "callPhone": "Call",
-    "treatmentStatus": "Treatment status",
+    "treatmentStatus": "Patient status",
     "status": {
       "active": "In treatment",
       "completed": "Course finished",
       "dropped_out": "Stopped partway",
       "full_success": "Finished — full improvement",
       "partial_success": "Finished — partial improvement",
-      "unsuccessful": "Treatment did not help"
+      "unsuccessful": "Treatment did not help",
+      "inactive": "Not active"
     },
-    "allStatuses": "All statuses"
+    "allStatuses": "All statuses",
+    "treatmentStatusHint": "Only \"in treatment\" keeps the file in the working list."
   },
   "appointments": {
     "title": "Calendar",
@@ -751,8 +753,12 @@
       "searchFormula": "Search a formula, or type a name",
       "searchHerb": "Search a herb, or type a name",
       "notInCatalogue": "Not in the catalogue — kept as written",
-      "daysSupply": "For how long",
-      "daysSupplyPlaceholder": "e.g. 10 days, until the next visit"
+      "herbs": "Herbs",
+      "totalQuantity": "Total quantity",
+      "totalQuantityHint": "Give a total and the numbers beside each herb are read as relative parts; the actual weights are worked out from them.",
+      "parts": "Parts",
+      "doseAsParts": "numbers = parts",
+      "doseAsGrams": "numbers = {unit}"
     },
     "tcmCategory": {
       "release_exterior_warm": "Release the exterior — warm, acrid",
@@ -916,6 +922,13 @@
       "dried_herb": "Dried herb",
       "powder": "Powder",
       "tincture": "Tincture"
+    },
+    "granules": {
+      "title": "Granule conversion",
+      "explainer": "Granules are a {ratio}:1 concentrate — one gram of granule stands for {ratio} grams of raw herb. The ratio varies by manufacturer and by herb; check it matches what you hold.",
+      "rawHerb": "Dried herb",
+      "granules": "Granules",
+      "result": "{raw} g dried herb = {granules} g granules"
     }
   },
   "portal": {

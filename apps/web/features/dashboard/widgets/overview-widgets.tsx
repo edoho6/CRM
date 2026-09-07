@@ -41,7 +41,9 @@ function PatientStatsWidget() {
   return (
     <div className="grid h-full grid-cols-2 gap-3">
       <div className="flex flex-col justify-center rounded-lg bg-jade-50 px-3 py-2">
-        <span className="text-2xl font-semibold text-jade-800 tabular-nums">{data?.active ?? 0}</span>
+        <span className="text-2xl font-semibold text-jade-800 tabular-nums">
+          {data?.active ?? 0}
+        </span>
         <span className="text-xs text-jade-700">{t('activePatients')}</span>
       </div>
       <div className="flex flex-col justify-center rounded-lg bg-ink-50 px-3 py-2">

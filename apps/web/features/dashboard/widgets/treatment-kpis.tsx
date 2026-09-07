@@ -176,7 +176,9 @@ function DayColumns({ days, labelEvery }: { days: PeriodStats['days']; labelEver
                     role="tooltip"
                     className="pointer-events-none absolute bottom-full z-10 mb-1 rounded-md border border-ink-200 bg-white px-2 py-1 text-xs whitespace-nowrap text-ink-800 shadow-md"
                   >
-                    <span dir="ltr">{format.dateTime(day.date, { day: 'numeric', month: 'short' })}</span>
+                    <span dir="ltr">
+                      {format.dateTime(day.date, { day: 'numeric', month: 'short' })}
+                    </span>
                     {' · '}
                     {t('treatmentCount', { count: day.count })}
                   </div>
@@ -192,7 +194,10 @@ function DayColumns({ days, labelEvery }: { days: PeriodStats['days']; labelEver
           <div key={day.key} className="text-center" style={{ width: `${columnWidth}%` }}>
             {index % labelEvery === 0 || day.isToday ? (
               <span dir="ltr" className={cn(day.isToday && 'font-semibold text-jade-800')}>
-                {format.dateTime(day.date, labelEvery === 1 ? { weekday: 'short' } : { day: 'numeric' })}
+                {format.dateTime(
+                  day.date,
+                  labelEvery === 1 ? { weekday: 'short' } : { day: 'numeric' },
+                )}
               </span>
             ) : null}
           </div>
@@ -202,7 +207,15 @@ function DayColumns({ days, labelEvery }: { days: PeriodStats['days']; labelEver
   );
 }
 
-function Delta({ current, previous, periodLabel }: { current: number; previous: number; periodLabel: string }) {
+function Delta({
+  current,
+  previous,
+  periodLabel,
+}: {
+  current: number;
+  previous: number;
+  periodLabel: string;
+}) {
   const t = useTranslations('widgets.treatmentKpis');
   const delta = current - previous;
   const Icon = delta > 0 ? TrendingUp : delta < 0 ? TrendingDown : Minus;
@@ -291,7 +304,11 @@ function TreatmentKpisWidget({ size }: WidgetProps<Record<string, never>>) {
                 {format.number(stat.current)}
               </span>
               <span className="mt-1 block">
-                <Delta current={stat.current} previous={stat.previous} periodLabel={period.previousLabel} />
+                <Delta
+                  current={stat.current}
+                  previous={stat.previous}
+                  periodLabel={period.previousLabel}
+                />
               </span>
             </button>
           );
@@ -325,7 +342,10 @@ function TreatmentKpisWidget({ size }: WidgetProps<Record<string, never>>) {
               <p className="text-xs font-medium text-ink-500">
                 {openPeriod === 'week' ? t('byDayThisWeek') : t('byDayThisMonth')}
               </p>
-              <DayColumns days={stats[openPeriod].days} labelEvery={openPeriod === 'week' ? 1 : 5} />
+              <DayColumns
+                days={stats[openPeriod].days}
+                labelEvery={openPeriod === 'week' ? 1 : 5}
+              />
             </>
           )}
         </div>

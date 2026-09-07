@@ -268,10 +268,7 @@ export function CalendarView({
         ? format.dateTime(startOfMonth(anchor), 'monthYear')
         : `${format.dateTime(days[0]!, 'short')} – ${format.dateTime(days[days.length - 1]!, 'short')}`;
 
-  const totalInView = days.reduce(
-    (sum, day) => sum + (byDay.get(toDateKey(day))?.length ?? 0),
-    0,
-  );
+  const totalInView = days.reduce((sum, day) => sum + (byDay.get(toDateKey(day))?.length ?? 0), 0);
 
   return (
     <div className="space-y-3">
@@ -283,10 +280,20 @@ export function CalendarView({
           {view !== 'range' ? (
             <>
               {/* Chevrons point in reading order: "previous" is towards the start edge. */}
-              <Button variant="secondary" size="icon" onClick={() => navigate(-1)} aria-label={tc('back')}>
+              <Button
+                variant="secondary"
+                size="icon"
+                onClick={() => navigate(-1)}
+                aria-label={tc('back')}
+              >
                 {isRtl ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
               </Button>
-              <Button variant="secondary" size="icon" onClick={() => navigate(1)} aria-label={tc('viewAll')}>
+              <Button
+                variant="secondary"
+                size="icon"
+                onClick={() => navigate(1)}
+                aria-label={tc('viewAll')}
+              >
                 {isRtl ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
               </Button>
               <Button variant="secondary" size="sm" onClick={goToday}>
@@ -373,137 +380,153 @@ export function CalendarView({
           onAddOn={(day) => openSlot(day, 4)}
         />
       ) : (
-      <div className="overflow-x-auto rounded-card border border-ink-200 bg-white">
-        <div className="min-w-[720px]">
-          {/* Header row: time gutter + one cell per day. */}
-          <div
-            className="grid border-b border-ink-200"
-            style={{ gridTemplateColumns: `4rem repeat(${days.length}, minmax(0, 1fr))` }}
-          >
-            <div className="border-e border-ink-100" />
-            {days.map((day) => {
-              const today = isSameDay(day, new Date());
-              return (
-                <div
-                  key={day.toISOString()}
-                  className={cn(
-                    'border-e border-ink-100 px-2 py-1.5 text-center last:border-e-0',
-                    today && 'bg-jade-50',
-                  )}
-                >
-                  <div className={cn('text-xs font-medium', today ? 'text-jade-800' : 'text-ink-600')}>
-                    {format.dateTime(day, { weekday: 'short' })}
-                  </div>
-                  <div className={cn('text-sm', today ? 'font-semibold text-jade-900' : 'text-ink-800')}>
-                    {format.dateTime(day, { day: 'numeric', month: 'numeric' })}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Body: time gutter + day columns with absolutely-placed events. */}
-          <div
-            className="grid"
-            style={{ gridTemplateColumns: `4rem repeat(${days.length}, minmax(0, 1fr))` }}
-          >
-            <div className="border-e border-ink-100">
-              {Array.from({ length: SLOT_COUNT }, (_, index) => {
-                const minutes = DAY_START_HOUR * 60 + index * SLOT_MINUTES;
-                const isHour = minutes % 60 === 0;
+        <div className="overflow-x-auto rounded-card border border-ink-200 bg-white">
+          <div className="min-w-[720px]">
+            {/* Header row: time gutter + one cell per day. */}
+            <div
+              className="grid border-b border-ink-200"
+              style={{ gridTemplateColumns: `4rem repeat(${days.length}, minmax(0, 1fr))` }}
+            >
+              <div className="border-e border-ink-100" />
+              {days.map((day) => {
+                const today = isSameDay(day, new Date());
                 return (
                   <div
-                    key={index}
-                    style={{ height: SLOT_HEIGHT }}
-                    className={cn('relative', isHour && 'border-t border-ink-100')}
+                    key={day.toISOString()}
+                    className={cn(
+                      'border-e border-ink-100 px-2 py-1.5 text-center last:border-e-0',
+                      today && 'bg-jade-50',
+                    )}
                   >
-                    {isHour ? (
-                      <span
-                        className="absolute -top-2 end-1.5 text-[11px] text-ink-500 tabular-nums"
-                        dir="ltr"
-                      >
-                        {String(Math.floor(minutes / 60)).padStart(2, '0')}:00
-                      </span>
-                    ) : null}
+                    <div
+                      className={cn(
+                        'text-xs font-medium',
+                        today ? 'text-jade-800' : 'text-ink-600',
+                      )}
+                    >
+                      {format.dateTime(day, { weekday: 'short' })}
+                    </div>
+                    <div
+                      className={cn(
+                        'text-sm',
+                        today ? 'font-semibold text-jade-900' : 'text-ink-800',
+                      )}
+                    >
+                      {format.dateTime(day, { day: 'numeric', month: 'numeric' })}
+                    </div>
                   </div>
                 );
               })}
             </div>
 
-            {days.map((day) => {
-              const key = toDateKey(day);
-              const dayAppointments = byDay.get(key) ?? [];
-              const positioned = positionDay(dayAppointments);
-              const today = isSameDay(day, new Date());
-
-              return (
-                <div
-                  key={key}
-                  className={cn('relative border-e border-ink-100 last:border-e-0', today && 'bg-jade-50/40')}
-                >
-                  {/* Clickable background slots. */}
-                  {Array.from({ length: SLOT_COUNT }, (_, index) => {
-                    const minutes = DAY_START_HOUR * 60 + index * SLOT_MINUTES;
-                    return (
-                      <button
-                        key={index}
-                        type="button"
-                        onClick={() => openSlot(day, index)}
-                        style={{ height: SLOT_HEIGHT }}
-                        className={cn(
-                          'block w-full transition-colors hover:bg-jade-100/60',
-                          minutes % 60 === 0 ? 'border-t border-ink-100' : 'border-t border-ink-50',
-                        )}
-                        aria-label={`${format.dateTime(day, 'short')} ${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`}
-                      />
-                    );
-                  })}
-
-                  {positioned.map(({ appointment, top, height, column, columns }) => {
-                    const color = appointment.appointment_type?.color ?? '#0ea5e9';
-                    const isCancelled = appointment.status === 'cancelled';
-                    const widthPercent = 100 / columns;
-                    return (
-                      <button
-                        key={appointment.id}
-                        type="button"
-                        onClick={() => openAppointment(appointment)}
-                        style={{
-                          top,
-                          height,
-                          // Logical offsets keep events flowing in reading order.
-                          insetInlineStart: `calc(${column * widthPercent}% + 2px)`,
-                          width: `calc(${widthPercent}% - 4px)`,
-                          borderInlineStartColor: color,
-                          backgroundColor: isCancelled ? undefined : `${color}1a`,
-                        }}
-                        className={cn(
-                          'absolute overflow-hidden rounded-md border-s-3 px-1.5 py-0.5 text-start transition-shadow hover:shadow-md',
-                          isCancelled
-                            ? 'bg-ink-100 text-ink-500 line-through'
-                            : 'text-ink-900',
-                        )}
-                      >
-                        <span className="block truncate text-[11px] font-medium tabular-nums" dir="ltr">
-                          {format.dateTime(new Date(appointment.start_at), 'time')}
+            {/* Body: time gutter + day columns with absolutely-placed events. */}
+            <div
+              className="grid"
+              style={{ gridTemplateColumns: `4rem repeat(${days.length}, minmax(0, 1fr))` }}
+            >
+              <div className="border-e border-ink-100">
+                {Array.from({ length: SLOT_COUNT }, (_, index) => {
+                  const minutes = DAY_START_HOUR * 60 + index * SLOT_MINUTES;
+                  const isHour = minutes % 60 === 0;
+                  return (
+                    <div
+                      key={index}
+                      style={{ height: SLOT_HEIGHT }}
+                      className={cn('relative', isHour && 'border-t border-ink-100')}
+                    >
+                      {isHour ? (
+                        <span
+                          className="absolute -top-2 end-1.5 text-[11px] text-ink-500 tabular-nums"
+                          dir="ltr"
+                        >
+                          {String(Math.floor(minutes / 60)).padStart(2, '0')}:00
                         </span>
-                        <span className="block truncate text-xs">
-                          {patientFullName(appointment.patient)}
-                        </span>
-                        {height > 44 ? (
-                          <span className="block truncate text-[11px] text-ink-500">
-                            {appointmentTypeName(appointment.appointment_type, locale)}
+                      ) : null}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {days.map((day) => {
+                const key = toDateKey(day);
+                const dayAppointments = byDay.get(key) ?? [];
+                const positioned = positionDay(dayAppointments);
+                const today = isSameDay(day, new Date());
+
+                return (
+                  <div
+                    key={key}
+                    className={cn(
+                      'relative border-e border-ink-100 last:border-e-0',
+                      today && 'bg-jade-50/40',
+                    )}
+                  >
+                    {/* Clickable background slots. */}
+                    {Array.from({ length: SLOT_COUNT }, (_, index) => {
+                      const minutes = DAY_START_HOUR * 60 + index * SLOT_MINUTES;
+                      return (
+                        <button
+                          key={index}
+                          type="button"
+                          onClick={() => openSlot(day, index)}
+                          style={{ height: SLOT_HEIGHT }}
+                          className={cn(
+                            'block w-full transition-colors hover:bg-jade-100/60',
+                            minutes % 60 === 0
+                              ? 'border-t border-ink-100'
+                              : 'border-t border-ink-50',
+                          )}
+                          aria-label={`${format.dateTime(day, 'short')} ${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`}
+                        />
+                      );
+                    })}
+
+                    {positioned.map(({ appointment, top, height, column, columns }) => {
+                      const color = appointment.appointment_type?.color ?? '#0ea5e9';
+                      const isCancelled = appointment.status === 'cancelled';
+                      const widthPercent = 100 / columns;
+                      return (
+                        <button
+                          key={appointment.id}
+                          type="button"
+                          onClick={() => openAppointment(appointment)}
+                          style={{
+                            top,
+                            height,
+                            // Logical offsets keep events flowing in reading order.
+                            insetInlineStart: `calc(${column * widthPercent}% + 2px)`,
+                            width: `calc(${widthPercent}% - 4px)`,
+                            borderInlineStartColor: color,
+                            backgroundColor: isCancelled ? undefined : `${color}1a`,
+                          }}
+                          className={cn(
+                            'absolute overflow-hidden rounded-md border-s-3 px-1.5 py-0.5 text-start transition-shadow hover:shadow-md',
+                            isCancelled ? 'bg-ink-100 text-ink-500 line-through' : 'text-ink-900',
+                          )}
+                        >
+                          <span
+                            className="block truncate text-[11px] font-medium tabular-nums"
+                            dir="ltr"
+                          >
+                            {format.dateTime(new Date(appointment.start_at), 'time')}
                           </span>
-                        ) : null}
-                      </button>
-                    );
-                  })}
-                </div>
-              );
-            })}
+                          <span className="block truncate text-xs">
+                            {patientFullName(appointment.patient)}
+                          </span>
+                          {height > 44 ? (
+                            <span className="block truncate text-[11px] text-ink-500">
+                              {appointmentTypeName(appointment.appointment_type, locale)}
+                            </span>
+                          ) : null}
+                        </button>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
-      </div>
       )}
 
       <AppointmentDialog
@@ -633,7 +656,11 @@ function MonthOrRangeView({
                   <span
                     className={cn(
                       'text-xs tabular-nums',
-                      today ? 'font-semibold text-jade-800' : outside ? 'text-ink-500' : 'text-ink-700',
+                      today
+                        ? 'font-semibold text-jade-800'
+                        : outside
+                          ? 'text-ink-500'
+                          : 'text-ink-700',
                     )}
                   >
                     {format.dateTime(day, { day: 'numeric' })}

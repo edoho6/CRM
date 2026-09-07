@@ -70,7 +70,14 @@ export async function HerbFilters({ filters }: { filters: HerbFilterState }) {
       activeCount={activeFilterCount(filters)}
       clearHref={{
         pathname: PATH,
-        query: herbFilterQuery({ q: filters.q, cat: [], temp: [], taste: [], chan: [], review: false }),
+        query: herbFilterQuery({
+          q: filters.q,
+          cat: [],
+          temp: [],
+          taste: [],
+          chan: [],
+          review: false,
+        }),
       }}
     />
   );

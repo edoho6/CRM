@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { Search, X } from 'lucide-react';
 import { cn } from './cn';
+import { FloatingList, useAnchoredPosition } from './popover';
 
 /**
  * Type-ahead selection over a list that is too long for a dropdown.
@@ -49,7 +50,12 @@ function normalise(value: string): string {
 
 /** Ranked so an exact code beats a prefix, and a prefix beats a mention. */
 function rank(option: ComboboxOption, needle: string): number {
-  const fields = [option.label, option.secondary ?? '', option.tertiary ?? '', option.keywords ?? ''];
+  const fields = [
+    option.label,
+    option.secondary ?? '',
+    option.tertiary ?? '',
+    option.keywords ?? '',
+  ];
   let best = -1;
   for (const raw of fields) {
     const field = normalise(raw);
@@ -95,6 +101,7 @@ export function Combobox({
   const [open, setOpen] = React.useState(false);
   const [highlight, setHighlight] = React.useState(0);
   const inputRef = React.useRef<HTMLInputElement>(null);
+  const fieldRef = React.useRef<HTMLDivElement>(null);
   const reactId = React.useId();
   const listId = `${id ?? reactId}-options`;
 
@@ -136,9 +143,14 @@ export function Combobox({
   }
 
   const showCustomHint = allowCustom && term.trim() !== '' && matches.length === 0;
+  const listVisible = open && (matches.length > 0 || showCustomHint);
+
+  // The list is rendered into the body and positioned against the field, so a
+  // combobox inside a scrolling table is not cut off by it.
+  const listStyle = useAnchoredPosition(fieldRef, listVisible);
 
   return (
-    <div className={cn('relative', className)}>
+    <div ref={fieldRef} className={cn('relative', className)}>
       <Search
         className="pointer-events-none absolute inset-y-0 start-2.5 my-auto h-4 w-4 text-ink-500"
         aria-hidden
@@ -205,13 +217,8 @@ export function Combobox({
         </button>
       ) : null}
 
-      {open && (matches.length > 0 || showCustomHint) ? (
-        <ul
-          id={listId}
-          role="listbox"
-          aria-label={label}
-          className="absolute z-30 mt-1 max-h-72 w-full overflow-auto rounded-lg border border-ink-200 bg-white py-1 shadow-lg"
-        >
+      {listVisible ? (
+        <FloatingList id={listId} role="listbox" aria-label={label} style={listStyle}>
           {matches.map((option, index) => (
             <li key={option.id}>
               <button
@@ -259,7 +266,7 @@ export function Combobox({
               </button>
             </li>
           ) : null}
-        </ul>
+        </FloatingList>
       ) : null}
     </div>
   );

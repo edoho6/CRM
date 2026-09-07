@@ -1,4 +1,4 @@
-import type { Locale } from '@clinic/domain';
+import type { Locale, TreatmentStatus } from '@clinic/domain';
 
 /**
  * Naming helpers.
@@ -139,4 +139,33 @@ export function patientFullName(
   if (!patient) return '';
   if (patient.full_name?.trim()) return patient.full_name.trim();
   return [patient.first_name, patient.last_name].filter(Boolean).join(' ').trim();
+}
+
+/**
+ * The badge colour for a patient's status.
+ *
+ * Green for in-treatment and for a full recovery, red only for a course that
+ * did not help, amber for someone who stopped partway — the onestate worth
+ * noticing — and neutral for the rest. Colour is never the only signal: the
+ * badge always carries its label.
+ */
+export function patientStatusTone(
+  status: TreatmentStatus | null | undefined,
+): 'success' | 'danger' | 'warning' | 'neutral' | 'muted' {
+  switch (status) {
+    case 'full_success':
+      return 'success';
+    case 'active':
+    case null:
+    case undefined:
+      return 'success';
+    case 'unsuccessful':
+      return 'danger';
+    case 'dropped_out':
+      return 'warning';
+    case 'inactive':
+      return 'muted';
+    default:
+      return 'neutral';
+  }
 }

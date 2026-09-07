@@ -64,7 +64,10 @@ function RevenueWidget() {
   if (loading) return <WidgetLoading />;
 
   return (
-    <Link href="/billing" className="flex h-full flex-col justify-between gap-3 rounded-lg transition-colors hover:bg-ink-50/60">
+    <Link
+      href="/billing"
+      className="flex h-full flex-col justify-between gap-3 rounded-lg transition-colors hover:bg-ink-50/60"
+    >
       <div>
         <p className="text-xs font-medium text-ink-500">{t('collectedThisMonth')}</p>
         <p className="mt-1 text-3xl font-semibold text-jade-800" dir="ltr">

@@ -45,13 +45,7 @@ interface ItemRow {
  * A formula is a template, not a prescription: it stores one dose of each herb, and
  * the multiplier applied at dispensing time decides how many days are handed over.
  */
-export function FormulaForm({
-  formula,
-  herbs,
-}: {
-  formula?: HerbFormulaWithItems;
-  herbs: Herb[];
-}) {
+export function FormulaForm({ formula, herbs }: { formula?: HerbFormulaWithItems; herbs: Herb[] }) {
   const t = useTranslations('inventory.formulas');
   const tf = useTranslations('inventory.formulas.fields');
   const tCategory = useTranslations('inventory.formulas.category');
@@ -69,7 +63,9 @@ export function FormulaForm({
   const [nameEnglish, setNameEnglish] = useState(formula?.name_english ?? '');
   const [nameHebrew, setNameHebrew] = useState(formula?.name_hebrew ?? '');
   const [category, setCategory] = useState<FormulaCategory>(formula?.category ?? 'custom');
-  const [tcmCategory, setTcmCategory] = useState<FormulaTcmCategory | ''>(formula?.tcm_category ?? '');
+  const [tcmCategory, setTcmCategory] = useState<FormulaTcmCategory | ''>(
+    formula?.tcm_category ?? '',
+  );
   const [sourceText, setSourceText] = useState(formula?.source_text ?? '');
   const [actions, setActions] = useState(formula?.actions ?? '');
   const [description, setDescription] = useState(formula?.description ?? '');
@@ -200,7 +196,9 @@ export function FormulaForm({
                 <Select
                   id="tcm_category"
                   value={tcmCategory}
-                  onChange={(event) => setTcmCategory(event.target.value as FormulaTcmCategory | '')}
+                  onChange={(event) =>
+                    setTcmCategory(event.target.value as FormulaTcmCategory | '')
+                  }
                 >
                   <option value="">—</option>
                   {FORMULA_TCM_CATEGORIES.map((value) => (
@@ -219,7 +217,10 @@ export function FormulaForm({
               </Field>
             </FieldGrid>
             <label className="mt-4 flex items-center gap-2 text-sm text-ink-700">
-              <Checkbox checked={isActive} onChange={(event) => setIsActive(event.target.checked)} />
+              <Checkbox
+                checked={isActive}
+                onChange={(event) => setIsActive(event.target.checked)}
+              />
               {tc('active')}
             </label>
           </Section>
@@ -315,7 +316,9 @@ export function FormulaForm({
                     aria-label={tc('unit')}
                     className="w-28"
                     value={item.unit}
-                    onChange={(event) => updateItem(index, { unit: event.target.value as HerbUnit })}
+                    onChange={(event) =>
+                      updateItem(index, { unit: event.target.value as HerbUnit })
+                    }
                   >
                     {HERB_UNITS.map((unit) => (
                       <option key={unit} value={unit}>
@@ -348,7 +351,9 @@ export function FormulaForm({
               variant="secondary"
               size="sm"
               className="mt-2"
-              onClick={() => setItems([...items, { herb_id: '', dosage: '', unit: 'gram', notes: '' }])}
+              onClick={() =>
+                setItems([...items, { herb_id: '', dosage: '', unit: 'gram', notes: '' }])
+              }
             >
               <Plus className="h-4 w-4" />
               {t('addItem')}
@@ -358,7 +363,12 @@ export function FormulaForm({
       </Card>
 
       <div className="flex justify-end gap-2">
-        <Button type="button" variant="secondary" onClick={() => router.back()} disabled={isPending}>
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={() => router.back()}
+          disabled={isPending}
+        >
           {tc('cancel')}
         </Button>
         <Button type="submit" disabled={isPending}>

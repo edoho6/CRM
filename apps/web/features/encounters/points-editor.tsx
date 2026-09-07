@@ -1,9 +1,18 @@
 'use client';
 
 import { useMemo, useRef, useState } from 'react';
-import { useTranslations } from 'next-intl';
-import { Search, X } from 'lucide-react';
-import { Select } from '@clinic/ui';
+import { useLocale, useTranslations } from 'next-intl';
+import {
+  ArrowDownLeft,
+  ArrowDownRight,
+  ArrowUpLeft,
+  ArrowUpRight,
+  Ear,
+  Minus,
+  Search,
+  X,
+} from 'lucide-react';
+import { FloatingList, Select, useAnchoredPosition } from '@clinic/ui';
 import { cn } from '@clinic/ui/cn';
 import {
   NEEDLE_TECHNIQUES,
@@ -27,10 +36,12 @@ import {
  * answering the same question twice, and left the body chart unable to do
  * anything but mark both sides.
  *
- * Right sits on the right of the grid and left on the left, following the words
- * rather than the front-view convention where a facing patient's right appears
- * on the reader's left. The words are what gets typed under pressure; the chart
- * beside it is what shows the anatomy.
+ * Right sits on the physical right of the screen and left on the physical left,
+ * in both languages — the column order is reversed for Hebrew so that reading
+ * the word and looking at the position give the same answer. That is deliberate
+ * rather than following the front-view convention where a facing patient's right
+ * appears on the reader's left: the words are what gets typed under pressure,
+ * and the chart beside it is what shows the anatomy.
  *
  * Anything can be typed. A code from the catalogue carries an id, which is what
  * puts a dot on the body map and links through to the point's page; free text
@@ -39,11 +50,70 @@ import {
  * being complete.
  */
 
-/** The cross, row by row. Empty strings are the gaps that give it its shape. */
-const PLACEMENT_GRID: readonly (PointPlacement | null)[][] = [
-  ['right_upper', 'center', 'left_upper'],
-  ['right_lower', 'ear', 'left_lower'],
-];
+/**
+ * How each quadrant is drawn.
+ *
+ * The two sides carry different hues so a glance separates them, but colour is
+ * never the only signal: every panel also has its label and an arrow pointing at
+ * the physical corner it occupies. Someone who cannot tell jade from sky still
+ * has two independent cues.
+ *
+ * Written as whole class strings rather than composed at runtime, because
+ * Tailwind can only see classes that appear literally in the source.
+ */
+const PLACEMENT_STYLES: Record<
+  PointPlacement,
+  {
+    icon: typeof ArrowUpRight;
+    panel: string;
+    label: string;
+    icon_class: string;
+    count: string;
+  }
+> = {
+  right_upper: {
+    icon: ArrowUpRight,
+    panel: 'border-jade-200 bg-jade-50/60',
+    label: 'text-jade-800',
+    icon_class: 'text-jade-700',
+    count: 'bg-jade-100 text-jade-800',
+  },
+  right_lower: {
+    icon: ArrowDownRight,
+    panel: 'border-jade-200 bg-jade-50/60',
+    label: 'text-jade-800',
+    icon_class: 'text-jade-700',
+    count: 'bg-jade-100 text-jade-800',
+  },
+  left_upper: {
+    icon: ArrowUpLeft,
+    panel: 'border-sky-200 bg-sky-50/60',
+    label: 'text-sky-800',
+    icon_class: 'text-sky-700',
+    count: 'bg-sky-100 text-sky-800',
+  },
+  left_lower: {
+    icon: ArrowDownLeft,
+    panel: 'border-sky-200 bg-sky-50/60',
+    label: 'text-sky-800',
+    icon_class: 'text-sky-700',
+    count: 'bg-sky-100 text-sky-800',
+  },
+  center: {
+    icon: Minus,
+    panel: 'border-ink-200 bg-white',
+    label: 'text-ink-700',
+    icon_class: 'text-ink-600',
+    count: 'bg-ink-100 text-ink-700',
+  },
+  ear: {
+    icon: Ear,
+    panel: 'border-ink-200 bg-white',
+    label: 'text-ink-700',
+    icon_class: 'text-ink-600',
+    count: 'bg-ink-100 text-ink-700',
+  },
+};
 
 export interface PointOption {
   id: string;
@@ -83,7 +153,10 @@ function search(catalogue: PointOption[], term: string): PointOption[] {
     if (score >= 0) scored.push({ option, score });
     if (scored.length > 400) break;
   }
-  scored.sort((a, b) => a.score - b.score || a.option.code.localeCompare(b.option.code, 'en', { numeric: true }));
+  scored.sort(
+    (a, b) =>
+      a.score - b.score || a.option.code.localeCompare(b.option.code, 'en', { numeric: true }),
+  );
   return scored.slice(0, 8).map((entry) => entry.option);
 }
 
@@ -103,8 +176,17 @@ function PointCombobox({
   const [highlight, setHighlight] = useState(0);
   const [open, setOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const fieldRef = useRef<HTMLDivElement>(null);
 
   const matches = useMemo(() => search(catalogue, term), [catalogue, term]);
+
+  // The list is rendered into the body and measured against the viewport: these
+  // fields sit in a narrow grid cell, and an absolutely-positioned list was both
+  // cropped by it and too narrow to read a point's names in.
+  const listStyle = useAnchoredPosition(fieldRef, open && matches.length > 0, {
+    matchWidth: false,
+    maxHeight: 256,
+  });
 
   function addOption(option: PointOption) {
     onAdd({ point: option.code, point_id: option.id, region, technique: 'even' });
@@ -122,7 +204,7 @@ function PointCombobox({
   }
 
   return (
-    <div className="relative">
+    <div ref={fieldRef} className="relative">
       <Search
         className="pointer-events-none absolute inset-y-0 start-2 my-auto h-3.5 w-3.5 text-ink-500"
         aria-hidden
@@ -168,10 +250,10 @@ function PointCombobox({
       />
 
       {open && matches.length > 0 ? (
-        <ul
+        <FloatingList
           id={`point-options-${region}`}
           role="listbox"
-          className="absolute z-20 mt-1 max-h-64 w-full min-w-56 overflow-auto rounded-lg border border-ink-200 bg-white py-1 shadow-lg"
+          style={listStyle ? { ...listStyle, minWidth: 280 } : null}
         >
           {matches.map((option, index) => (
             <li key={option.id}>
@@ -204,7 +286,7 @@ function PointCombobox({
               </button>
             </li>
           ))}
-        </ul>
+        </FloatingList>
       ) : null}
     </div>
   );
@@ -224,6 +306,7 @@ export function PointsEditor({
   const t = useTranslations('encounters.points');
   const tRegion = useTranslations('encounters.region');
   const tTechnique = useTranslations('encounters.technique');
+  const isRtl = useLocale() === 'he';
 
   const byRegion = useMemo(() => {
     const groups = Object.fromEntries(
@@ -245,81 +328,130 @@ export function PointsEditor({
     onChange(value.filter((_, position) => position !== index));
   }
 
+  /*
+   * Columns are ordered so that "right" always lands on the physical right of
+   * the screen and "left" on the physical left, in both languages. In Hebrew
+   * the grid flows right-to-left, so the right-hand quadrants come first in the
+   * markup; in English it flows the other way and they come last. Reading the
+   * word and looking at the position give the same answer either way, which is
+   * the whole point of laying it out rather than listing it.
+   */
+  const columns: readonly (readonly PointPlacement[])[] = isRtl
+    ? [
+        ['right_upper', 'right_lower'],
+        ['center', 'ear'],
+        ['left_upper', 'left_lower'],
+      ]
+    : [
+        ['left_upper', 'left_lower'],
+        ['center', 'ear'],
+        ['right_upper', 'right_lower'],
+      ];
+
   return (
-    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-      {PLACEMENT_GRID.flat().map((region) => {
-        if (!region) return null;
-        const rows = byRegion[region];
-        return (
-          <section key={region} className="rounded-lg border border-ink-200 bg-ink-50/40 p-2">
-            <div className="mb-1.5 flex items-baseline justify-between gap-2">
-              <h4 className="text-xs font-semibold text-ink-600">{tRegion(region)}</h4>
-              {rows.length > 0 ? (
-                <span className="text-xs tabular-nums text-ink-500">{rows.length}</span>
-              ) : null}
-            </div>
-
-            {rows.length === 0 && disabled ? (
-              <p className="py-1 text-xs text-ink-500">{t('none')}</p>
-            ) : null}
-
-            <ul className="space-y-1.5">
-              {rows.map(({ row, index }) => (
-                <li
-                  key={index}
-                  className="flex flex-wrap items-center gap-1.5 rounded-md border border-ink-200 bg-white px-1.5 py-1"
-                >
-                  <span
-                    dir="ltr"
-                    className={cn(
-                      'text-sm font-semibold',
-                      // A point that came from the catalogue is the one that can
-                      // appear on the map; free text reads plainly so the
-                      // difference is visible without explanation.
-                      row.point_id ? 'text-jade-800' : 'text-ink-700',
-                    )}
-                  >
-                    {row.point}
-                  </span>
-                  <Select
-                    aria-label={t('technique')}
-                    value={row.technique}
-                    disabled={disabled}
-                    onChange={(event) => update(index, { technique: event.target.value as NeedleTechnique })}
-                    className="h-7 w-auto min-w-20 border-0 bg-transparent px-1 text-xs shadow-none"
-                  >
-                    {NEEDLE_TECHNIQUES.map((technique) => (
-                      <option key={technique} value={technique}>
-                        {tTechnique(technique)}
-                      </option>
-                    ))}
-                  </Select>
-                  {!disabled ? (
-                    <button
-                      type="button"
-                      onClick={() => remove(index)}
-                      aria-label={t('remove')}
-                      className="ms-auto rounded p-1 text-ink-500 transition-colors hover:bg-red-50 hover:text-red-600"
+    // The cross is drawn, not implied: the middle column is separated by real
+    // rules, so the four quadrants read as quadrants at a glance.
+    <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_auto_1fr] sm:gap-0 sm:rounded-lg sm:border sm:border-ink-200 sm:bg-ink-50/40 sm:p-2">
+      {columns.map((column, columnIndex) => (
+        <div
+          key={columnIndex}
+          className={cn(
+            'flex flex-col gap-2',
+            // The middle column is narrower and fenced off by the two rules
+            // that make the shape a cross.
+            columnIndex === 1 && 'sm:mx-2 sm:w-44 sm:border-x sm:border-ink-200 sm:px-2',
+          )}
+        >
+          {column.map((region) => {
+            const rows = byRegion[region];
+            const style = PLACEMENT_STYLES[region];
+            const Icon = style.icon;
+            return (
+              <section key={region} className={cn('flex-1 rounded-lg border p-2', style.panel)}>
+                <div className="mb-1.5 flex items-center gap-1.5">
+                  {/* The arrow points at the physical corner the panel occupies, so
+                  the quadrant is identifiable without reading the label — which
+                  matters when the words for left and right are the thing being
+                  told apart in a hurry. */}
+                  <Icon className={cn('h-3.5 w-3.5 shrink-0', style.icon_class)} aria-hidden />
+                  <h4 className={cn('text-xs font-semibold', style.label)}>{tRegion(region)}</h4>
+                  {rows.length > 0 ? (
+                    <span
+                      className={cn(
+                        'ms-auto rounded-full px-1.5 text-xs font-medium tabular-nums',
+                        style.count,
+                      )}
                     >
-                      <X className="h-3.5 w-3.5" />
-                    </button>
+                      {rows.length}
+                    </span>
                   ) : null}
-                </li>
-              ))}
-            </ul>
+                </div>
 
-            {!disabled ? (
-              <div className="mt-1.5">
-                <PointCombobox
-                  catalogue={catalogue}
-                  region={region}
-                  onAdd={(row) => onChange([...value, row])}
-                />
-              </div>
-            ) : null}
-          </section>
-        );
-      })}
+                {rows.length === 0 && disabled ? (
+                  <p className="py-1 text-xs text-ink-500">{t('none')}</p>
+                ) : null}
+
+                <ul className="space-y-1.5">
+                  {rows.map(({ row, index }) => (
+                    <li
+                      key={index}
+                      className="flex flex-wrap items-center gap-1.5 rounded-md border border-ink-200 bg-white px-1.5 py-1"
+                    >
+                      <span
+                        dir="ltr"
+                        className={cn(
+                          'text-sm font-semibold',
+                          // A point that came from the catalogue is the one that can
+                          // appear on the map; free text reads plainly so the
+                          // difference is visible without explanation.
+                          row.point_id ? 'text-jade-800' : 'text-ink-700',
+                        )}
+                      >
+                        {row.point}
+                      </span>
+                      <Select
+                        aria-label={t('technique')}
+                        value={row.technique}
+                        disabled={disabled}
+                        onChange={(event) =>
+                          update(index, { technique: event.target.value as NeedleTechnique })
+                        }
+                        className="h-7 w-auto min-w-20 border-0 bg-transparent px-1 text-xs shadow-none"
+                      >
+                        {NEEDLE_TECHNIQUES.map((technique) => (
+                          <option key={technique} value={technique}>
+                            {tTechnique(technique)}
+                          </option>
+                        ))}
+                      </Select>
+                      {!disabled ? (
+                        <button
+                          type="button"
+                          onClick={() => remove(index)}
+                          aria-label={t('remove')}
+                          className="ms-auto rounded p-1 text-ink-500 transition-colors hover:bg-red-50 hover:text-red-600"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+
+                {!disabled ? (
+                  <div className="mt-1.5">
+                    <PointCombobox
+                      catalogue={catalogue}
+                      region={region}
+                      onAdd={(row) => onChange([...value, row])}
+                    />
+                  </div>
+                ) : null}
+              </section>
+            );
+          })}
+        </div>
+      ))}
     </div>
   );
 }

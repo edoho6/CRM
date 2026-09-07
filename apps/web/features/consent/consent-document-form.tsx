@@ -83,7 +83,13 @@ export function ConsentDocumentForm({ kind, locale }: { kind: ConsentKind; local
       </p>
 
       <div className="flex justify-end gap-2">
-        <Button type="button" variant="secondary" size="sm" onClick={() => setOpen(false)} disabled={isPending}>
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          onClick={() => setOpen(false)}
+          disabled={isPending}
+        >
           {tc('cancel')}
         </Button>
         <Button type="submit" size="sm" disabled={isPending}>

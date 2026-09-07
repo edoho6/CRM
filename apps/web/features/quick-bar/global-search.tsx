@@ -234,11 +234,7 @@ export function GlobalSearch() {
   const showPanel = open && term.length >= MIN_QUERY_LENGTH;
 
   return (
-    <div
-      className="relative"
-      onMouseEnter={reveal}
-      onMouseLeave={scheduleClose}
-    >
+    <div className="relative" onMouseEnter={reveal} onMouseLeave={scheduleClose}>
       <div className="flex items-center gap-1.5">
         <button
           type="button"
@@ -302,7 +298,9 @@ export function GlobalSearch() {
               <Spinner /> {t('searching')}
             </p>
           ) : grouped.length === 0 ? (
-            <p className="py-6 text-center text-sm text-ink-500">{t('noResults', { query: term })}</p>
+            <p className="py-6 text-center text-sm text-ink-500">
+              {t('noResults', { query: term })}
+            </p>
           ) : (
             grouped.map(({ group, items }) => {
               const meta = GROUP_META[group];
@@ -330,7 +328,9 @@ export function GlobalSearch() {
                                 {result.primary}
                               </span>
                               {result.chinese ? (
-                                <span className="shrink-0 text-sm text-ink-500">{result.chinese}</span>
+                                <span className="shrink-0 text-sm text-ink-500">
+                                  {result.chinese}
+                                </span>
                               ) : null}
                             </span>
                             {result.secondary ? (

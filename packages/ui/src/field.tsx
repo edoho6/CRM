@@ -13,11 +13,12 @@ export const inputClasses =
   'disabled:cursor-not-allowed disabled:bg-ink-50 disabled:text-ink-500 ' +
   'read-only:bg-ink-50 read-only:text-ink-700';
 
-export const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(
-  ({ className, ...props }, ref) => (
-    <input ref={ref} className={cn(inputClasses, 'h-10', className)} {...props} />
-  ),
-);
+export const Input = React.forwardRef<
+  HTMLInputElement,
+  React.InputHTMLAttributes<HTMLInputElement>
+>(({ className, ...props }, ref) => (
+  <input ref={ref} className={cn(inputClasses, 'h-10', className)} {...props} />
+));
 Input.displayName = 'Input';
 
 /**
@@ -25,11 +26,12 @@ Input.displayName = 'Input';
  * emails, times. Without this, digits inside a Hebrew page render in a confusing
  * visual order. This is the single most common RTL bug in clinic software.
  */
-export const LtrInput = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(
-  ({ className, ...props }, ref) => (
-    <input ref={ref} dir="ltr" className={cn(inputClasses, 'h-10 field-ltr', className)} {...props} />
-  ),
-);
+export const LtrInput = React.forwardRef<
+  HTMLInputElement,
+  React.InputHTMLAttributes<HTMLInputElement>
+>(({ className, ...props }, ref) => (
+  <input ref={ref} dir="ltr" className={cn(inputClasses, 'h-10 field-ltr', className)} {...props} />
+));
 LtrInput.displayName = 'LtrInput';
 
 export const Textarea = React.forwardRef<
@@ -133,7 +135,11 @@ export function Field({
   return (
     <div className={cn(compact ? 'space-y-0.5' : 'space-y-1.5', className)}>
       {label ? (
-        <Label htmlFor={htmlFor} required={required} className={compact ? 'text-xs font-normal text-ink-600' : undefined}>
+        <Label
+          htmlFor={htmlFor}
+          required={required}
+          className={compact ? 'text-xs font-normal text-ink-600' : undefined}
+        >
           {label}
         </Label>
       ) : null}
@@ -151,7 +157,12 @@ export function Field({
         </p>
       ) : null}
       {error ? (
-        <p id={errorId} className="text-xs font-medium text-red-700" role="alert" aria-live="polite">
+        <p
+          id={errorId}
+          className="text-xs font-medium text-red-700"
+          role="alert"
+          aria-live="polite"
+        >
           {error}
         </p>
       ) : null}

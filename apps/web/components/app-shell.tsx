@@ -37,7 +37,13 @@ const NAV_ITEMS = [
   { href: '/', labelKey: 'dashboard', icon: LayoutDashboard, exact: true, stockOnly: false },
   { href: '/patients', labelKey: 'patients', icon: Users, exact: false, stockOnly: false },
   { href: '/calendar', labelKey: 'calendar', icon: CalendarDays, exact: false, stockOnly: false },
-  { href: '/encounters', labelKey: 'encounters', icon: ClipboardList, exact: false, stockOnly: false },
+  {
+    href: '/encounters',
+    labelKey: 'encounters',
+    icon: ClipboardList,
+    exact: false,
+    stockOnly: false,
+  },
   { href: '/reference', labelKey: 'reference', icon: BookOpen, exact: false, stockOnly: false },
   { href: '/inventory', labelKey: 'inventory', icon: Boxes, exact: false, stockOnly: true },
   { href: '/billing', labelKey: 'billing', icon: Receipt, exact: false, stockOnly: false },
@@ -139,9 +145,16 @@ export function AppShell({
           still navigate from is worth more than the extra 3rem, and the whole
           point of collapsing is to give a wide table more room, not to hide the
           way back out of it. */}
+      {/* Stuck to the viewport, its own height, its own scroll.
+          Before this the sidebar was as tall as the page, so on a long herb
+          table the settings, theme and sign-out at its foot were a thousand
+          pixels down — reachable only by scrolling past the content they were
+          meant to sit beside. Now the panel is exactly the height of the window
+          and the navigation scrolls inside it, so the foot is always at the
+          foot. */}
       <aside
         className={cn(
-          'hidden shrink-0 flex-col border-e border-ink-200 bg-white transition-[width] duration-200 lg:flex',
+          'sticky top-0 hidden h-dvh shrink-0 flex-col border-e border-ink-200 bg-white transition-[width] duration-200 lg:flex',
           collapsed ? 'w-14' : 'w-60',
         )}
         aria-label={t('sidebar')}
@@ -157,17 +170,24 @@ export function AppShell({
           </span>
           {!collapsed ? (
             <span className="min-w-0">
-              <span className="block truncate text-sm font-semibold text-ink-900">{clinicName}</span>
+              <span className="block truncate text-sm font-semibold text-ink-900">
+                {clinicName}
+              </span>
               <span className="block truncate text-xs text-ink-500">{userName}</span>
             </span>
           ) : null}
         </div>
 
-        <div className={cn('flex-1 overflow-y-auto', collapsed ? 'p-2' : 'p-3')}>
+        {/* `min-h-0` is what makes the scroll actually happen: without it a flex
+            child refuses to shrink below its content, so the list pushes the
+            footer off the bottom instead of scrolling. */}
+        <div className={cn('min-h-0 flex-1 overflow-y-auto', collapsed ? 'p-2' : 'p-3')}>
           {navList(collapsed)}
         </div>
 
-        <div className={cn('space-y-2 border-t border-ink-100', collapsed ? 'p-2' : 'p-3')}>
+        <div
+          className={cn('shrink-0 space-y-2 border-t border-ink-100', collapsed ? 'p-2' : 'p-3')}
+        >
           <Button
             asChild
             variant="ghost"
@@ -187,7 +207,11 @@ export function AppShell({
           >
             <Link href="/accessibility" title={collapsed ? t('accessibility') : undefined}>
               <Accessibility className="h-4 w-4" />
-              {!collapsed ? t('accessibility') : <span className="sr-only">{t('accessibility')}</span>}
+              {!collapsed ? (
+                t('accessibility')
+              ) : (
+                <span className="sr-only">{t('accessibility')}</span>
+              )}
             </Link>
           </Button>
 
@@ -226,7 +250,10 @@ export function AppShell({
             )}
           >
             <ChevronsRight
-              className={cn('h-4 w-4 shrink-0 transition-transform rtl:-scale-x-100', !collapsed && 'rotate-180')}
+              className={cn(
+                'h-4 w-4 shrink-0 transition-transform rtl:-scale-x-100',
+                !collapsed && 'rotate-180',
+              )}
               aria-hidden
             />
             {!collapsed ? (
@@ -268,7 +295,9 @@ export function AppShell({
             >
               <Menu className="h-5 w-5" />
             </Button>
-            <span className="truncate text-sm font-semibold text-ink-900 lg:hidden">{clinicName}</span>
+            <span className="truncate text-sm font-semibold text-ink-900 lg:hidden">
+              {clinicName}
+            </span>
           </div>
           <div className="flex shrink-0 items-center gap-1.5">
             <GlobalSearch />
@@ -281,7 +310,12 @@ export function AppShell({
           <div id="mobile-menu" className="border-b border-ink-200 bg-white p-3 lg:hidden">
             <div className="mb-2 flex items-center justify-between">
               <span className="text-xs text-ink-500">{userName}</span>
-              <Button variant="ghost" size="icon" onClick={() => setMobileOpen(false)} aria-label={t('mainMenu')}>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setMobileOpen(false)}
+                aria-label={t('mainMenu')}
+              >
                 <X className="h-4 w-4" />
               </Button>
             </div>
@@ -301,7 +335,11 @@ export function AppShell({
 
         {/* `tabIndex={-1}` so the skip link can move focus here, not merely
             scroll to it — otherwise the next Tab would resume from the top. */}
-        <main id="main-content" tabIndex={-1} className="min-w-0 flex-1 p-4 sm:p-6 focus:outline-none">
+        <main
+          id="main-content"
+          tabIndex={-1}
+          className="min-w-0 flex-1 p-4 sm:p-6 focus:outline-none"
+        >
           {children}
         </main>
       </div>

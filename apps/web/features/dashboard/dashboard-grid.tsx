@@ -202,7 +202,12 @@ export function DashboardGrid({ initialLayout }: { initialLayout: DashboardLayou
 
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={ids} strategy={rectSortingStrategy}>
-          <div className={cn('grid grid-cols-1 gap-4 md:grid-cols-6 xl:grid-cols-12', isEditing && 'dashboard-editing')}>
+          <div
+            className={cn(
+              'grid grid-cols-1 gap-4 md:grid-cols-6 xl:grid-cols-12',
+              isEditing && 'dashboard-editing',
+            )}
+          >
             {layout.map((item) => (
               <SortableWidget
                 key={item.id}
@@ -260,7 +265,8 @@ function SortableWidget({
     const parsed = definition.configSchema
       ? definition.configSchema.safeParse(item.config ?? definition.defaultConfig)
       : null;
-    const config = parsed && parsed.success ? parsed.data : (item.config ?? definition.defaultConfig);
+    const config =
+      parsed && parsed.success ? parsed.data : (item.config ?? definition.defaultConfig);
     title = definition.displayName[locale] ?? definition.type;
     body = (
       <WidgetComponent
@@ -277,7 +283,11 @@ function SortableWidget({
     <div
       ref={setNodeRef}
       style={style}
-      className={cn(SIZE_CLASSES[item.size], SIZE_MIN_HEIGHT[item.size], isDragging && 'z-30 opacity-90')}
+      className={cn(
+        SIZE_CLASSES[item.size],
+        SIZE_MIN_HEIGHT[item.size],
+        isDragging && 'z-30 opacity-90',
+      )}
     >
       <WidgetFrame
         title={title}

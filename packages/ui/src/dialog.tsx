@@ -46,7 +46,9 @@ export function DialogContent({
                   {description}
                 </DialogPrimitive.Description>
               ) : (
-                <DialogPrimitive.Description className="sr-only">{title}</DialogPrimitive.Description>
+                <DialogPrimitive.Description className="sr-only">
+                  {title}
+                </DialogPrimitive.Description>
               )}
             </div>
             <DialogPrimitive.Close

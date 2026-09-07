@@ -3,16 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useTranslations } from 'next-intl';
 import { Boxes, Check } from 'lucide-react';
-import {
-  Alert,
-  Button,
-  Card,
-  CardBody,
-  Field,
-  Input,
-  Section,
-  Spinner,
-} from '@clinic/ui';
+import { Alert, Button, Card, CardBody, Field, Input, Section, Spinner } from '@clinic/ui';
 import { cn } from '@clinic/ui/cn';
 import { useRouter } from '@clinic/i18n/navigation';
 import { saveClinicSettings } from '@/features/inventory/actions';
@@ -68,7 +59,11 @@ export function ClinicSettingsForm({
         <CardBody className="space-y-6">
           <Section title={t('sections.clinic')}>
             <Field label={t('fields.name')} htmlFor="clinic_name">
-              <Input id="clinic_name" value={name} onChange={(event) => setName(event.target.value)} />
+              <Input
+                id="clinic_name"
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+              />
             </Field>
           </Section>
 
@@ -90,7 +85,9 @@ export function ClinicSettingsForm({
                     )}
                   >
                     <span className="flex items-center gap-2 text-sm font-semibold text-ink-900">
-                      <Boxes className={cn('h-4 w-4', selected ? 'text-jade-700' : 'text-ink-500')} />
+                      <Boxes
+                        className={cn('h-4 w-4', selected ? 'text-jade-700' : 'text-ink-500')}
+                      />
                       {t(`${option.key}.title`)}
                       {selected ? <Check className="ms-auto h-4 w-4 text-jade-700" /> : null}
                     </span>

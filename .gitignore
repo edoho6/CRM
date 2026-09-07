@@ -61,3 +61,4 @@ yarn-error.log*
 billing_migration_to_run.sql
 botanical_migration_to_run.sql
 7_clinical_workflow_to_run.sql
+8_patient_status_to_run.sql

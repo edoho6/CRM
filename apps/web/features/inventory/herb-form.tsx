@@ -116,10 +116,18 @@ export function HerbForm({ herb }: { herb?: Herb }) {
               <Field label={tf('chineseName')} htmlFor="chinese_name">
                 <LtrInput id="chinese_name" {...register('chinese_name')} />
               </Field>
-              <Field label={tf('botanicalName')} htmlFor="botanical_name" hint="Astragalus membranaceus (Radix)">
+              <Field
+                label={tf('botanicalName')}
+                htmlFor="botanical_name"
+                hint="Astragalus membranaceus (Radix)"
+              >
                 <LtrInput id="botanical_name" className="italic" {...register('botanical_name')} />
               </Field>
-              <Field label={tf('pharmaceuticalName')} htmlFor="pharmaceutical_name" hint="Radix Astragali">
+              <Field
+                label={tf('pharmaceuticalName')}
+                htmlFor="pharmaceutical_name"
+                hint="Radix Astragali"
+              >
                 <LtrInput id="pharmaceutical_name" {...register('pharmaceutical_name')} />
               </Field>
               <Field label={tf('englishName')} htmlFor="english_name">
@@ -193,10 +201,22 @@ export function HerbForm({ herb }: { herb?: Herb }) {
           <Section title={ts('dosage')}>
             <FieldGrid columns={3}>
               <Field label={tf('dosageMin')} htmlFor="dosage_min_g">
-                <LtrInput id="dosage_min_g" type="number" min={0} step="0.5" {...register('dosage_min_g')} />
+                <LtrInput
+                  id="dosage_min_g"
+                  type="number"
+                  min={0}
+                  step="0.5"
+                  {...register('dosage_min_g')}
+                />
               </Field>
               <Field label={tf('dosageMax')} htmlFor="dosage_max_g">
-                <LtrInput id="dosage_max_g" type="number" min={0} step="0.5" {...register('dosage_max_g')} />
+                <LtrInput
+                  id="dosage_max_g"
+                  type="number"
+                  min={0}
+                  step="0.5"
+                  {...register('dosage_max_g')}
+                />
               </Field>
               <Field label={tf('dosageNotes')} htmlFor="dosage_notes">
                 <Input id="dosage_notes" {...register('dosage_notes')} />
@@ -228,10 +248,22 @@ export function HerbForm({ herb }: { herb?: Herb }) {
                 </Select>
               </Field>
               <Field label={tf('reorderThreshold')} htmlFor="reorder_threshold">
-                <LtrInput id="reorder_threshold" type="number" min={0} step="0.01" {...register('reorder_threshold')} />
+                <LtrInput
+                  id="reorder_threshold"
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  {...register('reorder_threshold')}
+                />
               </Field>
               <Field label={tf('reorderQuantity')} htmlFor="reorder_quantity">
-                <LtrInput id="reorder_quantity" type="number" min={0} step="0.01" {...register('reorder_quantity')} />
+                <LtrInput
+                  id="reorder_quantity"
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  {...register('reorder_quantity')}
+                />
               </Field>
             </FieldGrid>
             <label className="mt-4 flex items-center gap-2 text-sm text-ink-700">
@@ -243,7 +275,12 @@ export function HerbForm({ herb }: { herb?: Herb }) {
       </Card>
 
       <div className="flex justify-end gap-2">
-        <Button type="button" variant="secondary" onClick={() => router.back()} disabled={isPending}>
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={() => router.back()}
+          disabled={isPending}
+        >
           {tc('cancel')}
         </Button>
         <Button type="submit" disabled={isPending}>

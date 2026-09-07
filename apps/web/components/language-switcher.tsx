@@ -100,11 +100,16 @@ export function LanguageSwitcher({ className }: { className?: string }) {
                 onClick={() => switchTo(option)}
                 className={cn(
                   'flex w-full items-center gap-2 px-3 py-1.5 text-start text-sm transition-colors',
-                  option === locale ? 'font-semibold text-jade-800' : 'text-ink-700 hover:bg-ink-50',
+                  option === locale
+                    ? 'font-semibold text-jade-800'
+                    : 'text-ink-700 hover:bg-ink-50',
                 )}
               >
                 <Check
-                  className={cn('h-3.5 w-3.5 shrink-0', option === locale ? 'opacity-100' : 'opacity-0')}
+                  className={cn(
+                    'h-3.5 w-3.5 shrink-0',
+                    option === locale ? 'opacity-100' : 'opacity-0',
+                  )}
                   aria-hidden
                 />
                 {LOCALE_LABELS[option]}

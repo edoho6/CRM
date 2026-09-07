@@ -75,7 +75,8 @@ export async function FacetFilters({
                   aria-pressed={option.selected}
                   className={cn(
                     'inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium whitespace-nowrap transition-all hover:-translate-y-px hover:shadow-xs',
-                    option.className ?? (facet.scale ? tcmStyle(facet.scale, option.value).chip : ''),
+                    option.className ??
+                      (facet.scale ? tcmStyle(facet.scale, option.value).chip : ''),
                     option.selected
                       ? 'ring-2 ring-ink-800 ring-offset-1'
                       : 'opacity-75 hover:opacity-100',

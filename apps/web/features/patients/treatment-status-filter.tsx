@@ -29,10 +29,11 @@ export function TreatmentStatusFilter({ className }: { className?: string }) {
     if (status) params.set('status', status);
     else params.delete('status');
 
-    // Anything but "in treatment" is by definition inactive, so asking for one
-    // of those has to widen the list past the active-only default — otherwise
-    // the filter would always come back empty.
+    // Every status but 'active' describes a file that is, by definition, not
+    // active — so asking for one has to widen the list past the active-only
+    // default, or the filter would always come back empty.
     if (status && status !== 'active') params.set('inactive', '1');
+    else params.delete('inactive');
 
     const query = params.toString();
     router.replace(query ? `${pathname}?${query}` : pathname);

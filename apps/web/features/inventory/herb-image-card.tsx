@@ -3,7 +3,17 @@
 import { useRef, useState, useTransition } from 'react';
 import { useTranslations } from 'next-intl';
 import { ImageIcon, Trash2, Upload } from 'lucide-react';
-import { Alert, Button, Card, CardBody, CardHeader, CardTitle, Field, Input, Spinner } from '@clinic/ui';
+import {
+  Alert,
+  Button,
+  Card,
+  CardBody,
+  CardHeader,
+  CardTitle,
+  Field,
+  Input,
+  Spinner,
+} from '@clinic/ui';
 import { useRouter } from '@clinic/i18n/navigation';
 import { removeHerbImage, uploadHerbImage } from './image-actions';
 
@@ -63,7 +73,13 @@ export function HerbImageCard({
       <CardHeader>
         <CardTitle>{t('title')}</CardTitle>
         {imageUrl ? (
-          <Button variant="ghost" size="sm" onClick={handleRemove} disabled={isPending} className="text-red-600 hover:bg-red-50">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleRemove}
+            disabled={isPending}
+            className="text-red-600 hover:bg-red-50"
+          >
             <Trash2 className="h-4 w-4" />
             {t('remove')}
           </Button>
@@ -105,10 +121,21 @@ export function HerbImageCard({
             className="block w-full text-sm text-ink-700 file:me-3 file:rounded-lg file:border-0 file:bg-jade-50 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-jade-800 hover:file:bg-jade-100"
           />
           <Field label={t('attribution')} htmlFor="image_attribution">
-            <Input id="image_attribution" name="attribution" disabled={isPending} defaultValue={attribution ?? ''} />
+            <Input
+              id="image_attribution"
+              name="attribution"
+              disabled={isPending}
+              defaultValue={attribution ?? ''}
+            />
           </Field>
           <p className="text-xs text-ink-500">{t('hint')}</p>
-          <Button type="submit" variant="secondary" size="sm" disabled={isPending} className="w-full">
+          <Button
+            type="submit"
+            variant="secondary"
+            size="sm"
+            disabled={isPending}
+            className="w-full"
+          >
             {isPending ? <Spinner /> : <Upload className="h-4 w-4" />}
             {imageUrl ? t('replace') : t('upload')}
           </Button>

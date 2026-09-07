@@ -19,7 +19,6 @@ import {
   Button,
   Card,
   CardBody,
-  Checkbox,
   Field,
   FieldGrid,
   Input,
@@ -68,7 +67,6 @@ export function PatientForm({ patient }: { patient?: Patient }) {
       referral_source: patient?.referral_source ?? '',
       preferred_locale: patient?.preferred_locale ?? 'he',
       notes: patient?.notes ?? '',
-      is_active: patient?.is_active ?? true,
       treatment_status: patient?.treatment_status ?? 'active',
     },
   });
@@ -91,8 +89,7 @@ export function PatientForm({ patient }: { patient?: Patient }) {
     });
   }
 
-  const fieldError = (name: keyof PatientFormValues) =>
-    errors[name] ? tc('requiredField') : null;
+  const fieldError = (name: keyof PatientFormValues) => (errors[name] ? tc('requiredField') : null);
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
@@ -102,13 +99,27 @@ export function PatientForm({ patient }: { patient?: Patient }) {
         <CardBody className="space-y-5">
           <Section title={t('sections.personal')}>
             <FieldGrid>
-              <Field label={t('fields.firstName')} htmlFor="first_name" required error={fieldError('first_name')}>
+              <Field
+                label={t('fields.firstName')}
+                htmlFor="first_name"
+                required
+                error={fieldError('first_name')}
+              >
                 <Input id="first_name" autoComplete="given-name" {...register('first_name')} />
               </Field>
-              <Field label={t('fields.lastName')} htmlFor="last_name" required error={fieldError('last_name')}>
+              <Field
+                label={t('fields.lastName')}
+                htmlFor="last_name"
+                required
+                error={fieldError('last_name')}
+              >
                 <Input id="last_name" autoComplete="family-name" {...register('last_name')} />
               </Field>
-              <Field label={t('fields.dateOfBirth')} htmlFor="date_of_birth" error={fieldError('date_of_birth')}>
+              <Field
+                label={t('fields.dateOfBirth')}
+                htmlFor="date_of_birth"
+                error={fieldError('date_of_birth')}
+              >
                 {/* Dates and IDs stay LTR so the digits don't visually reverse in Hebrew. */}
                 <LtrInput id="date_of_birth" type="date" {...register('date_of_birth')} />
               </Field>
@@ -135,7 +146,11 @@ export function PatientForm({ patient }: { patient?: Patient }) {
               <Field label={t('fields.phone')} htmlFor="phone">
                 <LtrInput id="phone" type="tel" autoComplete="tel" {...register('phone')} />
               </Field>
-              <Field label={t('fields.email')} htmlFor="email" error={errors.email ? tc('invalidEmail') : null}>
+              <Field
+                label={t('fields.email')}
+                htmlFor="email"
+                error={errors.email ? tc('invalidEmail') : null}
+              >
                 <LtrInput id="email" type="email" autoComplete="email" {...register('email')} />
               </Field>
               <Field label={t('fields.address')} htmlFor="address">
@@ -153,7 +168,11 @@ export function PatientForm({ patient }: { patient?: Patient }) {
                 <Input id="emergency_contact_name" {...register('emergency_contact_name')} />
               </Field>
               <Field label={t('fields.emergencyContactPhone')} htmlFor="emergency_contact_phone">
-                <LtrInput id="emergency_contact_phone" type="tel" {...register('emergency_contact_phone')} />
+                <LtrInput
+                  id="emergency_contact_phone"
+                  type="tel"
+                  {...register('emergency_contact_phone')}
+                />
               </Field>
             </FieldGrid>
           </Section>
@@ -176,14 +195,15 @@ export function PatientForm({ patient }: { patient?: Patient }) {
             <Field label={t('fields.notes')} htmlFor="notes" className="mt-4">
               <Textarea id="notes" rows={3} {...register('notes')} />
             </Field>
-            {/* Two separate questions, deliberately. `is_active` decides whether
-                the file appears in the working list; the outcome below says how
-                the course of treatment stands. Someone who finished successfully
-                and someone who stopped coming are both inactive, and a year
-                later the difference is the only part worth having. */}
+            {/* One status, not a status plus a checkbox. The two used to be
+                separate fields asking the same question, which meant a file
+                could be marked active and "stopped partway" at once. The
+                database derives `is_active` from this now, so the working list
+                still filters on a boolean without anyone maintaining it. */}
             <Field
               label={t('treatmentStatus')}
               htmlFor="treatment_status"
+              hint={t('treatmentStatusHint')}
               className="mt-4 max-w-xs"
             >
               <Select id="treatment_status" {...register('treatment_status')}>
@@ -194,17 +214,17 @@ export function PatientForm({ patient }: { patient?: Patient }) {
                 ))}
               </Select>
             </Field>
-
-            <label className="mt-4 flex items-center gap-2 text-sm text-ink-700">
-              <Checkbox {...register('is_active')} />
-              {t('fields.isActive')}
-            </label>
           </Section>
         </CardBody>
       </Card>
 
       <div className="flex items-center justify-end gap-2">
-        <Button type="button" variant="secondary" onClick={() => router.back()} disabled={isPending}>
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={() => router.back()}
+          disabled={isPending}
+        >
           {tc('cancel')}
         </Button>
         <Button type="submit" disabled={isPending}>

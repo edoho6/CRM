@@ -12,7 +12,6 @@ import {
   CardTitle,
   Combobox,
   Field,
-  Input,
   LtrInput,
   Select,
   SortBody,
@@ -21,6 +20,7 @@ import {
   Spinner,
   TableWrapper,
   Td,
+  Textarea,
   Tr,
   type ComboboxOption,
   type ComboboxValue,
@@ -34,32 +34,35 @@ import {
 import { useRouter } from '@clinic/i18n/navigation';
 import type { DispensingRecordWithItems, Herb, HerbFormulaWithItems } from '@clinic/db/types';
 import { formulaPrimaryName, herbPrimaryName, herbSecondaryName } from '@/lib/display';
+import { GranuleCalculator } from './granule-calculator';
+import { multiplierForTotal, round2, splitByParts } from './dosing';
 import { dispenseHerbs, recordPrescription } from './actions';
 
 interface HerbRow {
   /** Null when the name was typed rather than chosen — an off-catalogue line. */
   choice: ComboboxValue | null;
-  quantity: string;
+  /** A relative part when a total is given, otherwise grams as written. */
+  dose: string;
 }
 
 /**
  * What was prescribed, written the way it is dictated.
  *
- * Two ways in, and they are named for what they are: a formula, or individual
- * herbs. Both are typed rather than scrolled — the catalogue holds 170 formulas
- * and 376 herbs, and a `<select>` of either is unusable when the name is known
- * and the list is not.
+ * Two ways in — a formula, or individual herbs — and both are typed rather than
+ * scrolled: the catalogue holds 170 formulas and 376 herbs, and a `<select>` of
+ * either is unusable when you know the name and the list does not fit on screen.
+ * Anything the catalogue has never carried is kept verbatim, because refusing it
+ * does not stop it being prescribed, it just moves the record onto paper.
  *
- * Anything can be prescribed, including things the catalogue has never carried:
- * a patent remedy, a supplement, a formula modified past recognition. Refusing
- * those does not stop them being prescribed, it just moves the record onto paper
- * where nothing can find it again — so a typed name that matches nothing is kept
- * verbatim.
+ * The preparation and the total sit above the list rather than beside each line,
+ * because they are decided once for the whole prescription. The unit follows
+ * from the preparation instead of being a second menu that can disagree with it.
  *
- * Amounts are amounts. The old multiplier asked "how many times the book dose",
- * which is a calculation to do in your head before you can answer; this asks for
- * grams or millilitres, and which of the two is decided by the preparation
- * rather than by a second menu that can disagree with it.
+ * With a total given, the numbers against each herb are read as *parts* and the
+ * actual weights are worked out from them — put 100g against nine herbs marked
+ * 13, 19 and 6 and each one's share is computed. That is the arithmetic a
+ * practitioner otherwise does nine times on paper, and it is where the decimal
+ * point goes astray. With no total, the numbers are grams exactly as typed.
  */
 export function DispensePanel({
   encounterId,
@@ -90,15 +93,17 @@ export function DispensePanel({
   const [formulaChoice, setFormulaChoice] = useState<ComboboxValue | null>(null);
   const [preparation, setPreparation] = useState<HerbPreparation>('dried_herb');
   const [totalQuantity, setTotalQuantity] = useState('');
-  const [daysSupply, setDaysSupply] = useState('');
-  const [rows, setRows] = useState<HerbRow[]>([{ choice: null, quantity: '' }]);
+  const [rows, setRows] = useState<HerbRow[]>([{ choice: null, dose: '' }]);
   const [notes, setNotes] = useState('');
   const [isPending, startTransition] = useTransition();
-  const [error, setError] = useState<{ key: string; values?: Record<string, string | number> } | null>(
-    null,
-  );
+  const [error, setError] = useState<{
+    key: string;
+    values?: Record<string, string | number>;
+  } | null>(null);
 
   const unit = preparationUnit(preparation);
+  const requestedTotal = Number(totalQuantity);
+  const hasTotal = Number.isFinite(requestedTotal) && requestedTotal > 0;
 
   const formulaOptions: ComboboxOption[] = useMemo(
     () =>
@@ -129,38 +134,42 @@ export function DispensePanel({
     [formulas, formulaChoice],
   );
 
-  const filledRows = rows.filter((row) => row.choice && Number(row.quantity) > 0);
+  const filledRows = rows.filter((row) => row.choice && Number(row.dose) > 0);
 
   /*
-   * The book dose of the formula — the sum of its lines as written.
+   * The proportional split.
    *
-   * Asking for a total in grams is the natural way to prescribe ("make up 100g
-   * of this"), while the database scales a formula by a multiplier. The
-   * conversion belongs here, once, rather than in the practitioner's head every
-   * time: how many times the written formula does the requested weight come to.
-   *
-   * With no total given the formula is dispensed exactly as written.
+   * The numbers against each herb are relative parts; their sum is the whole.
+   * Each herb's weight is its share of the requested total, so nine herbs marked
+   * 13/19/6 out of 100g come out as 11.4, 16.7 and 5.3 rather than as the parts
+   * themselves. Without a total there is nothing to divide, and the numbers are
+   * taken as grams exactly as typed.
    */
+  const herbLines = splitByParts(
+    filledRows.map((row) => ({ item: row.choice!, dose: Number(row.dose) })),
+    hasTotal ? requestedTotal : null,
+  ).map((line) => ({ choice: line.item, quantity: line.quantity }));
+
+  const herbLinesTotal = round2(herbLines.reduce((sum, line) => sum + line.quantity, 0));
+
+  /* The book dose of a formula — the sum of its lines as written. Asking for a
+     total in grams is the natural way to prescribe; the database scales by a
+     multiplier, so the conversion happens here rather than in someone's head. */
   const formulaBookDose = selectedFormula
     ? selectedFormula.items.reduce((sum, item) => sum + Number(item.dosage), 0)
     : 0;
 
-  const requestedTotal = Number(totalQuantity);
   const multiplier =
-    mode === 'formula' && requestedTotal > 0 && formulaBookDose > 0
-      ? requestedTotal / formulaBookDose
-      : 1;
+    mode === 'formula' ? multiplierForTotal(formulaBookDose, hasTotal ? requestedTotal : null) : 1;
 
-  /* Enough to send: a formula (catalogued or named) or at least one herb line. */
   const canSubmit =
-    mode === 'formula' ? Boolean(formulaChoice?.label.trim()) : filledRows.length > 0;
+    mode === 'formula' ? Boolean(formulaChoice?.label.trim()) : herbLines.length > 0;
 
   function reset() {
     setFormulaChoice(null);
-    setRows([{ choice: null, quantity: '' }]);
+    setRows([{ choice: null, dose: '' }]);
     setNotes('');
     setTotalQuantity('');
-    setDaysSupply('');
   }
 
   function handleSubmit() {
@@ -174,14 +183,15 @@ export function DispensePanel({
       custom_formula:
         mode === 'formula' && formulaChoice && !formulaChoice.id ? formulaChoice.label : '',
       preparation,
-      days_supply: daysSupply,
-      multiplier,
+      days_supply: '',
+      multiplier: mode === 'formula' ? multiplier : 1,
       items:
         mode === 'herb'
-          ? filledRows.map((row) => ({
-              herb_id: row.choice?.id ?? null,
-              name: row.choice?.id ? '' : (row.choice?.label ?? ''),
-              quantity: Number(row.quantity),
+          ? herbLines.map((line) => ({
+              herb_id: line.choice.id,
+              name: line.choice.id ? '' : line.choice.label,
+              // Already the computed weight, so the server stores what was shown.
+              quantity: line.quantity,
               preparation,
               unit,
             }))
@@ -192,12 +202,10 @@ export function DispensePanel({
     startTransition(async () => {
       // With no shelf there is nothing to allocate and nothing that can come up
       // short, so the write goes to the plain recorder rather than the allocator.
-      // A prescription naming something off-catalogue also cannot be allocated,
+      // A prescription naming something off-catalogue cannot be allocated either,
       // whatever the clinic holds.
       const allocatable = tracksInventory && payload.formula_id !== null && !payload.custom_formula;
-      const result = allocatable
-        ? await dispenseHerbs(payload)
-        : await recordPrescription(payload);
+      const result = allocatable ? await dispenseHerbs(payload) : await recordPrescription(payload);
 
       if (!result.ok) {
         setError(result.error);
@@ -232,7 +240,7 @@ export function DispensePanel({
           <CardBody className="space-y-4">
             {error ? <Alert tone="danger">{renderError()}</Alert> : null}
 
-            <div className="flex gap-1">
+            <div className="flex flex-wrap items-center gap-1">
               <Button
                 variant={mode === 'formula' ? 'primary' : 'secondary'}
                 size="sm"
@@ -247,6 +255,40 @@ export function DispensePanel({
               >
                 {t('herb')}
               </Button>
+              <GranuleCalculator className="ms-auto" />
+            </div>
+
+            {/* Decided once for the whole prescription, so it sits above the list
+                rather than being repeated against every line. */}
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label={tPrep('label')} htmlFor="preparation">
+                <Select
+                  id="preparation"
+                  value={preparation}
+                  onChange={(event) => setPreparation(event.target.value as HerbPreparation)}
+                >
+                  {HERB_PREPARATIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {tPrep(option)}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+
+              <Field
+                label={`${t('totalQuantity')} · ${tUnit(unit)}`}
+                htmlFor="total_quantity"
+                hint={mode === 'herb' ? t('totalQuantityHint') : undefined}
+              >
+                <LtrInput
+                  id="total_quantity"
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={totalQuantity}
+                  onChange={(event) => setTotalQuantity(event.target.value)}
+                />
+              </Field>
             </div>
 
             {mode === 'formula' ? (
@@ -264,116 +306,110 @@ export function DispensePanel({
               </Field>
             ) : (
               <div className="space-y-2">
-                {rows.map((row, index) => (
-                  <div key={index} className="flex items-end gap-2">
-                    <div className="min-w-0 flex-1">
-                      <Combobox
-                        label={t('herb')}
-                        placeholder={t('searchHerb')}
-                        options={herbOptions}
-                        value={row.choice}
-                        allowCustom
-                        emptyCustomHint={t('notInCatalogue')}
-                        onChange={(choice) =>
-                          setRows(
-                            rows.map((entry, position) =>
-                              position === index ? { ...entry, choice } : entry,
-                            ),
-                          )
-                        }
-                      />
-                    </div>
-                    <div className="flex items-center gap-1">
+                <div className="flex items-baseline justify-between gap-2">
+                  <h4 className="text-sm font-medium text-ink-800">{t('herbs')}</h4>
+                  <span className="text-xs text-ink-600">
+                    {hasTotal ? t('doseAsParts') : t('doseAsGrams', { unit: tUnit(unit) })}
+                  </span>
+                </div>
+
+                {rows.map((row, index) => {
+                  const line = row.choice
+                    ? herbLines.find((entry) => entry.choice === row.choice)
+                    : undefined;
+                  return (
+                    <div key={index} className="flex items-end gap-2">
+                      <div className="min-w-0 flex-1">
+                        <Combobox
+                          label={t('herb')}
+                          placeholder={t('searchHerb')}
+                          options={herbOptions}
+                          value={row.choice}
+                          allowCustom
+                          emptyCustomHint={t('notInCatalogue')}
+                          onChange={(choice) =>
+                            setRows(
+                              rows.map((entry, position) =>
+                                position === index ? { ...entry, choice } : entry,
+                              ),
+                            )
+                          }
+                        />
+                      </div>
+
                       <LtrInput
-                        aria-label={tc('quantity')}
+                        aria-label={hasTotal ? t('parts') : tc('quantity')}
                         type="number"
                         min={0}
                         step="0.01"
-                        className="w-24"
-                        value={row.quantity}
+                        className="w-20"
+                        value={row.dose}
                         onChange={(event) =>
                           setRows(
                             rows.map((entry, position) =>
-                              position === index ? { ...entry, quantity: event.target.value } : entry,
+                              position === index ? { ...entry, dose: event.target.value } : entry,
                             ),
                           )
                         }
                       />
-                      <span className="shrink-0 text-xs text-ink-600">{tUnit(unit)}</span>
+
+                      {/* The computed weight, beside the part it came from, so the
+                          split is visible as it is typed rather than only in a
+                          summary underneath. */}
+                      <span
+                        dir="ltr"
+                        className="w-24 shrink-0 pb-2 text-xs tabular-nums text-ink-700"
+                      >
+                        {line ? `${format.number(line.quantity)} ${tUnit(unit)}` : '—'}
+                      </span>
+
+                      <button
+                        type="button"
+                        aria-label={tc('delete')}
+                        onClick={() => setRows(rows.filter((_, position) => position !== index))}
+                        className="mb-1 rounded-md p-2 text-ink-500 transition-colors hover:bg-red-50 hover:text-red-600"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
                     </div>
-                    <button
-                      type="button"
-                      aria-label={tc('delete')}
-                      onClick={() => setRows(rows.filter((_, position) => position !== index))}
-                      className="mb-1 rounded-md p-2 text-ink-500 transition-colors hover:bg-red-50 hover:text-red-600"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  </div>
-                ))}
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => setRows([...rows, { choice: null, quantity: '' }])}
-                >
-                  <Plus className="h-4 w-4" />
-                  {tc('add')}
-                </Button>
+                  );
+                })}
+
+                <div className="flex items-center justify-between gap-2">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setRows([...rows, { choice: null, dose: '' }])}
+                  >
+                    <Plus className="h-4 w-4" />
+                    {tc('add')}
+                  </Button>
+
+                  {herbLines.length > 0 ? (
+                    <span className="text-sm font-medium text-ink-800">
+                      {tc('total')}{' '}
+                      <span dir="ltr" className="tabular-nums">
+                        {format.number(herbLinesTotal)} {tUnit(unit)}
+                      </span>
+                    </span>
+                  ) : null}
+                </div>
               </div>
             )}
 
-            <div className="grid gap-3 sm:grid-cols-3">
-              <Field label={tPrep('label')} htmlFor="preparation">
-                <Select
-                  id="preparation"
-                  value={preparation}
-                  onChange={(event) => setPreparation(event.target.value as HerbPreparation)}
-                >
-                  {HERB_PREPARATIONS.map((option) => (
-                    <option key={option} value={option}>
-                      {tPrep(option)}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
-
-              {mode === 'formula' ? (
-                <Field label={`${tc('quantity')} · ${tUnit(unit)}`} htmlFor="total_quantity">
-                  <LtrInput
-                    id="total_quantity"
-                    type="number"
-                    min={0}
-                    step="0.01"
-                    value={totalQuantity}
-                    onChange={(event) => setTotalQuantity(event.target.value)}
-                  />
-                </Field>
-              ) : null}
-
-              {/* Free text on purpose: "10 ימים", "עד הביקור הבא", "שבועיים ואז
-                  נראה". The instruction lives in the wording, and an integer
-                  field throws away exactly the part that carries it. */}
-              <Field label={t('daysSupply')} htmlFor="days_supply">
-                <Input
-                  id="days_supply"
-                  value={daysSupply}
-                  placeholder={t('daysSupplyPlaceholder')}
-                  onChange={(event) => setDaysSupply(event.target.value)}
-                />
-              </Field>
-            </div>
-
             <Field label={tc('notes')} htmlFor="dispense_notes">
-              <Input
+              {/* A textarea rather than a single line, and resizable: dosing
+                  instructions run to a sentence or two more often than not. */}
+              <Textarea
                 id="dispense_notes"
+                rows={2}
                 value={notes}
                 onChange={(event) => setNotes(event.target.value)}
               />
             </Field>
 
-            {/* The composition of a catalogued formula, so what is about to be
-                handed over is visible before it is. A named formula has no
-                composition to show, which is itself worth seeing. */}
+            {/* The composition of a catalogued formula, scaled to what was asked
+                for, so what is about to be weighed is visible before it is. */}
             {selectedFormula ? (
               <div className="rounded-lg border border-ink-200 bg-ink-50 p-3">
                 <p className="mb-1.5 text-xs font-medium text-ink-600">
@@ -385,11 +421,8 @@ export function DispensePanel({
                       <span className="min-w-0 truncate text-ink-800">
                         {herbPrimaryName(item.herb, locale)}
                       </span>
-                      {/* Scaled to the requested total, so what is shown is what
-                          will be weighed rather than what the book says. */}
-                      <span className="shrink-0 tabular-nums text-ink-600" dir="ltr">
-                        {format.number(Math.round(Number(item.dosage) * multiplier * 100) / 100)}{' '}
-                        {tUnit(unit)}
+                      <span className="shrink-0 tabular-nums text-ink-700" dir="ltr">
+                        {format.number(round2(Number(item.dosage) * multiplier))} {tUnit(unit)}
                       </span>
                     </li>
                   ))}
@@ -397,9 +430,7 @@ export function DispensePanel({
                 <p className="mt-2 flex justify-between border-t border-ink-200 pt-1.5 text-sm font-medium">
                   <span>{tc('total')}</span>
                   <span dir="ltr" className="tabular-nums">
-                    {format.number(
-                      Math.round((requestedTotal > 0 ? requestedTotal : formulaBookDose) * 100) / 100,
-                    )}{' '}
+                    {format.number(round2(hasTotal ? requestedTotal : formulaBookDose))}{' '}
                     {tUnit(unit)}
                   </span>
                 </p>
@@ -431,7 +462,6 @@ export function DispensePanel({
                     <span className="text-sm font-medium text-ink-900">
                       {record.formula ? formulaPrimaryName(record.formula, locale) : t('herb')}
                       {record.preparation ? ` · ${tPrep(record.preparation)}` : ''}
-                      {record.days_supply ? ` · ${record.days_supply}` : ''}
                     </span>
                     <span className="text-xs text-ink-500" dir="ltr">
                       {format.dateTime(new Date(record.dispensed_at), 'dateTime')}
@@ -468,7 +498,9 @@ export function DispensePanel({
                       </SortBody>
                     </SortableTable>
                   </TableWrapper>
-                  {record.notes ? <p className="mt-1 text-xs text-ink-500">{record.notes}</p> : null}
+                  {record.notes ? (
+                    <p className="mt-1 text-xs whitespace-pre-wrap text-ink-600">{record.notes}</p>
+                  ) : null}
                 </div>
               ))}
             </div>

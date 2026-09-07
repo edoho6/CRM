@@ -364,7 +364,10 @@ export function InvoiceEditor({ invoice }: { invoice: InvoiceWithDetails }) {
             ) : (
               <ul className="divide-y divide-ink-100">
                 {invoice.payments.map((payment) => (
-                  <li key={payment.id} className="flex items-center justify-between gap-2 px-4 py-2.5">
+                  <li
+                    key={payment.id}
+                    className="flex items-center justify-between gap-2 px-4 py-2.5"
+                  >
                     <span className="min-w-0">
                       <span className="block text-sm text-ink-900" dir="ltr">
                         {format.number(Number(payment.amount), 'currency')}

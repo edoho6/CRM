@@ -12,6 +12,7 @@ export {
   inputClasses,
   type FieldProps,
 } from './field';
+export { Popover, FloatingList, useAnchoredPosition } from './popover';
 export { Combobox, type ComboboxOption, type ComboboxValue } from './combobox';
 export { Card, CardHeader, CardTitle, CardBody, CardFooter, Section } from './card';
 export { Badge, Alert, EmptyState, Spinner, DetailRow } from './feedback';

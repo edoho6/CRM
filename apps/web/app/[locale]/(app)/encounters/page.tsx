@@ -2,7 +2,7 @@ import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/serve
 import { ClipboardList } from 'lucide-react';
 import { Badge, EmptyState, SortBody, SortTh, SortableTable, TableWrapper, Td, Tr } from '@clinic/ui';
 import { Link } from '@clinic/i18n/navigation';
-import type { Encounter, Patient } from '@clinic/db/types';
+import type { Appointment, Encounter, Patient } from '@clinic/db/types';
 import { PageHeader } from '@/components/app-shell';
 import { DateRangeFilter } from '@/components/date-range-filter';
 import { getClinicScope } from '@/lib/session';
@@ -10,7 +10,21 @@ import { resolveRange } from '@/lib/date-range';
 
 type EncounterRow = Encounter & {
   patient: Pick<Patient, 'id' | 'full_name'> | null;
+  appointment: Pick<Appointment, 'id' | 'start_at'> | null;
 };
+
+/**
+ * The time to show against a treatment.
+ *
+ * The appointment's time, not the moment the record was opened. Those are
+ * different facts and the first is the useful one: a record is often written up
+ * afterwards, so `started_at` says when the typing began rather than when the
+ * patient was seen. A walk-in with no appointment has only the second, and that
+ * is when it is worth showing.
+ */
+function treatmentTime(encounter: EncounterRow): string | null {
+  return encounter.appointment?.start_at ?? encounter.started_at ?? null;
+}
 
 export default async function EncountersPage({
   params,
@@ -38,7 +52,7 @@ export default async function EncountersPage({
 
   let query = scope.supabase
     .from('encounters')
-    .select('*, patient:patients(id, full_name)')
+    .select('*, patient:patients(id, full_name), appointment:appointments(id, start_at)')
     .order('encounter_date', { ascending: false })
     .order('started_at', { ascending: false })
     .limit(500);
@@ -78,7 +92,7 @@ export default async function EncountersPage({
                   sort={{
                     // Sort on the instant, so two records on one day order by
                     // the time they were opened rather than arbitrarily.
-                    date: new Date(encounter.started_at ?? encounter.encounter_date).getTime(),
+                    date: new Date(treatmentTime(encounter) ?? encounter.encounter_date).getTime(),
                     patient: encounter.patient?.full_name ?? null,
                     status: t(`status.${encounter.status}`),
                   }}
@@ -93,9 +107,9 @@ export default async function EncountersPage({
                     >
                       {format.dateTime(new Date(encounter.encounter_date), 'short')}
                     </Link>
-                    {encounter.started_at ? (
+                    {treatmentTime(encounter) ? (
                       <span dir="ltr" className="ms-2 text-xs tabular-nums text-ink-600">
-                        {format.dateTime(new Date(encounter.started_at), 'time')}
+                        {format.dateTime(new Date(treatmentTime(encounter)!), 'time')}
                       </span>
                     ) : null}
                   </Td>

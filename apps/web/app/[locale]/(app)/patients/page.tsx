@@ -16,7 +16,7 @@ import { TREATMENT_STATUSES } from '@clinic/domain';
 import type { Patient } from '@clinic/db/types';
 import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
-import { ageFromDateOfBirth } from '@/lib/display';
+import { ageFromDateOfBirth, patientStatusTone } from '@/lib/display';
 import { PatientSearch } from '@/features/patients/patient-search';
 import { TreatmentStatusFilter } from '@/features/patients/treatment-status-filter';
 
@@ -108,8 +108,7 @@ export default async function PatientsPage({
                 <SortTh sortKey="phone">{t('fields.phone')}</SortTh>
                 <SortTh sortKey="age">{t('age')}</SortTh>
                 <SortTh sortKey="city">{t('fields.city')}</SortTh>
-                <SortTh sortKey="status">{tc('status')}</SortTh>
-                <SortTh sortKey="outcome">{t('treatmentStatus')}</SortTh>
+                <SortTh sortKey="status">{t('treatmentStatus')}</SortTh>
               </tr>
             </thead>
             <SortBody locale={locale}>
@@ -123,8 +122,9 @@ export default async function PatientsPage({
                       phone: patient.phone,
                       age,
                       city: patient.city,
-                      status: patient.is_active ? 0 : 1,
-                      outcome: t(`status.${patient.treatment_status ?? 'active'}`),
+                      // Sorted by label rather than by the enum's order, so the
+                      // column sorts the way it reads.
+                      status: t(`status.${patient.treatment_status ?? 'active'}`),
                     }}
                   >
                     <Td>
@@ -147,14 +147,9 @@ export default async function PatientsPage({
                     <Td>{age === null ? <span className="text-ink-500">—</span> : age}</Td>
                     <Td>{patient.city ?? <span className="text-ink-500">—</span>}</Td>
                     <Td>
-                      <Badge tone={patient.is_active ? 'success' : 'muted'}>
-                        {patient.is_active ? tc('active') : tc('inactive')}
-                      </Badge>
-                    </Td>
-                    <Td>
-                      <span className="text-sm text-ink-700">
+                      <Badge tone={patientStatusTone(patient.treatment_status)}>
                         {t(`status.${patient.treatment_status ?? 'active'}`)}
-                      </span>
+                      </Badge>
                     </Td>
                   </Tr>
                 );

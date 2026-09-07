@@ -91,7 +91,9 @@ export function ThemeToggle({ className }: { className?: string }) {
             onClick={() => select(option.value)}
             className={cn(
               'inline-flex h-7 flex-1 items-center justify-center rounded-md px-2 transition-colors',
-              active ? 'bg-accent text-accent-fg' : 'text-ink-600 hover:bg-ink-100 hover:text-ink-900',
+              active
+                ? 'bg-accent text-accent-fg'
+                : 'text-ink-600 hover:bg-ink-100 hover:text-ink-900',
             )}
           >
             <option.icon className="h-3.5 w-3.5" aria-hidden />

@@ -172,7 +172,11 @@ export function DocumentsPanel({
       {listError ? <Alert tone="danger">{tc('errorGeneric')}</Alert> : null}
 
       {documents.length === 0 ? (
-        <EmptyState icon={<FileText className="h-8 w-8" />} title={t('empty')} description={t('emptyBody')} />
+        <EmptyState
+          icon={<FileText className="h-8 w-8" />}
+          title={t('empty')}
+          description={t('emptyBody')}
+        />
       ) : (
         <TableWrapper>
           <SortableTable defaultSortKey="uploaded" defaultSortDirection="desc">
@@ -202,8 +206,12 @@ export function DocumentsPanel({
                       <span className="flex items-center gap-2">
                         <FileText className="h-4 w-4 shrink-0 text-ink-500" aria-hidden />
                         <span className="min-w-0">
-                          <span className="block max-w-56 truncate text-ink-900">{document.file_name}</span>
-                          <span className="block text-xs text-ink-500">{formatSize(document.size_bytes)}</span>
+                          <span className="block max-w-56 truncate text-ink-900">
+                            {document.file_name}
+                          </span>
+                          <span className="block text-xs text-ink-500">
+                            {formatSize(document.size_bytes)}
+                          </span>
                         </span>
                       </span>
                     </Td>

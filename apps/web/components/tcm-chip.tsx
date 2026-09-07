@@ -67,7 +67,11 @@ export function TcmDot({
     <span
       title={title}
       aria-hidden
-      className={cn('inline-block h-2.5 w-2.5 shrink-0 rounded-full', tcmStyle(scale, value).dot, className)}
+      className={cn(
+        'inline-block h-2.5 w-2.5 shrink-0 rounded-full',
+        tcmStyle(scale, value).dot,
+        className,
+      )}
     />
   );
 }

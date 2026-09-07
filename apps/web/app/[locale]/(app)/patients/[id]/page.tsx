@@ -33,7 +33,7 @@ import { PageHeader } from '@/components/app-shell';
 import { PhoneActions } from '@/components/phone-actions';
 import { getClinicScope } from '@/lib/session';
 import { logRecordAccess } from '@/lib/access-log';
-import { ageFromDateOfBirth, appointmentTypeName } from '@/lib/display';
+import { ageFromDateOfBirth, appointmentTypeName, patientStatusTone } from '@/lib/display';
 import { PatientTabs } from '@/features/patients/patient-tabs';
 import { MedicalHistoryForm } from '@/features/patients/medical-history-form';
 import { StartEncounterButton } from '@/features/encounters/start-encounter-button';
@@ -291,27 +291,12 @@ export default async function PatientDetailPage({
         title={patient.full_name}
         description={
           <span className="flex items-center gap-2">
-            <Badge tone={patient.is_active ? 'success' : 'muted'}>
-              {patient.is_active ? tc('active') : tc('inactive')}
+            {/* One badge. There used to be two — an active flag and an outcome —
+                which could contradict each other and, when they agreed, said the
+                same thing twice. */}
+            <Badge tone={patientStatusTone(patient.treatment_status)}>
+              {t(`status.${patient.treatment_status ?? 'active'}`)}
             </Badge>
-            {/* The outcome, beside the active flag rather than instead of it.
-                Only shown once it says something: "in treatment" is the default
-                and adds nothing next to the badge already there. */}
-            {patient.treatment_status && patient.treatment_status !== 'active' ? (
-              <Badge
-                tone={
-                  patient.treatment_status === 'full_success'
-                    ? 'success'
-                    : patient.treatment_status === 'unsuccessful'
-                      ? 'danger'
-                      : patient.treatment_status === 'dropped_out'
-                        ? 'warning'
-                        : 'neutral'
-                }
-              >
-                {t(`status.${patient.treatment_status}`)}
-              </Badge>
-            ) : null}
             {age !== null ? <span>{t('years', { count: age })}</span> : null}
           </span>
         }

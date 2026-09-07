@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { MessageCircle, Phone } from 'lucide-react';
+import { Popover } from '@clinic/ui';
 
 /**
  * A phone number that offers to call or to open WhatsApp.
@@ -40,63 +40,45 @@ export function whatsappNumber(raw: string): string | null {
 
 export function PhoneActions({ phone, className }: { phone: string; className?: string }) {
   const t = useTranslations('patients');
-  const [open, setOpen] = useState(false);
   const wa = whatsappNumber(phone);
 
   return (
     <span className={className}>
-      <span className="relative inline-flex">
-        <button
-          type="button"
-          onClick={() => setOpen((value) => !value)}
-          aria-expanded={open}
-          aria-label={t('contactActions', { phone })}
-          dir="ltr"
-          className="rounded-md px-1 py-0.5 tabular-nums text-jade-800 underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-jade-700"
-        >
-          {phone}
-        </button>
-
-        {open ? (
-          <>
-            {/* Click-away. Keyboard users get out with Escape on the buttons. */}
-            <span
-              className="fixed inset-0 z-20"
-              aria-hidden
-              onClick={() => setOpen(false)}
-            />
-            <span
-              className="absolute top-full z-30 mt-1 flex min-w-44 flex-col overflow-hidden rounded-lg border border-ink-200 bg-white py-1 shadow-lg"
-              onKeyDown={(event) => {
-                if (event.key === 'Escape') setOpen(false);
-              }}
-            >
-              {wa ? (
-                <a
-                  // wa.me picks the installed app on a phone and WhatsApp Web on
-                  // a desktop, so one link covers both without sniffing.
-                  href={`https://wa.me/${wa}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => setOpen(false)}
-                  className="flex items-center gap-2 px-3 py-2 text-sm text-ink-800 hover:bg-ink-50"
-                >
-                  <MessageCircle className="h-4 w-4 shrink-0 text-jade-700" aria-hidden />
-                  {t('sendWhatsApp')}
-                </a>
-              ) : null}
+      <Popover
+        width={200}
+        align="start"
+        panelLabel={t('contactActions', { phone })}
+        triggerLabel={t('contactActions', { phone })}
+        triggerClassName="rounded-md px-1 py-0.5 tabular-nums text-jade-800 underline-offset-2 hover:underline"
+        triggerContent={<span dir="ltr">{phone}</span>}
+      >
+        {({ close }) => (
+          <div className="-m-3 flex flex-col py-1">
+            {wa ? (
               <a
-                href={`tel:${phone}`}
-                onClick={() => setOpen(false)}
+                // wa.me picks the installed app on a phone and WhatsApp Web on a
+                // desktop, so one link covers both without sniffing the agent.
+                href={`https://wa.me/${wa}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={close}
                 className="flex items-center gap-2 px-3 py-2 text-sm text-ink-800 hover:bg-ink-50"
               >
-                <Phone className="h-4 w-4 shrink-0 text-ink-600" aria-hidden />
-                {t('callPhone')}
+                <MessageCircle className="h-4 w-4 shrink-0 text-jade-700" aria-hidden />
+                {t('sendWhatsApp')}
               </a>
-            </span>
-          </>
-        ) : null}
-      </span>
+            ) : null}
+            <a
+              href={`tel:${phone}`}
+              onClick={close}
+              className="flex items-center gap-2 px-3 py-2 text-sm text-ink-800 hover:bg-ink-50"
+            >
+              <Phone className="h-4 w-4 shrink-0 text-ink-600" aria-hidden />
+              {t('callPhone')}
+            </a>
+          </div>
+        )}
+      </Popover>
     </span>
   );
 }

@@ -268,16 +268,18 @@
     "contactActions": "פעולות עבור {phone}",
     "sendWhatsApp": "שליחת הודעת ווטסאפ",
     "callPhone": "חיוג",
-    "treatmentStatus": "מצב הטיפול",
+    "treatmentStatus": "סטטוס מטופל",
     "status": {
       "active": "מטופל פעיל",
       "completed": "סיים טיפולים",
       "dropped_out": "פרש באמצע",
       "full_success": "סיים בהצלחה מלאה",
       "partial_success": "סיים בהצלחה חלקית",
-      "unsuccessful": "טיפול לא צלח"
+      "unsuccessful": "טיפול לא צלח",
+      "inactive": "לא פעיל"
     },
-    "allStatuses": "כל המצבים"
+    "allStatuses": "כל המצבים",
+    "treatmentStatusHint": "רק \"מטופל פעיל\" מציג את התיק ברשימת העבודה."
   },
   "appointments": {
     "title": "יומן",
@@ -751,8 +753,12 @@
       "searchFormula": "חיפוש פורמולה או הקלדת שם",
       "searchHerb": "חיפוש צמח או הקלדת שם",
       "notInCatalogue": "לא במאגר — יישמר כפי שנכתב",
-      "daysSupply": "לכמה ימים",
-      "daysSupplyPlaceholder": "למשל: 10 ימים, עד הביקור הבא"
+      "herbs": "צמחים",
+      "totalQuantity": "כמות כוללת",
+      "totalQuantityHint": "אם ממלאים כמות כוללת, המספרים ליד כל צמח נחשבים כיחסים והכמות בפועל מחושבת מהם.",
+      "parts": "יחס",
+      "doseAsParts": "המספרים = יחסים",
+      "doseAsGrams": "המספרים = {unit}"
     },
     "tcmCategory": {
       "release_exterior_warm": "משחררי חיצון — חמים",
@@ -916,6 +922,13 @@
       "dried_herb": "צמח יבש",
       "powder": "אבקה",
       "tincture": "טינקטורה"
+    },
+    "granules": {
+      "title": "המרה לגרנולות",
+      "explainer": "גרנולות הן תמצית מרוכזת ביחס {ratio}:1 — גרם אחד של גרנולה שקול ל-{ratio} גרם צמח יבש. היחס משתנה בין יצרנים ובין צמחים; ודא שהוא מתאים למה שאתה מחזיק.",
+      "rawHerb": "צמח יבש",
+      "granules": "גרנולות",
+      "result": "{raw} גרם צמח יבש = {granules} גרם גרנולות"
     }
   },
   "portal": {

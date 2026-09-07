@@ -139,15 +139,21 @@ export function preparationUnit(preparation: HerbPreparation | null | undefined)
 }
 
 /**
- * How a course of treatment stands, or ended.
+ * The status of a patient file — one question, not two.
  *
- * Deliberately separate from `is_active`, which only decides whether a file
- * shows up in the working list. "Stopped coming halfway" and "finished, partial
- * improvement" are both inactive and are not the same fact, and the difference
- * is the one worth having a year later.
+ * This began as a second field beside `is_active`, and having both meant
+ * answering the same thing twice and being able to answer it inconsistently: a
+ * file could be marked active and "stopped partway" at once. So `is_active` is
+ * now derived from this, by a trigger in the database rather than by whichever
+ * code path happened to write last. Only the first value counts as active.
+ *
+ * The distinctions past "not active" are the point: someone who stopped coming
+ * and someone who finished and got better are both inactive, and a year later
+ * that difference is the only part worth having.
  */
 export const TREATMENT_STATUSES = [
   'active',
+  'inactive',
   'completed',
   'dropped_out',
   'full_success',
@@ -155,6 +161,11 @@ export const TREATMENT_STATUSES = [
   'unsuccessful',
 ] as const;
 export type TreatmentStatus = (typeof TREATMENT_STATUSES)[number];
+
+/** Whether a status means the file belongs in the working list. */
+export function isActiveStatus(status: TreatmentStatus | null | undefined): boolean {
+  return status === 'active' || status === undefined || status === null;
+}
 
 /** The fourteen channels the point catalogue is organised by. */
 export const POINT_CHANNELS = [

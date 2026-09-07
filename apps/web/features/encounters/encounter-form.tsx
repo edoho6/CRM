@@ -350,167 +350,163 @@ export function EncounterForm({
   return (
     <div className="grid gap-5 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
       <div className="space-y-4">
-      {isSigned ? (
-        <Alert tone="info" title={t('lockedNotice')} />
-      ) : null}
-      {status === 'saved' ? <Alert tone="success">{tc('saved')}</Alert> : null}
-      {status === 'error' ? (
-        <Alert tone="danger">
-          {errorKey === 'errors.encounterLocked' ? tErrors('encounterLocked') : tc('errorGeneric')}
-        </Alert>
-      ) : null}
+        {isSigned ? <Alert tone="info" title={t('lockedNotice')} /> : null}
+        {status === 'saved' ? <Alert tone="success">{tc('saved')}</Alert> : null}
+        {status === 'error' ? (
+          <Alert tone="danger">
+            {errorKey === 'errors.encounterLocked'
+              ? tErrors('encounterLocked')
+              : tc('errorGeneric')}
+          </Alert>
+        ) : null}
 
-      <Card>
-        <CardBody className="space-y-6">
-          <Section title={t('sections.complaint')}>
-            <div className="space-y-4">
-              <Field label={tf('chiefComplaint')} htmlFor="chief_complaint">
-                <Textarea
-                  id="chief_complaint"
-                  rows={2}
-                  disabled={disabled}
-                  value={state.chief_complaint}
-                  onChange={(event) => set('chief_complaint', event.target.value)}
-                />
-              </Field>
-              <Field label={tf('historyOfPresentIllness')} htmlFor="history_of_present_illness">
-                <Textarea
-                  id="history_of_present_illness"
-                  rows={3}
-                  disabled={disabled}
-                  value={state.history_of_present_illness}
-                  onChange={(event) => set('history_of_present_illness', event.target.value)}
-                />
-              </Field>
-            </div>
-          </Section>
-
-          <Section title={t('sections.differentiation')}>
-            <div className="space-y-4">
-              <Field label={tf('tcmPatternDiagnosis')} htmlFor="tcm_pattern_diagnosis">
-                <Textarea
-                  id="tcm_pattern_diagnosis"
-                  rows={2}
-                  disabled={disabled}
-                  value={state.tcm_pattern_diagnosis}
-                  onChange={(event) => set('tcm_pattern_diagnosis', event.target.value)}
-                />
-              </Field>
-              <FieldGrid>
-                <Field label={tf('westernDiagnosis')} htmlFor="western_diagnosis">
+        <Card>
+          <CardBody className="space-y-6">
+            <Section title={t('sections.complaint')}>
+              <div className="space-y-4">
+                <Field label={tf('chiefComplaint')} htmlFor="chief_complaint">
                   <Textarea
-                    id="western_diagnosis"
+                    id="chief_complaint"
                     rows={2}
                     disabled={disabled}
-                    value={state.western_diagnosis}
-                    onChange={(event) => set('western_diagnosis', event.target.value)}
+                    value={state.chief_complaint}
+                    onChange={(event) => set('chief_complaint', event.target.value)}
                   />
                 </Field>
-                <Field label={tf('treatmentPrinciple')} htmlFor="treatment_principle">
+                <Field label={tf('historyOfPresentIllness')} htmlFor="history_of_present_illness">
                   <Textarea
-                    id="treatment_principle"
+                    id="history_of_present_illness"
+                    rows={3}
+                    disabled={disabled}
+                    value={state.history_of_present_illness}
+                    onChange={(event) => set('history_of_present_illness', event.target.value)}
+                  />
+                </Field>
+              </div>
+            </Section>
+
+            <Section title={t('sections.differentiation')}>
+              <div className="space-y-4">
+                <Field label={tf('tcmPatternDiagnosis')} htmlFor="tcm_pattern_diagnosis">
+                  <Textarea
+                    id="tcm_pattern_diagnosis"
                     rows={2}
                     disabled={disabled}
-                    value={state.treatment_principle}
-                    onChange={(event) => set('treatment_principle', event.target.value)}
+                    value={state.tcm_pattern_diagnosis}
+                    onChange={(event) => set('tcm_pattern_diagnosis', event.target.value)}
                   />
                 </Field>
-              </FieldGrid>
-            </div>
-          </Section>
+                <FieldGrid>
+                  <Field label={tf('westernDiagnosis')} htmlFor="western_diagnosis">
+                    <Textarea
+                      id="western_diagnosis"
+                      rows={2}
+                      disabled={disabled}
+                      value={state.western_diagnosis}
+                      onChange={(event) => set('western_diagnosis', event.target.value)}
+                    />
+                  </Field>
+                  <Field label={tf('treatmentPrinciple')} htmlFor="treatment_principle">
+                    <Textarea
+                      id="treatment_principle"
+                      rows={2}
+                      disabled={disabled}
+                      value={state.treatment_principle}
+                      onChange={(event) => set('treatment_principle', event.target.value)}
+                    />
+                  </Field>
+                </FieldGrid>
+              </div>
+            </Section>
 
-          <Section title={t('sections.treatment')}>
-            {/* The nine modality checkboxes that used to open this section are
+            <Section title={t('sections.treatment')}>
+              {/* The nine modality checkboxes that used to open this section are
                 gone. They were nine clicks describing what the points and the
                 notes below already say, and the column they occupied is worth
                 more to the point grid. `modalities_used` is still stored and
                 still carried through a save, so older notes keep theirs. */}
-            <div className="space-y-4">
-              <Field label={tf('pointsUsed')} hint={t('points.hint')}>
-                <div className="grid gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,1fr)]">
-                  <PointsEditor
-                    value={state.points_used}
-                    catalogue={pointCatalogue}
-                    disabled={disabled}
-                    onChange={(rows) => set('points_used', rows)}
-                  />
-                  {/* The chart is a mirror of the list, not a second input: it
+              <div className="space-y-4">
+                <Field label={tf('pointsUsed')} hint={t('points.hint')}>
+                  <div className="grid gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,1fr)]">
+                    <PointsEditor
+                      value={state.points_used}
+                      catalogue={pointCatalogue}
+                      disabled={disabled}
+                      onChange={(rows) => set('points_used', rows)}
+                    />
+                    {/* The chart is a mirror of the list, not a second input: it
                       reflects what has been chosen so a gap in the prescription
                       is visible rather than deduced. */}
-                  <BodyMap
-                    points={mappedPoints}
-                    onSelect={(point) => router.push(`/reference/points/${point.pointId}`)}
+                    <BodyMap
+                      points={mappedPoints}
+                      onSelect={(point) => router.push(`/reference/points/${point.pointId}`)}
+                    />
+                  </div>
+                </Field>
+
+                <Field label={tf('treatmentNotes')} htmlFor="treatment_notes">
+                  <Textarea
+                    id="treatment_notes"
+                    rows={3}
+                    disabled={disabled}
+                    value={state.treatment_notes}
+                    onChange={(event) => set('treatment_notes', event.target.value)}
                   />
-                </div>
-              </Field>
+                </Field>
+              </div>
+            </Section>
 
-              <Field label={tf('treatmentNotes')} htmlFor="treatment_notes">
-                <Textarea
-                  id="treatment_notes"
-                  rows={3}
-                  disabled={disabled}
-                  value={state.treatment_notes}
-                  onChange={(event) => set('treatment_notes', event.target.value)}
-                />
-              </Field>
-            </div>
-          </Section>
+            <Section title={t('sections.followUp')}>
+              <FieldGrid>
+                <Field label={tf('recommendations')} htmlFor="recommendations">
+                  <Textarea
+                    id="recommendations"
+                    rows={3}
+                    disabled={disabled}
+                    value={state.recommendations}
+                    onChange={(event) => set('recommendations', event.target.value)}
+                  />
+                </Field>
+                <Field label={tf('followUpPlan')} htmlFor="follow_up_plan">
+                  <Textarea
+                    id="follow_up_plan"
+                    rows={3}
+                    disabled={disabled}
+                    value={state.follow_up_plan}
+                    onChange={(event) => set('follow_up_plan', event.target.value)}
+                  />
+                </Field>
+              </FieldGrid>
+            </Section>
+          </CardBody>
+        </Card>
 
-          <Section title={t('sections.followUp')}>
-            <FieldGrid>
-              <Field label={tf('recommendations')} htmlFor="recommendations">
-                <Textarea
-                  id="recommendations"
-                  rows={3}
-                  disabled={disabled}
-                  value={state.recommendations}
-                  onChange={(event) => set('recommendations', event.target.value)}
-                />
-              </Field>
-              <Field label={tf('followUpPlan')} htmlFor="follow_up_plan">
-                <Textarea
-                  id="follow_up_plan"
-                  rows={3}
-                  disabled={disabled}
-                  value={state.follow_up_plan}
-                  onChange={(event) => set('follow_up_plan', event.target.value)}
-                />
-              </Field>
-            </FieldGrid>
-          </Section>
-        </CardBody>
-      </Card>
-
-      {!isSigned ? (
-        <div className="flex flex-wrap items-center justify-end gap-2">
-          {/* What the autosave is doing, stated rather than assumed. A form that
+        {!isSigned ? (
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            {/* What the autosave is doing, stated rather than assumed. A form that
               saves itself silently is indistinguishable from one that does not,
               and the whole reassurance is in being able to see the last time. */}
-          <p
-            className="me-auto text-xs text-ink-600"
-            role="status"
-            aria-live="polite"
-          >
-            {autosave.state === 'saving'
-              ? tc('saving')
-              : autosave.state === 'error'
-                ? t('autosaveFailed')
-                : autosave.lastSavedAt
-                  ? t('autosavedAt', {
-                      time: format.dateTime(autosave.lastSavedAt, 'time'),
-                    })
-                  : t('autosaveOn')}
-          </p>
-          <Button variant="secondary" onClick={handleSave} disabled={isPending}>
-            {isPending ? <Spinner /> : <Save className="h-4 w-4" />}
-            {isPending ? tc('saving') : tc('save')}
-          </Button>
-          <Button onClick={handleSign} disabled={isPending}>
-            <Lock className="h-4 w-4" />
-            {t('sign')}
-          </Button>
-        </div>
-      ) : null}
+            <p className="me-auto text-xs text-ink-600" role="status" aria-live="polite">
+              {autosave.state === 'saving'
+                ? tc('saving')
+                : autosave.state === 'error'
+                  ? t('autosaveFailed')
+                  : autosave.lastSavedAt
+                    ? t('autosavedAt', {
+                        time: format.dateTime(autosave.lastSavedAt, 'time'),
+                      })
+                    : t('autosaveOn')}
+            </p>
+            <Button variant="secondary" onClick={handleSave} disabled={isPending}>
+              {isPending ? <Spinner /> : <Save className="h-4 w-4" />}
+              {isPending ? tc('saving') : tc('save')}
+            </Button>
+            <Button onClick={handleSign} disabled={isPending}>
+              <Lock className="h-4 w-4" />
+              {t('sign')}
+            </Button>
+          </div>
+        ) : null}
       </div>
 
       {/* Side column: what you observe at the couch, and what you hand over

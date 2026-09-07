@@ -62,9 +62,15 @@ export function PointSearch({
 
       <div className="space-y-2 rounded-card border border-ink-200 bg-white p-3">
         <fieldset>
-          <legend className="mb-1.5 text-xs font-semibold text-ink-600">{t('filterByChannel')}</legend>
+          <legend className="mb-1.5 text-xs font-semibold text-ink-600">
+            {t('filterByChannel')}
+          </legend>
           <div className="flex flex-wrap gap-1.5">
-            <Link href={{ pathname, query: query({ channel: '' }) }} scroll={false} className={chip(!channel)}>
+            <Link
+              href={{ pathname, query: query({ channel: '' }) }}
+              scroll={false}
+              className={chip(!channel)}
+            >
               {tc('all')}
             </Link>
             {POINT_CHANNELS.map((entry) => (
@@ -84,7 +90,11 @@ export function PointSearch({
         <fieldset className="border-t border-ink-100 pt-2">
           <legend className="mb-1.5 text-xs font-semibold text-ink-600">{t('filterByArea')}</legend>
           <div className="flex flex-wrap gap-1.5">
-            <Link href={{ pathname, query: query({ area: '' }) }} scroll={false} className={chip(!area)}>
+            <Link
+              href={{ pathname, query: query({ area: '' }) }}
+              scroll={false}
+              className={chip(!area)}
+            >
               {tc('all')}
             </Link>
             {/* Ordered head to foot, so the row reads like a body. */}
@@ -104,7 +114,9 @@ export function PointSearch({
         </fieldset>
 
         <fieldset className="border-t border-ink-100 pt-2">
-          <legend className="mb-1.5 text-xs font-semibold text-ink-600">{t('filterByCategory')}</legend>
+          <legend className="mb-1.5 text-xs font-semibold text-ink-600">
+            {t('filterByCategory')}
+          </legend>
           <div className="flex flex-wrap gap-1.5">
             <Link
               href={{ pathname, query: query({ category: '' }) }}

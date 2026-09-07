@@ -163,7 +163,13 @@ export function ReceiveForm({
             </Field>
 
             <Field label={t('unitCost')} htmlFor="unit_cost">
-              <LtrInput id="unit_cost" type="number" min={0} step="0.0001" {...register('unit_cost')} />
+              <LtrInput
+                id="unit_cost"
+                type="number"
+                min={0}
+                step="0.0001"
+                {...register('unit_cost')}
+              />
             </Field>
 
             <Field label={t('expiryDate')} htmlFor="expiry_date">
@@ -186,7 +192,12 @@ export function ReceiveForm({
       </Card>
 
       <div className="flex justify-end gap-2">
-        <Button type="button" variant="secondary" onClick={() => router.back()} disabled={isPending}>
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={() => router.back()}
+          disabled={isPending}
+        >
           {tc('cancel')}
         </Button>
         <Button type="submit" disabled={isPending}>

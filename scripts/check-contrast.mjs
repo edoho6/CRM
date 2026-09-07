@@ -136,6 +136,12 @@ const componentPairs = [
   { bg: 'amber-200', fg: 'amber-950', where: 'synthetic-data banner' },
   { bg: 'jade-50', fg: 'jade-800', where: 'highlighted option row' },
   { bg: 'white', fg: 'jade-700', where: 'figures and quantities' },
+  /* The point grid tints each side of the body differently. Colour is never the
+     only cue there — every panel is labelled and carries a direction arrow — but
+     the label still has to be readable on the tint it sits on. */
+  { bg: 'sky-50', fg: 'sky-800', where: 'left-side point panel' },
+  { bg: 'sky-50', fg: 'sky-700', where: 'left-side point arrow' },
+  { bg: 'jade-50', fg: 'jade-700', where: 'right-side point arrow' },
 ];
 
 const AA_SMALL = 4.5;

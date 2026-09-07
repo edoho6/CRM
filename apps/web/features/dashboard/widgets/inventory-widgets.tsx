@@ -55,7 +55,9 @@ function LowStockWidget() {
               className="flex items-center gap-2 py-2 transition-colors hover:bg-ink-50"
             >
               <AlertTriangle
-                className={isOut ? 'h-4 w-4 shrink-0 text-red-500' : 'h-4 w-4 shrink-0 text-amber-500'}
+                className={
+                  isOut ? 'h-4 w-4 shrink-0 text-red-500' : 'h-4 w-4 shrink-0 text-amber-500'
+                }
                 aria-hidden
               />
               <span className="min-w-0 flex-1">

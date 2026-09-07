@@ -218,7 +218,13 @@ export function BodyMap({
                         24px minimum a pointer needs. */}
                     <circle cx={cx} cy={cy} r={11} fill="transparent" />
                     {isActive ? (
-                      <circle cx={cx} cy={cy} r={10} fill="var(--color-jade-600)" fillOpacity={0.2} />
+                      <circle
+                        cx={cx}
+                        cy={cy}
+                        r={10}
+                        fill="var(--color-jade-600)"
+                        fillOpacity={0.2}
+                      />
                     ) : null}
                     <circle
                       cx={cx}

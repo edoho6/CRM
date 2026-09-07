@@ -51,7 +51,10 @@ export async function FormulaFilters({ filters }: { filters: FormulaFilterState 
           value: 'review',
           label: tReview('badge'),
           selected: filters.review,
-          href: { pathname: PATH, query: formulaFilterQuery({ ...filters, review: !filters.review }) },
+          href: {
+            pathname: PATH,
+            query: formulaFilterQuery({ ...filters, review: !filters.review }),
+          },
           className: 'bg-amber-100 text-amber-900 ring-1 ring-amber-300',
         },
       ],
@@ -62,7 +65,10 @@ export async function FormulaFilters({ filters }: { filters: FormulaFilterState 
     <FacetFilters
       facets={facets}
       activeCount={activeFormulaFilterCount(filters)}
-      clearHref={{ pathname: PATH, query: formulaFilterQuery({ q: filters.q, cat: [], kind: [], review: false }) }}
+      clearHref={{
+        pathname: PATH,
+        query: formulaFilterQuery({ q: filters.q, cat: [], kind: [], review: false }),
+      }}
     />
   );
 }

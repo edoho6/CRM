@@ -15,7 +15,12 @@ import {
   Select,
   Spinner,
 } from '@clinic/ui';
-import { CONSENT_KINDS, CONSENT_METHODS, type ConsentKind, type ConsentMethod } from '@clinic/domain';
+import {
+  CONSENT_KINDS,
+  CONSENT_METHODS,
+  type ConsentKind,
+  type ConsentMethod,
+} from '@clinic/domain';
 import { useRouter } from '@clinic/i18n/navigation';
 import type {
   ConsentDocument,
@@ -117,7 +122,9 @@ export function ConsentPanel({
               return (
                 <li key={kind} className="flex flex-wrap items-center gap-x-3 gap-y-2 py-3">
                   <span className="min-w-40 flex-1">
-                    <span className="block text-sm font-medium text-ink-900">{t(`kinds.${kind}`)}</span>
+                    <span className="block text-sm font-medium text-ink-900">
+                      {t(`kinds.${kind}`)}
+                    </span>
                     {status ? (
                       <span className="block text-xs text-ink-600">
                         {t(granted ? 'grantedOn' : 'withdrawnOn', {
@@ -133,7 +140,11 @@ export function ConsentPanel({
                   </span>
 
                   <Badge tone={granted ? 'success' : status ? 'danger' : 'muted'}>
-                    {granted ? t('status.granted') : status ? t('status.withdrawn') : t('status.none')}
+                    {granted
+                      ? t('status.granted')
+                      : status
+                        ? t('status.withdrawn')
+                        : t('status.none')}
                   </Badge>
 
                   {document ? (
@@ -176,7 +187,10 @@ export function ConsentPanel({
           ) : (
             <ul className="divide-y divide-ink-100">
               {[...history].reverse().map((entry) => (
-                <li key={entry.id} className="flex flex-wrap items-baseline gap-x-2 gap-y-1 px-4 py-2 text-sm">
+                <li
+                  key={entry.id}
+                  className="flex flex-wrap items-baseline gap-x-2 gap-y-1 px-4 py-2 text-sm"
+                >
                   <span dir="ltr" className="text-xs tabular-nums text-ink-600">
                     {format.dateTime(new Date(entry.decided_at), 'dateTime')}
                   </span>

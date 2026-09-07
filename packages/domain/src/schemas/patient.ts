@@ -19,7 +19,12 @@ export const patientFormSchema = z.object({
   referral_source: optionalText(120),
   preferred_locale: z.enum(LOCALES).default('he'),
   notes: optionalText(4000),
-  is_active: z.boolean().default(true),
+  /**
+   * The only status. `is_active` used to be a second, independent field asking
+   * the same question, and is now derived from this by a trigger — so it is
+   * deliberately not in this payload: sending it would let a form overwrite a
+   * recorded outcome with a checkbox.
+   */
   treatment_status: z.enum(TREATMENT_STATUSES).default('active'),
 });
 

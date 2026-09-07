@@ -13,7 +13,10 @@ export function Card({ className, ...props }: React.HTMLAttributes<HTMLDivElemen
 export function CardHeader({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn('flex items-center justify-between gap-3 border-b border-ink-100 px-4 py-3', className)}
+      className={cn(
+        'flex items-center justify-between gap-3 border-b border-ink-100 px-4 py-3',
+        className,
+      )}
       {...props}
     />
   );
@@ -30,7 +33,10 @@ export function CardBody({ className, ...props }: React.HTMLAttributes<HTMLDivEl
 export function CardFooter({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn('flex items-center justify-end gap-2 border-t border-ink-100 px-4 py-3', className)}
+      className={cn(
+        'flex items-center justify-end gap-2 border-t border-ink-100 px-4 py-3',
+        className,
+      )}
       {...props}
     />
   );

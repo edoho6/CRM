@@ -22,11 +22,7 @@ import { useRouter } from '@clinic/i18n/navigation';
 import type { AppointmentType, AppointmentWithRelations, Patient } from '@clinic/db/types';
 import { appointmentTypeName } from '@/lib/display';
 import { StartEncounterButton } from '@/features/encounters/start-encounter-button';
-import {
-  createAppointment,
-  deleteAppointment,
-  updateAppointment,
-} from './actions';
+import { createAppointment, deleteAppointment, updateAppointment } from './actions';
 import { addMinutes, differenceInMinutes, toDateTimeLocalValue } from './date-utils';
 
 export interface AppointmentDraft {
