@@ -17,7 +17,13 @@ export function LoginForm({ locale }: { locale: Locale }) {
     <form action={formAction} className="space-y-4">
       {state.error ? (
         <Alert tone="danger">
-          {state.error === 'notConfigured' ? t('notConfigured') : t('invalidCredentials')}
+          {state.error === 'notConfigured'
+            ? t('notConfigured')
+            : state.error === 'tooManyAttempts'
+              ? t('tooManyAttempts', {
+                  minutes: Math.max(1, Math.ceil((state.retryAfterSeconds ?? 0) / 60)),
+                })
+              : t('invalidCredentials')}
         </Alert>
       ) : null}
 

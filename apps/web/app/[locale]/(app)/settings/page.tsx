@@ -1,6 +1,7 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
+import { SettingsNav } from '@/features/settings/settings-nav';
 import { ClinicSettingsForm } from '@/features/settings/clinic-settings-form';
 
 export default async function SettingsPage({ params }: { params: Promise<{ locale: string }> }) {
@@ -14,6 +15,7 @@ export default async function SettingsPage({ params }: { params: Promise<{ local
   return (
     <>
       <PageHeader title={t('title')} description={t('subtitle')} />
+      <SettingsNav />
       <ClinicSettingsForm
         name={scope.context.clinic.name}
         tracksInventory={scope.context.clinic.tracks_inventory !== false}

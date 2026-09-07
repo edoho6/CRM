@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createServerSupabase, isSupabaseConfigured } from '@clinic/db';
 import type { PatientDocument } from '@clinic/db/types';
+import { logRecordAccess } from '@/lib/access-log';
 
 /**
  * Download link for one patient document.
@@ -41,6 +42,11 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   if (signError || !signed) {
     return NextResponse.json({ error: 'sign_failed' }, { status: 500 });
   }
+
+  // Taking a copy of a document out of the system is the strongest form of
+  // access there is, so it is recorded as an export rather than a view — and
+  // unlike a view it is never deduplicated: every download is its own row.
+  await logRecordAccess(supabase, 'patient_documents', id, 'export');
 
   return NextResponse.redirect(signed.signedUrl);
 }

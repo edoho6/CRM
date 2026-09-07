@@ -28,6 +28,7 @@ import type {
 import type { Locale } from '@clinic/domain';
 import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
+import { logRecordAccess } from '@/lib/access-log';
 import { ageFromDateOfBirth, appointmentTypeName } from '@/lib/display';
 import { PatientTabs } from '@/features/patients/patient-tabs';
 import { MedicalHistoryForm } from '@/features/patients/medical-history-form';
@@ -62,6 +63,11 @@ export default async function PatientDetailPage({
     .maybeSingle<Patient>();
 
   if (!patient) notFound();
+
+  // Opening a patient file is the act the access log exists to record. It is
+  // logged before the panels load, so a page that errors half-way through still
+  // leaves the trace.
+  await logRecordAccess(scope.supabase, 'patients', patient.id);
 
   const [historyResult, encountersResult, appointmentsResult, documentsResult] = await Promise.all([
     scope.supabase

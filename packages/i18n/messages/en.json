@@ -93,7 +93,8 @@
     "sendingMagicLink": "Sending…",
     "magicLinkSent": "Check your email for a sign-in link. It is valid for 60 minutes.",
     "magicLinkError": "We couldn't send the link. Please check the email address.",
-    "backToSignIn": "Back to sign in"
+    "backToSignIn": "Back to sign in",
+    "tooManyAttempts": "Too many sign-in attempts. Try again in {minutes} minutes."
   },
   "setup": {
     "title": "Finish setup",
@@ -910,7 +911,54 @@
       "title": "No, I only prescribe",
       "body": "Everything to do with stock disappears — the stock room, batches, suppliers and quantities. A treatment records what you prescribed without deducting anything."
     },
-    "inventoryReversible": "Change it whenever you like. Turning it off hides your stock data rather than deleting it, so turning it back on restores exactly what was there."
+    "inventoryReversible": "Change it whenever you like. Turning it off hides your stock data rather than deleting it, so turning it back on restores exactly what was there.",
+    "nav": {
+      "general": "General",
+      "access": "Access log",
+      "billing": "Billing"
+    },
+    "access": {
+      "title": "Access log",
+      "subtitle": "Who opened which records, and when",
+      "actor": "User",
+      "action": "Action",
+      "record": "Record",
+      "empty": "No access recorded yet",
+      "unknownActor": "Deleted user",
+      "filters": {
+        "reads": "Reads and downloads",
+        "writes": "Changes"
+      },
+      "retentionNote": "Showing the {count} most recent entries. The log itself is kept in full and cannot be edited or deleted from within the application — not even by you.",
+      "actions": {
+        "view": "Viewed",
+        "export": "Downloaded",
+        "insert": "Created",
+        "update": "Edited",
+        "delete": "Deleted",
+        "sign": "Signed"
+      },
+      "tables": {
+        "patients": "Patient",
+        "encounters": "Treatment",
+        "tcm_notes": "Clinical note",
+        "patient_documents": "Document",
+        "appointments": "Appointment",
+        "invoices": "Invoice",
+        "herbs": "Herb",
+        "herb_formulas": "Formula"
+      },
+      "anomalies": {
+        "title": "Unusual patterns",
+        "clear": "Nothing unusual",
+        "clearBody": "No unusual access patterns in the last 30 days.",
+        "rules": "Two rules, deliberately blunt: thirty or more distinct records in one hour, or five or more reads between 23:00 and 06:00. A flag is not proof of anything — it is a reason to look. Failed logins and login location are not monitored yet: they live in the authentication layer rather than the database.",
+        "kind": {
+          "bulk_access": "{count, plural, one {opened 1 record} other {opened # records}} in one hour",
+          "after_hours": "{count, plural, one {1 read} other {# reads}} overnight"
+        }
+      }
+    }
   },
   "reference": {
     "points": {

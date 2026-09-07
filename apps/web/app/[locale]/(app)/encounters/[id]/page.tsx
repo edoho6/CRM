@@ -13,6 +13,7 @@ import type {
 } from '@clinic/db/types';
 import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
+import { logRecordAccess } from '@/lib/access-log';
 import { EncounterForm } from '@/features/encounters/encounter-form';
 import { DispensePanel } from '@/features/inventory/dispense-panel';
 import { CreateInvoiceButton } from '@/features/billing/create-invoice-button';
@@ -106,6 +107,10 @@ export default async function EncounterPage({
         .limit(1000)
         .returns<PointRow[]>(),
     ]);
+
+  // Opening a treatment record is reading a patient's clinical notes, and is
+  // recorded as such.
+  await logRecordAccess(scope.supabase, 'encounters', encounter.id);
 
   const isSigned = encounter.status === 'signed';
   const points = pointsResult.data ?? [];
