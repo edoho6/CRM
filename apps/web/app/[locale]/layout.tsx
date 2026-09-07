@@ -4,6 +4,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server';
 import { getDirection, isLocale, locales } from '@clinic/i18n';
 import { UiDirectionProvider } from '@clinic/ui';
+import { themeInitScript } from '@/lib/theme';
 import '../globals.css';
 
 /**
@@ -53,6 +54,13 @@ export default async function LocaleLayout({
 
   return (
     <html lang={locale} dir={dir} suppressHydrationWarning>
+      <head>
+        {/* Sets data-theme before anything paints, from the stored choice or
+            the system preference. Blocking on purpose: the alternative is a
+            flash of the light theme on every page load for anyone using dark.
+            It writes only one attribute, so it costs well under a millisecond. */}
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
       {/* suppressHydrationWarning here (not just on <html>) because some browser
           extensions inject attributes onto <body> before React hydrates — that is
           a false-positive mismatch, not a real bug, and Next.js recommends this

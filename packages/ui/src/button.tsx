@@ -19,11 +19,11 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        primary: 'bg-jade-700 text-white hover:bg-jade-700 active:bg-jade-800 shadow-xs',
+        primary: 'bg-accent text-accent-fg hover:bg-accent active:bg-accent-strong shadow-xs',
         secondary:
           'bg-white text-ink-800 border border-ink-200 hover:bg-ink-50 hover:border-ink-300 active:bg-ink-100 shadow-xs',
         ghost: 'text-ink-700 hover:bg-ink-100 hover:shadow-sm active:bg-ink-200',
-        danger: 'bg-red-600 text-white hover:bg-red-700 active:bg-red-800 shadow-xs',
+        danger: 'bg-danger text-accent-fg hover:bg-danger-strong active:bg-danger-strong shadow-xs',
         link: 'text-jade-700 underline-offset-4 hover:underline hover:translate-y-0 hover:shadow-none',
       },
       size: {

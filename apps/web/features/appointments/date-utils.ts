@@ -25,6 +25,65 @@ export function startOfWeek(date: Date): Date {
   return addDays(result, -diff);
 }
 
+export function startOfMonth(date: Date): Date {
+  const result = startOfDay(date);
+  result.setDate(1);
+  return result;
+}
+
+export function endOfMonth(date: Date): Date {
+  const result = startOfDay(date);
+  // Day 0 of the next month is the last day of this one, and it handles
+  // February and leap years without a table.
+  result.setMonth(result.getMonth() + 1, 0);
+  return result;
+}
+
+export function addMonths(date: Date, months: number): Date {
+  const result = startOfDay(date);
+  const targetDay = result.getDate();
+  result.setDate(1);
+  result.setMonth(result.getMonth() + months);
+  // Clamp: 31 January plus one month is 28 February, not 3 March.
+  const lastDay = endOfMonth(result).getDate();
+  result.setDate(Math.min(targetDay, lastDay));
+  return result;
+}
+
+/**
+ * The days a month grid draws: whole weeks, from the Sunday on or before the
+ * first of the month to the Saturday on or after the last.
+ *
+ * Always whole weeks, so the grid is rectangular; between 28 and 42 days, so a
+ * short February and a long May both come out right without a fixed six rows of
+ * mostly-empty cells.
+ */
+export function monthGridDays(date: Date): Date[] {
+  const first = startOfWeek(startOfMonth(date));
+  const last = endOfMonth(date);
+  const days: Date[] = [];
+  for (let cursor = first; cursor <= last || days.length % 7 !== 0; cursor = addDays(cursor, 1)) {
+    days.push(cursor);
+    // A guard, not a condition: a bug in the loop above would otherwise hang
+    // the browser rather than render a wrong calendar.
+    if (days.length > 42) break;
+  }
+  return days;
+}
+
+/** Every day from `from` to `to` inclusive, for an agenda over a chosen range. */
+export function daysBetween(from: Date, to: Date, limit = 120): Date[] {
+  const days: Date[] = [];
+  for (let cursor = startOfDay(from); cursor <= to && days.length < limit; cursor = addDays(cursor, 1)) {
+    days.push(cursor);
+  }
+  return days;
+}
+
+export function isSameMonth(a: Date, b: Date): boolean {
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth();
+}
+
 export function isSameDay(a: Date, b: Date): boolean {
   return (
     a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()

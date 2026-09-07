@@ -2,8 +2,14 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import type { AppointmentType, AppointmentWithRelations, Patient } from '@clinic/db/types';
 import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
-import { CalendarView } from '@/features/appointments/calendar-view';
-import { addDays, fromDateKey, startOfWeek, toDateKey } from '@/features/appointments/date-utils';
+import { CalendarView, type CalendarViewMode } from '@/features/appointments/calendar-view';
+import {
+  addDays,
+  fromDateKey,
+  monthGridDays,
+  startOfWeek,
+  toDateKey,
+} from '@/features/appointments/date-utils';
 
 const APPOINTMENT_SELECT =
   'id, clinic_id, patient_id, practitioner_id, appointment_type_id, start_at, end_at, status, location, notes, cancelled_reason, cancelled_at, created_by, created_at, updated_at, ' +
@@ -15,24 +21,68 @@ export default async function CalendarPage({
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ date?: string; view?: string; patient?: string; new?: string }>;
+  searchParams: Promise<{
+    date?: string;
+    view?: string;
+    patient?: string;
+    new?: string;
+    from?: string;
+    to?: string;
+  }>;
 }) {
   const { locale } = await params;
-  const { date, view: viewParam, patient: patientParam, new: newParam } = await searchParams;
+  const {
+    date,
+    view: viewParam,
+    patient: patientParam,
+    new: newParam,
+    from: fromParam,
+    to: toParam,
+  } = await searchParams;
   setRequestLocale(locale);
 
   const t = await getTranslations('appointments');
   const scope = await getClinicScope();
   if (!scope) return null;
 
-  const view = viewParam === 'day' ? 'day' : 'week';
-  const anchorKey = date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : toDateKey(new Date());
+  const DATE_KEY = /^\d{4}-\d{2}-\d{2}$/;
+
+  const view: CalendarViewMode =
+    viewParam === 'day' || viewParam === 'month' || viewParam === 'range' ? viewParam : 'week';
+
+  const anchorKey = date && DATE_KEY.test(date) ? date : toDateKey(new Date());
   const anchor = fromDateKey(anchorKey);
 
-  // Fetch a day either side of the visible range so appointments that straddle
-  // midnight in the user's time zone still show up.
-  const rangeStart = view === 'day' ? addDays(anchor, -1) : addDays(startOfWeek(anchor), -1);
-  const rangeEnd = view === 'day' ? addDays(anchor, 2) : addDays(startOfWeek(anchor), 8);
+  const rangeFrom = fromParam && DATE_KEY.test(fromParam) ? fromParam : null;
+  const rangeTo = toParam && DATE_KEY.test(toParam) ? toParam : null;
+
+  /*
+   * What to fetch, per view. A day either side of whatever is visible, so an
+   * appointment that straddles midnight in the practitioner's time zone still
+   * appears at both ends.
+   *
+   * The month grid runs to whole weeks, so it can reach several days into the
+   * neighbouring months — fetching the calendar month alone would leave those
+   * leading and trailing cells wrongly empty.
+   */
+  const [windowStart, windowEnd] = (() => {
+    if (view === 'day') return [addDays(anchor, -1), addDays(anchor, 2)];
+    if (view === 'month') {
+      const grid = monthGridDays(anchor);
+      return [addDays(grid[0]!, -1), addDays(grid[grid.length - 1]!, 2)];
+    }
+    if (view === 'range') {
+      const start = rangeFrom ? fromDateKey(rangeFrom) : addDays(anchor, -7);
+      const end = rangeTo ? fromDateKey(rangeTo) : addDays(anchor, 7);
+      // A backwards range would produce an empty query rather than an empty
+      // view; clamping keeps the panel explicable.
+      return end >= start ? [addDays(start, -1), addDays(end, 2)] : [addDays(start, -1), addDays(start, 2)];
+    }
+    return [addDays(startOfWeek(anchor), -1), addDays(startOfWeek(anchor), 8)];
+  })();
+
+  const rangeStart = windowStart;
+  const rangeEnd = windowEnd;
 
   const [appointmentsResult, typesResult, patientsResult] = await Promise.all([
     scope.supabase
@@ -66,6 +116,8 @@ export default async function CalendarPage({
         practitionerId={scope.context.membership.user_id}
         anchorDate={anchorKey}
         view={view}
+        rangeFrom={rangeFrom}
+        rangeTo={rangeTo}
         defaultPatientId={patientParam}
         openNewOnLoad={newParam === '1'}
       />

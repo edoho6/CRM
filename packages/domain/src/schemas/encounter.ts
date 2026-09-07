@@ -1,5 +1,11 @@
 import { z } from 'zod';
-import { NEEDLE_TECHNIQUES, POINT_REGIONS, POINT_SIDES, TREATMENT_MODALITIES } from '../enums';
+import {
+  NEEDLE_TECHNIQUES,
+  POINT_PLACEMENTS,
+  POINT_SIDES,
+  TREATMENT_MODALITIES,
+  toPointPlacement,
+} from '../enums';
 import { optionalNumber, optionalText, requiredText } from './common';
 
 /**
@@ -19,7 +25,14 @@ export const acupuncturePointSchema = z.object({
   point_id: z
     .union([z.string().uuid(), z.literal(''), z.null(), z.undefined()])
     .transform((value) => (value ? value : null)),
-  region: z.enum(POINT_REGIONS).default('upper'),
+  // Read leniently: a note saved before placements existed carries one of the
+  // five old flat regions, and it has to keep opening. The translation happens
+  // here rather than in the editor so every reader of a note gets it.
+  region: z
+    .unknown()
+    .transform(toPointPlacement)
+    .pipe(z.enum(POINT_PLACEMENTS))
+    .default('right_upper'),
   side: z.enum(POINT_SIDES).optional(),
   technique: z.enum(NEEDLE_TECHNIQUES).default('even'),
   retention_minutes: optionalNumber,

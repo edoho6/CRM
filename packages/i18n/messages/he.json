@@ -77,7 +77,9 @@
     "points": "נקודות דיקור",
     "sidebar": "תפריט צד",
     "accessibility": "הצהרת נגישות",
-    "syntheticBanner": "סביבת פיתוח — כל המטופלים כאן בדיוניים. אין כאן מידע אמיתי, ואין להזין כאן מידע אמיתי."
+    "syntheticBanner": "סביבת פיתוח — כל המטופלים כאן בדיוניים. אין כאן מידע אמיתי, ואין להזין כאן מידע אמיתי.",
+    "collapseSidebar": "קיפול התפריט",
+    "expandSidebar": "פתיחת התפריט"
   },
   "auth": {
     "signInTitle": "כניסה למערכת",
@@ -262,7 +264,20 @@
     "noMedicalHistory": "לא הוזן רקע רפואי",
     "noEncounters": "אין עדיין טיפולים מתועדים",
     "noAppointments": "אין תורים",
-    "noDocuments": "אין מסמכים"
+    "noDocuments": "אין מסמכים",
+    "contactActions": "פעולות עבור {phone}",
+    "sendWhatsApp": "שליחת הודעת ווטסאפ",
+    "callPhone": "חיוג",
+    "treatmentStatus": "מצב הטיפול",
+    "status": {
+      "active": "מטופל פעיל",
+      "completed": "סיים טיפולים",
+      "dropped_out": "פרש באמצע",
+      "full_success": "סיים בהצלחה מלאה",
+      "partial_success": "סיים בהצלחה חלקית",
+      "unsuccessful": "טיפול לא צלח"
+    },
+    "allStatuses": "כל המצבים"
   },
   "appointments": {
     "title": "יומן",
@@ -285,7 +300,8 @@
       "day": "יום",
       "week": "שבוע",
       "month": "חודש",
-      "list": "רשימה"
+      "list": "רשימה",
+      "range": "טווח"
     },
     "status": {
       "scheduled": "נקבע",
@@ -311,7 +327,10 @@
       "defaultDuration": "משך ברירת מחדל",
       "color": "צבע ביומן",
       "empty": "לא הוגדרו סוגי טיפול"
-    }
+    },
+    "noneInRange": "אין תורים בטווח הזה",
+    "moreInDay": "ועוד {count}",
+    "countInView": "{count, plural, =0 {אין תורים} one {תור אחד} two {שני תורים} other {# תורים}}"
   },
   "encounters": {
     "title": "טיפולים",
@@ -360,7 +379,14 @@
       "pointsUsed": "נקודות דיקור",
       "treatmentNotes": "מהלך הטיפול",
       "recommendations": "המלצות למטופל",
-      "followUpPlan": "תוכנית המשך"
+      "followUpPlan": "תוכנית המשך",
+      "tongue": "לשון",
+      "pulse": "דופק",
+      "tongueColorShort": "צבע",
+      "tongueShapeShort": "צורה",
+      "tongueCoatingShort": "חיפוי",
+      "pulseRightShort": "ימין",
+      "pulseLeftShort": "שמאל"
     },
     "points": {
       "add": "הוספת נקודה",
@@ -398,11 +424,12 @@
       "dietary_advice": "הנחיות תזונה"
     },
     "region": {
-      "upper": "למעלה",
-      "lower": "למטה",
-      "left": "שמאל",
-      "right": "ימין",
-      "center": "מרכז"
+      "center": "מרכז",
+      "right_upper": "ימין למעלה",
+      "left_upper": "שמאל למעלה",
+      "right_lower": "ימין למטה",
+      "left_lower": "שמאל למטה",
+      "ear": "אוזן"
     },
     "bodyMap": {
       "front": "חזית",
@@ -410,7 +437,10 @@
       "frontLabel": "{count, plural, =0 {חזית, ללא נקודות} one {חזית, נקודה אחת} other {חזית, # נקודות}}",
       "backLabel": "{count, plural, =0 {גב, ללא נקודות} one {גב, נקודה אחת} other {גב, # נקודות}}",
       "disclaimer": "סימון סכמטי בלבד — להמחשה של הטיפול, לא לאיתור אנטומי."
-    }
+    },
+    "autosaveOn": "שמירה אוטומטית פעילה",
+    "autosavedAt": "נשמר אוטומטית ב-{time}",
+    "autosaveFailed": "השמירה האוטומטית נכשלה — לשמור ידנית"
   },
   "billing": {
     "title": "חיוב וחשבוניות",
@@ -613,7 +643,8 @@
       "bottle": "בקבוק",
       "box": "קופסה",
       "milliliter": "מ״ל",
-      "packet": "שקית"
+      "packet": "שקית",
+      "dose": "מנות"
     },
     "formulas": {
       "title": "פורמולות",
@@ -714,7 +745,14 @@
       "dispensedBy": "נופק על ידי",
       "totalCost": "עלות כוללת",
       "prescriptionTitle": "רישום מרשם",
-      "prescribe": "רשום מרשם"
+      "prescribe": "רשום מרשם",
+      "formula": "פורמולה",
+      "herb": "צמח",
+      "searchFormula": "חיפוש פורמולה או הקלדת שם",
+      "searchHerb": "חיפוש צמח או הקלדת שם",
+      "notInCatalogue": "לא במאגר — יישמר כפי שנכתב",
+      "daysSupply": "לכמה ימים",
+      "daysSupplyPlaceholder": "למשל: 10 ימים, עד הביקור הבא"
     },
     "tcmCategory": {
       "release_exterior_warm": "משחררי חיצון — חמים",
@@ -843,7 +881,11 @@
         "out": "שום דבר לא אזל",
         "to_order": "רשימת ההזמנות ריקה"
       },
-      "available": "זמין במלאי"
+      "available": "זמין במלאי",
+      "editStock": "עריכת מלאי",
+      "editStockFor": "עריכת המלאי של {herb}",
+      "thresholdShort": "סף תחתון",
+      "reorderQuantity": "כמות להזמנה"
     },
     "tabs": {
       "in_stock": "נמצא במלאי",
@@ -866,7 +908,14 @@
         "pending": "להזמנה",
         "ordered": "הוזמן",
         "received": "התקבל"
-      }
+      },
+      "alreadyListedTopUp": "כבר ברשימה — ההזמנה תעודכן"
+    },
+    "preparation": {
+      "label": "פורמט",
+      "dried_herb": "צמח יבש",
+      "powder": "אבקה",
+      "tincture": "טינקטורה"
     }
   },
   "portal": {
@@ -1147,5 +1196,23 @@
     "bodyHint": "הנוסח המלא כפי שהמטופל יראה אותו.",
     "tooShort": "נדרשת כותרת ונוסח מלא.",
     "publishWarning": "לאחר הפרסום לא ניתן יהיה לערוך את הנוסח. ודא שהטקסט סופי — תיקון מחייב פרסום גרסה חדשה."
+  },
+  "theme": {
+    "label": "ערכת צבעים",
+    "light": "בהיר",
+    "dark": "כהה",
+    "system": "לפי המערכת"
+  },
+  "filters": {
+    "dateRange": "טווח תאריכים",
+    "today": "היום",
+    "week": "שבוע אחרון",
+    "month": "חודש אחרון",
+    "all": "הכל",
+    "custom": "טווח תאריכים",
+    "from": "מתאריך",
+    "to": "עד תאריך",
+    "clear": "ניקוי",
+    "noneInRange": "אין רשומות בטווח הזה"
   }
 }

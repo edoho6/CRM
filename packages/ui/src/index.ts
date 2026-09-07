@@ -12,6 +12,7 @@ export {
   inputClasses,
   type FieldProps,
 } from './field';
+export { Combobox, type ComboboxOption, type ComboboxValue } from './combobox';
 export { Card, CardHeader, CardTitle, CardBody, CardFooter, Section } from './card';
 export { Badge, Alert, EmptyState, Spinner, DetailRow } from './feedback';
 export { Dialog, DialogTrigger, DialogClose, DialogContent, DialogFooter } from './dialog';

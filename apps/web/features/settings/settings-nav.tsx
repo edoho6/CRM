@@ -28,7 +28,7 @@ export function SettingsNav() {
             aria-current={isActive ? 'page' : undefined}
             className={cn(
               'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
-              isActive ? 'bg-jade-700 text-white' : 'text-ink-600 hover:bg-ink-50',
+              isActive ? 'bg-accent text-accent-fg' : 'text-ink-600 hover:bg-ink-50',
             )}
           >
             {t(section.labelKey)}

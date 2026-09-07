@@ -4,6 +4,7 @@ import {
   FORMULA_CATEGORIES,
   FORMULA_TCM_CATEGORIES,
   HERB_CATEGORIES,
+  HERB_PREPARATIONS,
   HERB_UNITS,
   STOCK_MOVEMENT_TYPES,
   TASTES,
@@ -104,11 +105,20 @@ export const receiveBatchSchema = z.object({
   supplier_id: z.union([uuidField, z.literal(''), z.null()]).transform((v) => (v ? v : null)),
   batch_number: optionalText(80),
   quantity: positiveQuantity,
+  /**
+   * Kept for the full receiving form, which shows it. Everywhere else the unit
+   * is derived from the preparation, so a tincture cannot be booked in in grams.
+   */
   unit: z.enum(HERB_UNITS).default('gram'),
+  preparation: z.enum(HERB_PREPARATIONS).default('dried_herb'),
   unit_cost: optionalNumber,
   expiry_date: optionalDate,
   storage_location: optionalText(120),
-  received_date: z.string().min(1),
+  /**
+   * Empty means today. The quick booking-in from the stock table does not ask,
+   * because the answer is always today — that is why it is being typed.
+   */
+  received_date: optionalText(20),
   notes: optionalText(500),
 });
 
@@ -150,6 +160,9 @@ export const dispenseRequestSchema = z
       .transform((v) => (typeof v === 'number' ? v : Number(v)))
       .pipe(z.number().positive().max(1000))
       .default(1),
+    /** Carried so the panel can send one shape to either function. */
+    preparation: z.enum(HERB_PREPARATIONS).optional(),
+    days_supply: optionalText(80),
     items: z.array(dispenseItemSchema).default([]),
     notes: optionalText(1000),
   })

@@ -160,7 +160,7 @@ export default async function AccessLogPage({
             aria-current={action === option.key ? 'page' : undefined}
             className={
               action === option.key
-                ? 'rounded-full bg-jade-700 px-3 py-1 text-xs font-medium text-white'
+                ? 'rounded-full bg-accent px-3 py-1 text-xs font-medium text-accent-fg'
                 : 'rounded-full bg-ink-100 px-3 py-1 text-xs font-medium text-ink-700 transition-colors hover:bg-ink-200'
             }
           >

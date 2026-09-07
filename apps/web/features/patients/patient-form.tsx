@@ -8,6 +8,7 @@ import {
   patientFormSchema,
   LOCALES,
   SEXES,
+  TREATMENT_STATUSES,
   type PatientFormData,
   type PatientFormValues,
 } from '@clinic/domain';
@@ -68,6 +69,7 @@ export function PatientForm({ patient }: { patient?: Patient }) {
       preferred_locale: patient?.preferred_locale ?? 'he',
       notes: patient?.notes ?? '',
       is_active: patient?.is_active ?? true,
+      treatment_status: patient?.treatment_status ?? 'active',
     },
   });
 
@@ -174,6 +176,25 @@ export function PatientForm({ patient }: { patient?: Patient }) {
             <Field label={t('fields.notes')} htmlFor="notes" className="mt-4">
               <Textarea id="notes" rows={3} {...register('notes')} />
             </Field>
+            {/* Two separate questions, deliberately. `is_active` decides whether
+                the file appears in the working list; the outcome below says how
+                the course of treatment stands. Someone who finished successfully
+                and someone who stopped coming are both inactive, and a year
+                later the difference is the only part worth having. */}
+            <Field
+              label={t('treatmentStatus')}
+              htmlFor="treatment_status"
+              className="mt-4 max-w-xs"
+            >
+              <Select id="treatment_status" {...register('treatment_status')}>
+                {TREATMENT_STATUSES.map((status) => (
+                  <option key={status} value={status}>
+                    {t(`status.${status}`)}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+
             <label className="mt-4 flex items-center gap-2 text-sm text-ink-700">
               <Checkbox {...register('is_active')} />
               {t('fields.isActive')}

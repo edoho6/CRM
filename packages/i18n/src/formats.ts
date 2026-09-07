@@ -12,6 +12,8 @@ export const formats = {
     short: { day: '2-digit', month: '2-digit', year: 'numeric' },
     long: { day: 'numeric', month: 'long', year: 'numeric' },
     weekday: { weekday: 'long', day: 'numeric', month: 'long' },
+    /** The heading over a month grid: "ספטמבר 2026", "September 2026". */
+    monthYear: { month: 'long', year: 'numeric' },
     time: { hour: '2-digit', minute: '2-digit', hour12: false },
     dateTime: {
       day: '2-digit',

@@ -33,11 +33,60 @@ if (cssFiles.length === 0) {
 }
 const css = cssFiles.map((f) => fs.readFileSync(path.join(cssDir, f), 'utf8')).join('\n');
 
-/** Tailwind emits a hex fallback beside each wide-gamut value; the hex is what we measure. */
-const vars = new Map([['white', '#ffffff']]);
-for (const m of css.matchAll(/--color-([a-z]+-\d+):\s*(#[0-9a-fA-F]{6})/g)) {
-  if (!vars.has(m[1])) vars.set(m[1], m[2]);
+/**
+ * Tailwind emits a hex fallback beside each wide-gamut value; the hex is what we
+ * measure. Names may contain letters, digits and dashes (`jade-700`, but also
+ * `accent-fg`), so the pattern is deliberately loose and it is the `#rrggbb`
+ * requirement that keeps it from matching non-colour properties.
+ */
+const COLOR_DECL = /--color-([a-z0-9-]+):\s*(#[0-9a-fA-F]{3}(?:[0-9a-fA-F]{3})?)\b/g;
+
+/** The minifier shortens #ffffff to #fff; both have to measure the same. */
+function expandHex(hex) {
+  if (hex.length === 4) {
+    return `#${hex[1]}${hex[1]}${hex[2]}${hex[2]}${hex[3]}${hex[3]}`;
+  }
+  return hex;
 }
+
+const vars = new Map([['white', '#ffffff']]);
+for (const m of css.matchAll(COLOR_DECL)) {
+  if (!vars.has(m[1])) vars.set(m[1], expandHex(m[2]));
+}
+
+/**
+ * The dark palette, read out of the `[data-theme="dark"]` rule.
+ *
+ * Dark mode is not an inversion of the light values — every step was chosen by
+ * hand — so it has to be measured on its own rather than assumed to inherit the
+ * light theme's passing marks. Missing block means dark mode is not built, and
+ * the dark pass is skipped rather than failing.
+ */
+function readDarkPalette(source) {
+  // The minifier strips the quotes from the attribute value, so all three
+  // spellings have to be looked for — the built stylesheet is what is measured,
+  // not the source.
+  const at = [`[data-theme="dark"]`, `[data-theme='dark']`, `[data-theme=dark]`]
+    .map((needle) => source.indexOf(needle))
+    .filter((index) => index >= 0)
+    .sort((a, b) => a - b)[0];
+  if (at === undefined) return null;
+
+  const open = source.indexOf('{', at);
+  const close = source.indexOf('}', open);
+  if (open < 0 || close < 0) return null;
+
+  const block = source.slice(open + 1, close);
+  const dark = new Map(vars);
+  let found = 0;
+  for (const m of block.matchAll(COLOR_DECL)) {
+    dark.set(m[1], expandHex(m[2]));
+    found += 1;
+  }
+  return found > 0 ? dark : null;
+}
+
+const darkVars = readDarkPalette(css);
 
 const toLinear = (c) => {
   const v = c / 255;
@@ -78,25 +127,31 @@ const componentPairs = [
   { bg: 'amber-100', fg: 'amber-800', where: 'warning badge' },
   { bg: 'red-100', fg: 'red-700', where: 'danger badge' },
   { bg: 'sky-100', fg: 'sky-800', where: 'info badge' },
-  { bg: 'jade-700', fg: 'white', where: 'primary button, active nav' },
+  { bg: 'accent', fg: 'accent-fg', where: 'primary button, active nav' },
+  { bg: 'accent-strong', fg: 'accent-fg', where: 'primary button, pressed' },
+  { bg: 'danger', fg: 'accent-fg', where: 'danger button' },
+  { bg: 'danger-strong', fg: 'accent-fg', where: 'danger button, pressed' },
   { bg: 'amber-50', fg: 'amber-900', where: 'review notice' },
   { bg: 'sky-50', fg: 'sky-900', where: 'information notice' },
   { bg: 'amber-200', fg: 'amber-950', where: 'synthetic-data banner' },
+  { bg: 'jade-50', fg: 'jade-800', where: 'highlighted option row' },
+  { bg: 'white', fg: 'jade-700', where: 'figures and quantities' },
 ];
 
 const AA_SMALL = 4.5;
 let failures = 0;
-const seen = new Set();
 
-function measure(pairs, title) {
+function measure(pairs, title, palette, seen) {
   console.log(`\n${title}`);
+  let checked = 0;
   for (const { bg, fg, where } of pairs) {
     const key = `${bg}|${fg}`;
     if (seen.has(key)) continue;
     seen.add(key);
+    checked += 1;
 
-    const bgHex = vars.get(bg);
-    const fgHex = vars.get(fg);
+    const bgHex = palette.get(bg);
+    const fgHex = palette.get(fg);
     if (!bgHex || !fgHex) {
       console.log(`  ????  ${fg} on ${bg} — not in the stylesheet`);
       failures += 1;
@@ -112,15 +167,52 @@ function measure(pairs, title) {
       );
     }
   }
-  console.log(`  ${pairs.length} pairs checked`);
+  console.log(`  ${checked} pairs checked`);
 }
 
-measure(chipPairs, `Materia medica chips — AA small text needs ${AA_SMALL}:1`);
-measure(componentPairs, 'Text, badges and buttons');
+const lightSeen = new Set();
+measure(chipPairs, `Light · materia medica chips — AA small text needs ${AA_SMALL}:1`, vars, lightSeen);
+measure(componentPairs, 'Light · text, badges and buttons', vars, lightSeen);
 
-/* A regression guard for the one that was wrong: jade-600 is a surface colour
-   and does not carry white text. jade-700 does. */
+if (darkVars) {
+  // Same pairs, dark palette. `white` here is the card surface, because dark
+  // mode redefines it — which is exactly the substitution the browser makes.
+  const darkSeen = new Set();
+  measure(chipPairs, 'Dark · materia medica chips', darkVars, darkSeen);
+  measure(componentPairs, 'Dark · text, badges and buttons', darkVars, darkSeen);
+} else {
+  console.log('\nNo dark palette found in the stylesheet — dark pairs not measured.');
+}
+
+/* Two regression guards.
+
+   The first is for the failure this script was written to catch: jade-600 is a
+   surface colour and does not carry white text.
+
+   The second is for dark mode. `text-white` no longer means "white" — dark mode
+   redefines `--color-white` to the card surface so every `bg-white` panel flips
+   at once, which turns `text-white` on a coloured button into dark-on-dark. Text
+   that must stay light belongs on `text-accent-fg`. */
 const forbidden = [];
+const whiteText = [];
+function walkWhite(dir) {
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (entry.name === 'node_modules' || entry.name.startsWith('.')) continue;
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) walkWhite(full);
+    else if (/\.tsx?$/.test(entry.name) && /\btext-white\b/.test(fs.readFileSync(full, 'utf8'))) {
+      whiteText.push(path.relative(root, full));
+    }
+  }
+}
+for (const dir of ['apps/web', 'packages/ui']) walkWhite(path.join(root, dir));
+
+if (whiteText.length > 0) {
+  console.log('\ntext-white inverts in dark mode. Text on a coloured surface needs text-accent-fg:');
+  for (const file of whiteText) console.log(`  ${file}`);
+  failures += whiteText.length;
+}
+
 function walk(dir) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     if (entry.name === 'node_modules' || entry.name.startsWith('.')) continue;

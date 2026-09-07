@@ -38,7 +38,7 @@ import {
 } from '@/lib/display';
 import { ReferenceNav } from '@/features/reference/reference-nav';
 import { HerbImageCard } from '@/features/inventory/herb-image-card';
-import { AddToOrderButton } from '@/features/inventory/stock-controls';
+import { OrderDialog } from '@/features/inventory/order-dialog';
 
 /** Where a chip on this page sends you: the same herb list, filtered. */
 const HERBS_PATH = '/reference/herbs';
@@ -350,9 +350,8 @@ export default async function HerbDetailPage({
                     {herb.reorder_threshold === null ? '—' : format.number(Number(herb.reorder_threshold))}
                   </DetailRow>
                 </dl>
-                <AddToOrderButton
+                <OrderDialog
                   herbId={herb.id}
-                  unit={herb.default_unit}
                   suggestedQuantity={
                     herb.reorder_quantity === null ? null : Number(herb.reorder_quantity)
                   }

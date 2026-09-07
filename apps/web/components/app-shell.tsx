@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import {
   Accessibility,
   BookOpen,
   Boxes,
   CalendarDays,
+  ChevronsRight,
   ClipboardList,
   FlaskConical,
   LayoutDashboard,
@@ -21,6 +22,7 @@ import {
 import { Link, usePathname } from '@clinic/i18n/navigation';
 import { Button, cn } from '@clinic/ui';
 import { LanguageSwitcher } from './language-switcher';
+import { ThemeToggle } from './theme-toggle';
 import { GlobalSearch } from '@/features/quick-bar/global-search';
 import { QuickCreateMenu } from '@/features/quick-bar/quick-create-menu';
 
@@ -29,6 +31,8 @@ import { QuickCreateMenu } from '@/features/quick-bar/quick-create-menu';
  * they answer different questions: "what is this herb" versus "have I got any".
  * A clinic that holds no stock never sees the second one.
  */
+const SIDEBAR_STORAGE_KEY = 'herbalist-sidebar-collapsed';
+
 const NAV_ITEMS = [
   { href: '/', labelKey: 'dashboard', icon: LayoutDashboard, exact: true, stockOnly: false },
   { href: '/patients', labelKey: 'patients', icon: Users, exact: false, stockOnly: false },
@@ -59,28 +63,62 @@ export function AppShell({
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const nav = (
-    <nav className="flex flex-col gap-0.5" aria-label={t('mainMenu')}>
-      {NAV_ITEMS.filter((item) => tracksInventory || !item.stockOnly).map((item) => {
-        const isActive = item.exact ? pathname === item.href : pathname.startsWith(item.href);
-        return (
-          <Link
-            key={item.href}
-            href={item.href}
-            onClick={() => setMobileOpen(false)}
-            aria-current={isActive ? 'page' : undefined}
-            className={cn(
-              'flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-              isActive ? 'bg-jade-700 text-white' : 'text-ink-700 hover:bg-ink-100',
-            )}
-          >
-            <item.icon className="h-4 w-4 shrink-0" aria-hidden />
-            <span className="truncate">{t(item.labelKey)}</span>
-          </Link>
-        );
-      })}
-    </nav>
-  );
+  // Whether the sidebar is collapsed belongs to this browser, not to the
+  // account: the same practitioner wants it open on a laptop and folded away on
+  // a small screen where the herb table needs every pixel. Starts expanded and
+  // corrects itself after mount, so the server and the first client render agree.
+  const [collapsed, setCollapsed] = useState(false);
+
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(SIDEBAR_STORAGE_KEY) === '1') setCollapsed(true);
+    } catch {
+      // Site data blocked. The sidebar simply opens expanded every time.
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      if (collapsed) localStorage.setItem(SIDEBAR_STORAGE_KEY, '1');
+      else localStorage.removeItem(SIDEBAR_STORAGE_KEY);
+    } catch {
+      // As above — not remembering is the whole of the failure.
+    }
+  }, [collapsed]);
+
+  // `iconOnly` is the collapsed desktop rail. The mobile menu always shows
+  // labels, because it is not the thing being collapsed.
+  function navList(iconOnly: boolean) {
+    return (
+      <nav id="sidebar-nav" className="flex flex-col gap-0.5" aria-label={t('mainMenu')}>
+        {NAV_ITEMS.filter((item) => tracksInventory || !item.stockOnly).map((item) => {
+          const isActive = item.exact ? pathname === item.href : pathname.startsWith(item.href);
+          const label = t(item.labelKey);
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={() => setMobileOpen(false)}
+              aria-current={isActive ? 'page' : undefined}
+              title={iconOnly ? label : undefined}
+              className={cn(
+                'flex items-center rounded-lg py-2 text-sm font-medium transition-colors',
+                iconOnly ? 'justify-center px-0' : 'gap-2.5 px-3',
+                isActive ? 'bg-accent text-accent-fg' : 'text-ink-700 hover:bg-ink-100',
+              )}
+            >
+              <item.icon className="h-4 w-4 shrink-0" aria-hidden />
+              {/* The label stays in the accessibility tree when collapsed —
+                  a rail of unlabelled icons is unusable with a screen reader. */}
+              <span className={iconOnly ? 'sr-only' : 'truncate'}>{label}</span>
+            </Link>
+          );
+        })}
+      </nav>
+    );
+  }
+
+  const nav = navList(false);
 
   return (
     <div className="flex min-h-dvh">
@@ -90,46 +128,113 @@ export function AppShell({
           navigation to reach the content. */}
       <a
         href="#main-content"
-        className="sr-only rounded-lg bg-jade-700 px-4 py-2 text-sm font-medium text-white focus:not-sr-only focus:absolute focus:top-2 focus:start-2 focus:z-50"
+        className="sr-only rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-fg focus:not-sr-only focus:absolute focus:top-2 focus:start-2 focus:z-50"
       >
         {t('skipToContent')}
       </a>
       {/* Desktop sidebar. `border-e` is a logical border, so it sits on the correct
-          side in both Hebrew and English without a second rule. */}
+          side in both Hebrew and English without a second rule.
+
+          Collapsed, it keeps the icons rather than disappearing: a rail you can
+          still navigate from is worth more than the extra 3rem, and the whole
+          point of collapsing is to give a wide table more room, not to hide the
+          way back out of it. */}
       <aside
-        className="hidden w-60 shrink-0 flex-col border-e border-ink-200 bg-white lg:flex"
+        className={cn(
+          'hidden shrink-0 flex-col border-e border-ink-200 bg-white transition-[width] duration-200 lg:flex',
+          collapsed ? 'w-14' : 'w-60',
+        )}
         aria-label={t('sidebar')}
       >
-        <div className="flex items-center gap-2.5 border-b border-ink-100 px-4 py-3.5">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-jade-700 text-white">
+        <div
+          className={cn(
+            'flex items-center gap-2.5 border-b border-ink-100 py-3.5',
+            collapsed ? 'justify-center px-2' : 'px-4',
+          )}
+        >
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent text-accent-fg">
             <Leaf className="h-4 w-4" />
           </span>
-          <span className="min-w-0">
-            <span className="block truncate text-sm font-semibold text-ink-900">{clinicName}</span>
-            <span className="block truncate text-xs text-ink-500">{userName}</span>
-          </span>
+          {!collapsed ? (
+            <span className="min-w-0">
+              <span className="block truncate text-sm font-semibold text-ink-900">{clinicName}</span>
+              <span className="block truncate text-xs text-ink-500">{userName}</span>
+            </span>
+          ) : null}
         </div>
-        <div className="flex-1 overflow-y-auto p-3">{nav}</div>
-        <div className="space-y-2 border-t border-ink-100 p-3">
-          <Button asChild variant="ghost" size="sm" className="w-full justify-start">
-            <Link href="/settings">
+
+        <div className={cn('flex-1 overflow-y-auto', collapsed ? 'p-2' : 'p-3')}>
+          {navList(collapsed)}
+        </div>
+
+        <div className={cn('space-y-2 border-t border-ink-100', collapsed ? 'p-2' : 'p-3')}>
+          <Button
+            asChild
+            variant="ghost"
+            size="sm"
+            className={cn('w-full', collapsed ? 'justify-center px-0' : 'justify-start')}
+          >
+            <Link href="/settings" title={collapsed ? t('settings') : undefined}>
               <Settings className="h-4 w-4" />
-              {t('settings')}
+              {!collapsed ? t('settings') : <span className="sr-only">{t('settings')}</span>}
             </Link>
           </Button>
-          <Button asChild variant="ghost" size="sm" className="w-full justify-start">
-            <Link href="/accessibility">
+          <Button
+            asChild
+            variant="ghost"
+            size="sm"
+            className={cn('w-full', collapsed ? 'justify-center px-0' : 'justify-start')}
+          >
+            <Link href="/accessibility" title={collapsed ? t('accessibility') : undefined}>
               <Accessibility className="h-4 w-4" />
-              {t('accessibility')}
+              {!collapsed ? t('accessibility') : <span className="sr-only">{t('accessibility')}</span>}
             </Link>
           </Button>
-          <LanguageSwitcher className="w-full justify-center" />
+
+          {!collapsed ? (
+            <>
+              <ThemeToggle className="w-full" />
+              <LanguageSwitcher className="w-full justify-center" />
+            </>
+          ) : null}
+
           <form action={onSignOut}>
-            <Button type="submit" variant="ghost" size="sm" className="w-full justify-start">
+            <Button
+              type="submit"
+              variant="ghost"
+              size="sm"
+              className={cn('w-full', collapsed ? 'justify-center px-0' : 'justify-start')}
+              title={collapsed ? t('signOut') : undefined}
+            >
               <LogOut className="h-4 w-4" />
-              {t('signOut')}
+              {!collapsed ? t('signOut') : <span className="sr-only">{t('signOut')}</span>}
             </Button>
           </form>
+
+          {/* The collapse control sits at the foot of the panel it collapses, and
+              the chevron is a logical icon: it points at the edge the panel will
+              move towards, which is the opposite direction in Hebrew. */}
+          <button
+            type="button"
+            onClick={() => setCollapsed((value) => !value)}
+            aria-expanded={!collapsed}
+            aria-controls="sidebar-nav"
+            title={collapsed ? t('expandSidebar') : t('collapseSidebar')}
+            className={cn(
+              'flex h-8 w-full items-center gap-2 rounded-lg text-ink-600 transition-colors hover:bg-ink-100 hover:text-ink-900',
+              collapsed ? 'justify-center px-0' : 'justify-start px-2',
+            )}
+          >
+            <ChevronsRight
+              className={cn('h-4 w-4 shrink-0 transition-transform rtl:-scale-x-100', !collapsed && 'rotate-180')}
+              aria-hidden
+            />
+            {!collapsed ? (
+              <span className="truncate text-xs">{t('collapseSidebar')}</span>
+            ) : (
+              <span className="sr-only">{t('expandSidebar')}</span>
+            )}
+          </button>
         </div>
       </aside>
 
@@ -181,6 +286,10 @@ export function AppShell({
               </Button>
             </div>
             {nav}
+            <div className="mt-2 flex items-center gap-2">
+              <ThemeToggle />
+              <LanguageSwitcher />
+            </div>
             <form action={onSignOut} className="mt-2">
               <Button type="submit" variant="ghost" size="sm" className="w-full justify-start">
                 <LogOut className="h-4 w-4" />

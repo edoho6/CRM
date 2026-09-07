@@ -1,5 +1,9 @@
 @import 'tailwindcss';
 
+/* Same reason as the staff app: Tailwind's source detection skips node_modules,
+   and the shared component package is reached through a symlink inside it. */
+@source '../../../packages/ui/src';
+
 /* The portal shares the clinic's palette so it feels like the same practice,
    but ships none of the staff app's grid, editor or calendar CSS — patients are
    mostly on phones and should not download what they cannot use. */

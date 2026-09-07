@@ -52,7 +52,7 @@ export function PointSearch({
     cn(
       'rounded-full px-2.5 py-1 text-xs font-medium whitespace-nowrap transition-all',
       selected
-        ? 'bg-jade-700 text-white shadow-xs'
+        ? 'bg-accent text-accent-fg shadow-xs'
         : 'bg-ink-100 text-ink-700 hover:-translate-y-px hover:bg-ink-200 hover:text-ink-900',
     );
 

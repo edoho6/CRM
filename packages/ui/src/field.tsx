@@ -93,6 +93,8 @@ export interface FieldProps {
   hint?: React.ReactNode;
   required?: boolean;
   className?: string;
+  /** 'compact' shrinks the label for fields grouped under a shared heading. */
+  density?: 'default' | 'compact';
   children: React.ReactNode;
 }
 
@@ -107,16 +109,31 @@ export interface FieldProps {
  *
  * `aria-live` on the error means a validation failure that appears after
  * submission is announced rather than silently rendered.
+ *
+ * `density="compact"` shrinks the label for fields sitting side by side under a
+ * shared heading — the tongue's colour, shape and coating, say. It changes the
+ * type size and nothing else: the label is still a real `<label>`, still
+ * associated, and still read out. Compact is about the eye, not the tree.
  */
-export function Field({ label, htmlFor, error, hint, required, className, children }: FieldProps) {
+export function Field({
+  label,
+  htmlFor,
+  error,
+  hint,
+  required,
+  className,
+  density = 'default',
+  children,
+}: FieldProps) {
   const hintId = htmlFor && hint && !error ? `${htmlFor}-hint` : undefined;
   const errorId = htmlFor && error ? `${htmlFor}-error` : undefined;
   const describedBy = [hintId, errorId].filter(Boolean).join(' ') || undefined;
+  const compact = density === 'compact';
 
   return (
-    <div className={cn('space-y-1.5', className)}>
+    <div className={cn(compact ? 'space-y-0.5' : 'space-y-1.5', className)}>
       {label ? (
-        <Label htmlFor={htmlFor} required={required}>
+        <Label htmlFor={htmlFor} required={required} className={compact ? 'text-xs font-normal text-ink-600' : undefined}>
           {label}
         </Label>
       ) : null}

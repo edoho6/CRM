@@ -1,5 +1,14 @@
 @import 'tailwindcss';
 
+/* The shared component package has to be scanned explicitly.
+   Tailwind's automatic source detection skips node_modules, and in a pnpm
+   workspace `@clinic/ui` is reached through a symlink inside it — so every class
+   written in a shared component was invisible to the compiler. Until now that
+   went unnoticed because those classes happened to also be used somewhere in
+   this app; the first class unique to the package silently produced no CSS at
+   all, which is a bug that shows as an unstyled button rather than as an error. */
+@source '../../../packages/ui/src';
+
 /* ==========================================================================
    Design tokens
    ==========================================================================
@@ -38,6 +47,25 @@
   --color-ink-800: #3b4146;
   --color-ink-900: #23272a;
 
+  /* ------------------------------------------------------------------------
+     Solid surfaces that carry white text.
+
+     These exist because jade-700 and red-600 were each doing two jobs: the
+     background of a button, and the colour of body text. That is fine while
+     there is one theme and impossible with two — in dark mode the text has to
+     become light and the button surface must not. Splitting them means the
+     button keeps its colour in both themes while `text-jade-700` and
+     `text-red-600` are free to invert.
+
+     White on all four measures above 4.5:1, so they are safe in either theme
+     and are deliberately not overridden below.
+     ------------------------------------------------------------------------ */
+  --color-accent-fg: #ffffff;
+  --color-accent: #15803c;
+  --color-accent-strong: #166533;
+  --color-danger: #dc2626;
+  --color-danger-strong: #b91c1c;
+
   /* A stack that renders Hebrew and Latin well without a network font download,
      so the app looks right offline and on first paint. */
   --font-sans:
@@ -46,6 +74,87 @@
   --font-mono: 'Cascadia Code', 'Consolas', ui-monospace, 'SF Mono', Menlo, monospace;
 
   --radius-card: 0.875rem;
+}
+
+/* ==========================================================================
+   Dark theme
+   ==========================================================================
+   Defined once, on an explicit `data-theme="dark"` attribute, rather than twice
+   — once for the attribute and once inside a `prefers-color-scheme` query. A
+   small script in the document head sets the attribute before first paint, from
+   the stored choice or from the system preference, so "follow the system" still
+   works and there is no flash of the wrong theme.
+
+   Two things carry the whole theme:
+
+     · `--color-white` becomes the card surface. Every `bg-white` panel in the
+       app flips with it, which is why `text-white` was replaced by
+       `text-accent-fg` — otherwise button labels would have flipped too.
+     · the `ink` ramp reverses. It is used as "50 is the page, 900 is the text",
+       so reversing it turns every heading, border and muted label at once.
+
+   These are not an automatic inversion of the light values. A mechanically
+   inverted palette comes out muddy, and the greens in particular go grey. Every
+   value below was chosen and then measured — `pnpm check:contrast` reads this
+   block out of the built stylesheet and checks the dark pairs alongside the
+   light ones, so nothing here is a guess.
+   ========================================================================== */
+
+:root[data-theme='dark'] {
+  /* Tells the browser to draw scrollbars, form controls and the caret dark. */
+  color-scheme: dark;
+
+  /* Surfaces. `white` is the raised surface a card sits on; ink-50 is the page
+     behind it, and is darker so the cards read as lifted rather than flush. */
+  --color-white: #1e2225;
+  --color-ink-50: #14181a;
+  --color-ink-100: #272c30;
+  --color-ink-200: #363c41;
+  --color-ink-300: #485056;
+
+  /* Text, reversed. 400 is the placeholder tier, 900 the heading tier. */
+  --color-ink-400: #8b959b;
+  --color-ink-500: #a2abb1;
+  --color-ink-600: #b3bbc0;
+  --color-ink-700: #cdd3d7;
+  --color-ink-800: #e2e6e8;
+  --color-ink-900: #f1f4f5;
+
+  /* Jade as text and as tint. The button surface is `--color-accent` and is
+     left alone; what has to move is jade-700 and jade-800, which are the link
+     and figure colours in some sixty places and are nearly black. */
+  --color-jade-50: #12301f;
+  --color-jade-100: #17422a;
+  --color-jade-200: #1d5636;
+  --color-jade-300: #2a7a4c;
+  --color-jade-700: #4ec98d;
+  --color-jade-800: #5fd39a;
+  --color-jade-900: #8ae4b8;
+
+  /* Status colours. The light tints become dark tints and the dark inks become
+     light ones, so a badge keeps its meaning and its legibility both. */
+  --color-amber-50: #2a1f08;
+  --color-amber-100: #3a2a0a;
+  --color-amber-200: #4a360c;
+  --color-amber-700: #fbbf24;
+  --color-amber-800: #fcd34d;
+  --color-amber-900: #fde68a;
+  --color-amber-950: #fef3c7;
+
+  --color-red-50: #2a1113;
+  --color-red-100: #3a1517;
+  --color-red-200: #4d1c1f;
+  --color-red-600: #f87171;
+  --color-red-700: #fca5a5;
+  --color-red-800: #fecaca;
+  --color-red-900: #fee2e2;
+
+  --color-sky-50: #0c1f2e;
+  --color-sky-100: #0f2a3d;
+  --color-sky-200: #14384f;
+  --color-sky-700: #7dd3fc;
+  --color-sky-800: #bae6fd;
+  --color-sky-900: #e0f2fe;
 }
 
 /* ==========================================================================

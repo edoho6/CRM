@@ -11,6 +11,7 @@ import type {
   EncounterStatus,
   FormulaCategory,
   HerbCategory,
+  HerbPreparation,
   HerbUnit,
   Locale,
   MembershipRole,
@@ -19,6 +20,7 @@ import type {
   PointBodyArea,
   PointCategory,
   PointChannel,
+  PointPlacement,
   PointRegion,
   PointSide,
   PurchaseOrderStatus,
@@ -28,6 +30,7 @@ import type {
   TcmCategory,
   Temperature,
   TreatmentModality,
+  TreatmentStatus,
 } from '@clinic/domain';
 
 /**
@@ -108,6 +111,11 @@ export interface Patient {
   preferred_locale: Locale;
   notes: string | null;
   is_active: boolean;
+  /**
+   * How the course of treatment stands or ended. Separate from is_active, which
+   * only decides whether the file appears in the working list.
+   */
+  treatment_status: TreatmentStatus;
   created_by: string | null;
   created_at: string;
   updated_at: string;
@@ -211,6 +219,8 @@ export interface Encounter {
   appointment_id: string | null;
   practitioner_id: string;
   encounter_date: string;
+  /** When the record was opened — the time of day the filing date cannot carry. */
+  started_at: string;
   status: EncounterStatus;
   signed_at: string | null;
   signed_by: string | null;
@@ -224,12 +234,14 @@ export interface Encounter {
  *
  * `point_id` is present only when the entry came from the catalogue; free text
  * is always allowed and simply does not appear on the body map. `side` survives
- * for notes written before regions replaced it.
+ * for notes written before regions replaced it, and `region` is read leniently
+ * because notes written before placements existed carry one of the five old
+ * flat buckets.
  */
 export interface RecordedPoint {
   point: string;
   point_id?: string | null;
-  region?: PointRegion;
+  region?: PointPlacement | PointRegion;
   side?: PointSide;
   technique: NeedleTechnique;
   retention_minutes?: number | null;
@@ -324,6 +336,24 @@ export interface Herb {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+}
+
+/**
+ * One line of the shelf, from the `herb_stock_by_preparation` view.
+ *
+ * A herb kept as dried root and as tincture has two rows here and one row in
+ * `HerbStockLevel`. Both are wanted: the total answers "do we stock this", and
+ * these answer "what is actually on the shelf", which is the question asked
+ * while writing a prescription.
+ */
+export interface HerbStockByPreparation {
+  clinic_id: string;
+  herb_id: string;
+  preparation: HerbPreparation;
+  unit: 'gram' | 'milliliter';
+  total_remaining: number | null;
+  batch_count: number;
+  nearest_expiry: string | null;
 }
 
 /** Herb enriched with its live stock position, from the `herb_stock_levels` view. */
@@ -435,6 +465,7 @@ export interface HerbBatch {
   quantity_received: number;
   quantity_remaining: number;
   unit: HerbUnit;
+  preparation: HerbPreparation;
   unit_cost: number | null;
   expiry_date: string | null;
   storage_location: string | null;
@@ -497,6 +528,10 @@ export interface DispensingRecord {
   dispensed_at: string;
   status: DispensingStatus;
   notes: string | null;
+  /** The preparation the whole prescription was written in, when one applies. */
+  preparation: HerbPreparation | null;
+  /** Free text: practitioners write "10 days", "שבועיים ואז נראה". */
+  days_supply: string | null;
   total_cost: number | null;
   created_at: string;
 }
@@ -505,10 +540,13 @@ export interface DispensingItem {
   id: string;
   clinic_id: string;
   dispensing_record_id: string;
-  herb_id: string;
+  /** Null for a line the catalogue has never heard of; custom_name carries it. */
+  herb_id: string | null;
+  custom_name: string | null;
   batch_id: string | null;
   quantity: number;
   unit: HerbUnit;
+  preparation: HerbPreparation | null;
   unit_cost_snapshot: number | null;
   line_total: number | null;
 }
@@ -669,6 +707,8 @@ export interface OrderListEntry {
   formula_id: string | null;
   quantity: number | null;
   unit: HerbUnit | 'dose';
+  /** Ordering dried root and powder of one herb are two separate lines. */
+  preparation: HerbPreparation | null;
   supplier_id: string | null;
   status: OrderListStatus;
   notes: string | null;

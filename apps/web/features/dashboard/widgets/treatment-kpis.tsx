@@ -161,8 +161,8 @@ function DayColumns({ days, labelEvery }: { days: PeriodStats['days']; labelEver
                 <div
                   className={cn(
                     'w-full max-w-6 rounded-t transition-colors',
-                    day.isToday ? 'bg-jade-700' : 'bg-jade-300',
-                    isHover && (day.isToday ? 'bg-jade-700' : 'bg-jade-400'),
+                    day.isToday ? 'bg-accent' : 'bg-jade-300',
+                    isHover && (day.isToday ? 'bg-accent' : 'bg-jade-400'),
                   )}
                   // 2px surface gap between neighbours; a zero day keeps a 2px
                   // stub so the baseline reads as continuous.

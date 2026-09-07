@@ -14,17 +14,23 @@ import {
 import { Link, redirect } from '@clinic/i18n/navigation';
 import type {
   FormulaStockLevel,
+  HerbStockByPreparation,
   HerbStockLevel,
   OrderListEntryWithTarget,
 } from '@clinic/db/types';
-import type { Locale } from '@clinic/domain';
+import type { HerbPreparation, Locale } from '@clinic/domain';
 import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
 import { formulaPrimaryName, herbPrimaryName, herbSecondaryName } from '@/lib/display';
 import { InventoryNav } from '@/features/inventory/inventory-nav';
 import { parseStockTab, type StockTab } from '@/features/inventory/stock-tabs';
-import { AddToOrderButton, ThresholdCell } from '@/features/inventory/stock-controls';
+import { ThresholdCell } from '@/features/inventory/stock-controls';
+import { OrderDialog } from '@/features/inventory/order-dialog';
+import { StockEditor, type StockBatchSummary } from '@/features/inventory/stock-editor';
 import { OrderListRowControls } from '@/features/inventory/order-list-row';
+
+/** Just enough of a batch for the stock editor's list. */
+type BatchRow = StockBatchSummary & { herb_id: string };
 
 /**
  * The stock room.
@@ -63,6 +69,7 @@ export default async function StockRoomPage({
   const tBatches = await getTranslations('inventory.batches');
   const tOrder = await getTranslations('inventory.order');
   const tUnit = await getTranslations('inventory.unit');
+  const tPrep = await getTranslations('inventory.preparation');
   const tc = await getTranslations('common');
   const format = await getFormatter();
 
@@ -76,7 +83,7 @@ export default async function StockRoomPage({
     return null;
   }
 
-  const [herbResult, formulaResult, orderResult] = await Promise.all([
+  const [herbResult, formulaResult, orderResult, prepResult, batchResult] = await Promise.all([
     scope.supabase
       .from('herb_stock_levels')
       .select('*')
@@ -97,11 +104,51 @@ export default async function StockRoomPage({
       .order('created_at', { ascending: false })
       .limit(500)
       .returns<OrderListEntryWithTarget[]>(),
+    // The shelf as it actually is: 40g of dried root and 100ml of tincture are
+    // two lines, not 140 of anything.
+    scope.supabase
+      .from('herb_stock_by_preparation')
+      .select('*')
+      .limit(4000)
+      .returns<HerbStockByPreparation[]>(),
+    // Live batches, so the stock editor can show and correct expiry in place.
+    scope.supabase
+      .from('herb_batches')
+      .select('id, herb_id, preparation, quantity_remaining, expiry_date')
+      .gt('quantity_remaining', 0)
+      .order('expiry_date', { ascending: true, nullsFirst: false })
+      .limit(4000)
+      .returns<BatchRow[]>(),
   ]);
 
   const herbs = herbResult.data ?? [];
   const formulas = formulaResult.data ?? [];
   const orders = orderResult.data ?? [];
+
+  const preparationsByHerb = new Map<string, HerbStockByPreparation[]>();
+  for (const row of prepResult.data ?? []) {
+    if (Number(row.total_remaining ?? 0) <= 0) continue;
+    const list = preparationsByHerb.get(row.herb_id);
+    if (list) list.push(row);
+    else preparationsByHerb.set(row.herb_id, [row]);
+  }
+
+  const batchesByHerb = new Map<string, BatchRow[]>();
+  for (const batch of batchResult.data ?? []) {
+    const list = batchesByHerb.get(batch.herb_id);
+    if (list) list.push(batch);
+    else batchesByHerb.set(batch.herb_id, [batch]);
+  }
+
+  // Which preparations of a herb are already on the order list. Not a block —
+  // the dialog uses it only to say "this tops up the line already there".
+  const listedPreparationsByHerb = new Map<string, (HerbPreparation | null)[]>();
+  for (const entry of orders) {
+    if (entry.status === 'received' || !entry.herb_id) continue;
+    const list = listedPreparationsByHerb.get(entry.herb_id) ?? [];
+    list.push(entry.preparation ?? null);
+    listedPreparationsByHerb.set(entry.herb_id, list);
+  }
 
   const listedHerbs = new Set(
     orders.filter((entry) => entry.status !== 'received' && entry.herb_id).map((entry) => entry.herb_id!),
@@ -261,12 +308,13 @@ export default async function StockRoomPage({
                       <SortTh sortKey="stock">{tHerbs('inStock')}</SortTh>
                       <SortTh sortKey="threshold">{t('threshold')}</SortTh>
                       <SortTh sortKey="expiry">{tBatches('expiryDate')}</SortTh>
-                      <SortTh sortKey="order">{tOrder('kind')}</SortTh>
+                      <SortTh sortKey="order">{tc('actions')}</SortTh>
                     </tr>
                   </thead>
                   <SortBody locale={locale}>
                     {shownHerbs.map((level) => {
                       const remaining = Number(level.total_remaining);
+                      const prepared = preparationsByHerb.get(level.herb_id) ?? [];
                       const secondary = herbSecondaryName(level, locale as Locale);
                       return (
                         <Tr
@@ -296,29 +344,46 @@ export default async function StockRoomPage({
                             ) : null}
                           </Td>
                           <Td>
-                            <span
-                              dir="ltr"
-                              className={
-                                remaining <= 0
-                                  ? 'font-semibold tabular-nums text-red-600'
-                                  : level.is_below_threshold
-                                    ? 'font-semibold tabular-nums text-amber-700'
-                                    : 'font-semibold tabular-nums text-ink-800'
-                              }
-                            >
-                              {format.number(remaining)} {tUnit(level.default_unit)}
-                            </span>
-                            <span className="block text-xs text-ink-500">
-                              {t('batches', { count: level.batch_count })}
-                            </span>
+                            {/* One line per preparation actually held, each in
+                                its own unit — grams for a powder, millilitres
+                                for a tincture. A single total across the two
+                                would be a number of nothing.
+
+                                An empty shelf reads as a dash rather than as a
+                                zero: zero is a measurement, and none was taken. */}
+                            {prepared.length === 0 ? (
+                              <span className="text-ink-500">—</span>
+                            ) : (
+                              <span className="flex flex-col gap-0.5">
+                                {prepared.map((row) => (
+                                  <span key={row.preparation} className="flex items-baseline gap-1.5">
+                                    <span
+                                      dir="ltr"
+                                      className={
+                                        level.is_below_threshold
+                                          ? 'font-semibold tabular-nums text-amber-700'
+                                          : 'font-semibold tabular-nums text-ink-800'
+                                      }
+                                    >
+                                      {format.number(Number(row.total_remaining))} {tUnit(row.unit)}
+                                    </span>
+                                    <span className="text-xs text-ink-600">
+                                      {tPrep(row.preparation)}
+                                    </span>
+                                  </span>
+                                ))}
+                              </span>
+                            )}
                           </Td>
                           <Td>
-                            <ThresholdCell
-                              id={level.herb_id}
-                              kind="herb"
-                              value={level.reorder_threshold === null ? null : Number(level.reorder_threshold)}
-                              suffix={tUnit(level.default_unit)}
-                            />
+                            {level.reorder_threshold === null ? (
+                              <span className="text-ink-500">—</span>
+                            ) : (
+                              <span dir="ltr" className="tabular-nums text-ink-800">
+                                {format.number(Number(level.reorder_threshold))}{' '}
+                                {tUnit(level.default_unit)}
+                              </span>
+                            )}
                           </Td>
                           <Td>
                             {level.nearest_expiry ? (
@@ -326,18 +391,30 @@ export default async function StockRoomPage({
                                 {format.dateTime(new Date(level.nearest_expiry), 'short')}
                               </span>
                             ) : (
-                              <span className="text-ink-500">{tBatches('noExpiry')}</span>
+                              <span className="text-ink-500">—</span>
                             )}
                           </Td>
                           <Td>
-                            <AddToOrderButton
-                              herbId={level.herb_id}
-                              unit={level.default_unit}
-                              suggestedQuantity={
-                                level.reorder_quantity === null ? null : Number(level.reorder_quantity)
-                              }
-                              alreadyListed={listedHerbs.has(level.herb_id)}
-                            />
+                            <span className="flex items-center gap-1">
+                              <StockEditor
+                                herbId={level.herb_id}
+                                herbName={herbPrimaryName(level, locale as Locale)}
+                                threshold={
+                                  level.reorder_threshold === null ? null : Number(level.reorder_threshold)
+                                }
+                                reorderQuantity={
+                                  level.reorder_quantity === null ? null : Number(level.reorder_quantity)
+                                }
+                                batches={batchesByHerb.get(level.herb_id) ?? []}
+                              />
+                              <OrderDialog
+                                herbId={level.herb_id}
+                                suggestedQuantity={
+                                  level.reorder_quantity === null ? null : Number(level.reorder_quantity)
+                                }
+                                listedPreparations={listedPreparationsByHerb.get(level.herb_id) ?? []}
+                              />
+                            </span>
                           </Td>
                         </Tr>
                       );
@@ -363,7 +440,7 @@ export default async function StockRoomPage({
                       <SortTh sortKey="doses">{t('dosesAvailable')}</SortTh>
                       <SortTh sortKey="threshold">{t('threshold')}</SortTh>
                       <SortTh sortKey="missing">{t('missingIngredients')}</SortTh>
-                      <SortTh sortKey="order">{tOrder('kind')}</SortTh>
+                      <SortTh sortKey="order">{tc('actions')}</SortTh>
                     </tr>
                   </thead>
                   <SortBody locale={locale}>
@@ -433,11 +510,10 @@ export default async function StockRoomPage({
                             )}
                           </Td>
                           <Td>
-                            <AddToOrderButton
-                              formulaId={level.formula_id}
-                              unit="dose"
-                              alreadyListed={listedFormulas.has(level.formula_id)}
-                            />
+                            {/* A formula is ordered in doses and has no
+                                preparation of its own, so the dialog shows just
+                                the amount. */}
+                            <OrderDialog formulaId={level.formula_id} />
                           </Td>
                         </Tr>
                       );

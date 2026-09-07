@@ -73,6 +73,89 @@ export type PointSide = (typeof POINT_SIDES)[number];
 export const POINT_REGIONS = ['upper', 'lower', 'left', 'right', 'center'] as const;
 export type PointRegion = (typeof POINT_REGIONS)[number];
 
+/**
+ * Where a point was actually needled, as the treatment note records it.
+ *
+ * Side and level together, because that is how needling is remembered and said
+ * out loud: "LI4 right, ST36 both below". Splitting them into two questions
+ * meant answering the same thing twice and, worse, meant the body chart could
+ * only ever draw a point on both sides.
+ *
+ * Laid out on screen as a cross, with each quadrant where it belongs, so the
+ * shape of the prescription is visible before a word of it is read. Ear sits by
+ * the centre: auricular points have no upper or lower, and putting them in one
+ * of the quadrants would be a lie for the sake of a tidy grid.
+ */
+export const POINT_PLACEMENTS = [
+  'right_upper',
+  'left_upper',
+  'center',
+  'ear',
+  'right_lower',
+  'left_lower',
+] as const;
+export type PointPlacement = (typeof POINT_PLACEMENTS)[number];
+
+/**
+ * Notes written before placements existed used one of five flat buckets. They
+ * still have to open, so the old value is read and translated to the nearest
+ * new one. Side is preserved where it was recorded; where it was not, the
+ * right-hand quadrant is chosen so the point lands somewhere the practitioner
+ * can see and move, rather than vanishing.
+ */
+const LEGACY_REGION_TO_PLACEMENT: Record<string, PointPlacement> = {
+  upper: 'right_upper',
+  lower: 'right_lower',
+  left: 'left_upper',
+  right: 'right_upper',
+  center: 'center',
+};
+
+export function toPointPlacement(value: unknown): PointPlacement {
+  if (typeof value !== 'string') return 'right_upper';
+  if ((POINT_PLACEMENTS as readonly string[]).includes(value)) return value as PointPlacement;
+  return LEGACY_REGION_TO_PLACEMENT[value] ?? 'right_upper';
+}
+
+/** Which side of the body a placement is on, or null when it has no side. */
+export function placementSide(placement: PointPlacement): 'left' | 'right' | null {
+  if (placement === 'left_upper' || placement === 'left_lower') return 'left';
+  if (placement === 'right_upper' || placement === 'right_lower') return 'right';
+  return null;
+}
+
+/**
+ * How a herb is kept and dispensed.
+ *
+ * The unit follows from the preparation rather than being a separate choice: a
+ * tincture is millilitres and a powder is not, and letting the two be picked
+ * independently only ever produces "100g of tincture".
+ */
+export const HERB_PREPARATIONS = ['dried_herb', 'powder', 'tincture'] as const;
+export type HerbPreparation = (typeof HERB_PREPARATIONS)[number];
+
+export function preparationUnit(preparation: HerbPreparation | null | undefined): 'gram' | 'milliliter' {
+  return preparation === 'tincture' ? 'milliliter' : 'gram';
+}
+
+/**
+ * How a course of treatment stands, or ended.
+ *
+ * Deliberately separate from `is_active`, which only decides whether a file
+ * shows up in the working list. "Stopped coming halfway" and "finished, partial
+ * improvement" are both inactive and are not the same fact, and the difference
+ * is the one worth having a year later.
+ */
+export const TREATMENT_STATUSES = [
+  'active',
+  'completed',
+  'dropped_out',
+  'full_success',
+  'partial_success',
+  'unsuccessful',
+] as const;
+export type TreatmentStatus = (typeof TREATMENT_STATUSES)[number];
+
 /** The fourteen channels the point catalogue is organised by. */
 export const POINT_CHANNELS = [
   'lung',

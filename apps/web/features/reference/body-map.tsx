@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { cn } from '@clinic/ui';
-import type { BodyView } from '@clinic/domain';
+import { placementSide, toPointPlacement, type BodyView } from '@clinic/domain';
 
 /**
  * A schematic body chart with the treatment's points marked on it.
@@ -18,8 +18,9 @@ import type { BodyView } from '@clinic/domain';
  * precise invites being used as though it were, and this one answers "which
  * points did I use, and roughly where" rather than "where exactly is LU7".
  *
- * Bilateral points are stored once on the right-hand side and mirrored here, so
- * correcting one coordinate moves both dots.
+ * Coordinates are stored once, on the right-hand side, and the left is drawn as
+ * their mirror — so correcting one number moves both sides. Which side actually
+ * gets a dot comes from the placement recorded in the note.
  */
 
 export interface MappedPoint {
@@ -90,14 +91,24 @@ function dotsFor(points: MappedPoint[], view: BodyView) {
   const out: { key: string; cx: number; cy: number; point: MappedPoint }[] = [];
   for (const point of points) {
     if (point.view !== view) continue;
-    // "left" and "right" in a note mean the patient's side; on a chart drawn
-    // facing the reader they are simply the two mirrored positions, and a
-    // single-sided entry gets one dot instead of two.
-    const wantsBoth = point.bilateral && point.region !== 'left' && point.region !== 'right';
-    if (wantsBoth) {
-      out.push({ key: `${point.key}-r`, cx: point.x, cy: point.y, point });
+
+    // The note now records a side for every point, so the chart draws what was
+    // actually needled rather than assuming both. A bilateral point needled on
+    // the left gets one dot on the left — marking both would be a record of a
+    // treatment that did not happen.
+    //
+    // Coordinates are stored once, on the right; the left is the mirror of it,
+    // so correcting one number moves both sides.
+    const side = placementSide(toPointPlacement(point.region));
+
+    if (side === 'left') {
       out.push({ key: `${point.key}-l`, cx: W - point.x, cy: point.y, point });
-    } else if (point.bilateral && point.region === 'left') {
+    } else if (side === 'right') {
+      out.push({ key: `${point.key}-r`, cx: point.x, cy: point.y, point });
+    } else if (point.bilateral) {
+      // Midline and ear entries on a paired point: no side was stated, so both
+      // are shown, which is the older reading and still the honest one.
+      out.push({ key: `${point.key}-r`, cx: point.x, cy: point.y, point });
       out.push({ key: `${point.key}-l`, cx: W - point.x, cy: point.y, point });
     } else {
       out.push({ key: `${point.key}-r`, cx: point.x, cy: point.y, point });

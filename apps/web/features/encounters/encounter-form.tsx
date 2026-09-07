@@ -1,14 +1,13 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { useTranslations } from 'next-intl';
+import { useFormatter, useTranslations } from 'next-intl';
 import { Lock, Save } from 'lucide-react';
 import {
   Alert,
   Button,
   Card,
   CardBody,
-  Checkbox,
   Field,
   FieldGrid,
   Input,
@@ -16,9 +15,10 @@ import {
   Spinner,
   Textarea,
 } from '@clinic/ui';
-import { TREATMENT_MODALITIES, type BodyView, type TreatmentModality } from '@clinic/domain';
+import { toPointPlacement, type BodyView, type TreatmentModality } from '@clinic/domain';
 import { useRouter } from '@clinic/i18n/navigation';
 import type { TcmNote } from '@clinic/db/types';
+import { useAutosave } from '@/lib/use-autosave';
 import { BodyMap, type MappedPoint } from '@/features/reference/body-map';
 import { PointsEditor, type PointOption, type PointRow } from './points-editor';
 import { saveEncounterNote, signEncounter } from './actions';
@@ -75,16 +75,19 @@ function toState(note: TcmNote | null): NoteState {
     points_used: (note?.points_used ?? []).map((point) => ({
       point: point.point,
       point_id: point.point_id ?? null,
-      // Notes written before regions existed carry a side instead; left and
-      // right map across cleanly, and anything else starts in the upper bucket
-      // where the practitioner can move it.
-      region:
-        point.region ??
-        (point.side === 'left' || point.side === 'right'
-          ? point.side
-          : point.side === 'midline'
-            ? 'center'
-            : 'upper'),
+      // Two generations of older notes have to keep opening: ones that recorded
+      // a `side` and no region, and ones that recorded one of the five flat
+      // regions. toPointPlacement handles the second; the side is read first
+      // because it is the more specific of the two.
+      region: point.region
+        ? toPointPlacement(point.region)
+        : point.side === 'left'
+          ? 'left_upper'
+          : point.side === 'right'
+            ? 'right_upper'
+            : point.side === 'midline'
+              ? 'center'
+              : 'right_upper',
       technique: point.technique,
       retention_minutes: point.retention_minutes ?? '',
       notes: point.notes ?? '',
@@ -125,9 +128,9 @@ export function EncounterForm({
 }) {
   const t = useTranslations('encounters');
   const tf = useTranslations('encounters.fields');
-  const tModality = useTranslations('encounters.modalities');
   const tc = useTranslations('common');
   const tErrors = useTranslations('errors');
+  const format = useFormatter();
   const router = useRouter();
 
   const [state, setState] = useState<NoteState>(() => toState(note));
@@ -140,15 +143,6 @@ export function EncounterForm({
   function set<K extends keyof NoteState>(key: K, value: NoteState[K]) {
     setState((current) => ({ ...current, [key]: value }));
     setStatus('idle');
-  }
-
-  function toggleModality(modality: TreatmentModality) {
-    set(
-      'modalities_used',
-      state.modalities_used.includes(modality)
-        ? state.modalities_used.filter((entry) => entry !== modality)
-        : [...state.modalities_used, modality],
-    );
   }
 
   function buildPayload() {
@@ -195,6 +189,30 @@ export function EncounterForm({
     ];
   });
 
+  /*
+   * Autosave, every forty-five seconds.
+   *
+   * A consultation runs for an hour and the note is written throughout it. The
+   * loss this guards against is the ordinary one — a closed tab, a sleeping
+   * laptop, an expired session — and "remember to press save" is not a control
+   * for any of them.
+   *
+   * It does not call `router.refresh()` the way the manual save does: a refresh
+   * mid-sentence re-renders the page under the cursor. The write has happened;
+   * the screen catching up can wait for the explicit save or the next load.
+   *
+   * A signed record is locked by the database, so autosave stops rather than
+   * generating a rejected write every forty-five seconds.
+   */
+  const autosave = useAutosave({
+    value: state,
+    enabled: !isSigned,
+    onSave: async () => {
+      const result = await saveEncounterNote(encounterId, buildPayload());
+      return result.ok;
+    },
+  });
+
   function handleSave() {
     setStatus('idle');
     setErrorKey(null);
@@ -206,6 +224,9 @@ export function EncounterForm({
         return;
       }
       setStatus('saved');
+      // Tell the autosave this value is on disk, so it does not immediately
+      // write the same thing again.
+      autosave.markSaved();
       router.refresh();
     });
   }
@@ -231,80 +252,95 @@ export function EncounterForm({
     });
   }
 
+  /*
+   * Tongue and pulse, two headings instead of eight stacked rows.
+   *
+   * These sit in the narrow column beside the note, and one label per line ran
+   * the panel far below the fold — which meant scrolling away from the thing
+   * being written in order to record the thing just observed. Each group now has
+   * one heading and its fields side by side, with the labels above them small
+   * and quiet. The fields themselves are unchanged; only the furniture is gone.
+   */
   const examinationCard = (
     <Card>
       <CardBody>
         <Section title={t('sections.examination')}>
           <div className="space-y-4">
-            <Field label={tf('tongueBodyColor')} htmlFor="tongue_body_color">
-              <Input
-                id="tongue_body_color"
-                disabled={disabled}
-                value={state.tongue_body_color}
-                onChange={(event) => set('tongue_body_color', event.target.value)}
-              />
-            </Field>
-            <Field label={tf('tongueShape')} htmlFor="tongue_shape">
-              <Input
-                id="tongue_shape"
-                disabled={disabled}
-                value={state.tongue_shape}
-                onChange={(event) => set('tongue_shape', event.target.value)}
-              />
-            </Field>
-            <Field label={tf('tongueCoating')} htmlFor="tongue_coating">
-              <Input
-                id="tongue_coating"
-                disabled={disabled}
-                value={state.tongue_coating}
-                onChange={(event) => set('tongue_coating', event.target.value)}
-              />
-            </Field>
-            <Field label={tf('tongueNotes')} htmlFor="tongue_notes">
+            <div>
+              <h4 className="mb-1.5 text-sm font-semibold text-ink-900">{tf('tongue')}</h4>
+              <div className="grid grid-cols-3 gap-1.5">
+                <Field label={tf('tongueColorShort')} htmlFor="tongue_body_color" density="compact">
+                  <Input
+                    id="tongue_body_color"
+                    disabled={disabled}
+                    value={state.tongue_body_color}
+                    onChange={(event) => set('tongue_body_color', event.target.value)}
+                  />
+                </Field>
+                <Field label={tf('tongueShapeShort')} htmlFor="tongue_shape" density="compact">
+                  <Input
+                    id="tongue_shape"
+                    disabled={disabled}
+                    value={state.tongue_shape}
+                    onChange={(event) => set('tongue_shape', event.target.value)}
+                  />
+                </Field>
+                <Field label={tf('tongueCoatingShort')} htmlFor="tongue_coating" density="compact">
+                  <Input
+                    id="tongue_coating"
+                    disabled={disabled}
+                    value={state.tongue_coating}
+                    onChange={(event) => set('tongue_coating', event.target.value)}
+                  />
+                </Field>
+              </div>
               <Textarea
                 id="tongue_notes"
                 rows={2}
+                className="mt-1.5"
+                aria-label={tf('tongueNotes')}
+                placeholder={tf('tongueNotes')}
                 disabled={disabled}
                 value={state.tongue_notes}
                 onChange={(event) => set('tongue_notes', event.target.value)}
               />
-            </Field>
-
-            <div className="border-t border-ink-100 pt-4">
-              <Field label={tf('pulseLeft')} htmlFor="pulse_left">
-                <Input
-                  id="pulse_left"
-                  disabled={disabled}
-                  value={state.pulse_left}
-                  onChange={(event) => set('pulse_left', event.target.value)}
-                />
-              </Field>
             </div>
-            <Field label={tf('pulseRight')} htmlFor="pulse_right">
-              <Input
-                id="pulse_right"
-                disabled={disabled}
-                value={state.pulse_right}
-                onChange={(event) => set('pulse_right', event.target.value)}
-              />
-            </Field>
-            <Field label={tf('pulseQualities')} htmlFor="pulse_qualities" hint="wiry, thready">
-              <Input
-                id="pulse_qualities"
-                disabled={disabled}
-                value={state.pulse_qualities}
-                onChange={(event) => set('pulse_qualities', event.target.value)}
-              />
-            </Field>
-            <Field label={tf('pulseNotes')} htmlFor="pulse_notes">
+
+            <div className="border-t border-ink-100 pt-3">
+              <h4 className="mb-1.5 text-sm font-semibold text-ink-900">{tf('pulse')}</h4>
+              {/* Qualities used to be a third field. They are written into the
+                  same phrase as the sides in practice — "left wiry, right thin"
+                  — so the row that asked for them separately is gone and the
+                  column is still stored for notes that have one. */}
+              <div className="grid grid-cols-2 gap-1.5">
+                <Field label={tf('pulseRightShort')} htmlFor="pulse_right" density="compact">
+                  <Input
+                    id="pulse_right"
+                    disabled={disabled}
+                    value={state.pulse_right}
+                    onChange={(event) => set('pulse_right', event.target.value)}
+                  />
+                </Field>
+                <Field label={tf('pulseLeftShort')} htmlFor="pulse_left" density="compact">
+                  <Input
+                    id="pulse_left"
+                    disabled={disabled}
+                    value={state.pulse_left}
+                    onChange={(event) => set('pulse_left', event.target.value)}
+                  />
+                </Field>
+              </div>
               <Textarea
                 id="pulse_notes"
                 rows={2}
+                className="mt-1.5"
+                aria-label={tf('pulseNotes')}
+                placeholder={tf('pulseNotes')}
                 disabled={disabled}
                 value={state.pulse_notes}
                 onChange={(event) => set('pulse_notes', event.target.value)}
               />
-            </Field>
+            </div>
           </div>
         </Section>
       </CardBody>
@@ -384,22 +420,12 @@ export function EncounterForm({
           </Section>
 
           <Section title={t('sections.treatment')}>
+            {/* The nine modality checkboxes that used to open this section are
+                gone. They were nine clicks describing what the points and the
+                notes below already say, and the column they occupied is worth
+                more to the point grid. `modalities_used` is still stored and
+                still carried through a save, so older notes keep theirs. */}
             <div className="space-y-4">
-              <Field label={tf('modalitiesUsed')}>
-                <div className="flex flex-wrap gap-x-4 gap-y-2">
-                  {TREATMENT_MODALITIES.map((modality) => (
-                    <label key={modality} className="flex items-center gap-2 text-sm text-ink-700">
-                      <Checkbox
-                        checked={state.modalities_used.includes(modality)}
-                        disabled={disabled}
-                        onChange={() => toggleModality(modality)}
-                      />
-                      {tModality(modality)}
-                    </label>
-                  ))}
-                </div>
-              </Field>
-
               <Field label={tf('pointsUsed')} hint={t('points.hint')}>
                 <div className="grid gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,1fr)]">
                   <PointsEditor
@@ -457,6 +483,24 @@ export function EncounterForm({
 
       {!isSigned ? (
         <div className="flex flex-wrap items-center justify-end gap-2">
+          {/* What the autosave is doing, stated rather than assumed. A form that
+              saves itself silently is indistinguishable from one that does not,
+              and the whole reassurance is in being able to see the last time. */}
+          <p
+            className="me-auto text-xs text-ink-600"
+            role="status"
+            aria-live="polite"
+          >
+            {autosave.state === 'saving'
+              ? tc('saving')
+              : autosave.state === 'error'
+                ? t('autosaveFailed')
+                : autosave.lastSavedAt
+                  ? t('autosavedAt', {
+                      time: format.dateTime(autosave.lastSavedAt, 'time'),
+                    })
+                  : t('autosaveOn')}
+          </p>
           <Button variant="secondary" onClick={handleSave} disabled={isPending}>
             {isPending ? <Spinner /> : <Save className="h-4 w-4" />}
             {isPending ? tc('saving') : tc('save')}

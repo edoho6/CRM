@@ -77,7 +77,9 @@
     "points": "Points",
     "sidebar": "Sidebar",
     "accessibility": "Accessibility statement",
-    "syntheticBanner": "Development environment — every patient here is fictional. No real data is held here, and none should be entered."
+    "syntheticBanner": "Development environment — every patient here is fictional. No real data is held here, and none should be entered.",
+    "collapseSidebar": "Collapse menu",
+    "expandSidebar": "Expand menu"
   },
   "auth": {
     "signInTitle": "Sign in",
@@ -262,7 +264,20 @@
     "noMedicalHistory": "No medical background recorded",
     "noEncounters": "No treatments recorded yet",
     "noAppointments": "No appointments",
-    "noDocuments": "No documents"
+    "noDocuments": "No documents",
+    "contactActions": "Actions for {phone}",
+    "sendWhatsApp": "Send a WhatsApp message",
+    "callPhone": "Call",
+    "treatmentStatus": "Treatment status",
+    "status": {
+      "active": "In treatment",
+      "completed": "Course finished",
+      "dropped_out": "Stopped partway",
+      "full_success": "Finished — full improvement",
+      "partial_success": "Finished — partial improvement",
+      "unsuccessful": "Treatment did not help"
+    },
+    "allStatuses": "All statuses"
   },
   "appointments": {
     "title": "Calendar",
@@ -285,7 +300,8 @@
       "day": "Day",
       "week": "Week",
       "month": "Month",
-      "list": "List"
+      "list": "List",
+      "range": "Range"
     },
     "status": {
       "scheduled": "Scheduled",
@@ -311,7 +327,10 @@
       "defaultDuration": "Default duration",
       "color": "Calendar colour",
       "empty": "No appointment types defined"
-    }
+    },
+    "noneInRange": "No appointments in this range",
+    "moreInDay": "{count} more",
+    "countInView": "{count, plural, =0 {No appointments} one {1 appointment} other {# appointments}}"
   },
   "encounters": {
     "title": "Treatments",
@@ -360,7 +379,14 @@
       "pointsUsed": "Points used",
       "treatmentNotes": "Treatment notes",
       "recommendations": "Recommendations",
-      "followUpPlan": "Follow-up plan"
+      "followUpPlan": "Follow-up plan",
+      "tongue": "Tongue",
+      "pulse": "Pulse",
+      "tongueColorShort": "Colour",
+      "tongueShapeShort": "Shape",
+      "tongueCoatingShort": "Coating",
+      "pulseRightShort": "Right",
+      "pulseLeftShort": "Left"
     },
     "points": {
       "add": "Add point",
@@ -398,11 +424,12 @@
       "dietary_advice": "Dietary advice"
     },
     "region": {
-      "upper": "Upper",
-      "lower": "Lower",
-      "left": "Left",
-      "right": "Right",
-      "center": "Centre"
+      "center": "Midline",
+      "right_upper": "Right, upper",
+      "left_upper": "Left, upper",
+      "right_lower": "Right, lower",
+      "left_lower": "Left, lower",
+      "ear": "Ear"
     },
     "bodyMap": {
       "front": "Front",
@@ -410,7 +437,10 @@
       "frontLabel": "{count, plural, =0 {Front view, no points} one {Front view, 1 point} other {Front view, # points}}",
       "backLabel": "{count, plural, =0 {Back view, no points} one {Back view, 1 point} other {Back view, # points}}",
       "disclaimer": "Schematic only — an illustration of the treatment, not an anatomical locator."
-    }
+    },
+    "autosaveOn": "Autosave is on",
+    "autosavedAt": "Autosaved at {time}",
+    "autosaveFailed": "Autosave failed — save manually"
   },
   "billing": {
     "title": "Billing",
@@ -613,7 +643,8 @@
       "bottle": "bottle",
       "box": "box",
       "milliliter": "ml",
-      "packet": "packet"
+      "packet": "packet",
+      "dose": "doses"
     },
     "formulas": {
       "title": "Formulas",
@@ -714,7 +745,14 @@
       "dispensedBy": "Dispensed by",
       "totalCost": "Total cost",
       "prescriptionTitle": "Record a prescription",
-      "prescribe": "Record prescription"
+      "prescribe": "Record prescription",
+      "formula": "Formula",
+      "herb": "Herb",
+      "searchFormula": "Search a formula, or type a name",
+      "searchHerb": "Search a herb, or type a name",
+      "notInCatalogue": "Not in the catalogue — kept as written",
+      "daysSupply": "For how long",
+      "daysSupplyPlaceholder": "e.g. 10 days, until the next visit"
     },
     "tcmCategory": {
       "release_exterior_warm": "Release the exterior — warm, acrid",
@@ -843,7 +881,11 @@
         "out": "Nothing has run out",
         "to_order": "The order list is empty"
       },
-      "available": "Available"
+      "available": "Available",
+      "editStock": "Edit stock",
+      "editStockFor": "Edit the stock of {herb}",
+      "thresholdShort": "Low at",
+      "reorderQuantity": "Order qty"
     },
     "tabs": {
       "in_stock": "In stock",
@@ -866,7 +908,14 @@
         "pending": "To order",
         "ordered": "Ordered",
         "received": "Received"
-      }
+      },
+      "alreadyListedTopUp": "Already listed — this updates that line"
+    },
+    "preparation": {
+      "label": "Preparation",
+      "dried_herb": "Dried herb",
+      "powder": "Powder",
+      "tincture": "Tincture"
     }
   },
   "portal": {
@@ -1147,5 +1196,23 @@
     "bodyHint": "The full text exactly as the patient will see it.",
     "tooShort": "A title and a full text are both required.",
     "publishWarning": "Once published the text cannot be edited. Make sure it is final — a correction means publishing a new version."
+  },
+  "theme": {
+    "label": "Colour theme",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "Match system"
+  },
+  "filters": {
+    "dateRange": "Date range",
+    "today": "Today",
+    "week": "Last week",
+    "month": "Last month",
+    "all": "All",
+    "custom": "Pick dates",
+    "from": "From",
+    "to": "To",
+    "clear": "Clear",
+    "noneInRange": "Nothing in this range"
   }
 }

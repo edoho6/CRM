@@ -2,11 +2,16 @@ import { describe, expect, it } from 'vitest';
 import {
   addDays,
   addMinutes,
+  addMonths,
+  daysBetween,
+  endOfMonth,
   combineDateAndTime,
   differenceInMinutes,
   fromDateKey,
   isSameDay,
   minutesSinceMidnight,
+  monthGridDays,
+  startOfMonth,
   startOfWeek,
   toDateKey,
   toDateTimeLocalValue,
@@ -100,5 +105,73 @@ describe('isSameDay', () => {
 
   it('separates adjacent days', () => {
     expect(isSameDay(new Date(2026, 8, 6, 23, 59), new Date(2026, 8, 7, 0, 1))).toBe(false);
+  });
+});
+
+describe('month arithmetic', () => {
+  it('finds the first and last day of a month', () => {
+    expect(toDateKey(startOfMonth(new Date(2026, 8, 17)))).toBe('2026-09-01');
+    expect(toDateKey(endOfMonth(new Date(2026, 8, 17)))).toBe('2026-09-30');
+  });
+
+  it('handles February in a leap year', () => {
+    expect(toDateKey(endOfMonth(new Date(2028, 1, 10)))).toBe('2028-02-29');
+    expect(toDateKey(endOfMonth(new Date(2026, 1, 10)))).toBe('2026-02-28');
+  });
+
+  it('clamps rather than overflowing when a month is shorter', () => {
+    // 31 January plus one month is the end of February, not the 3rd of March.
+    expect(toDateKey(addMonths(new Date(2026, 0, 31), 1))).toBe('2026-02-28');
+  });
+
+  it('steps backwards across a year boundary', () => {
+    expect(toDateKey(addMonths(new Date(2026, 0, 15), -1))).toBe('2025-12-15');
+  });
+});
+
+describe('monthGridDays', () => {
+  it('returns whole weeks starting on a Sunday', () => {
+    const days = monthGridDays(new Date(2026, 8, 15));
+    expect(days.length % 7).toBe(0);
+    expect(days[0]!.getDay()).toBe(0);
+    expect(days[days.length - 1]!.getDay()).toBe(6);
+  });
+
+  it('covers every day of the month', () => {
+    const days = monthGridDays(new Date(2026, 8, 15));
+    const keys = days.map(toDateKey);
+    expect(keys).toContain('2026-09-01');
+    expect(keys).toContain('2026-09-30');
+  });
+
+  it('never exceeds six weeks', () => {
+    for (let month = 0; month < 12; month += 1) {
+      expect(monthGridDays(new Date(2026, month, 1)).length).toBeLessThanOrEqual(42);
+    }
+  });
+});
+
+describe('daysBetween', () => {
+  it('is inclusive of both ends', () => {
+    const days = daysBetween(new Date(2026, 8, 1), new Date(2026, 8, 5));
+    expect(days.map(toDateKey)).toEqual([
+      '2026-09-01',
+      '2026-09-02',
+      '2026-09-03',
+      '2026-09-04',
+      '2026-09-05',
+    ]);
+  });
+
+  it('returns a single day when the ends match', () => {
+    expect(daysBetween(new Date(2026, 8, 1), new Date(2026, 8, 1))).toHaveLength(1);
+  });
+
+  it('stops at the limit rather than building an unbounded list', () => {
+    expect(daysBetween(new Date(2020, 0, 1), new Date(2030, 0, 1), 10)).toHaveLength(10);
+  });
+
+  it('returns nothing when the range runs backwards', () => {
+    expect(daysBetween(new Date(2026, 8, 5), new Date(2026, 8, 1))).toHaveLength(0);
   });
 });

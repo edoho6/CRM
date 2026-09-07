@@ -12,21 +12,23 @@ import {
   Tr,
 } from '@clinic/ui';
 import { Link } from '@clinic/i18n/navigation';
+import { TREATMENT_STATUSES } from '@clinic/domain';
 import type { Patient } from '@clinic/db/types';
 import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
 import { ageFromDateOfBirth } from '@/lib/display';
 import { PatientSearch } from '@/features/patients/patient-search';
+import { TreatmentStatusFilter } from '@/features/patients/treatment-status-filter';
 
 export default async function PatientsPage({
   params,
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ q?: string; inactive?: string }>;
+  searchParams: Promise<{ q?: string; inactive?: string; status?: string }>;
 }) {
   const { locale } = await params;
-  const { q = '', inactive } = await searchParams;
+  const { q = '', inactive, status } = await searchParams;
   setRequestLocale(locale);
 
   const t = await getTranslations('patients');
@@ -43,6 +45,13 @@ export default async function PatientsPage({
 
   if (inactive !== '1') {
     query = query.eq('is_active', true);
+  }
+
+  // The outcome filter is separate from the active flag on purpose: "show me
+  // everyone who stopped partway" is a question about people who are, by
+  // definition, no longer active.
+  if (status && (TREATMENT_STATUSES as readonly string[]).includes(status)) {
+    query = query.eq('treatment_status', status);
   }
 
   const term = q.trim();
@@ -72,8 +81,9 @@ export default async function PatientsPage({
         }
       />
 
-      <div className="mb-4">
+      <div className="mb-4 space-y-2">
         <PatientSearch initialQuery={q} showInactive={inactive === '1'} />
+        <TreatmentStatusFilter />
       </div>
 
       {patients.length === 0 ? (
@@ -99,6 +109,7 @@ export default async function PatientsPage({
                 <SortTh sortKey="age">{t('age')}</SortTh>
                 <SortTh sortKey="city">{t('fields.city')}</SortTh>
                 <SortTh sortKey="status">{tc('status')}</SortTh>
+                <SortTh sortKey="outcome">{t('treatmentStatus')}</SortTh>
               </tr>
             </thead>
             <SortBody locale={locale}>
@@ -113,6 +124,7 @@ export default async function PatientsPage({
                       age,
                       city: patient.city,
                       status: patient.is_active ? 0 : 1,
+                      outcome: t(`status.${patient.treatment_status ?? 'active'}`),
                     }}
                   >
                     <Td>
@@ -138,6 +150,11 @@ export default async function PatientsPage({
                       <Badge tone={patient.is_active ? 'success' : 'muted'}>
                         {patient.is_active ? tc('active') : tc('inactive')}
                       </Badge>
+                    </Td>
+                    <Td>
+                      <span className="text-sm text-ink-700">
+                        {t(`status.${patient.treatment_status ?? 'active'}`)}
+                      </span>
                     </Td>
                   </Tr>
                 );

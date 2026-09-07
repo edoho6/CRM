@@ -269,6 +269,13 @@ pages — labels, accessible names, heading order, `lang` and `dir`. It is check
 against deliberately broken markup, so a clean result means something rather than
 meaning the harness is inert.
 
+Both palettes are measured. Dark mode is a hand-picked set of steps rather than
+an inversion of the light ones, so it is read out of the built stylesheet and
+checked pair by pair alongside the light theme — 124 pairs across the two. The
+checker also fails the build on `text-white`, which no longer means white: dark
+mode redefines `--color-white` to the card surface so every panel flips at once,
+and text on a coloured button therefore belongs on `text-accent-fg`.
+
 Full status, including what has not been done, is on `/accessibility` — which is
 also the statement the standard requires. Its contact details are unfilled and
 visibly marked as such.

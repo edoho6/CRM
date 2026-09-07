@@ -30,6 +30,7 @@ import type {
 } from '@clinic/db/types';
 import type { Locale } from '@clinic/domain';
 import { PageHeader } from '@/components/app-shell';
+import { PhoneActions } from '@/components/phone-actions';
 import { getClinicScope } from '@/lib/session';
 import { logRecordAccess } from '@/lib/access-log';
 import { ageFromDateOfBirth, appointmentTypeName } from '@/lib/display';
@@ -141,13 +142,7 @@ export default async function PatientDetailPage({
         <dl className="grid grid-cols-1 gap-x-6 sm:grid-cols-2 lg:grid-cols-3">
           <DetailRow label={t('fields.fullName')}>{patient.full_name}</DetailRow>
           <DetailRow label={t('fields.phone')}>
-            {patient.phone ? (
-              <a href={`tel:${patient.phone}`} dir="ltr" className="tabular-nums text-jade-800">
-                {patient.phone}
-              </a>
-            ) : (
-              '—'
-            )}
+            {patient.phone ? <PhoneActions phone={patient.phone} /> : '—'}
           </DetailRow>
           <DetailRow label={t('fields.email')}>
             {patient.email ? (
@@ -186,9 +181,7 @@ export default async function PatientDetailPage({
           </DetailRow>
           <DetailRow label={t('fields.emergencyContactPhone')}>
             {patient.emergency_contact_phone ? (
-              <span dir="ltr" className="tabular-nums">
-                {patient.emergency_contact_phone}
-              </span>
+              <PhoneActions phone={patient.emergency_contact_phone} />
             ) : (
               '—'
             )}
@@ -301,6 +294,24 @@ export default async function PatientDetailPage({
             <Badge tone={patient.is_active ? 'success' : 'muted'}>
               {patient.is_active ? tc('active') : tc('inactive')}
             </Badge>
+            {/* The outcome, beside the active flag rather than instead of it.
+                Only shown once it says something: "in treatment" is the default
+                and adds nothing next to the badge already there. */}
+            {patient.treatment_status && patient.treatment_status !== 'active' ? (
+              <Badge
+                tone={
+                  patient.treatment_status === 'full_success'
+                    ? 'success'
+                    : patient.treatment_status === 'unsuccessful'
+                      ? 'danger'
+                      : patient.treatment_status === 'dropped_out'
+                        ? 'warning'
+                        : 'neutral'
+                }
+              >
+                {t(`status.${patient.treatment_status}`)}
+              </Badge>
+            ) : null}
             {age !== null ? <span>{t('years', { count: age })}</span> : null}
           </span>
         }

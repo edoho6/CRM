@@ -7,18 +7,30 @@ import { Select } from '@clinic/ui';
 import { cn } from '@clinic/ui/cn';
 import {
   NEEDLE_TECHNIQUES,
-  POINT_REGIONS,
+  POINT_PLACEMENTS,
+  toPointPlacement,
   type NeedleTechnique,
+  type PointPlacement,
   type PointRegion,
 } from '@clinic/domain';
 
 /**
  * The point prescription, written the way it is spoken.
  *
- * Five buckets — upper, lower, left, right, centre — rather than a flat list,
- * because a prescription is remembered spatially: "ST36 and SP6 below, LI4 and
- * LU7 above, Ren 6 on the midline". The catalogue proposes which bucket a point
- * belongs to and the practitioner moves it wherever it actually went.
+ * Laid out as a cross, with each quadrant where it belongs on the body: upper
+ * left and upper right along the top, lower left and lower right along the
+ * bottom, midline and ear down the middle. A prescription is remembered
+ * spatially — "ST36 and SP6 below, LI4 above, Ren 6 on the midline" — and a
+ * grid in that shape can be read at a glance without labels being parsed.
+ *
+ * Side and level are one choice rather than two. Asking separately meant
+ * answering the same question twice, and left the body chart unable to do
+ * anything but mark both sides.
+ *
+ * Right sits on the right of the grid and left on the left, following the words
+ * rather than the front-view convention where a facing patient's right appears
+ * on the reader's left. The words are what gets typed under pressure; the chart
+ * beside it is what shows the anatomy.
  *
  * Anything can be typed. A code from the catalogue carries an id, which is what
  * puts a dot on the body map and links through to the point's page; free text
@@ -26,6 +38,12 @@ import {
  * ability to write "ashi, left trapezius" would be a worse trade than the map
  * being complete.
  */
+
+/** The cross, row by row. Empty strings are the gaps that give it its shape. */
+const PLACEMENT_GRID: readonly (PointPlacement | null)[][] = [
+  ['right_upper', 'center', 'left_upper'],
+  ['right_lower', 'ear', 'left_lower'],
+];
 
 export interface PointOption {
   id: string;
@@ -39,7 +57,7 @@ export interface PointOption {
 export interface PointRow {
   point: string;
   point_id: string | null;
-  region: PointRegion;
+  region: PointPlacement;
   technique: NeedleTechnique;
   retention_minutes?: number | string | null;
   notes?: string | null;
@@ -76,7 +94,7 @@ function PointCombobox({
   disabled,
 }: {
   catalogue: PointOption[];
-  region: PointRegion;
+  region: PointPlacement;
   onAdd: (row: PointRow) => void;
   disabled?: boolean;
 }) {
@@ -208,12 +226,13 @@ export function PointsEditor({
   const tTechnique = useTranslations('encounters.technique');
 
   const byRegion = useMemo(() => {
-    const groups: Record<PointRegion, { row: PointRow; index: number }[]> = {
-      upper: [], lower: [], left: [], right: [], center: [],
-    };
+    const groups = Object.fromEntries(
+      POINT_PLACEMENTS.map((placement) => [placement, [] as { row: PointRow; index: number }[]]),
+    ) as Record<PointPlacement, { row: PointRow; index: number }[]>;
     value.forEach((row, index) => {
-      const region = POINT_REGIONS.includes(row.region) ? row.region : 'upper';
-      groups[region].push({ row, index });
+      // Notes written before placements existed carry one of the old flat
+      // regions; toPointPlacement translates rather than dropping them.
+      groups[toPointPlacement(row.region)].push({ row, index });
     });
     return groups;
   }, [value]);
@@ -227,8 +246,9 @@ export function PointsEditor({
   }
 
   return (
-    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-      {POINT_REGIONS.map((region) => {
+    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+      {PLACEMENT_GRID.flat().map((region) => {
+        if (!region) return null;
         const rows = byRegion[region];
         return (
           <section key={region} className="rounded-lg border border-ink-200 bg-ink-50/40 p-2">

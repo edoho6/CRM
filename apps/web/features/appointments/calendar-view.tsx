@@ -12,13 +12,28 @@ import { AppointmentDialog, type AppointmentDraft } from './appointment-dialog';
 import {
   addDays,
   addMinutes,
+  addMonths,
   combineDateAndTime,
+  daysBetween,
   fromDateKey,
   isSameDay,
+  isSameMonth,
   minutesSinceMidnight,
+  monthGridDays,
+  startOfMonth,
   startOfWeek,
   toDateKey,
 } from './date-utils';
+
+/**
+ * Four ways to look at the diary.
+ *
+ * Day and week are a time grid, because the question there is "what is the shape
+ * of this day" and a grid answers it at a glance. Month and a chosen range are
+ * lists: a time grid over thirty days is unreadable at any width, and the
+ * question changes to "which days have something in them".
+ */
+export type CalendarViewMode = 'day' | 'week' | 'month' | 'range';
 
 /** Visible hours. Outside these the grid would be mostly empty scrolling. */
 const DAY_START_HOUR = 7;
@@ -107,6 +122,8 @@ export function CalendarView({
   practitionerId,
   anchorDate,
   view,
+  rangeFrom,
+  rangeTo,
   defaultPatientId,
   openNewOnLoad,
 }: {
@@ -115,12 +132,16 @@ export function CalendarView({
   appointmentTypes: AppointmentType[];
   practitionerId: string;
   anchorDate: string;
-  view: 'week' | 'day';
+  view: CalendarViewMode;
+  /** Inclusive bounds for the range view, as `YYYY-MM-DD`. */
+  rangeFrom?: string | null;
+  rangeTo?: string | null;
   defaultPatientId?: string;
   openNewOnLoad?: boolean;
 }) {
   const t = useTranslations('appointments');
   const tc = useTranslations('common');
+  const tFilters = useTranslations('filters');
   const format = useFormatter();
   const locale = useLocale() as Locale;
   const isRtl = locale === 'he';
@@ -130,9 +151,21 @@ export function CalendarView({
   const anchor = useMemo(() => fromDateKey(anchorDate), [anchorDate]);
   const days = useMemo(() => {
     if (view === 'day') return [anchor];
+    if (view === 'month') return monthGridDays(anchor);
+    if (view === 'range') {
+      const from = rangeFrom ? fromDateKey(rangeFrom) : anchor;
+      const to = rangeTo ? fromDateKey(rangeTo) : addDays(from, 13);
+      const list = daysBetween(from, to);
+      // An empty or backwards range still has to render something rather than
+      // an unexplained blank panel.
+      return list.length > 0 ? list : [anchor];
+    }
     const start = startOfWeek(anchor);
     return Array.from({ length: 7 }, (_, index) => addDays(start, index));
-  }, [anchor, view]);
+  }, [anchor, view, rangeFrom, rangeTo]);
+
+  /** Day and week draw a time grid; month and range draw lists. */
+  const isTimeGrid = view === 'day' || view === 'week';
 
   const defaultDuration = appointmentTypes[0]?.default_duration_minutes ?? 60;
 
@@ -158,8 +191,15 @@ export function CalendarView({
     return map;
   }, [appointments]);
 
-  function navigate(offsetDays: number) {
-    const next = addDays(anchor, offsetDays);
+  function navigate(direction: -1 | 1) {
+    // Each view steps by its own unit: a day, a week, a month. The range view
+    // is anchored to its own dates and has nothing to step through.
+    const next =
+      view === 'day'
+        ? addDays(anchor, direction)
+        : view === 'month'
+          ? addMonths(anchor, direction)
+          : addDays(anchor, direction * 7);
     router.push({ pathname, query: { date: toDateKey(next), view } });
   }
 
@@ -167,8 +207,32 @@ export function CalendarView({
     router.push({ pathname, query: { date: toDateKey(new Date()), view } });
   }
 
-  function switchView(nextView: 'week' | 'day') {
+  function switchView(nextView: CalendarViewMode) {
+    if (nextView === 'range') {
+      // Opening the range view with nothing chosen would show a blank panel, so
+      // it starts on the fortnight around today and is edited from there.
+      router.push({
+        pathname,
+        query: {
+          view: 'range',
+          from: rangeFrom ?? toDateKey(addDays(new Date(), -7)),
+          to: rangeTo ?? toDateKey(addDays(new Date(), 7)),
+        },
+      });
+      return;
+    }
     router.push({ pathname, query: { date: anchorDate, view: nextView } });
+  }
+
+  function setRangeBound(which: 'from' | 'to', value: string) {
+    router.replace({
+      pathname,
+      query: {
+        view: 'range',
+        from: which === 'from' ? value : (rangeFrom ?? value),
+        to: which === 'to' ? value : (rangeTo ?? value),
+      },
+    });
   }
 
   function openSlot(day: Date, slotIndex: number) {
@@ -200,26 +264,65 @@ export function CalendarView({
   const rangeLabel =
     view === 'day'
       ? format.dateTime(anchor, 'weekday')
-      : `${format.dateTime(days[0]!, 'short')} – ${format.dateTime(days[days.length - 1]!, 'short')}`;
+      : view === 'month'
+        ? format.dateTime(startOfMonth(anchor), 'monthYear')
+        : `${format.dateTime(days[0]!, 'short')} – ${format.dateTime(days[days.length - 1]!, 'short')}`;
+
+  const totalInView = days.reduce(
+    (sum, day) => sum + (byDay.get(toDateKey(day))?.length ?? 0),
+    0,
+  );
 
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-1">
-          {/* Chevrons point in reading order: "previous" is towards the start edge. */}
-          <Button variant="secondary" size="icon" onClick={() => navigate(view === 'day' ? -1 : -7)} aria-label={tc('back')}>
-            {isRtl ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-          </Button>
-          <Button variant="secondary" size="icon" onClick={() => navigate(view === 'day' ? 1 : 7)} aria-label={tc('viewAll')}>
-            {isRtl ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-          </Button>
-          <Button variant="secondary" size="sm" onClick={goToday}>
-            {tc('today')}
-          </Button>
-          <span className="ms-2 text-sm font-medium text-ink-700">{rangeLabel}</span>
+        <div className="flex flex-wrap items-center gap-1">
+          {/* The range view is anchored to its own two dates, so stepping and
+              "today" have nothing to act on and are hidden rather than left
+              present and inert. */}
+          {view !== 'range' ? (
+            <>
+              {/* Chevrons point in reading order: "previous" is towards the start edge. */}
+              <Button variant="secondary" size="icon" onClick={() => navigate(-1)} aria-label={tc('back')}>
+                {isRtl ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+              </Button>
+              <Button variant="secondary" size="icon" onClick={() => navigate(1)} aria-label={tc('viewAll')}>
+                {isRtl ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+              </Button>
+              <Button variant="secondary" size="sm" onClick={goToday}>
+                {tc('today')}
+              </Button>
+              <span className="ms-2 text-sm font-medium text-ink-700">{rangeLabel}</span>
+            </>
+          ) : (
+            <div className="flex flex-wrap items-center gap-1.5">
+              <input
+                type="date"
+                dir="ltr"
+                aria-label={tFilters('from')}
+                value={rangeFrom ?? ''}
+                max={rangeTo ?? undefined}
+                onChange={(event) => setRangeBound('from', event.target.value)}
+                className="h-9 rounded-lg border border-ink-200 bg-white px-2 text-sm text-ink-900 tabular-nums shadow-xs outline-none focus:border-jade-600"
+              />
+              <span className="text-sm text-ink-600">–</span>
+              <input
+                type="date"
+                dir="ltr"
+                aria-label={tFilters('to')}
+                value={rangeTo ?? ''}
+                min={rangeFrom ?? undefined}
+                onChange={(event) => setRangeBound('to', event.target.value)}
+                className="h-9 rounded-lg border border-ink-200 bg-white px-2 text-sm text-ink-900 tabular-nums shadow-xs outline-none focus:border-jade-600"
+              />
+              <span className="ms-1 text-sm text-ink-600">
+                {t('countInView', { count: totalInView })}
+              </span>
+            </div>
+          )}
         </div>
 
-        <div className="flex items-center gap-1">
+        <div className="flex flex-wrap items-center gap-1">
           <Button
             variant={view === 'day' ? 'primary' : 'secondary'}
             size="sm"
@@ -235,6 +338,20 @@ export function CalendarView({
             {t('views.week')}
           </Button>
           <Button
+            variant={view === 'month' ? 'primary' : 'secondary'}
+            size="sm"
+            onClick={() => switchView('month')}
+          >
+            {t('views.month')}
+          </Button>
+          <Button
+            variant={view === 'range' ? 'primary' : 'secondary'}
+            size="sm"
+            onClick={() => switchView('range')}
+          >
+            {t('views.range')}
+          </Button>
+          <Button
             size="sm"
             onClick={() => openSlot(view === 'day' ? anchor : days[0]!, 4)}
             className="ms-2"
@@ -245,6 +362,17 @@ export function CalendarView({
         </div>
       </div>
 
+      {!isTimeGrid ? (
+        <MonthOrRangeView
+          days={days}
+          view={view}
+          anchor={anchor}
+          byDay={byDay}
+          locale={locale}
+          onOpen={openAppointment}
+          onAddOn={(day) => openSlot(day, 4)}
+        />
+      ) : (
       <div className="overflow-x-auto rounded-card border border-ink-200 bg-white">
         <div className="min-w-[720px]">
           {/* Header row: time gutter + one cell per day. */}
@@ -376,6 +504,7 @@ export function CalendarView({
           </div>
         </div>
       </div>
+      )}
 
       <AppointmentDialog
         open={dialogOpen}
@@ -385,6 +514,168 @@ export function CalendarView({
         practitionerId={practitionerId}
         onOpenChange={setDialogOpen}
       />
+    </div>
+  );
+}
+
+/**
+ * Month and chosen-range views.
+ *
+ * Both are lists rather than time grids. Thirty days of a time grid at any
+ * usable width gives columns too narrow to hold a patient's name, and the
+ * question being asked over a month is not "what is the shape of Tuesday
+ * afternoon" but "which days have something in them, and what".
+ *
+ * The month keeps the calendar's shape — seven columns, whole weeks — because
+ * that shape is how a month is read. The range is a plain agenda: an arbitrary
+ * span has no shape to preserve, and days with nothing in them are dropped
+ * rather than printed as empty rows.
+ */
+function MonthOrRangeView({
+  days,
+  view,
+  anchor,
+  byDay,
+  locale,
+  onOpen,
+  onAddOn,
+}: {
+  days: Date[];
+  view: CalendarViewMode;
+  anchor: Date;
+  byDay: Map<string, AppointmentWithRelations[]>;
+  locale: Locale;
+  onOpen: (appointment: AppointmentWithRelations) => void;
+  onAddOn: (day: Date) => void;
+}) {
+  const t = useTranslations('appointments');
+  const format = useFormatter();
+
+  if (view === 'range') {
+    const withSomething = days.filter((day) => (byDay.get(toDateKey(day))?.length ?? 0) > 0);
+
+    if (withSomething.length === 0) {
+      return (
+        <div className="rounded-card border border-ink-200 bg-white p-8 text-center text-sm text-ink-600">
+          {t('noneInRange')}
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-2">
+        {withSomething.map((day) => (
+          <section key={day.toISOString()} className="rounded-card border border-ink-200 bg-white">
+            <h3 className="border-b border-ink-100 px-3 py-2 text-sm font-semibold text-ink-900">
+              {format.dateTime(day, 'weekday')}
+            </h3>
+            <ul className="divide-y divide-ink-100">
+              {(byDay.get(toDateKey(day)) ?? []).map((appointment) => (
+                <li key={appointment.id}>
+                  <button
+                    type="button"
+                    onClick={() => onOpen(appointment)}
+                    className="flex w-full items-baseline gap-3 px-3 py-2 text-start text-sm hover:bg-ink-50"
+                  >
+                    <span dir="ltr" className="shrink-0 tabular-nums text-ink-600">
+                      {format.dateTime(new Date(appointment.start_at), 'time')}
+                    </span>
+                    <span className="min-w-0 flex-1 truncate font-medium text-ink-900">
+                      {patientFullName(appointment.patient)}
+                    </span>
+                    <span className="shrink-0 truncate text-xs text-ink-600">
+                      {appointmentTypeName(appointment.appointment_type, locale)}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="overflow-x-auto rounded-card border border-ink-200 bg-white">
+      <div className="min-w-[640px]">
+        <div className="grid grid-cols-7 border-b border-ink-200">
+          {days.slice(0, 7).map((day) => (
+            <div
+              key={`head-${day.toISOString()}`}
+              className="border-e border-ink-100 px-2 py-1.5 text-center text-xs font-medium text-ink-600 last:border-e-0"
+            >
+              {format.dateTime(day, { weekday: 'short' })}
+            </div>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-7">
+          {days.map((day) => {
+            const key = toDateKey(day);
+            const dayAppointments = byDay.get(key) ?? [];
+            const today = isSameDay(day, new Date());
+            // Leading and trailing days belong to the neighbouring months. They
+            // are shown, because a week that stops halfway is worse, but muted
+            // so the month being looked at is still obvious.
+            const outside = !isSameMonth(day, anchor);
+
+            return (
+              <div
+                key={key}
+                className={cn(
+                  'min-h-24 border-b border-e border-ink-100 p-1 last:border-e-0',
+                  outside && 'bg-ink-50/60',
+                  today && 'bg-jade-50',
+                )}
+              >
+                <div className="flex items-baseline justify-between gap-1">
+                  <span
+                    className={cn(
+                      'text-xs tabular-nums',
+                      today ? 'font-semibold text-jade-800' : outside ? 'text-ink-500' : 'text-ink-700',
+                    )}
+                  >
+                    {format.dateTime(day, { day: 'numeric' })}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => onAddOn(day)}
+                    aria-label={t('new')}
+                    className="rounded px-1 text-xs text-ink-500 opacity-0 transition-opacity hover:bg-ink-100 hover:text-ink-900 focus-visible:opacity-100 group-hover:opacity-100 [.group:hover_&]:opacity-100"
+                  >
+                    +
+                  </button>
+                </div>
+
+                <ul className="mt-0.5 space-y-0.5">
+                  {dayAppointments.slice(0, 3).map((appointment) => (
+                    <li key={appointment.id}>
+                      <button
+                        type="button"
+                        onClick={() => onOpen(appointment)}
+                        className="flex w-full items-baseline gap-1 rounded px-1 py-0.5 text-start text-[11px] hover:bg-ink-100"
+                      >
+                        <span dir="ltr" className="shrink-0 tabular-nums text-ink-600">
+                          {format.dateTime(new Date(appointment.start_at), 'time')}
+                        </span>
+                        <span className="min-w-0 truncate text-ink-900">
+                          {patientFullName(appointment.patient)}
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                  {dayAppointments.length > 3 ? (
+                    <li className="px-1 text-[11px] text-ink-600">
+                      {t('moreInDay', { count: dayAppointments.length - 3 })}
+                    </li>
+                  ) : null}
+                </ul>
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }

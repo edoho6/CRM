@@ -3,6 +3,7 @@ import {
   BODY_VIEWS,
   CONSENT_KINDS,
   CONSENT_METHODS,
+  HERB_PREPARATIONS,
   HERB_UNITS,
   ORDER_LIST_STATUSES,
   POINT_BODY_AREAS,
@@ -74,6 +75,14 @@ export const orderListEntrySchema = z
       .transform((v) => (v === null || v === undefined || v === '' ? null : Number(v)))
       .refine((v) => v === null || (Number.isFinite(v) && v > 0), { error: 'invalid_quantity' }),
     unit: z.enum([...HERB_UNITS, 'dose'] as const).default('gram'),
+    /**
+     * Part of the identity of a line, not a detail of it: dried root and powder
+     * of the same herb are two orders, and were previously treated as one.
+     */
+    preparation: z
+      .union([z.enum(HERB_PREPARATIONS), z.literal(''), z.null()])
+      .transform((v) => (v ? v : null))
+      .optional(),
     supplier_id: z.union([uuidField, z.literal(''), z.null()]).transform((v) => (v ? v : null)),
     status: z.enum(ORDER_LIST_STATUSES).default('pending'),
     notes: optionalText(500),
@@ -97,25 +106,56 @@ export const formulaThresholdUpdateSchema = z.object({
   reorder_threshold_doses: optionalNumber,
 });
 
+/**
+ * One line of a prescription.
+ *
+ * Either a catalogue herb or a name typed by hand — a patent remedy, a
+ * supplement, something the catalogue has never carried. Refusing the second
+ * kind does not stop it being prescribed; it moves the record onto paper.
+ */
+export const prescriptionItemSchema = z
+  .object({
+    herb_id: z.union([uuidField, z.literal(''), z.null()]).transform((v) => (v ? v : null)),
+    name: optionalText(120),
+    quantity: positiveQuantity,
+    preparation: z.enum(HERB_PREPARATIONS).optional(),
+    unit: z.enum(HERB_UNITS).default('gram'),
+  })
+  .refine((value) => Boolean(value.herb_id) || Boolean(value.name), {
+    error: 'herb_or_name_required',
+    path: ['herb_id'],
+  });
+
 /** Prescribing without stock: the same shape as a dispense, minus the allocation. */
 export const prescriptionRequestSchema = z
   .object({
     encounter_id: uuidField,
     formula_id: z.union([uuidField, z.literal(''), z.null()]).transform((v) => (v ? v : null)),
+    /** A formula that is not in the catalogue, recorded as one named line. */
+    custom_formula: optionalText(160),
     multiplier: z
       .union([z.string(), z.number()])
       .transform((v) => (typeof v === 'number' ? v : Number(v)))
       .pipe(z.number().positive().max(1000))
       .default(1),
-    items: z
-      .array(z.object({ herb_id: uuidField, quantity: positiveQuantity, unit: z.enum(HERB_UNITS).default('gram') }))
-      .default([]),
+    /** How the whole prescription is made up. The unit follows from it. */
+    preparation: z.enum(HERB_PREPARATIONS).optional(),
+    /**
+     * Free text, not a number of days. Practitioners write "10 days", "שבועיים
+     * ואז נראה", "until the next visit" — and the part that carries the
+     * instruction is exactly the part an integer would throw away.
+     */
+    days_supply: optionalText(80),
+    items: z.array(prescriptionItemSchema).default([]),
     notes: optionalText(1000),
   })
-  .refine((value) => Boolean(value.formula_id) || value.items.length > 0, {
-    error: 'formula_or_items_required',
-    path: ['formula_id'],
-  });
+  .refine(
+    (value) => Boolean(value.formula_id) || Boolean(value.custom_formula) || value.items.length > 0,
+    {
+      error: 'formula_or_items_required',
+      path: ['formula_id'],
+    },
+  );
 
 export type PrescriptionRequestValues = z.input<typeof prescriptionRequestSchema>;
 

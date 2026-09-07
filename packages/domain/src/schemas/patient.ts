@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { LOCALES, SEXES } from '../enums';
+import { LOCALES, SEXES, TREATMENT_STATUSES } from '../enums';
 import { optionalDate, optionalEmail, optionalText, requiredText } from './common';
 
 /** Payload for creating/updating a patient. Used by the form and the Server Action. */
@@ -20,6 +20,7 @@ export const patientFormSchema = z.object({
   preferred_locale: z.enum(LOCALES).default('he'),
   notes: optionalText(4000),
   is_active: z.boolean().default(true),
+  treatment_status: z.enum(TREATMENT_STATUSES).default('active'),
 });
 
 export type PatientFormValues = z.input<typeof patientFormSchema>;

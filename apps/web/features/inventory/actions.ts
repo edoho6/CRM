@@ -145,8 +145,9 @@ export async function receiveBatch(input: unknown): Promise<ActionResult<{ id: s
     p_unit_cost: parsed.data.unit_cost,
     p_expiry_date: parsed.data.expiry_date,
     p_storage_location: parsed.data.storage_location,
-    p_received_date: parsed.data.received_date,
+    p_received_date: parsed.data.received_date || null,
     p_notes: parsed.data.notes,
+    p_preparation: parsed.data.preparation,
   });
 
   if (error) return actionError(error);
@@ -190,6 +191,8 @@ export async function dispenseHerbs(input: unknown): Promise<ActionResult<{ id: 
     p_formula_id: parsed.data.formula_id,
     p_items: parsed.data.items,
     p_multiplier: parsed.data.multiplier,
+    // The allocator does not take a preparation or a duration; they are part of
+    // the record rather than of the deduction, and are written by the recorder.
     p_notes: parsed.data.notes,
   });
 
@@ -218,6 +221,9 @@ export async function recordPrescription(input: unknown): Promise<ActionResult<{
     p_items: parsed.data.items,
     p_multiplier: parsed.data.multiplier,
     p_notes: parsed.data.notes,
+    p_preparation: parsed.data.preparation ?? null,
+    p_days_supply: parsed.data.days_supply,
+    p_custom_formula: parsed.data.custom_formula,
   });
 
   if (error) return actionError(error);
@@ -256,9 +262,12 @@ export async function setFormulaThreshold(formulaId: string, input: unknown): Pr
 /**
  * Adds a herb or formula to the order list, or tops up the line already there.
  *
- * Adding the same thing twice is a normal thing to do — you notice it is low on
- * Monday and again on Thursday — so it updates the existing line rather than
- * producing two, which the partial unique index enforces underneath.
+ * "The same thing" now includes the preparation. Ordering dried root and powder
+ * of one herb is an ordinary week, and treating the second as a duplicate of the
+ * first — which is what the old unique index did — meant the second order simply
+ * could not be placed. Two preparations are two lines; the same preparation
+ * twice tops up the line that exists, because noticing something is low on
+ * Monday and again on Thursday should not produce two orders.
  */
 export async function addToOrderList(input: unknown): Promise<ActionResult<{ id: string }>> {
   const scope = await getClinicScope();
@@ -271,12 +280,19 @@ export async function addToOrderList(input: unknown): Promise<ActionResult<{ id:
     ? { column: 'herb_id' as const, value: parsed.data.herb_id }
     : { column: 'formula_id' as const, value: parsed.data.formula_id as string };
 
-  const { data: existing } = await scope.supabase
+  let existingQuery = scope.supabase
     .from('order_list')
     .select('id')
     .eq(target.column, target.value)
-    .neq('status', 'received')
-    .maybeSingle<{ id: string }>();
+    .neq('status', 'received');
+
+  // `.is` rather than `.eq` for the unspecified case: SQL equality against null
+  // matches nothing, so an unspecified line would never find itself.
+  existingQuery = parsed.data.preparation
+    ? existingQuery.eq('preparation', parsed.data.preparation)
+    : existingQuery.is('preparation', null);
+
+  const { data: existing } = await existingQuery.maybeSingle<{ id: string }>();
 
   if (existing) {
     const { error } = await scope.supabase

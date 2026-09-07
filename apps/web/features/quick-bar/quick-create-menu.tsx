@@ -93,11 +93,11 @@ export function QuickCreateMenu() {
         onClick={() => setOpen((value) => !value)}
         onFocus={() => setOpen(true)}
         className={cn(
-          'flex h-11 w-11 items-center justify-center rounded-xl bg-jade-700 text-white',
+          'flex h-11 w-11 items-center justify-center rounded-xl bg-accent text-accent-fg',
           'transition-all duration-150 ease-out',
-          'hover:-translate-y-px hover:bg-jade-700 hover:shadow-md',
+          'hover:-translate-y-px hover:bg-accent hover:shadow-md',
           'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-jade-600',
-          open && 'bg-jade-700 shadow-md',
+          open && 'bg-accent shadow-md',
         )}
       >
         <Plus className={cn('h-5 w-5 transition-transform duration-200', open && 'rotate-45')} />
