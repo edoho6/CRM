@@ -44,7 +44,10 @@ export interface DoseLine<T> {
  * weight nobody chose. The sum of the shown lines is shown, so any discrepancy
  * is visible rather than hidden.
  */
-export function splitByParts<T>(lines: DoseLine<T>[], total: number | null): {
+export function splitByParts<T>(
+  lines: DoseLine<T>[],
+  total: number | null,
+): {
   item: T;
   quantity: number;
 }[] {

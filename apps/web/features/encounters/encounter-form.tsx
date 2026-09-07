@@ -426,7 +426,15 @@ export function EncounterForm({
                 more to the point grid. `modalities_used` is still stored and
                 still carried through a save, so older notes keep theirs. */}
               <div className="space-y-4">
-                <Field label={tf('pointsUsed')} hint={t('points.hint')}>
+                <div>
+                  {/* The instruction sits under the heading rather than under
+                      the grid. It explains what to type, so it has to be read
+                      before the fields, not after them — underneath, it was
+                      below six panels and a body chart, which is where nobody
+                      looks for how to start. */}
+                  <h4 className="text-sm font-medium text-ink-700">{tf('pointsUsed')}</h4>
+                  <p className="mt-0.5 mb-2 text-xs text-ink-600">{t('points.hint')}</p>
+
                   <div className="grid gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,1fr)]">
                     <PointsEditor
                       value={state.points_used}
@@ -442,7 +450,7 @@ export function EncounterForm({
                       onSelect={(point) => router.push(`/reference/points/${point.pointId}`)}
                     />
                   </div>
-                </Field>
+                </div>
 
                 <Field label={tf('treatmentNotes')} htmlFor="treatment_notes">
                   <Textarea

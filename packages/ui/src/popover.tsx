@@ -204,7 +204,23 @@ export function Popover({
 export function useAnchoredPosition(
   anchorRef: React.RefObject<HTMLElement | null>,
   open: boolean,
-  { matchWidth = true, maxHeight = 288 }: { matchWidth?: boolean; maxHeight?: number } = {},
+  {
+    matchWidth = true,
+    maxHeight = 288,
+    /** The list itself, so placement uses what it actually measures. */
+    contentRef,
+    /**
+     * Anything that changes the list's height — the number of matches, say.
+     * Re-measures when it changes, so narrowing a search re-seats the list
+     * against the field instead of leaving it at its old size and position.
+     */
+    revision,
+  }: {
+    matchWidth?: boolean;
+    maxHeight?: number;
+    contentRef?: React.RefObject<HTMLElement | null>;
+    revision?: unknown;
+  } = {},
 ): React.CSSProperties | null {
   const [style, setStyle] = React.useState<React.CSSProperties | null>(null);
 
@@ -218,10 +234,26 @@ export function useAnchoredPosition(
 
     const spaceBelow = viewportHeight - rect.bottom - VIEWPORT_MARGIN;
     const spaceAbove = rect.top - VIEWPORT_MARGIN;
-    const below = spaceBelow >= Math.min(200, spaceAbove) || spaceBelow >= spaceAbove;
 
-    const available = Math.max(140, (below ? spaceBelow : spaceAbove) - 4);
-    const height = Math.min(maxHeight, available);
+    /*
+     * A results list belongs directly under the field it belongs to. Typing
+     * narrows ten matches to two, and a list that jumps above the cursor at that
+     * moment is worse than one that is slightly cramped — the eye is on the
+     * field, and the answer should appear where the eye already is.
+     *
+     * So this measures what the list is actually going to be, not the maximum it
+     * could be. Two results need ~80px and will nearly always fit below; only a
+     * long list on a field near the bottom of the window flips, and only when
+     * there is genuinely more room the other way.
+     */
+    const measured = contentRef?.current?.scrollHeight ?? 0;
+    const desired = Math.min(maxHeight, measured > 0 ? measured : maxHeight);
+
+    const fitsBelow = spaceBelow >= desired;
+    const below = fitsBelow || spaceBelow >= spaceAbove;
+
+    const available = Math.max(120, (below ? spaceBelow : spaceAbove) - 4);
+    const height = Math.min(desired, available);
     const width = matchWidth ? rect.width : undefined;
 
     const left = Math.min(
@@ -231,12 +263,14 @@ export function useAnchoredPosition(
 
     setStyle({
       position: 'fixed',
-      top: below ? rect.bottom + 4 : rect.top - 4 - height,
+      // 2px, not 4: the list should read as attached to the field rather than
+      // floating near it.
+      top: below ? rect.bottom + 2 : rect.top - 2 - height,
       left,
       width,
       maxHeight: height,
     });
-  }, [anchorRef, matchWidth, maxHeight]);
+  }, [anchorRef, contentRef, matchWidth, maxHeight]);
 
   React.useLayoutEffect(() => {
     if (!open) {
@@ -244,17 +278,24 @@ export function useAnchoredPosition(
       return;
     }
     place();
-  }, [open, place]);
+  }, [open, place, revision]);
 
   React.useEffect(() => {
     if (!open) return;
+
+    // A second pass once the list has rendered and has a real height. Without
+    // it the first measurement is always the maximum, which is what made a
+    // two-result list open upwards.
+    const raf = window.requestAnimationFrame(place);
+
     window.addEventListener('scroll', place, true);
     window.addEventListener('resize', place);
     return () => {
+      window.cancelAnimationFrame(raf);
       window.removeEventListener('scroll', place, true);
       window.removeEventListener('resize', place);
     };
-  }, [open, place]);
+  }, [open, place, revision]);
 
   return style;
 }
@@ -266,17 +307,15 @@ export function useAnchoredPosition(
  * nothing until it has been is what keeps the list from appearing in the corner
  * of the screen for one frame.
  */
-export function FloatingList({
-  children,
-  style,
-  ...props
-}: Omit<React.HTMLAttributes<HTMLUListElement>, 'style'> & {
-  style: React.CSSProperties | null;
-}) {
+export const FloatingList = React.forwardRef<
+  HTMLUListElement,
+  Omit<React.HTMLAttributes<HTMLUListElement>, 'style'> & { style: React.CSSProperties | null }
+>(function FloatingList({ children, style, ...props }, ref) {
   if (typeof document === 'undefined' || !style) return null;
   return createPortal(
     <ul
       {...props}
+      ref={ref}
       style={style}
       className={cn(
         'z-50 overflow-y-auto overscroll-contain rounded-lg border border-ink-200 bg-white py-1 shadow-lg',
@@ -287,4 +326,4 @@ export function FloatingList({
     </ul>,
     document.body,
   );
-}
+});

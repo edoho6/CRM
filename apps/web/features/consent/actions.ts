@@ -13,7 +13,9 @@ import { actionError, actionOk, type ActionResult } from '@/lib/errors';
  * withdrawing is its own decision, and the table refuses updates outright.
  */
 
-export async function publishConsentDocument(input: unknown): Promise<ActionResult<{ id: string }>> {
+export async function publishConsentDocument(
+  input: unknown,
+): Promise<ActionResult<{ id: string }>> {
   const scope = await getClinicScope();
   if (!scope) return actionError(new Error('unauthorized'));
 

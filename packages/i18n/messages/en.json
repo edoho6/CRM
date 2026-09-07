@@ -279,7 +279,8 @@
       "inactive": "Not active"
     },
     "allStatuses": "All statuses",
-    "treatmentStatusHint": "Only \"in treatment\" keeps the file in the working list."
+    "treatmentStatusHint": "Only \"in treatment\" keeps the file in the working list.",
+    "statusSaveFailed": "Not saved"
   },
   "appointments": {
     "title": "Calendar",

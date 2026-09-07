@@ -1,6 +1,7 @@
 'use server';
 
-import { patientFormSchema, patientMedicalHistorySchema } from '@clinic/domain';
+import { z } from 'zod';
+import { TREATMENT_STATUSES, patientFormSchema, patientMedicalHistorySchema } from '@clinic/domain';
 import { getClinicScope } from '@/lib/session';
 import { actionError, actionOk, type ActionResult } from '@/lib/errors';
 
@@ -50,10 +51,7 @@ export async function updatePatient(id: string, input: unknown): Promise<ActionR
  * Medical background lives in its own table, so this upserts rather than updates —
  * the row is created the first time anything is recorded, not when the patient is.
  */
-export async function saveMedicalHistory(
-  patientId: string,
-  input: unknown,
-): Promise<ActionResult> {
+export async function saveMedicalHistory(patientId: string, input: unknown): Promise<ActionResult> {
   const scope = await getClinicScope();
   if (!scope) return actionError(new Error('unauthorized'));
 
@@ -74,13 +72,28 @@ export async function saveMedicalHistory(
   return actionOk();
 }
 
-export async function setPatientActive(id: string, isActive: boolean): Promise<ActionResult> {
+/**
+ * Sets the patient's status, from the list or from anywhere else.
+ *
+ * `is_active` is not written here: a trigger derives it from the status, so the
+ * two cannot drift apart no matter which code path did the update. That is also
+ * why the old `setPatientActive` is gone — writing the flag directly was exactly
+ * the thing that let a file be active and "stopped partway" at once.
+ *
+ * The value is re-validated even though the caller is a `<select>` with a fixed
+ * option list, because a Server Action is a public endpoint and the option list
+ * is a suggestion to the browser rather than a constraint on the request.
+ */
+export async function setPatientStatus(id: string, status: unknown): Promise<ActionResult> {
   const scope = await getClinicScope();
   if (!scope) return actionError(new Error('unauthorized'));
 
+  const parsed = z.enum(TREATMENT_STATUSES).safeParse(status);
+  if (!parsed.success) return actionError(new Error('validation'));
+
   const { error } = await scope.supabase
     .from('patients')
-    .update({ is_active: isActive })
+    .update({ treatment_status: parsed.data })
     .eq('id', id);
 
   if (error) return actionError(error);

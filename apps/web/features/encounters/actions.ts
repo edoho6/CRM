@@ -31,12 +31,48 @@ export async function startEncounter(
     if (existing) return actionOk({ id: existing.id });
   }
 
+  /*
+   * Started from the patient's file rather than from the diary, so no
+   * appointment was named — but there almost always is one, and it is the thing
+   * that knows what time the patient was actually seen.
+   *
+   * So it is looked up: today's appointment for this patient, not cancelled, not
+   * already attached to another record. That makes the link a fact about the
+   * visit rather than an artefact of which button was pressed, and it is what
+   * lets the treatment list show the booked time instead of the moment someone
+   * started typing.
+   *
+   * Only when exactly one candidate exists. Two appointments in one day is a
+   * real thing, and guessing between them would put the wrong time on a record.
+   */
+  let resolvedAppointmentId = appointmentId ?? null;
+
+  if (!resolvedAppointmentId) {
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(startOfDay);
+    endOfDay.setDate(endOfDay.getDate() + 1);
+
+    const { data: candidates } = await scope.supabase
+      .from('appointments')
+      .select('id, encounter:encounters(id)')
+      .eq('patient_id', patientId)
+      .neq('status', 'cancelled')
+      .gte('start_at', startOfDay.toISOString())
+      .lt('start_at', endOfDay.toISOString())
+      .limit(3)
+      .returns<{ id: string; encounter: { id: string } | null }[]>();
+
+    const unattached = (candidates ?? []).filter((row) => !row.encounter);
+    if (unattached.length === 1) resolvedAppointmentId = unattached[0]!.id;
+  }
+
   const { data, error } = await scope.supabase
     .from('encounters')
     .insert({
       clinic_id: scope.context.clinic.id,
       patient_id: patientId,
-      appointment_id: appointmentId ?? null,
+      appointment_id: resolvedAppointmentId,
       practitioner_id: scope.context.membership.user_id,
       created_by: scope.context.membership.user_id,
     })

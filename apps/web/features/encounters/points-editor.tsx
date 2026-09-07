@@ -177,6 +177,7 @@ function PointCombobox({
   const [open, setOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const fieldRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
 
   const matches = useMemo(() => search(catalogue, term), [catalogue, term]);
 
@@ -186,6 +187,8 @@ function PointCombobox({
   const listStyle = useAnchoredPosition(fieldRef, open && matches.length > 0, {
     matchWidth: false,
     maxHeight: 256,
+    contentRef: listRef,
+    revision: matches.length,
   });
 
   function addOption(option: PointOption) {
@@ -251,6 +254,7 @@ function PointCombobox({
 
       {open && matches.length > 0 ? (
         <FloatingList
+          ref={listRef}
           id={`point-options-${region}`}
           role="listbox"
           style={listStyle ? { ...listStyle, minWidth: 280 } : null}
@@ -329,129 +333,143 @@ export function PointsEditor({
   }
 
   /*
-   * Columns are ordered so that "right" always lands on the physical right of
-   * the screen and "left" on the physical left, in both languages. In Hebrew
-   * the grid flows right-to-left, so the right-hand quadrants come first in the
-   * markup; in English it flows the other way and they come last. Reading the
-   * word and looking at the position give the same answer either way, which is
-   * the whole point of laying it out rather than listing it.
+   * Which quadrants sit in the left and right columns.
+   *
+   * Right always lands on the physical right of the screen and left on the
+   * physical left, in both languages — so the column order is reversed for
+   * Hebrew, where the grid flows the other way. Reading the word and looking at
+   * the position give the same answer either way, which is the entire reason
+   * for laying this out rather than listing it.
    */
-  const columns: readonly (readonly PointPlacement[])[] = isRtl
+  const [firstColumn, lastColumn]: [PointPlacement[], PointPlacement[]] = isRtl
     ? [
         ['right_upper', 'right_lower'],
-        ['center', 'ear'],
         ['left_upper', 'left_lower'],
       ]
     : [
         ['left_upper', 'left_lower'],
-        ['center', 'ear'],
         ['right_upper', 'right_lower'],
       ];
 
-  return (
-    // The cross is drawn, not implied: the middle column is separated by real
-    // rules, so the four quadrants read as quadrants at a glance.
-    <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_auto_1fr] sm:gap-0 sm:rounded-lg sm:border sm:border-ink-200 sm:bg-ink-50/40 sm:p-2">
-      {columns.map((column, columnIndex) => (
-        <div
-          key={columnIndex}
-          className={cn(
-            'flex flex-col gap-2',
-            // The middle column is narrower and fenced off by the two rules
-            // that make the shape a cross.
-            columnIndex === 1 && 'sm:mx-2 sm:w-44 sm:border-x sm:border-ink-200 sm:px-2',
-          )}
-        >
-          {column.map((region) => {
-            const rows = byRegion[region];
-            const style = PLACEMENT_STYLES[region];
-            const Icon = style.icon;
-            return (
-              <section key={region} className={cn('flex-1 rounded-lg border p-2', style.panel)}>
-                <div className="mb-1.5 flex items-center gap-1.5">
-                  {/* The arrow points at the physical corner the panel occupies, so
-                  the quadrant is identifiable without reading the label — which
-                  matters when the words for left and right are the thing being
-                  told apart in a hurry. */}
-                  <Icon className={cn('h-3.5 w-3.5 shrink-0', style.icon_class)} aria-hidden />
-                  <h4 className={cn('text-xs font-semibold', style.label)}>{tRegion(region)}</h4>
-                  {rows.length > 0 ? (
-                    <span
-                      className={cn(
-                        'ms-auto rounded-full px-1.5 text-xs font-medium tabular-nums',
-                        style.count,
-                      )}
-                    >
-                      {rows.length}
-                    </span>
-                  ) : null}
-                </div>
+  function panel(region: PointPlacement, compact = false) {
+    const rows = byRegion[region];
+    const style = PLACEMENT_STYLES[region];
+    const Icon = style.icon;
 
-                {rows.length === 0 && disabled ? (
-                  <p className="py-1 text-xs text-ink-500">{t('none')}</p>
-                ) : null}
-
-                <ul className="space-y-1.5">
-                  {rows.map(({ row, index }) => (
-                    <li
-                      key={index}
-                      className="flex flex-wrap items-center gap-1.5 rounded-md border border-ink-200 bg-white px-1.5 py-1"
-                    >
-                      <span
-                        dir="ltr"
-                        className={cn(
-                          'text-sm font-semibold',
-                          // A point that came from the catalogue is the one that can
-                          // appear on the map; free text reads plainly so the
-                          // difference is visible without explanation.
-                          row.point_id ? 'text-jade-800' : 'text-ink-700',
-                        )}
-                      >
-                        {row.point}
-                      </span>
-                      <Select
-                        aria-label={t('technique')}
-                        value={row.technique}
-                        disabled={disabled}
-                        onChange={(event) =>
-                          update(index, { technique: event.target.value as NeedleTechnique })
-                        }
-                        className="h-7 w-auto min-w-20 border-0 bg-transparent px-1 text-xs shadow-none"
-                      >
-                        {NEEDLE_TECHNIQUES.map((technique) => (
-                          <option key={technique} value={technique}>
-                            {tTechnique(technique)}
-                          </option>
-                        ))}
-                      </Select>
-                      {!disabled ? (
-                        <button
-                          type="button"
-                          onClick={() => remove(index)}
-                          aria-label={t('remove')}
-                          className="ms-auto rounded p-1 text-ink-500 transition-colors hover:bg-red-50 hover:text-red-600"
-                        >
-                          <X className="h-3.5 w-3.5" />
-                        </button>
-                      ) : null}
-                    </li>
-                  ))}
-                </ul>
-
-                {!disabled ? (
-                  <div className="mt-1.5">
-                    <PointCombobox
-                      catalogue={catalogue}
-                      region={region}
-                      onAdd={(row) => onChange([...value, row])}
-                    />
-                  </div>
-                ) : null}
-              </section>
-            );
-          })}
+    return (
+      <section
+        key={region}
+        className={cn('flex flex-col rounded-lg border p-2', style.panel, !compact && 'flex-1')}
+      >
+        <div className="mb-1.5 flex items-center gap-1.5">
+          {/* The arrow points at the physical corner the panel occupies, so a
+              quadrant is identifiable without reading the label — which is what
+              matters when left and right are the thing being told apart in a
+              hurry. */}
+          <Icon className={cn('h-3.5 w-3.5 shrink-0', style.icon_class)} aria-hidden />
+          <h4 className={cn('text-xs font-semibold', style.label)}>{tRegion(region)}</h4>
+          {rows.length > 0 ? (
+            <span
+              className={cn(
+                'ms-auto rounded-full px-1.5 text-xs font-medium tabular-nums',
+                style.count,
+              )}
+            >
+              {rows.length}
+            </span>
+          ) : null}
         </div>
-      ))}
+
+        {rows.length === 0 && disabled ? (
+          <p className="py-1 text-xs text-ink-500">{t('none')}</p>
+        ) : null}
+
+        <ul className={cn('space-y-1.5', compact && 'flex flex-wrap gap-1.5 space-y-0')}>
+          {rows.map(({ row, index }) => (
+            <li
+              key={index}
+              className="flex flex-wrap items-center gap-1.5 rounded-md border border-ink-200 bg-white px-1.5 py-1"
+            >
+              <span
+                dir="ltr"
+                className={cn(
+                  'text-sm font-semibold',
+                  // A point that came from the catalogue is the one that can
+                  // appear on the map; free text reads plainly so the difference
+                  // is visible without explanation.
+                  row.point_id ? 'text-jade-800' : 'text-ink-700',
+                )}
+              >
+                {row.point}
+              </span>
+              <Select
+                aria-label={t('technique')}
+                value={row.technique}
+                disabled={disabled}
+                onChange={(event) =>
+                  update(index, { technique: event.target.value as NeedleTechnique })
+                }
+                className="h-7 w-auto min-w-20 border-0 bg-transparent px-1 text-xs shadow-none"
+              >
+                {NEEDLE_TECHNIQUES.map((technique) => (
+                  <option key={technique} value={technique}>
+                    {tTechnique(technique)}
+                  </option>
+                ))}
+              </Select>
+              {!disabled ? (
+                <button
+                  type="button"
+                  onClick={() => remove(index)}
+                  aria-label={t('remove')}
+                  className="ms-auto rounded p-1 text-ink-500 transition-colors hover:bg-red-50 hover:text-red-600"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+
+        {!disabled ? (
+          <div className={cn('mt-1.5', compact ? 'max-w-xs' : 'mt-auto pt-1.5')}>
+            <PointCombobox
+              catalogue={catalogue}
+              region={region}
+              onAdd={(row) => onChange([...value, row])}
+            />
+          </div>
+        ) : null}
+      </section>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      {/*
+       * Three equal columns: a side, the midline, the other side.
+       *
+       * The middle one holds a single panel that runs the full height of the
+       * block rather than two half-height boxes, because the midline is one
+       * place on the body and not an upper and a lower one. It being taller is
+       * also what makes the shape read as a body at a glance instead of as six
+       * boxes in a grid.
+       *
+       * On a narrow screen the three stack, and the arrows and labels are then
+       * the whole of the orientation — which is why neither is optional.
+       */}
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+        <div className="flex flex-col gap-2">{firstColumn.map((region) => panel(region))}</div>
+
+        <div className="flex">{panel('center')}</div>
+
+        <div className="flex flex-col gap-2">{lastColumn.map((region) => panel(region))}</div>
+      </div>
+
+      {/* The ear sits outside the block, and smaller. Auricular points have no
+          upper or lower and no side in the sense the quadrants mean, so putting
+          them in the grid would make the grid say something untrue. */}
+      {panel('ear', true)}
     </div>
   );
 }

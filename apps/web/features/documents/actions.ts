@@ -86,7 +86,10 @@ export async function uploadDocument(
   return actionOk({ id: data.id });
 }
 
-export async function setDocumentShared(documentId: string, shared: boolean): Promise<ActionResult> {
+export async function setDocumentShared(
+  documentId: string,
+  shared: boolean,
+): Promise<ActionResult> {
   const scope = await getClinicScope();
   if (!scope) return actionError(new Error('unauthorized'));
 

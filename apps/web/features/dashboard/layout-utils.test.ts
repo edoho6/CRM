@@ -77,7 +77,9 @@ describe('parseStoredLayout', () => {
     });
 
     it('maps the old width onto the nearest size preset', () => {
-      const bySize = Object.fromEntries(parseStoredLayout(legacy).map((item) => [item.id, item.size]));
+      const bySize = Object.fromEntries(
+        parseStoredLayout(legacy).map((item) => [item.id, item.size]),
+      );
       expect(bySize).toEqual({
         today: 'lg',
         stats: 'sm',
@@ -88,7 +90,9 @@ describe('parseStoredLayout', () => {
     });
 
     it('carries widget config across the upgrade', () => {
-      const parsed = parseStoredLayout([{ id: 'n', type: 'note', x: 0, y: 0, w: 4, h: 3, config: { html: 'x' } }]);
+      const parsed = parseStoredLayout([
+        { id: 'n', type: 'note', x: 0, y: 0, w: 4, h: 3, config: { html: 'x' } },
+      ]);
       expect(parsed[0]).toEqual({ id: 'n', type: 'note', size: 'md', config: { html: 'x' } });
     });
 
@@ -136,7 +140,9 @@ describe('layoutsEqual', () => {
 
   it('notices a size change and a config change', () => {
     expect(layoutsEqual(layout, [{ ...layout[0]!, size: 'lg' }, layout[1]!])).toBe(false);
-    expect(layoutsEqual(layout, [{ ...layout[0]!, config: { html: 'y' } }, layout[1]!])).toBe(false);
+    expect(layoutsEqual(layout, [{ ...layout[0]!, config: { html: 'y' } }, layout[1]!])).toBe(
+      false,
+    );
   });
 });
 

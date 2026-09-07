@@ -279,7 +279,8 @@
       "inactive": "לא פעיל"
     },
     "allStatuses": "כל המצבים",
-    "treatmentStatusHint": "רק \"מטופל פעיל\" מציג את התיק ברשימת העבודה."
+    "treatmentStatusHint": "רק \"מטופל פעיל\" מציג את התיק ברשימת העבודה.",
+    "statusSaveFailed": "לא נשמר"
   },
   "appointments": {
     "title": "יומן",

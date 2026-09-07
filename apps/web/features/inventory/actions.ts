@@ -244,7 +244,10 @@ export async function setHerbThreshold(herbId: string, input: unknown): Promise<
 }
 
 /** The same, for a formula — where "low" is counted in whole doses. */
-export async function setFormulaThreshold(formulaId: string, input: unknown): Promise<ActionResult> {
+export async function setFormulaThreshold(
+  formulaId: string,
+  input: unknown,
+): Promise<ActionResult> {
   const scope = await getClinicScope();
   if (!scope) return actionError(new Error('unauthorized'));
 

@@ -154,6 +154,8 @@ export function AppShell({
           foot. */}
       <aside
         className={cn(
+          // `sticky` is a positioned value, so it already establishes the
+          // containing block the collapse handle is placed against.
           'sticky top-0 hidden h-dvh shrink-0 flex-col border-e border-ink-200 bg-white transition-[width] duration-200 lg:flex',
           collapsed ? 'w-14' : 'w-60',
         )}
@@ -185,6 +187,10 @@ export function AppShell({
           {navList(collapsed)}
         </div>
 
+        {/* Ordered by how far each one is from ordinary work: settings and the
+            two display switches first, then the accessibility statement, then
+            signing out at the very bottom — the one action you never want to hit
+            while reaching for something else. */}
         <div
           className={cn('shrink-0 space-y-2 border-t border-ink-100', collapsed ? 'p-2' : 'p-3')}
         >
@@ -199,6 +205,14 @@ export function AppShell({
               {!collapsed ? t('settings') : <span className="sr-only">{t('settings')}</span>}
             </Link>
           </Button>
+
+          {!collapsed ? (
+            <>
+              <ThemeToggle className="w-full" />
+              <LanguageSwitcher className="w-full justify-center" />
+            </>
+          ) : null}
+
           <Button
             asChild
             variant="ghost"
@@ -215,13 +229,6 @@ export function AppShell({
             </Link>
           </Button>
 
-          {!collapsed ? (
-            <>
-              <ThemeToggle className="w-full" />
-              <LanguageSwitcher className="w-full justify-center" />
-            </>
-          ) : null}
-
           <form action={onSignOut}>
             <Button
               type="submit"
@@ -234,35 +241,34 @@ export function AppShell({
               {!collapsed ? t('signOut') : <span className="sr-only">{t('signOut')}</span>}
             </Button>
           </form>
-
-          {/* The collapse control sits at the foot of the panel it collapses, and
-              the chevron is a logical icon: it points at the edge the panel will
-              move towards, which is the opposite direction in Hebrew. */}
-          <button
-            type="button"
-            onClick={() => setCollapsed((value) => !value)}
-            aria-expanded={!collapsed}
-            aria-controls="sidebar-nav"
-            title={collapsed ? t('expandSidebar') : t('collapseSidebar')}
-            className={cn(
-              'flex h-8 w-full items-center gap-2 rounded-lg text-ink-600 transition-colors hover:bg-ink-100 hover:text-ink-900',
-              collapsed ? 'justify-center px-0' : 'justify-start px-2',
-            )}
-          >
-            <ChevronsRight
-              className={cn(
-                'h-4 w-4 shrink-0 transition-transform rtl:-scale-x-100',
-                !collapsed && 'rotate-180',
-              )}
-              aria-hidden
-            />
-            {!collapsed ? (
-              <span className="truncate text-xs">{t('collapseSidebar')}</span>
-            ) : (
-              <span className="sr-only">{t('expandSidebar')}</span>
-            )}
-          </button>
         </div>
+
+        {/* A handle on the panel's own edge, halfway down: an arrow and nothing
+            else. It was a labelled row in the footer, which put a word for a
+            control that already looks like exactly what it does next to the
+            things you actually navigate to.
+
+            Physically left in both languages — in Hebrew that is the panel's
+            inner edge, in English its outer one — so it always sits between the
+            sidebar and the content it makes room for. The name is still on it
+            for a screen reader and on hover for everyone else. */}
+        <button
+          type="button"
+          onClick={() => setCollapsed((value) => !value)}
+          aria-expanded={!collapsed}
+          aria-controls="sidebar-nav"
+          aria-label={collapsed ? t('expandSidebar') : t('collapseSidebar')}
+          title={collapsed ? t('expandSidebar') : t('collapseSidebar')}
+          className="absolute top-1/2 left-0 z-10 flex h-12 w-4 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-ink-200 bg-white text-ink-600 shadow-xs transition-colors hover:bg-ink-100 hover:text-ink-900"
+        >
+          <ChevronsRight
+            className={cn(
+              'h-3.5 w-3.5 shrink-0 transition-transform rtl:-scale-x-100',
+              !collapsed && 'rotate-180',
+            )}
+            aria-hidden
+          />
+        </button>
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">

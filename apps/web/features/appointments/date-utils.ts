@@ -74,7 +74,11 @@ export function monthGridDays(date: Date): Date[] {
 /** Every day from `from` to `to` inclusive, for an agenda over a chosen range. */
 export function daysBetween(from: Date, to: Date, limit = 120): Date[] {
   const days: Date[] = [];
-  for (let cursor = startOfDay(from); cursor <= to && days.length < limit; cursor = addDays(cursor, 1)) {
+  for (
+    let cursor = startOfDay(from);
+    cursor <= to && days.length < limit;
+    cursor = addDays(cursor, 1)
+  ) {
     days.push(cursor);
   }
   return days;
@@ -86,7 +90,9 @@ export function isSameMonth(a: Date, b: Date): boolean {
 
 export function isSameDay(a: Date, b: Date): boolean {
   return (
-    a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
   );
 }
 

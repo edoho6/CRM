@@ -113,7 +113,13 @@ export async function createInvoiceFromEncounter(
 
   // The treatment line always comes first, priced by the practitioner.
   const allLines: DraftLine[] = [
-    { description: 'Treatment', quantity: 1, unit_price: 0, source_table: 'encounters', source_id: encounter.id },
+    {
+      description: 'Treatment',
+      quantity: 1,
+      unit_price: 0,
+      source_table: 'encounters',
+      source_id: encounter.id,
+    },
     ...lines,
   ];
 

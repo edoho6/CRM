@@ -1,7 +1,6 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { UserPlus, Users } from 'lucide-react';
 import {
-  Badge,
   Button,
   EmptyState,
   SortBody,
@@ -16,9 +15,10 @@ import { TREATMENT_STATUSES } from '@clinic/domain';
 import type { Patient } from '@clinic/db/types';
 import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
-import { ageFromDateOfBirth, patientStatusTone } from '@/lib/display';
+import { ageFromDateOfBirth } from '@/lib/display';
 import { PatientSearch } from '@/features/patients/patient-search';
 import { TreatmentStatusFilter } from '@/features/patients/treatment-status-filter';
+import { PatientStatusCell } from '@/features/patients/status-cell';
 
 export default async function PatientsPage({
   params,
@@ -147,9 +147,14 @@ export default async function PatientsPage({
                     <Td>{age === null ? <span className="text-ink-500">—</span> : age}</Td>
                     <Td>{patient.city ?? <span className="text-ink-500">—</span>}</Td>
                     <Td>
-                      <Badge tone={patientStatusTone(patient.treatment_status)}>
-                        {t(`status.${patient.treatment_status ?? 'active'}`)}
-                      </Badge>
+                      {/* Editable in place: marking a course finished is a
+                          five-second thought, and making it cost a page load,
+                          an edit form and a trip back is how a list fills up
+                          with people who stopped coming two years ago. */}
+                      <PatientStatusCell
+                        patientId={patient.id}
+                        status={patient.treatment_status ?? null}
+                      />
                     </Td>
                   </Tr>
                 );

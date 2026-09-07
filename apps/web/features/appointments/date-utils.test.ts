@@ -92,9 +92,7 @@ describe('time helpers', () => {
   });
 
   it('computes appointment length', () => {
-    expect(
-      differenceInMinutes(new Date(2026, 8, 6, 10, 30), new Date(2026, 8, 6, 9, 0)),
-    ).toBe(90);
+    expect(differenceInMinutes(new Date(2026, 8, 6, 10, 30), new Date(2026, 8, 6, 9, 0))).toBe(90);
   });
 });
 

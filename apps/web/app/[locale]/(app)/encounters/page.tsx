@@ -6,7 +6,7 @@ import type { Appointment, Encounter, Patient } from '@clinic/db/types';
 import { PageHeader } from '@/components/app-shell';
 import { DateRangeFilter } from '@/components/date-range-filter';
 import { getClinicScope } from '@/lib/session';
-import { resolveRange } from '@/lib/date-range';
+import { resolveRange, toDateKey } from '@/lib/date-range';
 
 type EncounterRow = Encounter & {
   patient: Pick<Patient, 'id' | 'full_name'> | null;
@@ -18,12 +18,20 @@ type EncounterRow = Encounter & {
  *
  * The appointment's time, not the moment the record was opened. Those are
  * different facts and the first is the useful one: a record is often written up
- * afterwards, so `started_at` says when the typing began rather than when the
- * patient was seen. A walk-in with no appointment has only the second, and that
- * is when it is worth showing.
+ * after the patient has left, so `started_at` says when the typing began.
+ *
+ * `fallback` covers records made before treatments were linked to their
+ * appointment — the diary still knows what time that patient was booked for
+ * that day, so the answer is recoverable rather than lost. A genuine walk-in has
+ * neither, and then when the record was opened is the only time there is.
  */
-function treatmentTime(encounter: EncounterRow): string | null {
-  return encounter.appointment?.start_at ?? encounter.started_at ?? null;
+function treatmentTime(encounter: EncounterRow, fallback: Map<string, string>): string | null {
+  return (
+    encounter.appointment?.start_at ??
+    fallback.get(`${encounter.patient_id}|${encounter.encounter_date}`) ??
+    encounter.started_at ??
+    null
+  );
 }
 
 export default async function EncountersPage({
@@ -64,6 +72,47 @@ export default async function EncountersPage({
 
   const encounters = data ?? [];
 
+  /*
+   * The booked time for treatments that carry no link to their appointment.
+   *
+   * One extra query rather than one per row: every appointment in the same span,
+   * keyed by patient and day. A patient with two appointments on one day is
+   * skipped rather than guessed at — the wrong time on a clinical record is
+   * worse than none.
+   */
+  const bookedTimes = new Map<string, string>();
+  const unlinked = encounters.filter((encounter) => !encounter.appointment);
+
+  if (unlinked.length > 0) {
+    const dates = unlinked.map((encounter) => encounter.encounter_date).sort();
+    const first = new Date(`${dates[0]}T00:00:00`);
+    const last = new Date(`${dates[dates.length - 1]}T00:00:00`);
+    last.setDate(last.getDate() + 1);
+
+    const { data: appointments } = await scope.supabase
+      .from('appointments')
+      .select('patient_id, start_at')
+      .neq('status', 'cancelled')
+      .gte('start_at', first.toISOString())
+      .lt('start_at', last.toISOString())
+      .limit(2000)
+      .returns<{ patient_id: string; start_at: string }[]>();
+
+    const seen = new Set<string>();
+    for (const appointment of appointments ?? []) {
+      const day = new Date(appointment.start_at);
+      const key = `${appointment.patient_id}|${toDateKey(day)}`;
+      // A second appointment for the same patient on the same day makes the
+      // match ambiguous, so the key is dropped rather than resolved arbitrarily.
+      if (seen.has(key)) {
+        bookedTimes.delete(key);
+        continue;
+      }
+      seen.add(key);
+      bookedTimes.set(key, appointment.start_at);
+    }
+  }
+
   return (
     <>
       <PageHeader title={t('title')} />
@@ -92,7 +141,9 @@ export default async function EncountersPage({
                   sort={{
                     // Sort on the instant, so two records on one day order by
                     // the time they were opened rather than arbitrarily.
-                    date: new Date(treatmentTime(encounter) ?? encounter.encounter_date).getTime(),
+                    date: new Date(
+                      treatmentTime(encounter, bookedTimes) ?? encounter.encounter_date,
+                    ).getTime(),
                     patient: encounter.patient?.full_name ?? null,
                     status: t(`status.${encounter.status}`),
                   }}
@@ -107,9 +158,9 @@ export default async function EncountersPage({
                     >
                       {format.dateTime(new Date(encounter.encounter_date), 'short')}
                     </Link>
-                    {treatmentTime(encounter) ? (
-                      <span dir="ltr" className="ms-2 text-xs tabular-nums text-ink-600">
-                        {format.dateTime(new Date(treatmentTime(encounter)!), 'time')}
+                    {treatmentTime(encounter, bookedTimes) ? (
+                      <span dir="ltr" className="ms-6 text-xs tabular-nums text-ink-600">
+                        {format.dateTime(new Date(treatmentTime(encounter, bookedTimes)!), 'time')}
                       </span>
                     ) : null}
                   </Td>

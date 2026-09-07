@@ -40,7 +40,10 @@ export function isWidgetSize(value: unknown): value is WidgetSize {
 }
 
 /** The next size in the cycle, restricted to what the widget allows. */
-export function nextSize(current: WidgetSize, allowed: readonly WidgetSize[] = WIDGET_SIZES): WidgetSize {
+export function nextSize(
+  current: WidgetSize,
+  allowed: readonly WidgetSize[] = WIDGET_SIZES,
+): WidgetSize {
   const order = WIDGET_SIZES.filter((size) => allowed.includes(size));
   if (order.length === 0) return current;
   const index = order.indexOf(current);
@@ -101,7 +104,9 @@ export function parseStoredLayout(value: unknown): DashboardLayout {
     .filter((entry): entry is LegacyInstance => Boolean(entry) && typeof entry === 'object')
     .filter((entry) => typeof entry.id === 'string' && typeof entry.type === 'string');
 
-  const isLegacy = entries.some((entry) => !isWidgetSize(entry.size) && typeof entry.w === 'number');
+  const isLegacy = entries.some(
+    (entry) => !isWidgetSize(entry.size) && typeof entry.w === 'number',
+  );
 
   const ordered = isLegacy
     ? [...entries].sort((a, b) => {

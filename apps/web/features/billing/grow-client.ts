@@ -119,7 +119,11 @@ async function post(
     return { ok: false, error: 'invalid_response', raw: await response.text().catch(() => null) };
   }
 
-  const body = payload as { status?: number | string; data?: Record<string, unknown>; err?: unknown };
+  const body = payload as {
+    status?: number | string;
+    data?: Record<string, unknown>;
+    err?: unknown;
+  };
   // Grow signals success with status 1.
   const succeeded = String(body?.status ?? '') === '1';
 

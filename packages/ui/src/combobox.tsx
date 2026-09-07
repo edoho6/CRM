@@ -102,6 +102,7 @@ export function Combobox({
   const [highlight, setHighlight] = React.useState(0);
   const inputRef = React.useRef<HTMLInputElement>(null);
   const fieldRef = React.useRef<HTMLDivElement>(null);
+  const listRef = React.useRef<HTMLUListElement>(null);
   const reactId = React.useId();
   const listId = `${id ?? reactId}-options`;
 
@@ -147,7 +148,12 @@ export function Combobox({
 
   // The list is rendered into the body and positioned against the field, so a
   // combobox inside a scrolling table is not cut off by it.
-  const listStyle = useAnchoredPosition(fieldRef, listVisible);
+  const listStyle = useAnchoredPosition(fieldRef, listVisible, {
+    contentRef: listRef,
+    // Re-measure whenever the result count changes, so narrowing a search
+    // re-seats the list under the field instead of leaving it at its old size.
+    revision: matches.length + (showCustomHint ? 1 : 0),
+  });
 
   return (
     <div ref={fieldRef} className={cn('relative', className)}>
@@ -218,7 +224,7 @@ export function Combobox({
       ) : null}
 
       {listVisible ? (
-        <FloatingList id={listId} role="listbox" aria-label={label} style={listStyle}>
+        <FloatingList ref={listRef} id={listId} role="listbox" aria-label={label} style={listStyle}>
           {matches.map((option, index) => (
             <li key={option.id}>
               <button
