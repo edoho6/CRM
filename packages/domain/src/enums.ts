@@ -284,3 +284,38 @@ export const FORMULA_TCM_CATEGORIES = [
   'other',
 ] as const;
 export type FormulaTcmCategory = (typeof FORMULA_TCM_CATEGORIES)[number];
+
+/**
+ * The classical categories a point belongs to.
+ *
+ * Not decoration: "which is the xi-cleft point of this channel" and "show me
+ * the back-shu points" are questions asked during a treatment, and a catalogue
+ * that cannot answer them is a list of names. A point can hold several.
+ *
+ * Ordered as they are taught — the five transport points distal to proximal
+ * first, then the connecting set, then the rest.
+ */
+export const POINT_CATEGORIES = [
+  'jing_well',
+  'ying_spring',
+  'shu_stream',
+  'jing_river',
+  'he_sea',
+  'yuan_source',
+  'luo_connecting',
+  'xi_cleft',
+  'back_shu',
+  'front_mu',
+  'influential',
+  'confluent',
+  'command',
+  'lower_he_sea',
+  'window_of_sky',
+  'sea_point',
+  'ghost_point',
+  'group_luo',
+  'crossing',
+  'entry',
+  'exit',
+] as const;
+export type PointCategory = (typeof POINT_CATEGORIES)[number];

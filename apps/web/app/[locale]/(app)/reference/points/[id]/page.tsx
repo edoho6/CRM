@@ -43,6 +43,7 @@ export default async function PointDetailPage({
   const tChannel = await getTranslations('reference.pointChannel');
   const tRegion = await getTranslations('encounters.region');
   const tArea = await getTranslations('reference.bodyArea');
+  const tPointCategory = await getTranslations('reference.pointCategory');
   const tReview = await getTranslations('inventory.review');
   const tc = await getTranslations('common');
 
@@ -154,6 +155,19 @@ export default async function PointDetailPage({
               ) : null}
             </CardHeader>
             <CardBody>
+              {point.point_categories.length > 0 ? (
+                <div className="mb-3 flex flex-wrap gap-1.5">
+                  {point.point_categories.map((entry) => (
+                    <Link
+                      key={entry}
+                      href={{ pathname: '/reference/points', query: { category: entry } }}
+                      className="rounded-full bg-jade-50 px-2 py-0.5 text-xs font-medium text-jade-800 ring-1 ring-jade-200 transition-all hover:-translate-y-px hover:shadow-xs"
+                    >
+                      {tPointCategory(entry)}
+                    </Link>
+                  ))}
+                </div>
+              ) : null}
               <dl>
                 <DetailRow label={t('fields.location')}>
                   <Prose text={point.location} />
@@ -171,6 +185,11 @@ export default async function PointDetailPage({
                   <Prose text={point.cautions} />
                 </DetailRow>
               </dl>
+              {hasClinicalText ? (
+                <p className="mt-3 border-t border-ink-100 pt-2 text-xs leading-relaxed text-ink-600">
+                  {t('clinicalSource')}
+                </p>
+              ) : null}
             </CardBody>
           </Card>
 

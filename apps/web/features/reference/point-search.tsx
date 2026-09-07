@@ -2,7 +2,7 @@
 
 import { useTransition } from 'react';
 import { useTranslations } from 'next-intl';
-import { POINT_BODY_AREAS, POINT_CHANNELS } from '@clinic/domain';
+import { POINT_BODY_AREAS, POINT_CATEGORIES, POINT_CHANNELS } from '@clinic/domain';
 import { cn } from '@clinic/ui';
 import { Link, usePathname, useRouter } from '@clinic/i18n/navigation';
 import { CatalogueSearch } from './catalogue-search';
@@ -20,26 +20,31 @@ export function PointSearch({
   initialQuery,
   channel,
   area,
+  category,
 }: {
   initialQuery: string;
   channel: string;
   area: string;
+  category: string;
 }) {
   const t = useTranslations('reference.points');
   const tChannel = useTranslations('reference.pointChannel');
   const tArea = useTranslations('reference.bodyArea');
+  const tCategory = useTranslations('reference.pointCategory');
   const tc = useTranslations('common');
   const pathname = usePathname();
   const router = useRouter();
   const [, startTransition] = useTransition();
 
-  const query = (next: { channel?: string; area?: string }) => {
+  const query = (next: { channel?: string; area?: string; category?: string }) => {
     const params: Record<string, string> = {};
     if (initialQuery) params.q = initialQuery;
     const nextChannel = next.channel ?? channel;
     const nextArea = next.area ?? area;
+    const nextCategory = next.category ?? category;
     if (nextChannel) params.channel = nextChannel;
     if (nextArea) params.area = nextArea;
+    if (nextCategory) params.category = nextCategory;
     return params;
   };
 
@@ -93,6 +98,30 @@ export function PointSearch({
                 onClick={() => startTransition(() => router.refresh())}
               >
                 {tArea(entry)}
+              </Link>
+            ))}
+          </div>
+        </fieldset>
+
+        <fieldset className="border-t border-ink-100 pt-2">
+          <legend className="mb-1.5 text-xs font-semibold text-ink-600">{t('filterByCategory')}</legend>
+          <div className="flex flex-wrap gap-1.5">
+            <Link
+              href={{ pathname, query: query({ category: '' }) }}
+              scroll={false}
+              className={chip(!category)}
+            >
+              {tc('all')}
+            </Link>
+            {POINT_CATEGORIES.map((entry) => (
+              <Link
+                key={entry}
+                href={{ pathname, query: query({ category: category === entry ? '' : entry }) }}
+                scroll={false}
+                aria-pressed={category === entry}
+                className={chip(category === entry)}
+              >
+                {tCategory(entry)}
               </Link>
             ))}
           </div>

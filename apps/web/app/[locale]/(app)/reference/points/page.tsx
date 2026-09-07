@@ -11,7 +11,7 @@ import {
 } from '@clinic/ui';
 import { Link } from '@clinic/i18n/navigation';
 import type { AcupuncturePoint } from '@clinic/db/types';
-import { POINT_BODY_AREAS, POINT_CHANNELS } from '@clinic/domain';
+import { POINT_BODY_AREAS, POINT_CATEGORIES, POINT_CHANNELS } from '@clinic/domain';
 import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
 import { ReferenceNav } from '@/features/reference/reference-nav';
@@ -22,10 +22,10 @@ export default async function PointsPage({
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ q?: string; channel?: string; area?: string }>;
+  searchParams: Promise<{ q?: string; channel?: string; area?: string; category?: string }>;
 }) {
   const { locale } = await params;
-  const { q = '', channel = '', area = '' } = await searchParams;
+  const { q = '', channel = '', area = '', category = '' } = await searchParams;
   setRequestLocale(locale);
 
   const t = await getTranslations('reference.points');
@@ -56,6 +56,11 @@ export default async function PointsPage({
   if (area && (POINT_BODY_AREAS as readonly string[]).includes(area)) {
     query = query.eq('body_area', area);
   }
+  // A point can hold several categories, so membership is an array containment
+  // test rather than equality.
+  if (category && (POINT_CATEGORIES as readonly string[]).includes(category)) {
+    query = query.contains('point_categories', [category]);
+  }
 
   const { data } = await query.returns<AcupuncturePoint[]>();
   const points = data ?? [];
@@ -66,7 +71,7 @@ export default async function PointsPage({
       <ReferenceNav />
 
       <div className="mb-4">
-        <PointSearch initialQuery={term} channel={channel} area={area} />
+        <PointSearch initialQuery={term} channel={channel} area={area} category={category} />
       </div>
 
       {points.length === 0 ? (

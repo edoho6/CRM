@@ -33,6 +33,7 @@ all_migrations_combined.sql
 herb_database_to_run.sql
 stock_and_points_to_run.sql
 points_update_to_run.sql
+points_clinical_to_run.sql
 
 # testing
 coverage/

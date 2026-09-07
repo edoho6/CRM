@@ -15,6 +15,7 @@ import type {
   NeedleTechnique,
   OrderListStatus,
   PointBodyArea,
+  PointCategory,
   PointChannel,
   PointRegion,
   PointSide,
@@ -643,7 +644,8 @@ export interface AcupuncturePoint {
   indications: string | null;
   needling: string | null;
   cautions: string | null;
-  point_categories: string[];
+  /** Classical categories: five-shu, yuan-source, back-shu, front-mu and the rest. */
+  point_categories: PointCategory[];
   needs_review: boolean;
   data_source: string | null;
   is_active: boolean;

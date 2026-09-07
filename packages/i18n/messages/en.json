@@ -940,11 +940,14 @@
         "needling": "Needling",
         "cautions": "Cautions",
         "chineseName": "Chinese",
-        "bodyArea": "Body area"
+        "bodyArea": "Body area",
+        "categories": "Classical categories"
       },
       "allAreas": "All areas",
       "filterByChannel": "Filter by channel",
-      "filterByArea": "Filter by area"
+      "filterByArea": "Filter by area",
+      "filterByCategory": "Filter by category",
+      "clinicalSource": "Written from the standard clinical knowledge common to the professional sources. It does not replace clinical judgement, and the measurements assume an adult of average build."
     },
     "pointChannel": {
       "lung": "Lung (LU)",
@@ -986,6 +989,29 @@
       "lower_leg": "Lower leg",
       "ankle": "Ankle",
       "foot": "Foot"
+    },
+    "pointCategory": {
+      "jing_well": "Jing-Well",
+      "ying_spring": "Ying-Spring",
+      "shu_stream": "Shu-Stream",
+      "jing_river": "Jing-River",
+      "he_sea": "He-Sea",
+      "yuan_source": "Yuan-Source",
+      "luo_connecting": "Luo-Connecting",
+      "xi_cleft": "Xi-Cleft",
+      "back_shu": "Back-Shu",
+      "front_mu": "Front-Mu",
+      "influential": "Influential (Hui)",
+      "confluent": "Confluent",
+      "command": "Command point",
+      "lower_he_sea": "Lower He-Sea",
+      "window_of_sky": "Window of the Sky",
+      "sea_point": "Sea point",
+      "ghost_point": "Ghost point",
+      "group_luo": "Group Luo",
+      "crossing": "Crossing point",
+      "entry": "Entry point",
+      "exit": "Exit point"
     }
   }
 }

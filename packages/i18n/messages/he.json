@@ -940,11 +940,14 @@
         "needling": "טכניקת דקירה",
         "cautions": "אזהרות",
         "chineseName": "סינית",
-        "bodyArea": "אזור בגוף"
+        "bodyArea": "אזור בגוף",
+        "categories": "קטגוריות קלאסיות"
       },
       "allAreas": "כל האזורים",
       "filterByChannel": "סינון לפי מרידיאן",
-      "filterByArea": "סינון לפי אזור"
+      "filterByArea": "סינון לפי אזור",
+      "filterByCategory": "סינון לפי קטגוריה",
+      "clinicalSource": "המידע נכתב לפי הידע הקליני הסטנדרטי המשותף למקורות המקצועיים. אינו מהווה תחליף לשיקול דעת קליני, והמידות הן לאדם בוגר בעל מבנה גוף ממוצע."
     },
     "pointChannel": {
       "lung": "ריאה (LU)",
@@ -986,6 +989,29 @@
       "lower_leg": "שוק",
       "ankle": "קרסול",
       "foot": "כף רגל"
+    },
+    "pointCategory": {
+      "jing_well": "נקודת באר (Jing-Well)",
+      "ying_spring": "נקודת מעיין (Ying-Spring)",
+      "shu_stream": "נקודת נחל (Shu-Stream)",
+      "jing_river": "נקודת נהר (Jing-River)",
+      "he_sea": "נקודת ים (He-Sea)",
+      "yuan_source": "נקודת מקור (Yuan)",
+      "luo_connecting": "נקודת קישור (Luo)",
+      "xi_cleft": "נקודת חריץ (Xi-Cleft)",
+      "back_shu": "נקודת שו אחורית",
+      "front_mu": "נקודת מו קדמית",
+      "influential": "נקודה משפיעה (Hui)",
+      "confluent": "נקודת פתיחה לכלי מיוחד",
+      "command": "נקודת פיקוד",
+      "lower_he_sea": "נקודת ים תחתונה",
+      "window_of_sky": "חלון השמיים",
+      "sea_point": "נקודת ים (ארבעת הימים)",
+      "ghost_point": "נקודת רוח (Gui)",
+      "group_luo": "לואו קבוצתי",
+      "crossing": "נקודת הצטלבות",
+      "entry": "נקודת כניסה",
+      "exit": "נקודת יציאה"
     }
   }
 }
