@@ -51,7 +51,14 @@ type FormulaUse = {
   notes: string | null;
   formula: Pick<
     HerbFormula,
-    'id' | 'name_pinyin' | 'name_chinese' | 'name_english' | 'name_hebrew' | 'tcm_category' | 'category' | 'is_active'
+    | 'id'
+    | 'name_pinyin'
+    | 'name_chinese'
+    | 'name_english'
+    | 'name_hebrew'
+    | 'tcm_category'
+    | 'category'
+    | 'is_active'
   > | null;
 };
 
@@ -87,7 +94,11 @@ export default async function HerbDetailPage({
   const scope = await getClinicScope();
   if (!scope) return null;
 
-  const { data: herb } = await scope.supabase.from('herbs').select('*').eq('id', id).maybeSingle<Herb>();
+  const { data: herb } = await scope.supabase
+    .from('herbs')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle<Herb>();
   if (!herb) notFound();
 
   // A clinic that keeps no stock is not asked to look at any: the three stock
@@ -95,7 +106,11 @@ export default async function HerbDetailPage({
   const tracksInventory = scope.context.clinic.tracks_inventory !== false;
 
   const [levelResult, batchesResult, movementsResult, usesResult] = await Promise.all([
-    scope.supabase.from('herb_stock_levels').select('*').eq('herb_id', id).maybeSingle<HerbStockLevel>(),
+    scope.supabase
+      .from('herb_stock_levels')
+      .select('*')
+      .eq('herb_id', id)
+      .maybeSingle<HerbStockLevel>(),
     scope.supabase
       .from('herb_batches')
       .select('*, supplier:suppliers(id, name)')
@@ -347,7 +362,9 @@ export default async function HerbDetailPage({
                     </span>
                   </DetailRow>
                   <DetailRow label={t('fields.reorderThreshold')}>
-                    {herb.reorder_threshold === null ? '—' : format.number(Number(herb.reorder_threshold))}
+                    {herb.reorder_threshold === null
+                      ? '—'
+                      : format.number(Number(herb.reorder_threshold))}
                   </DetailRow>
                 </dl>
                 <OrderDialog
@@ -407,7 +424,11 @@ export default async function HerbDetailPage({
                             </Td>
                             <Td>
                               {formula.tcm_category ? (
-                                <TcmChip scale="formulaTcmCategory" value={formula.tcm_category} size="sm">
+                                <TcmChip
+                                  scale="formulaTcmCategory"
+                                  value={formula.tcm_category}
+                                  size="sm"
+                                >
                                   {tFormulaTcm(formula.tcm_category)}
                                 </TcmChip>
                               ) : (
@@ -432,121 +453,137 @@ export default async function HerbDetailPage({
           {/* Batches and the stock ledger belong to the shelf, not to the
               materia medica: a clinic without one never sees either. */}
           {tracksInventory ? (
-          <>
-          <Card>
-            <CardHeader>
-              <CardTitle>{tBatches('title')}</CardTitle>
-            </CardHeader>
-            <CardBody className="p-0">
-              {batches.length === 0 ? (
-                <p className="px-4 py-6 text-center text-sm text-ink-500">{tBatches('empty')}</p>
-              ) : (
-                <TableWrapper className="rounded-none border-0">
-                  <SortableTable defaultSortKey="expiry">
-                    <thead>
-                      <tr>
-                        <SortTh sortKey="batch">{tBatches('batchNumber')}</SortTh>
-                        <SortTh sortKey="remaining">{tBatches('quantityRemaining')}</SortTh>
-                        <SortTh sortKey="expiry">{tBatches('expiryDate')}</SortTh>
-                        <SortTh sortKey="supplier">{tBatches('supplier')}</SortTh>
-                      </tr>
-                    </thead>
-                    <SortBody locale={locale}>
-                      {batches.map((batch) => {
-                        const expired = batch.expiry_date && new Date(batch.expiry_date) < new Date();
-                        return (
-                          <Tr
-                            key={batch.id}
-                            sort={{
-                              batch: batch.batch_number,
-                              remaining: Number(batch.quantity_remaining),
-                              expiry: batch.expiry_date ? new Date(batch.expiry_date).getTime() : null,
-                              supplier: batch.supplier?.name ?? null,
-                            }}
-                          >
-                            <Td>
-                              <span dir="ltr">{batch.batch_number ?? '—'}</span>
-                            </Td>
-                            <Td>
-                              <span dir="ltr" className="tabular-nums">
-                                {format.number(Number(batch.quantity_remaining))} /{' '}
-                                {format.number(Number(batch.quantity_received))}
-                              </span>
-                            </Td>
-                            <Td>
-                              {batch.expiry_date ? (
-                                <span dir="ltr" className={expired ? 'tabular-nums text-red-600' : 'tabular-nums'}>
-                                  {format.dateTime(new Date(batch.expiry_date), 'short')}
-                                </span>
-                              ) : (
-                                <span className="text-ink-500">{tBatches('noExpiry')}</span>
-                              )}
-                            </Td>
-                            <Td>{batch.supplier?.name ?? '—'}</Td>
-                          </Tr>
-                        );
-                      })}
-                    </SortBody>
-                  </SortableTable>
-                </TableWrapper>
-              )}
-            </CardBody>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>{tMovements('title')}</CardTitle>
-            </CardHeader>
-            <CardBody className="p-0">
-              {movements.length === 0 ? (
-                <p className="px-4 py-6 text-center text-sm text-ink-500">{tMovements('empty')}</p>
-              ) : (
-                <TableWrapper className="rounded-none border-0">
-                  <SortableTable defaultSortKey="date" defaultSortDirection="desc">
-                    <thead>
-                      <tr>
-                        <SortTh sortKey="date">{tc('date')}</SortTh>
-                        <SortTh sortKey="type">{tMovements('type')}</SortTh>
-                        <SortTh sortKey="quantity">{tc('quantity')}</SortTh>
-                      </tr>
-                    </thead>
-                    <SortBody locale={locale}>
-                      {movements.map((movement) => {
-                        const quantity = Number(movement.quantity);
-                        return (
-                          <Tr
-                            key={movement.id}
-                            sort={{
-                              date: new Date(movement.created_at).getTime(),
-                              type: tMovements(`kind.${movement.movement_type}`),
-                              quantity,
-                            }}
-                          >
-                            <Td>
-                              <span dir="ltr" className="tabular-nums">
-                                {format.dateTime(new Date(movement.created_at), 'short')}
-                              </span>
-                            </Td>
-                            <Td>{tMovements(`kind.${movement.movement_type}`)}</Td>
-                            <Td>
-                              <span
-                                dir="ltr"
-                                className={quantity < 0 ? 'tabular-nums text-red-600' : 'tabular-nums text-jade-700'}
+            <>
+              <Card>
+                <CardHeader>
+                  <CardTitle>{tBatches('title')}</CardTitle>
+                </CardHeader>
+                <CardBody className="p-0">
+                  {batches.length === 0 ? (
+                    <p className="px-4 py-6 text-center text-sm text-ink-500">
+                      {tBatches('empty')}
+                    </p>
+                  ) : (
+                    <TableWrapper className="rounded-none border-0">
+                      <SortableTable defaultSortKey="expiry">
+                        <thead>
+                          <tr>
+                            <SortTh sortKey="batch">{tBatches('batchNumber')}</SortTh>
+                            <SortTh sortKey="remaining">{tBatches('quantityRemaining')}</SortTh>
+                            <SortTh sortKey="expiry">{tBatches('expiryDate')}</SortTh>
+                            <SortTh sortKey="supplier">{tBatches('supplier')}</SortTh>
+                          </tr>
+                        </thead>
+                        <SortBody locale={locale}>
+                          {batches.map((batch) => {
+                            const expired =
+                              batch.expiry_date && new Date(batch.expiry_date) < new Date();
+                            return (
+                              <Tr
+                                key={batch.id}
+                                sort={{
+                                  batch: batch.batch_number,
+                                  remaining: Number(batch.quantity_remaining),
+                                  expiry: batch.expiry_date
+                                    ? new Date(batch.expiry_date).getTime()
+                                    : null,
+                                  supplier: batch.supplier?.name ?? null,
+                                }}
                               >
-                                {quantity > 0 ? '+' : ''}
-                                {format.number(quantity)}
-                              </span>
-                            </Td>
-                          </Tr>
-                        );
-                      })}
-                    </SortBody>
-                  </SortableTable>
-                </TableWrapper>
-              )}
-            </CardBody>
-          </Card>
-          </>
+                                <Td>
+                                  <span dir="ltr">{batch.batch_number ?? '—'}</span>
+                                </Td>
+                                <Td>
+                                  <span dir="ltr" className="tabular-nums">
+                                    {format.number(Number(batch.quantity_remaining))} /{' '}
+                                    {format.number(Number(batch.quantity_received))}
+                                  </span>
+                                </Td>
+                                <Td>
+                                  {batch.expiry_date ? (
+                                    <span
+                                      dir="ltr"
+                                      className={
+                                        expired ? 'tabular-nums text-red-600' : 'tabular-nums'
+                                      }
+                                    >
+                                      {format.dateTime(new Date(batch.expiry_date), 'short')}
+                                    </span>
+                                  ) : (
+                                    <span className="text-ink-500">{tBatches('noExpiry')}</span>
+                                  )}
+                                </Td>
+                                <Td>{batch.supplier?.name ?? '—'}</Td>
+                              </Tr>
+                            );
+                          })}
+                        </SortBody>
+                      </SortableTable>
+                    </TableWrapper>
+                  )}
+                </CardBody>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>{tMovements('title')}</CardTitle>
+                </CardHeader>
+                <CardBody className="p-0">
+                  {movements.length === 0 ? (
+                    <p className="px-4 py-6 text-center text-sm text-ink-500">
+                      {tMovements('empty')}
+                    </p>
+                  ) : (
+                    <TableWrapper className="rounded-none border-0">
+                      <SortableTable defaultSortKey="date" defaultSortDirection="desc">
+                        <thead>
+                          <tr>
+                            <SortTh sortKey="date">{tc('date')}</SortTh>
+                            <SortTh sortKey="type">{tMovements('type')}</SortTh>
+                            <SortTh sortKey="quantity">{tc('quantity')}</SortTh>
+                          </tr>
+                        </thead>
+                        <SortBody locale={locale}>
+                          {movements.map((movement) => {
+                            const quantity = Number(movement.quantity);
+                            return (
+                              <Tr
+                                key={movement.id}
+                                sort={{
+                                  date: new Date(movement.created_at).getTime(),
+                                  type: tMovements(`kind.${movement.movement_type}`),
+                                  quantity,
+                                }}
+                              >
+                                <Td>
+                                  <span dir="ltr" className="tabular-nums">
+                                    {format.dateTime(new Date(movement.created_at), 'short')}
+                                  </span>
+                                </Td>
+                                <Td>{tMovements(`kind.${movement.movement_type}`)}</Td>
+                                <Td>
+                                  <span
+                                    dir="ltr"
+                                    className={
+                                      quantity < 0
+                                        ? 'tabular-nums text-red-600'
+                                        : 'tabular-nums text-jade-700'
+                                    }
+                                  >
+                                    {quantity > 0 ? '+' : ''}
+                                    {format.number(quantity)}
+                                  </span>
+                                </Td>
+                              </Tr>
+                            );
+                          })}
+                        </SortBody>
+                      </SortableTable>
+                    </TableWrapper>
+                  )}
+                </CardBody>
+              </Card>
+            </>
           ) : null}
         </div>
       </div>

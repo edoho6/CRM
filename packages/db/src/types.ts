@@ -8,6 +8,7 @@ import type {
   FormulaTcmCategory,
   DispensingStatus,
   DocumentCategory,
+  DoseTiming,
   EncounterStatus,
   FormulaCategory,
   HerbCategory,
@@ -157,10 +158,16 @@ export interface AppointmentType {
   name_he: string;
   name_en: string;
   default_duration_minutes: number;
+  /** What this treatment normally costs. Null means it is not priced. */
+  price: number | null;
   color: string;
+  notes: string | null;
+  /** Null for a type the whole clinic shares. */
+  practitioner_id: string | null;
   sort_order: number;
   is_active: boolean;
   created_at: string;
+  updated_at: string;
 }
 
 export interface Appointment {
@@ -449,7 +456,10 @@ export interface HerbFormulaItem {
 }
 
 export interface HerbFormulaItemWithHerb extends HerbFormulaItem {
-  herb: Pick<Herb, 'id' | 'pinyin_name' | 'chinese_name' | 'english_name' | 'hebrew_name' | 'default_unit'> | null;
+  herb: Pick<
+    Herb,
+    'id' | 'pinyin_name' | 'chinese_name' | 'english_name' | 'hebrew_name' | 'default_unit'
+  > | null;
 }
 
 export interface HerbFormulaWithItems extends HerbFormula {
@@ -532,6 +542,10 @@ export interface DispensingRecord {
   preparation: HerbPreparation | null;
   /** Free text: practitioners write "10 days", "שבועיים ואז נראה". */
   days_supply: string | null;
+  /** How much the patient takes at a time — not how much was dispensed. */
+  dose_amount: number | null;
+  dose_unit: HerbUnit | null;
+  dose_timing: DoseTiming | null;
   total_cost: number | null;
   created_at: string;
 }
@@ -718,8 +732,14 @@ export interface OrderListEntry {
 }
 
 export interface OrderListEntryWithTarget extends OrderListEntry {
-  herb: Pick<Herb, 'id' | 'pinyin_name' | 'chinese_name' | 'english_name' | 'hebrew_name' | 'default_unit'> | null;
-  formula: Pick<HerbFormula, 'id' | 'name_pinyin' | 'name_chinese' | 'name_english' | 'name_hebrew'> | null;
+  herb: Pick<
+    Herb,
+    'id' | 'pinyin_name' | 'chinese_name' | 'english_name' | 'hebrew_name' | 'default_unit'
+  > | null;
+  formula: Pick<
+    HerbFormula,
+    'id' | 'name_pinyin' | 'name_chinese' | 'name_english' | 'name_hebrew'
+  > | null;
   supplier: Pick<Supplier, 'id' | 'name'> | null;
 }
 
@@ -778,4 +798,37 @@ export interface PatientConsentStatus {
   document_id: string | null;
   document_version: number | null;
   document_title: string | null;
+}
+
+/**
+ * Whether a treatment has been billed and paid, from
+ * `encounter_payment_status`. One view so the treatment list, the patient's file
+ * and the treatment itself all answer the question the same way.
+ */
+export interface EncounterPaymentStatus {
+  encounter_id: string;
+  clinic_id: string;
+  patient_id: string;
+  appointment_id: string | null;
+  invoice_id: string | null;
+  invoice_number: number | null;
+  invoice_status: InvoiceStatus | null;
+  total: number | null;
+  amount_paid: number | null;
+  payment_url: string | null;
+  payment_state: 'unbilled' | 'unpaid' | 'partially_paid' | 'paid' | 'cancelled';
+}
+
+/** The same question for a booking, from `appointment_payment_status`. */
+export interface AppointmentPaymentStatus {
+  appointment_id: string;
+  clinic_id: string;
+  patient_id: string;
+  invoice_id: string | null;
+  invoice_number: number | null;
+  invoice_status: InvoiceStatus | null;
+  total: number | null;
+  amount_paid: number | null;
+  payment_url: string | null;
+  payment_state: 'unbilled' | 'unpaid' | 'partially_paid' | 'paid' | 'cancelled';
 }

@@ -202,7 +202,9 @@ export default async function AccessLogPage({
                     </Td>
                     <Td>{row.actor_name || t('unknownActor')}</Td>
                     <Td>
-                      <Badge tone={row.action === 'export' ? 'warning' : isRead ? 'neutral' : 'info'}>
+                      <Badge
+                        tone={row.action === 'export' ? 'warning' : isRead ? 'neutral' : 'info'}
+                      >
                         {t(`actions.${row.action}`)}
                       </Badge>
                     </Td>

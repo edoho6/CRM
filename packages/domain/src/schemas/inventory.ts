@@ -3,6 +3,7 @@ import {
   CHANNELS,
   FORMULA_CATEGORIES,
   FORMULA_TCM_CATEGORIES,
+  DOSE_TIMINGS,
   HERB_CATEGORIES,
   HERB_PREPARATIONS,
   HERB_UNITS,
@@ -11,7 +12,14 @@ import {
   TCM_CATEGORIES,
   TEMPERATURES,
 } from '../enums';
-import { optionalDate, optionalNumber, optionalText, positiveQuantity, requiredText, uuidField } from './common';
+import {
+  optionalDate,
+  optionalNumber,
+  optionalText,
+  positiveQuantity,
+  requiredText,
+  uuidField,
+} from './common';
 
 /** `''` from an unselected <select> becomes null rather than failing the enum. */
 const optionalEnum = <T extends readonly [string, ...string[]]>(values: T) =>
@@ -47,7 +55,8 @@ export const herbFormSchema = z
     is_active: z.boolean().default(true),
   })
   .refine(
-    (value) => Boolean(value.pinyin_name || value.chinese_name || value.english_name || value.hebrew_name),
+    (value) =>
+      Boolean(value.pinyin_name || value.chinese_name || value.english_name || value.hebrew_name),
     { error: 'at_least_one_name_required', path: ['pinyin_name'] },
   );
 
@@ -132,7 +141,12 @@ export const stockAdjustmentSchema = z.object({
   quantity: z
     .union([z.string(), z.number()])
     .transform((v) => (typeof v === 'number' ? v : Number(v)))
-    .pipe(z.number().finite().refine((n) => n !== 0, { error: 'quantity_cannot_be_zero' })),
+    .pipe(
+      z
+        .number()
+        .finite()
+        .refine((n) => n !== 0, { error: 'quantity_cannot_be_zero' }),
+    ),
   notes: optionalText(500),
 });
 
@@ -160,9 +174,21 @@ export const dispenseRequestSchema = z
       .transform((v) => (typeof v === 'number' ? v : Number(v)))
       .pipe(z.number().positive().max(1000))
       .default(1),
-    /** Carried so the panel can send one shape to either function. */
+    /**
+     * Carried so the panel can send one shape to either function. The allocator
+     * ignores these; the action writes them onto the record it creates.
+     */
     preparation: z.enum(HERB_PREPARATIONS).optional(),
     days_supply: optionalText(80),
+    dose_amount: optionalNumber,
+    dose_unit: z
+      .union([z.enum(HERB_UNITS), z.literal(''), z.null()])
+      .transform((v) => (v ? v : null))
+      .optional(),
+    dose_timing: z
+      .union([z.enum(DOSE_TIMINGS), z.literal(''), z.null()])
+      .transform((v) => (v ? v : null))
+      .optional(),
     items: z.array(dispenseItemSchema).default([]),
     notes: optionalText(1000),
   })

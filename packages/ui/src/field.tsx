@@ -22,16 +22,44 @@ export const Input = React.forwardRef<
 Input.displayName = 'Input';
 
 /**
+ * The locale a native date or time control should format itself with.
+ *
+ * These controls choose their format from the page's language, and English gives
+ * a twelve-hour clock with AM/PM. The clinic runs on a 24-hour clock everywhere
+ * — every displayed time already does, through the shared formatter — so the
+ * inputs are told to use a locale that agrees. British English differs from
+ * American on exactly this point and on nothing else that matters here.
+ *
+ * Firefox has always honoured `lang` on these controls and current Chrome does
+ * too. A browser that ignores it falls back to its own locale, which is what
+ * happened before — not fixed, but no worse.
+ */
+export const TIME_INPUT_LANG = 'en-GB';
+
+/**
  * Input for values that are always read left-to-right — phone numbers, ID numbers,
  * emails, times. Without this, digits inside a Hebrew page render in a confusing
  * visual order. This is the single most common RTL bug in clinic software.
+ *
+ * A `time` or `datetime-local` input also gets the 24-hour locale, so the clock
+ * in the picker matches every clock elsewhere in the app.
  */
 export const LtrInput = React.forwardRef<
   HTMLInputElement,
   React.InputHTMLAttributes<HTMLInputElement>
->(({ className, ...props }, ref) => (
-  <input ref={ref} dir="ltr" className={cn(inputClasses, 'h-10 field-ltr', className)} {...props} />
-));
+>(({ className, type, lang, ...props }, ref) => {
+  const isClock = type === 'time' || type === 'datetime-local';
+  return (
+    <input
+      ref={ref}
+      dir="ltr"
+      type={type}
+      lang={lang ?? (isClock ? TIME_INPUT_LANG : undefined)}
+      className={cn(inputClasses, 'h-10 field-ltr', className)}
+      {...props}
+    />
+  );
+});
 LtrInput.displayName = 'LtrInput';
 
 export const Textarea = React.forwardRef<

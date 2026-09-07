@@ -195,7 +195,9 @@ export default async function HerbsPage({
                             <span className="text-base font-semibold text-jade-800">
                               {herbPrimaryName(herb, locale as Locale)}
                             </span>
-                            {chinese ? <span className="text-base text-ink-600">{chinese}</span> : null}
+                            {chinese ? (
+                              <span className="text-base text-ink-600">{chinese}</span>
+                            ) : null}
                           </Link>
                           {herb.needs_review ? (
                             <Badge tone="warning" className="mt-0.5">
@@ -234,7 +236,12 @@ export default async function HerbsPage({
                       )}
                     </Td>
                     <Td>
-                      <TcmChips scale="taste" values={tastes} render={(value) => tTaste(value as never)} size="sm" />
+                      <TcmChips
+                        scale="taste"
+                        values={tastes}
+                        render={(value) => tTaste(value as never)}
+                        size="sm"
+                      />
                     </Td>
                     <Td>
                       {dose ? (

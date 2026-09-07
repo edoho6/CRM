@@ -84,7 +84,10 @@ export default async function AccessibilityPage({
             <ul className="space-y-2">
               {gaps.map((key) => (
                 <li key={key} className="flex items-start gap-2 text-sm text-ink-800">
-                  <span aria-hidden className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-600" />
+                  <span
+                    aria-hidden
+                    className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-600"
+                  />
                   <span>{t(`gaps.${key}`)}</span>
                 </li>
               ))}

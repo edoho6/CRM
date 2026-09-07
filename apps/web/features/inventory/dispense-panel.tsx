@@ -12,6 +12,7 @@ import {
   CardTitle,
   Combobox,
   Field,
+  Input,
   LtrInput,
   Select,
   SortBody,
@@ -26,8 +27,10 @@ import {
   type ComboboxValue,
 } from '@clinic/ui';
 import {
+  DOSE_TIMINGS,
   HERB_PREPARATIONS,
   preparationUnit,
+  type DoseTiming,
   type HerbPreparation,
   type Locale,
 } from '@clinic/domain';
@@ -94,6 +97,8 @@ export function DispensePanel({
   const [preparation, setPreparation] = useState<HerbPreparation>('dried_herb');
   const [totalQuantity, setTotalQuantity] = useState('');
   const [rows, setRows] = useState<HerbRow[]>([{ choice: null, dose: '' }]);
+  const [doseAmount, setDoseAmount] = useState('');
+  const [doseTiming, setDoseTiming] = useState<DoseTiming | ''>('');
   const [notes, setNotes] = useState('');
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<{
@@ -170,6 +175,8 @@ export function DispensePanel({
     setRows([{ choice: null, dose: '' }]);
     setNotes('');
     setTotalQuantity('');
+    setDoseAmount('');
+    setDoseTiming('');
   }
 
   function handleSubmit() {
@@ -184,6 +191,12 @@ export function DispensePanel({
         mode === 'formula' && formulaChoice && !formulaChoice.id ? formulaChoice.label : '',
       preparation,
       days_supply: '',
+      // How the patient takes it, as opposed to how much was dispensed. The
+      // unit is not asked for separately — it follows from the preparation, the
+      // same way it does everywhere else in this panel.
+      dose_amount: doseAmount,
+      dose_unit: unit,
+      dose_timing: doseTiming,
       multiplier: mode === 'formula' ? multiplier : 1,
       items:
         mode === 'herb'
@@ -397,6 +410,54 @@ export function DispensePanel({
               </div>
             )}
 
+            {/* How to take it. Under the list on purpose: it is the last thing
+                decided and the first thing the patient reads, and it applies to
+                the whole prescription rather than to any one line.
+
+                It was previously written into the free-text note, where it
+                cannot be read back, cannot be printed onto a label, and cannot
+                be carried into the next prescription. */}
+            <div className="rounded-lg border border-ink-200 bg-ink-50/60 p-3">
+              <h4 className="mb-2 text-sm font-medium text-ink-800">{t('doseTitle')}</h4>
+              <div className="grid gap-3 sm:grid-cols-3">
+                <Field
+                  label={`${t('doseAmount')} · ${tUnit(unit)}`}
+                  htmlFor="dose_amount"
+                  density="compact"
+                >
+                  <LtrInput
+                    id="dose_amount"
+                    type="number"
+                    min={0}
+                    step="0.1"
+                    value={doseAmount}
+                    onChange={(event) => setDoseAmount(event.target.value)}
+                  />
+                </Field>
+
+                <Field label={tPrep('label')} htmlFor="dose_unit_display" density="compact">
+                  {/* Shown, not chosen: the unit follows the preparation above,
+                      and a second menu could only ever disagree with it. */}
+                  <Input id="dose_unit_display" value={tPrep(preparation)} readOnly disabled />
+                </Field>
+
+                <Field label={t('doseTiming')} htmlFor="dose_timing" density="compact">
+                  <Select
+                    id="dose_timing"
+                    value={doseTiming}
+                    onChange={(event) => setDoseTiming(event.target.value as DoseTiming | '')}
+                  >
+                    <option value="">—</option>
+                    {DOSE_TIMINGS.map((option) => (
+                      <option key={option} value={option}>
+                        {t(`timing.${option}`)}
+                      </option>
+                    ))}
+                  </Select>
+                </Field>
+              </div>
+            </div>
+
             <Field label={tc('notes')} htmlFor="dispense_notes">
               {/* A textarea rather than a single line, and resizable: dosing
                   instructions run to a sentence or two more often than not. */}
@@ -498,6 +559,18 @@ export function DispensePanel({
                       </SortBody>
                     </SortableTable>
                   </TableWrapper>
+                  {record.dose_amount || record.dose_timing ? (
+                    <p className="mt-1 text-xs text-ink-700">
+                      {[
+                        record.dose_amount
+                          ? `${format.number(Number(record.dose_amount))} ${tUnit(record.dose_unit ?? 'gram')}`
+                          : null,
+                        record.dose_timing ? t(`timing.${record.dose_timing}`) : null,
+                      ]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </p>
+                  ) : null}
                   {record.notes ? (
                     <p className="mt-1 text-xs whitespace-pre-wrap text-ink-600">{record.notes}</p>
                   ) : null}

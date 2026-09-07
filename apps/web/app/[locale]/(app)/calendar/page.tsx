@@ -76,7 +76,9 @@ export default async function CalendarPage({
       const end = rangeTo ? fromDateKey(rangeTo) : addDays(anchor, 7);
       // A backwards range would produce an empty query rather than an empty
       // view; clamping keeps the panel explicable.
-      return end >= start ? [addDays(start, -1), addDays(end, 2)] : [addDays(start, -1), addDays(start, 2)];
+      return end >= start
+        ? [addDays(start, -1), addDays(end, 2)]
+        : [addDays(start, -1), addDays(start, 2)];
     }
     return [addDays(startOfWeek(anchor), -1), addDays(startOfWeek(anchor), 8)];
   })();
@@ -99,11 +101,11 @@ export default async function CalendarPage({
       .returns<AppointmentType[]>(),
     scope.supabase
       .from('patients')
-      .select('id, full_name')
+      .select('id, full_name, phone')
       .eq('is_active', true)
       .order('last_name', { ascending: true })
       .limit(1000)
-      .returns<Pick<Patient, 'id' | 'full_name'>[]>(),
+      .returns<Pick<Patient, 'id' | 'full_name' | 'phone'>[]>(),
   ]);
 
   return (

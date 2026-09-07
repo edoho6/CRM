@@ -6,7 +6,9 @@ export const appointmentFormSchema = z
   .object({
     patient_id: uuidField,
     practitioner_id: uuidField,
-    appointment_type_id: z.union([uuidField, z.literal(''), z.null()]).transform((v) => (v ? v : null)),
+    appointment_type_id: z
+      .union([uuidField, z.literal(''), z.null()])
+      .transform((v) => (v ? v : null)),
     /** ISO 8601 instant, e.g. `2026-09-06T09:30:00.000Z`. */
     start_at: z.string().min(1),
     end_at: z.string().min(1),

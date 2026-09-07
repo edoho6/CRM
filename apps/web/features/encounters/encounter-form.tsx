@@ -521,7 +521,13 @@ export function EncounterForm({
           because of it. */}
       <div className="space-y-4">
         {examinationCard}
-        {dispensePanel}
+        {/* The wrapper is not decoration. `dispensePanel` is an element built by
+            the page and handed in as a prop, so putting it straight into this
+            list makes React validate a child it did not create and ask for a key
+            it cannot have. Giving it a parent of its own makes it a single child
+            rather than an entry in an array, which is the condition the warning
+            is actually about. */}
+        <div>{dispensePanel}</div>
       </div>
     </div>
   );

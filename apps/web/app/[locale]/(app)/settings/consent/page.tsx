@@ -68,7 +68,10 @@ export default async function ConsentDocumentsPage({
                 ) : (
                   <ul className="divide-y divide-ink-100 text-sm">
                     {versions.map((doc) => (
-                      <li key={doc.id} className="flex flex-wrap items-baseline gap-x-2 gap-y-1 py-2">
+                      <li
+                        key={doc.id}
+                        className="flex flex-wrap items-baseline gap-x-2 gap-y-1 py-2"
+                      >
                         <Badge tone="neutral">{t('version', { version: doc.version })}</Badge>
                         <span className="font-medium text-ink-900">{doc.title}</span>
                         <span className="text-xs text-ink-600">{doc.locale.toUpperCase()}</span>

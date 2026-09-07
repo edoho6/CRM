@@ -134,9 +134,22 @@ export function placementSide(placement: PointPlacement): 'left' | 'right' | nul
 export const HERB_PREPARATIONS = ['dried_herb', 'powder', 'tincture'] as const;
 export type HerbPreparation = (typeof HERB_PREPARATIONS)[number];
 
-export function preparationUnit(preparation: HerbPreparation | null | undefined): 'gram' | 'milliliter' {
+export function preparationUnit(
+  preparation: HerbPreparation | null | undefined,
+): 'gram' | 'milliliter' {
   return preparation === 'tincture' ? 'milliliter' : 'gram';
 }
+
+/**
+ * When to take a dose, relative to eating.
+ *
+ * The four a Chinese-medicine prescription actually uses. It matters clinically
+ * — a formula that harmonises the middle burner is taken with food, one that
+ * tonifies is taken away from it — so it belongs in a field rather than in the
+ * free-text note where it cannot be read back or printed on a label.
+ */
+export const DOSE_TIMINGS = ['before_meal', 'after_meal', 'with_meal', 'empty_stomach'] as const;
+export type DoseTiming = (typeof DOSE_TIMINGS)[number];
 
 /**
  * The status of a patient file — one question, not two.

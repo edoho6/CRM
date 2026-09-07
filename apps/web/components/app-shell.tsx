@@ -16,6 +16,7 @@ import {
   Menu,
   Receipt,
   Settings,
+  UserCog,
   Users,
   X,
 } from 'lucide-react';
@@ -194,6 +195,17 @@ export function AppShell({
         <div
           className={cn('shrink-0 space-y-2 border-t border-ink-100', collapsed ? 'p-2' : 'p-3')}
         >
+          <Button
+            asChild
+            variant="ghost"
+            size="sm"
+            className={cn('w-full', collapsed ? 'justify-center px-0' : 'justify-start')}
+          >
+            <Link href="/account" title={collapsed ? t('account') : undefined}>
+              <UserCog className="h-4 w-4" />
+              {!collapsed ? t('account') : <span className="sr-only">{t('account')}</span>}
+            </Link>
+          </Button>
           <Button
             asChild
             variant="ghost"

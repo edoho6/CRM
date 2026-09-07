@@ -9,13 +9,11 @@ import { z } from 'zod';
  */
 
 export const optionalText = (max = 500) =>
-  z
-    .union([z.string().max(max), z.null(), z.undefined()])
-    .transform((value) => {
-      if (value === null || value === undefined) return null;
-      const trimmed = value.trim();
-      return trimmed === '' ? null : trimmed;
-    });
+  z.union([z.string().max(max), z.null(), z.undefined()]).transform((value) => {
+    if (value === null || value === undefined) return null;
+    const trimmed = value.trim();
+    return trimmed === '' ? null : trimmed;
+  });
 
 export const requiredText = (max = 255, min = 1) =>
   z

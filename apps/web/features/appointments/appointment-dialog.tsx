@@ -13,7 +13,10 @@ import {
   FieldGrid,
   Input,
   LtrInput,
+  Combobox,
   Select,
+  type ComboboxOption,
+  type ComboboxValue,
   Spinner,
   Textarea,
 } from '@clinic/ui';
@@ -53,7 +56,7 @@ export function AppointmentDialog({
 }: {
   open: boolean;
   draft: AppointmentDraft | null;
-  patients: Pick<Patient, 'id' | 'full_name'>[];
+  patients: Pick<Patient, 'id' | 'full_name' | 'phone'>[];
   appointmentTypes: AppointmentType[];
   practitionerId: string;
   onOpenChange: (open: boolean) => void;
@@ -66,7 +69,20 @@ export function AppointmentDialog({
   const [isPending, startTransition] = useTransition();
   const [errorKey, setErrorKey] = useState<string | null>(null);
 
-  const [patientId, setPatientId] = useState('');
+  const [patientChoice, setPatientChoice] = useState<ComboboxValue | null>(null);
+  const patientId = patientChoice?.id ?? '';
+
+  const patientOptions: ComboboxOption[] = useMemo(
+    () =>
+      patients.map((patient) => ({
+        id: patient.id,
+        label: patient.full_name,
+        // Two patients can share a name; the phone number is what tells them
+        // apart at the desk, so it is searchable even though it is not shown.
+        keywords: patient.phone ?? undefined,
+      })),
+    [patients],
+  );
   const [typeId, setTypeId] = useState('');
   const [start, setStart] = useState('');
   const [end, setEnd] = useState('');
@@ -78,7 +94,14 @@ export function AppointmentDialog({
 
   useEffect(() => {
     if (!draft) return;
-    setPatientId(draft.patientId ?? '');
+    setPatientChoice(
+      draft.patientId
+        ? {
+            id: draft.patientId,
+            label: patients.find((p) => p.id === draft.patientId)?.full_name ?? '',
+          }
+        : null,
+    );
     setTypeId(draft.typeId ?? '');
     setStart(toDateTimeLocalValue(draft.start));
     setEnd(toDateTimeLocalValue(draft.end));
@@ -192,20 +215,20 @@ export function AppointmentDialog({
         <form onSubmit={handleSubmit} className="space-y-4">
           {errorKey ? <Alert tone="danger">{renderError()}</Alert> : null}
 
+          {/* Typed, not scrolled. A practice of any age has hundreds of files
+              and a dropdown of them cannot be searched — you know the name, and
+              the list is the thing standing between you and it. Only real
+              patients here: a booking has to point at a file that exists, so
+              free text is deliberately not allowed. */}
           <Field label={t('patient')} htmlFor="patient_id" required>
-            <Select
+            <Combobox
               id="patient_id"
-              value={patientId}
-              onChange={(event) => setPatientId(event.target.value)}
-              required
-            >
-              <option value="">{t('selectPatient')}</option>
-              {patients.map((patient) => (
-                <option key={patient.id} value={patient.id}>
-                  {patient.full_name}
-                </option>
-              ))}
-            </Select>
+              label={t('patient')}
+              placeholder={t('searchPatient')}
+              options={patientOptions}
+              value={patientChoice}
+              onChange={(choice) => setPatientChoice(choice)}
+            />
           </Field>
 
           <FieldGrid>

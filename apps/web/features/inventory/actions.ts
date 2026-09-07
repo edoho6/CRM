@@ -191,13 +191,39 @@ export async function dispenseHerbs(input: unknown): Promise<ActionResult<{ id: 
     p_formula_id: parsed.data.formula_id,
     p_items: parsed.data.items,
     p_multiplier: parsed.data.multiplier,
-    // The allocator does not take a preparation or a duration; they are part of
-    // the record rather than of the deduction, and are written by the recorder.
+    // The allocator takes only what it needs to deduct stock. The preparation
+    // and the dosing instruction describe the prescription rather than the
+    // deduction, and are written straight onto the record afterwards.
     p_notes: parsed.data.notes,
   });
 
   if (error) return actionError(error);
-  return actionOk({ id: data as string });
+
+  const recordId = data as string;
+
+  /*
+   * The preparation and the dosing instruction describe the prescription, not
+   * the deduction, so the allocator does not take them — it is concerned only
+   * with which batches to draw from and whether there is enough.
+   *
+   * Written straight onto the record it just created. A failure here is not
+   * worth unwinding a successful stock movement over: the herbs did leave the
+   * jar, and reporting that as a failure would be the larger lie. The write is
+   * simple enough that the only realistic cause is the connection dropping
+   * between two statements.
+   */
+  const { error: detailError } = await scope.supabase
+    .from('dispensing_records')
+    .update({
+      preparation: parsed.data.preparation ?? null,
+      dose_amount: parsed.data.dose_amount,
+      dose_unit: parsed.data.dose_unit ?? null,
+      dose_timing: parsed.data.dose_timing ?? null,
+    })
+    .eq('id', recordId);
+
+  if (detailError) return actionError(detailError);
+  return actionOk({ id: recordId });
 }
 
 /**
@@ -224,6 +250,9 @@ export async function recordPrescription(input: unknown): Promise<ActionResult<{
     p_preparation: parsed.data.preparation ?? null,
     p_days_supply: parsed.data.days_supply,
     p_custom_formula: parsed.data.custom_formula,
+    p_dose_amount: parsed.data.dose_amount,
+    p_dose_unit: parsed.data.dose_unit ?? null,
+    p_dose_timing: parsed.data.dose_timing ?? null,
   });
 
   if (error) return actionError(error);

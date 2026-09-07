@@ -74,6 +74,8 @@ export interface WidgetDefinition<TConfig = unknown> {
 export type AnyWidgetDefinition = WidgetDefinition<any>;
 
 /** Identity helper that preserves the config generic when declaring a widget. */
-export function defineWidget<TConfig>(definition: WidgetDefinition<TConfig>): WidgetDefinition<TConfig> {
+export function defineWidget<TConfig>(
+  definition: WidgetDefinition<TConfig>,
+): WidgetDefinition<TConfig> {
   return definition;
 }

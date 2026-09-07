@@ -11,7 +11,7 @@ import {
   Tr,
 } from '@clinic/ui';
 import { Link } from '@clinic/i18n/navigation';
-import { TREATMENT_STATUSES } from '@clinic/domain';
+import { TREATMENT_STATUSES, type TreatmentStatus } from '@clinic/domain';
 import type { Patient } from '@clinic/db/types';
 import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
@@ -19,6 +19,7 @@ import { ageFromDateOfBirth } from '@/lib/display';
 import { PatientSearch } from '@/features/patients/patient-search';
 import { TreatmentStatusFilter } from '@/features/patients/treatment-status-filter';
 import { PatientStatusCell } from '@/features/patients/status-cell';
+import { PatientStatusSummary, type StatusCounts } from '@/features/patients/status-summary';
 
 export default async function PatientsPage({
   params,
@@ -66,6 +67,43 @@ export default async function PatientsPage({
   const { data } = await query.returns<Patient[]>();
   const patients = data ?? [];
 
+  /*
+   * The counts are of the whole practice, not of the rows on screen.
+   *
+   * One query returning just the status column, counted here. Aggregating in the
+   * database would be tidier, but PostgREST has no GROUP BY and adding an RPC
+   * for a tally of a few thousand short strings is more machinery than the
+   * problem deserves — and a count over the loaded page would be wrong in a way
+   * nobody would notice until they filtered.
+   */
+  const { data: statusRows } = await scope.supabase
+    .from('patients')
+    .select('treatment_status')
+    .limit(20_000)
+    .returns<{ treatment_status: TreatmentStatus | null }[]>();
+
+  const byStatus = Object.fromEntries(TREATMENT_STATUSES.map((value) => [value, 0])) as Record<
+    TreatmentStatus,
+    number
+  >;
+
+  for (const row of statusRows ?? []) {
+    const value = row.treatment_status ?? 'active';
+    if (value in byStatus) byStatus[value] += 1;
+  }
+
+  const total = statusRows?.length ?? 0;
+  // Only "in treatment" counts as active — finishing a course, successfully or
+  // not, is not being in treatment.
+  const activeCount = byStatus.active;
+
+  const counts: StatusCounts = {
+    byStatus,
+    active: activeCount,
+    inactive: total - activeCount,
+    total,
+  };
+
   return (
     <>
       <PageHeader
@@ -81,7 +119,8 @@ export default async function PatientsPage({
         }
       />
 
-      <div className="mb-4 space-y-2">
+      <div className="mb-4 space-y-3">
+        <PatientStatusSummary counts={counts} />
         <PatientSearch initialQuery={q} showInactive={inactive === '1'} />
         <TreatmentStatusFilter />
       </div>

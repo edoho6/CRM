@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { useFormatter, useLocale, useTranslations } from 'next-intl';
 import { CalendarPlus, ChevronLeft, ChevronRight } from 'lucide-react';
-import { Button, cn } from '@clinic/ui';
+import { Button, cn, TIME_INPUT_LANG } from '@clinic/ui';
 import type { Locale } from '@clinic/domain';
 import { usePathname, useRouter } from '@clinic/i18n/navigation';
 import type { AppointmentType, AppointmentWithRelations, Patient } from '@clinic/db/types';
@@ -128,7 +128,7 @@ export function CalendarView({
   openNewOnLoad,
 }: {
   appointments: AppointmentWithRelations[];
-  patients: Pick<Patient, 'id' | 'full_name'>[];
+  patients: Pick<Patient, 'id' | 'full_name' | 'phone'>[];
   appointmentTypes: AppointmentType[];
   practitionerId: string;
   anchorDate: string;
@@ -305,6 +305,7 @@ export function CalendarView({
             <div className="flex flex-wrap items-center gap-1.5">
               <input
                 type="date"
+                lang={TIME_INPUT_LANG}
                 dir="ltr"
                 aria-label={tFilters('from')}
                 value={rangeFrom ?? ''}
@@ -315,6 +316,7 @@ export function CalendarView({
               <span className="text-sm text-ink-600">–</span>
               <input
                 type="date"
+                lang={TIME_INPUT_LANG}
                 dir="ltr"
                 aria-label={tFilters('to')}
                 value={rangeTo ?? ''}

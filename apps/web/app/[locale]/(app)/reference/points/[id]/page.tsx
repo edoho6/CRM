@@ -1,15 +1,7 @@
 import { notFound } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { AlertTriangle, ClipboardList } from 'lucide-react';
-import {
-  Badge,
-  Button,
-  Card,
-  CardBody,
-  CardHeader,
-  CardTitle,
-  DetailRow,
-} from '@clinic/ui';
+import { Badge, Button, Card, CardBody, CardHeader, CardTitle, DetailRow } from '@clinic/ui';
 import { Link } from '@clinic/i18n/navigation';
 import type { AcupuncturePoint } from '@clinic/db/types';
 import { PageHeader } from '@/components/app-shell';
@@ -68,7 +60,8 @@ export default async function PointDetailPage({
   const channelPoints = neighbours.data ?? [];
   const position = channelPoints.findIndex((entry) => entry.id === point.id);
   const previous = position > 0 ? channelPoints[position - 1] : null;
-  const next = position >= 0 && position < channelPoints.length - 1 ? channelPoints[position + 1] : null;
+  const next =
+    position >= 0 && position < channelPoints.length - 1 ? channelPoints[position + 1] : null;
 
   const mapped: MappedPoint[] =
     point.x !== null && point.y !== null

@@ -79,7 +79,7 @@ export function Combobox({
   allowCustom = false,
   disabled = false,
   id,
-  limit = 10,
+  limit = 200,
   className,
   emptyCustomHint,
 }: {
@@ -92,6 +92,11 @@ export function Combobox({
   allowCustom?: boolean;
   disabled?: boolean;
   id?: string;
+  /**
+   * How many matches to keep. Generous on purpose: the list scrolls, and
+   * truncating it silently means an empty search stops at whatever herb happens
+   * to be tenth alphabetically with no sign that there is more.
+   */
   limit?: number;
   className?: string;
   /** Shown under the list when nothing matched and free text is allowed. */
@@ -153,6 +158,9 @@ export function Combobox({
     // Re-measure whenever the result count changes, so narrowing a search
     // re-seats the list under the field instead of leaving it at its old size.
     revision: matches.length + (showCustomHint ? 1 : 0),
+    // Tall enough to scan, short enough not to cover the form behind it. The
+    // list scrolls past this; it does not stop at it.
+    maxHeight: 320,
   });
 
   return (

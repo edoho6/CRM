@@ -252,7 +252,9 @@ export default async function FormulaDetailPage({
                               order: index,
                               name: herb ? herbPrimaryName(herb, locale as Locale) : '',
                               cat: herb?.tcm_category ? tTcm(herb.tcm_category) : null,
-                              temp: herb?.temperature ? TEMPERATURES.indexOf(herb.temperature) : null,
+                              temp: herb?.temperature
+                                ? TEMPERATURES.indexOf(herb.temperature)
+                                : null,
                               dose: Number(item.dosage),
                             }}
                           >
@@ -272,7 +274,9 @@ export default async function FormulaDetailPage({
                                     <span className="font-semibold text-jade-800">
                                       {herbPrimaryName(herb, locale as Locale)}
                                     </span>
-                                    {herbChinese ? <span className="text-ink-600">{herbChinese}</span> : null}
+                                    {herbChinese ? (
+                                      <span className="text-ink-600">{herbChinese}</span>
+                                    ) : null}
                                   </Link>
                                   {botanical ? (
                                     <span className="block text-xs text-ink-500 italic" dir="ltr">
@@ -314,7 +318,10 @@ export default async function FormulaDetailPage({
                               </span>
                             </Td>
                             <Td>
-                              <span dir="ltr" className="text-base font-semibold tabular-nums text-ink-900">
+                              <span
+                                dir="ltr"
+                                className="text-base font-semibold tabular-nums text-ink-900"
+                              >
                                 {format.number(Number(item.dosage))}
                               </span>
                               <span className="ms-1 text-xs text-ink-500">{tUnit(item.unit)}</span>

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { CalendarRange } from 'lucide-react';
-import { cn } from '@clinic/ui';
+import { cn, TIME_INPUT_LANG } from '@clinic/ui';
 import { usePathname, useRouter } from '@clinic/i18n/navigation';
 import { useSearchParams } from 'next/navigation';
 import { RANGE_PRESETS, type RangePreset } from '@/lib/date-range';
@@ -103,6 +103,7 @@ export function DateRangeFilter({ className }: { className?: string }) {
               and the native picker lays its fields out that way regardless. */}
           <input
             type="date"
+            lang={TIME_INPUT_LANG}
             dir="ltr"
             aria-label={t('from')}
             value={from}
@@ -113,6 +114,7 @@ export function DateRangeFilter({ className }: { className?: string }) {
           <span className="text-xs text-ink-600">–</span>
           <input
             type="date"
+            lang={TIME_INPUT_LANG}
             dir="ltr"
             aria-label={t('to')}
             value={to}

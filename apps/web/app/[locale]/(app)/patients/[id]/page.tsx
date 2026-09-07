@@ -19,6 +19,7 @@ import {
 import { Link } from '@clinic/i18n/navigation';
 import type {
   Appointment,
+  AppointmentPaymentStatus,
   AppointmentType,
   ConsentDocument,
   Encounter,
@@ -31,6 +32,8 @@ import type {
 import type { Locale } from '@clinic/domain';
 import { PageHeader } from '@/components/app-shell';
 import { PhoneActions } from '@/components/phone-actions';
+import { PaymentAction } from '@/features/billing/payment-status';
+import { toPaymentSummary } from '@/features/billing/payment-summary';
 import { getClinicScope } from '@/lib/session';
 import { logRecordAccess } from '@/lib/access-log';
 import { ageFromDateOfBirth, appointmentTypeName, patientStatusTone } from '@/lib/display';
@@ -56,6 +59,7 @@ export default async function PatientDetailPage({
   const tc = await getTranslations('common');
   const tEnc = await getTranslations('encounters');
   const tApp = await getTranslations('appointments');
+  const tBilling = await getTranslations('billing');
   const format = await getFormatter();
 
   const scope = await getClinicScope();
@@ -129,6 +133,31 @@ export default async function PatientDetailPage({
       .order('version', { ascending: false })
       .returns<ConsentDocument[]>(),
   ]);
+
+  /*
+   * Whether each booking has been paid for.
+   *
+   * The view counts an invoice raised against the treatment that came out of the
+   * appointment, not only one raised against the booking itself — the visit is
+   * what was paid for, and which of the two rows it was attached to is an
+   * internal detail.
+   */
+  const [paymentResult, billingSettingsResult] = await Promise.all([
+    scope.supabase
+      .from('appointment_payment_status')
+      .select('*')
+      .eq('patient_id', id)
+      .returns<AppointmentPaymentStatus[]>(),
+    scope.supabase
+      .from('clinic_payment_settings')
+      .select('is_active')
+      .maybeSingle<{ is_active: boolean }>(),
+  ]);
+
+  const appointmentPayments = new Map(
+    (paymentResult.data ?? []).map((row) => [row.appointment_id, row]),
+  );
+  const canBill = billingSettingsResult.data?.is_active === true;
 
   const history = historyResult.data ?? null;
   const encounters = encountersResult.data ?? [];
@@ -255,6 +284,7 @@ export default async function PatientDetailPage({
               <SortTh sortKey="date">{tc('date')}</SortTh>
               <SortTh sortKey="type">{tApp('type')}</SortTh>
               <SortTh sortKey="status">{tc('status')}</SortTh>
+              <SortTh sortKey="payment">{tBilling('title')}</SortTh>
             </tr>
           </thead>
           <SortBody locale={locale}>
@@ -265,6 +295,7 @@ export default async function PatientDetailPage({
                   date: new Date(appointment.start_at).getTime(),
                   type: appointmentTypeName(appointment.appointment_type, locale as Locale),
                   status: tApp(`status.${appointment.status}`),
+                  payment: appointmentPayments.get(appointment.id)?.payment_state ?? 'unbilled',
                 }}
               >
                 <Td>
@@ -272,11 +303,19 @@ export default async function PatientDetailPage({
                     {format.dateTime(new Date(appointment.start_at), 'dateTime')}
                   </span>
                 </Td>
-                <Td>{appointmentTypeName(appointment.appointment_type, locale as Locale) || '—'}</Td>
+                <Td>
+                  {appointmentTypeName(appointment.appointment_type, locale as Locale) || '—'}
+                </Td>
                 <Td>
                   <Badge tone={appointment.status === 'cancelled' ? 'danger' : 'neutral'}>
                     {tApp(`status.${appointment.status}`)}
                   </Badge>
+                </Td>
+                <Td>
+                  <PaymentAction
+                    summary={toPaymentSummary(appointmentPayments.get(appointment.id))}
+                    canBill={canBill}
+                  />
                 </Td>
               </Tr>
             ))}

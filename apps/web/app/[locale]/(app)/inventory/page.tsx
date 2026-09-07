@@ -151,7 +151,9 @@ export default async function StockRoomPage({
   }
 
   const listedHerbs = new Set(
-    orders.filter((entry) => entry.status !== 'received' && entry.herb_id).map((entry) => entry.herb_id!),
+    orders
+      .filter((entry) => entry.status !== 'received' && entry.herb_id)
+      .map((entry) => entry.herb_id!),
   );
   const listedFormulas = new Set(
     orders
@@ -323,7 +325,9 @@ export default async function StockRoomPage({
                             name: herbPrimaryName(level, locale as Locale),
                             stock: remaining,
                             threshold:
-                              level.reorder_threshold === null ? null : Number(level.reorder_threshold),
+                              level.reorder_threshold === null
+                                ? null
+                                : Number(level.reorder_threshold),
                             expiry: level.nearest_expiry
                               ? new Date(level.nearest_expiry).getTime()
                               : null,
@@ -356,7 +360,10 @@ export default async function StockRoomPage({
                             ) : (
                               <span className="flex flex-col gap-0.5">
                                 {prepared.map((row) => (
-                                  <span key={row.preparation} className="flex items-baseline gap-1.5">
+                                  <span
+                                    key={row.preparation}
+                                    className="flex items-baseline gap-1.5"
+                                  >
                                     <span
                                       dir="ltr"
                                       className={
@@ -400,19 +407,27 @@ export default async function StockRoomPage({
                                 herbId={level.herb_id}
                                 herbName={herbPrimaryName(level, locale as Locale)}
                                 threshold={
-                                  level.reorder_threshold === null ? null : Number(level.reorder_threshold)
+                                  level.reorder_threshold === null
+                                    ? null
+                                    : Number(level.reorder_threshold)
                                 }
                                 reorderQuantity={
-                                  level.reorder_quantity === null ? null : Number(level.reorder_quantity)
+                                  level.reorder_quantity === null
+                                    ? null
+                                    : Number(level.reorder_quantity)
                                 }
                                 batches={batchesByHerb.get(level.herb_id) ?? []}
                               />
                               <OrderDialog
                                 herbId={level.herb_id}
                                 suggestedQuantity={
-                                  level.reorder_quantity === null ? null : Number(level.reorder_quantity)
+                                  level.reorder_quantity === null
+                                    ? null
+                                    : Number(level.reorder_quantity)
                                 }
-                                listedPreparations={listedPreparationsByHerb.get(level.herb_id) ?? []}
+                                listedPreparations={
+                                  listedPreparationsByHerb.get(level.herb_id) ?? []
+                                }
                               />
                             </span>
                           </Td>
@@ -526,9 +541,7 @@ export default async function StockRoomPage({
         </div>
       )}
 
-      {tab !== 'to_order' ? (
-        <p className="mt-4 text-xs text-ink-500">{t('scopeNote')}</p>
-      ) : null}
+      {tab !== 'to_order' ? <p className="mt-4 text-xs text-ink-500">{t('scopeNote')}</p> : null}
     </>
   );
 }

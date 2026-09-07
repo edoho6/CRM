@@ -79,7 +79,8 @@
     "accessibility": "Accessibility statement",
     "syntheticBanner": "Development environment — every patient here is fictional. No real data is held here, and none should be entered.",
     "collapseSidebar": "Collapse menu",
-    "expandSidebar": "Expand menu"
+    "expandSidebar": "Expand menu",
+    "account": "My area"
   },
   "auth": {
     "signInTitle": "Sign in",
@@ -280,7 +281,11 @@
     },
     "allStatuses": "All statuses",
     "treatmentStatusHint": "Only \"in treatment\" keeps the file in the working list.",
-    "statusSaveFailed": "Not saved"
+    "statusSaveFailed": "Not saved",
+    "kpi": {
+      "notActive": "Not in treatment",
+      "total": "All patients"
+    }
   },
   "appointments": {
     "title": "Calendar",
@@ -333,7 +338,8 @@
     },
     "noneInRange": "No appointments in this range",
     "moreInDay": "{count} more",
-    "countInView": "{count, plural, =0 {No appointments} one {1 appointment} other {# appointments}}"
+    "countInView": "{count, plural, =0 {No appointments} one {1 appointment} other {# appointments}}",
+    "searchPatient": "Search for a patient by name"
   },
   "encounters": {
     "title": "Treatments",
@@ -493,7 +499,17 @@
         "paid": "Paid",
         "failed": "Failed",
         "refunded": "Refunded"
-      }
+      },
+      "state": {
+        "unbilled": "Not billed",
+        "unpaid": "Unpaid",
+        "partially_paid": "Part paid",
+        "paid": "Paid",
+        "cancelled": "Cancelled"
+      },
+      "bill": "Raise invoice",
+      "pay": "Take payment",
+      "viewInvoice": "Invoice"
     },
     "cancel": "Cancel invoice",
     "cancelConfirm": "Cancel this invoice? It cannot be restored.",
@@ -515,7 +531,13 @@
       "saved": "Settings saved",
       "webhookTitle": "Notification URL (webhook)",
       "webhookBody": "Grow calls this address after each payment, so it must be reachable from the internet. While running locally it is not, which means payment updates only arrive once the app is deployed."
-    }
+    },
+    "providers": {
+      "grow": "Grow",
+      "sumit": "SUMIT",
+      "easycount": "EasyCount"
+    },
+    "providerNotReady": "This provider is not wired up yet — payments cannot be taken through it."
   },
   "quickBar": {
     "create": "Quick create",
@@ -759,7 +781,16 @@
       "totalQuantityHint": "Give a total and the numbers beside each herb are read as relative parts; the actual weights are worked out from them.",
       "parts": "Parts",
       "doseAsParts": "numbers = parts",
-      "doseAsGrams": "numbers = {unit}"
+      "doseAsGrams": "numbers = {unit}",
+      "doseTitle": "How to take it",
+      "doseAmount": "Amount per dose",
+      "doseTiming": "When",
+      "timing": {
+        "before_meal": "Before food",
+        "after_meal": "After food",
+        "with_meal": "With food",
+        "empty_stomach": "On an empty stomach"
+      }
     },
     "tcmCategory": {
       "release_exterior_warm": "Release the exterior — warm, acrid",
@@ -983,7 +1014,8 @@
       "general": "General",
       "access": "Access log",
       "billing": "Billing",
-      "consent": "Consent documents"
+      "consent": "Consent documents",
+      "account": "My area"
     },
     "access": {
       "title": "Access log",
@@ -1026,6 +1058,20 @@
           "after_hours": "{count, plural, one {1 read} other {# reads}} overnight"
         }
       }
+    },
+    "appointmentTypes": {
+      "title": "Treatment types",
+      "subtitle": "Every treatment you offer — its length, its price and its colour in the diary. These are the fields the calendar and the invoice are built from.",
+      "nameHe": "Name in Hebrew",
+      "nameEn": "Name in English",
+      "duration": "Length (minutes)",
+      "price": "Price",
+      "priceHint": "Can be left empty — the invoice line is editable anyway.",
+      "colour": "Colour in the diary",
+      "active": "Offered when booking",
+      "add": "Add a treatment type",
+      "deleteConfirm": "Delete this treatment type?",
+      "inUse": "This type is attached to existing bookings, so it was hidden from the picker rather than deleted — past appointments keep their label."
     }
   },
   "reference": {
@@ -1228,5 +1274,16 @@
     "to": "To",
     "clear": "Clear",
     "noneInRange": "Nothing in this range"
+  },
+  "account": {
+    "title": "My area",
+    "subtitle": "The settings each practitioner chooses for themself — how the interface looks, and the treatments they offer.",
+    "appearance": "Appearance",
+    "theme": "Colour theme",
+    "themeHint": "Saved in this browser only; it will not follow you to another device.",
+    "language": "Interface language",
+    "languageHint": "Switches immediately and keeps you on the same page.",
+    "payments": "Payments",
+    "paymentsBody": "The payment provider belongs to the practice rather than to one practitioner, so it is configured under Settings → Payments."
   }
 }

@@ -3,6 +3,7 @@ import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/serve
 import { Badge, Card, CardBody, CardHeader, CardTitle } from '@clinic/ui';
 import { Link } from '@clinic/i18n/navigation';
 import type {
+  EncounterPaymentStatus,
   AcupuncturePoint,
   DispensingRecordWithItems,
   Encounter,
@@ -16,7 +17,8 @@ import { getClinicScope } from '@/lib/session';
 import { logRecordAccess } from '@/lib/access-log';
 import { EncounterForm } from '@/features/encounters/encounter-form';
 import { DispensePanel } from '@/features/inventory/dispense-panel';
-import { CreateInvoiceButton } from '@/features/billing/create-invoice-button';
+import { PaymentAction } from '@/features/billing/payment-status';
+import { toPaymentSummary } from '@/features/billing/payment-summary';
 
 const FORMULA_SELECT =
   '*, items:herb_formula_items(*, herb:herbs(id, pinyin_name, chinese_name, english_name, hebrew_name, default_unit))';
@@ -67,11 +69,7 @@ export default async function EncounterPage({
 
   const [noteResult, patientResult, dispensingResult, formulasResult, herbsResult, pointsResult] =
     await Promise.all([
-      scope.supabase
-        .from('tcm_notes')
-        .select('*')
-        .eq('encounter_id', id)
-        .maybeSingle<TcmNote>(),
+      scope.supabase.from('tcm_notes').select('*').eq('encounter_id', id).maybeSingle<TcmNote>(),
       scope.supabase
         .from('patients')
         .select('*')
@@ -111,6 +109,22 @@ export default async function EncounterPage({
   // Opening a treatment record is reading a patient's clinical notes, and is
   // recorded as such.
   await logRecordAccess(scope.supabase, 'encounters', encounter.id);
+
+  const [paymentResult, billingSettingsResult] = await Promise.all([
+    scope.supabase
+      .from('encounter_payment_status')
+      .select('*')
+      .eq('encounter_id', encounter.id)
+      .maybeSingle<EncounterPaymentStatus>(),
+    scope.supabase
+      .from('clinic_payment_settings')
+      .select('is_active')
+      .maybeSingle<{ is_active: boolean }>(),
+  ]);
+
+  // No provider configured means "raise an invoice" would only ever fail, so it
+  // is not offered.
+  const canBill = billingSettingsResult.data?.is_active === true;
 
   const isSigned = encounter.status === 'signed';
   const points = pointsResult.data ?? [];
@@ -162,7 +176,15 @@ export default async function EncounterPage({
         }
         actions={
           <>
-            <CreateInvoiceButton encounterId={encounter.id} />
+            {/* The state of the money, at the top of the record, next to the
+                state of the record. Both are things you check before letting a
+                patient leave, so they belong in the same glance. */}
+            <PaymentAction
+              summary={toPaymentSummary(paymentResult.data)}
+              encounterId={encounter.id}
+              canBill={canBill}
+              size="md"
+            />
             <Badge tone={isSigned ? 'success' : 'warning'}>{t(`status.${encounter.status}`)}</Badge>
           </>
         }

@@ -1,6 +1,15 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Truck } from 'lucide-react';
-import { Badge, EmptyState, SortBody, SortTh, SortableTable, TableWrapper, Td, Tr } from '@clinic/ui';
+import {
+  Badge,
+  EmptyState,
+  SortBody,
+  SortTh,
+  SortableTable,
+  TableWrapper,
+  Td,
+  Tr,
+} from '@clinic/ui';
 import type { Supplier } from '@clinic/db/types';
 import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
@@ -68,13 +77,7 @@ export default async function SuppliersPage({ params }: { params: Promise<{ loca
                       '—'
                     )}
                   </Td>
-                  <Td>
-                    {supplier.email ? (
-                      <span dir="ltr">{supplier.email}</span>
-                    ) : (
-                      '—'
-                    )}
-                  </Td>
+                  <Td>{supplier.email ? <span dir="ltr">{supplier.email}</span> : '—'}</Td>
                   <Td>
                     <Badge tone={supplier.is_active ? 'success' : 'muted'}>
                       {supplier.is_active ? tc('active') : tc('inactive')}

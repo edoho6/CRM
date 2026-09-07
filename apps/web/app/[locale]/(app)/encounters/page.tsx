@@ -1,12 +1,23 @@
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
 import { ClipboardList } from 'lucide-react';
-import { Badge, EmptyState, SortBody, SortTh, SortableTable, TableWrapper, Td, Tr } from '@clinic/ui';
+import {
+  Badge,
+  EmptyState,
+  SortBody,
+  SortTh,
+  SortableTable,
+  TableWrapper,
+  Td,
+  Tr,
+} from '@clinic/ui';
 import { Link } from '@clinic/i18n/navigation';
-import type { Appointment, Encounter, Patient } from '@clinic/db/types';
+import type { Appointment, Encounter, EncounterPaymentStatus, Patient } from '@clinic/db/types';
 import { PageHeader } from '@/components/app-shell';
 import { DateRangeFilter } from '@/components/date-range-filter';
 import { getClinicScope } from '@/lib/session';
 import { resolveRange, toDateKey } from '@/lib/date-range';
+import { PaymentAction } from '@/features/billing/payment-status';
+import { toPaymentSummary } from '@/features/billing/payment-summary';
 
 type EncounterRow = Encounter & {
   patient: Pick<Patient, 'id' | 'full_name'> | null;
@@ -48,6 +59,7 @@ export default async function EncountersPage({
   const tc = await getTranslations('common');
   const tPatients = await getTranslations('patients');
   const tFilters = await getTranslations('filters');
+  const tBilling = await getTranslations('billing');
   const format = await getFormatter();
 
   const scope = await getClinicScope();
@@ -71,6 +83,32 @@ export default async function EncountersPage({
   const { data } = await query.returns<EncounterRow[]>();
 
   const encounters = data ?? [];
+
+  /*
+   * Whether each treatment has been paid for.
+   *
+   * A view rather than a join written here, so the list, the patient's file and
+   * the treatment itself all answer the question the same way. One query for the
+   * page, keyed by encounter.
+   */
+  const { data: paymentRows } = await scope.supabase
+    .from('encounter_payment_status')
+    .select('*')
+    .in(
+      'encounter_id',
+      encounters.map((encounter) => encounter.id),
+    )
+    .returns<EncounterPaymentStatus[]>();
+
+  const payments = new Map((paymentRows ?? []).map((row) => [row.encounter_id, row]));
+
+  // No provider set up means the "raise an invoice" button would only ever
+  // fail, so it is not offered.
+  const { data: paymentSettings } = await scope.supabase
+    .from('clinic_payment_settings')
+    .select('is_active')
+    .maybeSingle<{ is_active: boolean }>();
+  const canBill = paymentSettings?.is_active === true;
 
   /*
    * The booked time for treatments that carry no link to their appointment.
@@ -130,8 +168,10 @@ export default async function EncountersPage({
             <thead>
               <tr>
                 <SortTh sortKey="date">{tc('date')}</SortTh>
+                <SortTh sortKey="time">{tc('time')}</SortTh>
                 <SortTh sortKey="patient">{tPatients('title')}</SortTh>
                 <SortTh sortKey="status">{tc('status')}</SortTh>
+                <SortTh sortKey="payment">{tBilling('title')}</SortTh>
               </tr>
             </thead>
             <SortBody locale={locale}>
@@ -141,16 +181,18 @@ export default async function EncountersPage({
                   sort={{
                     // Sort on the instant, so two records on one day order by
                     // the time they were opened rather than arbitrarily.
-                    date: new Date(
+                    date: new Date(encounter.encounter_date).getTime(),
+                    // Sorted on the instant so two treatments on one day order
+                    // by the hour they happened rather than arbitrarily.
+                    time: new Date(
                       treatmentTime(encounter, bookedTimes) ?? encounter.encounter_date,
                     ).getTime(),
                     patient: encounter.patient?.full_name ?? null,
                     status: t(`status.${encounter.status}`),
+                    payment: payments.get(encounter.id)?.payment_state ?? 'unbilled',
                   }}
                 >
                   <Td>
-                    {/* Date and time together: on a day with six patients the
-                        date alone cannot tell two records apart. */}
                     <Link
                       href={`/encounters/${encounter.id}`}
                       className="font-medium text-jade-800 underline-offset-2 hover:underline"
@@ -158,11 +200,18 @@ export default async function EncountersPage({
                     >
                       {format.dateTime(new Date(encounter.encounter_date), 'short')}
                     </Link>
+                  </Td>
+                  {/* Its own column rather than trailing the date. They are two
+                      different facts, they sort differently, and on a day with
+                      six patients the hour is what tells two records apart. */}
+                  <Td>
                     {treatmentTime(encounter, bookedTimes) ? (
-                      <span dir="ltr" className="ms-6 text-xs tabular-nums text-ink-600">
+                      <span dir="ltr" className="tabular-nums text-ink-700">
                         {format.dateTime(new Date(treatmentTime(encounter, bookedTimes)!), 'time')}
                       </span>
-                    ) : null}
+                    ) : (
+                      <span className="text-ink-500">—</span>
+                    )}
                   </Td>
                   <Td>
                     {encounter.patient ? (
@@ -180,6 +229,13 @@ export default async function EncountersPage({
                     <Badge tone={encounter.status === 'signed' ? 'success' : 'warning'}>
                       {t(`status.${encounter.status}`)}
                     </Badge>
+                  </Td>
+                  <Td>
+                    <PaymentAction
+                      summary={toPaymentSummary(payments.get(encounter.id))}
+                      encounterId={encounter.id}
+                      canBill={canBill}
+                    />
                   </Td>
                 </Tr>
               ))}

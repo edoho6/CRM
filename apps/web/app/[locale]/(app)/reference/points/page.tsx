@@ -1,14 +1,6 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { MapPin } from 'lucide-react';
-import {
-  EmptyState,
-  SortBody,
-  SortTh,
-  SortableTable,
-  TableWrapper,
-  Td,
-  Tr,
-} from '@clinic/ui';
+import { EmptyState, SortBody, SortTh, SortableTable, TableWrapper, Td, Tr } from '@clinic/ui';
 import { Link } from '@clinic/i18n/navigation';
 import type { AcupuncturePoint } from '@clinic/db/types';
 import { POINT_BODY_AREAS, POINT_CATEGORIES, POINT_CHANNELS } from '@clinic/domain';

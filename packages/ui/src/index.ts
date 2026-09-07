@@ -10,6 +10,7 @@ export {
   Field,
   FieldGrid,
   inputClasses,
+  TIME_INPUT_LANG,
   type FieldProps,
 } from './field';
 export { Popover, FloatingList, useAnchoredPosition } from './popover';

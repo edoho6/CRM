@@ -3,6 +3,7 @@ import {
   BODY_VIEWS,
   CONSENT_KINDS,
   CONSENT_METHODS,
+  DOSE_TIMINGS,
   HERB_PREPARATIONS,
   HERB_UNITS,
   ORDER_LIST_STATUSES,
@@ -146,6 +147,20 @@ export const prescriptionRequestSchema = z
      * instruction is exactly the part an integer would throw away.
      */
     days_supply: optionalText(80),
+    /**
+     * How the patient takes it: how much at a time, in what unit, and when
+     * relative to eating. Three fields because they are three separate facts,
+     * and all three end up on the label.
+     */
+    dose_amount: optionalNumber,
+    dose_unit: z
+      .union([z.enum(HERB_UNITS), z.literal(''), z.null()])
+      .transform((v) => (v ? v : null))
+      .optional(),
+    dose_timing: z
+      .union([z.enum(DOSE_TIMINGS), z.literal(''), z.null()])
+      .transform((v) => (v ? v : null))
+      .optional(),
     items: z.array(prescriptionItemSchema).default([]),
     notes: optionalText(1000),
   })
@@ -195,3 +210,30 @@ export const patientConsentSchema = z
   });
 
 export type PatientConsentValues = z.input<typeof patientConsentSchema>;
+
+/**
+ * A treatment type a practitioner defines for their own practice.
+ *
+ * The price is optional on purpose: a type without one is still usable, and the
+ * invoice line stays editable for the times the standard price is wrong. Making
+ * it required would mean inventing a number to get past the form.
+ */
+export const appointmentTypeSchema = z.object({
+  name_he: requiredText(80),
+  name_en: requiredText(80),
+  default_duration_minutes: z
+    .union([z.string(), z.number()])
+    .transform((v) => (typeof v === 'number' ? v : Number(v)))
+    .pipe(z.number().int().min(5).max(480))
+    .default(60),
+  price: optionalNumber,
+  /** Hex, because that is what the calendar and the colour input both speak. */
+  color: z
+    .string()
+    .regex(/^#[0-9a-fA-F]{6}$/, { error: 'invalid_colour' })
+    .default('#0e7490'),
+  notes: optionalText(500),
+  is_active: z.boolean().default(true),
+});
+
+export type AppointmentTypeValues = z.input<typeof appointmentTypeSchema>;
