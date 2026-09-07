@@ -9,6 +9,7 @@ import type {
   DispensingStatus,
   DocumentCategory,
   DoseTiming,
+  FormField,
   EncounterStatus,
   FormulaCategory,
   HerbCategory,
@@ -546,6 +547,8 @@ export interface DispensingRecord {
   dose_amount: number | null;
   dose_unit: HerbUnit | null;
   dose_timing: DoseTiming | null;
+  /** How many times a day. Bounded at twelve by the database. */
+  doses_per_day: number | null;
   total_cost: number | null;
   created_at: string;
 }
@@ -831,4 +834,45 @@ export interface AppointmentPaymentStatus {
   amount_paid: number | null;
   payment_url: string | null;
   payment_state: 'unbilled' | 'unpaid' | 'partially_paid' | 'paid' | 'cancelled';
+}
+
+/** A questionnaire the practitioner built. Questions live in `fields`. */
+export interface FormTemplate {
+  id: string;
+  clinic_id: string;
+  title: string;
+  description: string | null;
+  fields: FormField[];
+  /** Bumped when the questions change, and copied onto every submission. */
+  version: number;
+  is_active: boolean;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * One filled-in form.
+ *
+ * Carries its own copy of the questions as asked. Editing the template later
+ * cannot change what someone appears to have answered.
+ */
+export interface FormSubmission {
+  id: string;
+  clinic_id: string;
+  template_id: string;
+  patient_id: string;
+  encounter_id: string | null;
+  template_version: number;
+  fields: FormField[];
+  answers: Record<string, unknown>;
+  submitted_at: string;
+  submitted_by: string | null;
+  notes: string | null;
+  created_at: string;
+}
+
+export interface FormSubmissionWithTemplate extends FormSubmission {
+  template: Pick<FormTemplate, 'id' | 'title'> | null;
+  patient: Pick<Patient, 'id' | 'full_name'> | null;
 }

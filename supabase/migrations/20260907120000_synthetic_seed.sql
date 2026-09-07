@@ -211,17 +211,12 @@ begin
   select v_clinic, 'טיפול ראשון', 'Initial consultation', 90, '#0e7490', 1
   where not exists (select 1 from public.appointment_types where clinic_id = v_clinic and name_en = 'Initial consultation');
 
-  insert into public.appointment_types (clinic_id, name_he, name_en, default_duration_minutes, color, sort_order)
-  select v_clinic, 'טיפול המשך', 'Follow-up treatment', 60, '#15803d', 2
-  where not exists (select 1 from public.appointment_types where clinic_id = v_clinic and name_en = 'Follow-up treatment');
-
-  insert into public.appointment_types (clinic_id, name_he, name_en, default_duration_minutes, color, sort_order)
-  select v_clinic, 'ייעוץ צמחים', 'Herbal consultation', 45, '#a16207', 3
-  where not exists (select 1 from public.appointment_types where clinic_id = v_clinic and name_en = 'Herbal consultation');
-
+  -- One example, not three. Which treatments a practice offers, how long they
+  -- take and what they cost is exactly the thing nobody else can guess, so the
+  -- seed leaves one to show the shape and the practitioner adds their own.
   select id into v_type_initial from public.appointment_types where clinic_id = v_clinic and name_en = 'Initial consultation';
-  select id into v_type_follow  from public.appointment_types where clinic_id = v_clinic and name_en = 'Follow-up treatment';
-  select id into v_type_herbs   from public.appointment_types where clinic_id = v_clinic and name_en = 'Herbal consultation';
+  v_type_follow := v_type_initial;
+  v_type_herbs  := v_type_initial;
 
   -- --- diary geometry ------------------------------------------------------
   -- The diary runs from roughly four months back to a month ahead, so the

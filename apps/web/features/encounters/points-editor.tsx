@@ -380,6 +380,20 @@ export function PointsEditor({
           ) : null}
         </div>
 
+        {/* Directly under the heading, above the points it adds to. It used to
+            sit at the foot of the panel, which in the tall centre column put it
+            a long way from the thing it belongs to — and the eye looks for the
+            way in at the top. */}
+        {!disabled ? (
+          <div className={cn('mb-1.5', compact && 'max-w-xs')}>
+            <PointCombobox
+              catalogue={catalogue}
+              region={region}
+              onAdd={(row) => onChange([...value, row])}
+            />
+          </div>
+        ) : null}
+
         {rows.length === 0 && disabled ? (
           <p className="py-1 text-xs text-ink-500">{t('none')}</p>
         ) : null}
@@ -430,16 +444,6 @@ export function PointsEditor({
             </li>
           ))}
         </ul>
-
-        {!disabled ? (
-          <div className={cn('mt-1.5', compact ? 'max-w-xs' : 'mt-auto pt-1.5')}>
-            <PointCombobox
-              catalogue={catalogue}
-              region={region}
-              onAdd={(row) => onChange([...value, row])}
-            />
-          </div>
-        ) : null}
       </section>
     );
   }

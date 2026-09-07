@@ -12,7 +12,6 @@ import {
   CardTitle,
   Combobox,
   Field,
-  Input,
   LtrInput,
   Select,
   SortBody,
@@ -98,6 +97,7 @@ export function DispensePanel({
   const [totalQuantity, setTotalQuantity] = useState('');
   const [rows, setRows] = useState<HerbRow[]>([{ choice: null, dose: '' }]);
   const [doseAmount, setDoseAmount] = useState('');
+  const [dosesPerDay, setDosesPerDay] = useState('');
   const [doseTiming, setDoseTiming] = useState<DoseTiming | ''>('');
   const [notes, setNotes] = useState('');
   const [isPending, startTransition] = useTransition();
@@ -176,6 +176,7 @@ export function DispensePanel({
     setNotes('');
     setTotalQuantity('');
     setDoseAmount('');
+    setDosesPerDay('');
     setDoseTiming('');
   }
 
@@ -196,6 +197,7 @@ export function DispensePanel({
       // same way it does everywhere else in this panel.
       dose_amount: doseAmount,
       dose_unit: unit,
+      doses_per_day: dosesPerDay,
       dose_timing: doseTiming,
       multiplier: mode === 'formula' ? multiplier : 1,
       items:
@@ -435,10 +437,20 @@ export function DispensePanel({
                   />
                 </Field>
 
-                <Field label={tPrep('label')} htmlFor="dose_unit_display" density="compact">
-                  {/* Shown, not chosen: the unit follows the preparation above,
-                      and a second menu could only ever disagree with it. */}
-                  <Input id="dose_unit_display" value={tPrep(preparation)} readOnly disabled />
+                {/* The preparation is chosen once at the top of the panel, so
+                    repeating it here said nothing. What was actually missing is
+                    how often — "1g after food" is not an instruction until you
+                    know whether that is once or three times a day. */}
+                <Field label={t('dosesPerDay')} htmlFor="doses_per_day" density="compact">
+                  <LtrInput
+                    id="doses_per_day"
+                    type="number"
+                    min={1}
+                    max={12}
+                    step={1}
+                    value={dosesPerDay}
+                    onChange={(event) => setDosesPerDay(event.target.value)}
+                  />
                 </Field>
 
                 <Field label={t('doseTiming')} htmlFor="dose_timing" density="compact">
@@ -559,11 +571,14 @@ export function DispensePanel({
                       </SortBody>
                     </SortableTable>
                   </TableWrapper>
-                  {record.dose_amount || record.dose_timing ? (
+                  {record.dose_amount || record.doses_per_day || record.dose_timing ? (
                     <p className="mt-1 text-xs text-ink-700">
                       {[
                         record.dose_amount
                           ? `${format.number(Number(record.dose_amount))} ${tUnit(record.dose_unit ?? 'gram')}`
+                          : null,
+                        record.doses_per_day
+                          ? t('perDay', { count: Number(record.doses_per_day) })
                           : null,
                         record.dose_timing ? t(`timing.${record.dose_timing}`) : null,
                       ]

@@ -293,7 +293,15 @@ export default async function FormulaDetailPage({
                             </Td>
                             <Td>
                               {herb?.tcm_category ? (
-                                <TcmChip scale="tcmCategory" value={herb.tcm_category} size="sm">
+                                <TcmChip
+                                  scale="tcmCategory"
+                                  value={herb.tcm_category}
+                                  href={{
+                                    pathname: '/reference/herbs',
+                                    query: { cat: herb.tcm_category },
+                                  }}
+                                  size="sm"
+                                >
                                   {tTcm(herb.tcm_category)}
                                 </TcmChip>
                               ) : (
@@ -303,7 +311,15 @@ export default async function FormulaDetailPage({
                             <Td>
                               <span className="flex flex-wrap items-center gap-1">
                                 {herb?.temperature ? (
-                                  <TcmChip scale="temperature" value={herb.temperature} size="sm">
+                                  <TcmChip
+                                    scale="temperature"
+                                    value={herb.temperature}
+                                    href={{
+                                      pathname: '/reference/herbs',
+                                      query: { temp: herb.temperature },
+                                    }}
+                                    size="sm"
+                                  >
                                     {tTemp(herb.temperature)}
                                   </TcmChip>
                                 ) : null}
@@ -312,6 +328,10 @@ export default async function FormulaDetailPage({
                                     scale="taste"
                                     values={tastes}
                                     render={(value) => tTaste(value as never)}
+                                    hrefFor={(value) => ({
+                                      pathname: '/reference/herbs',
+                                      query: { taste: value },
+                                    })}
                                     size="sm"
                                   />
                                 ) : null}

@@ -189,6 +189,7 @@ export const dispenseRequestSchema = z
       .union([z.enum(DOSE_TIMINGS), z.literal(''), z.null()])
       .transform((v) => (v ? v : null))
       .optional(),
+    doses_per_day: optionalNumber,
     items: z.array(dispenseItemSchema).default([]),
     notes: optionalText(1000),
   })

@@ -48,28 +48,92 @@ const H = 560;
  * segment gives an arm that tapers from shoulder to fingertip without a
  * hand-tuned outline that would have to be redrawn every time a landmark moves.
  */
-const TORSO =
-  'M 98 102 C 88 108, 70 114, 58 126 C 60 145, 63 156, 63 168 ' +
-  'C 66 200, 73 224, 73 248 C 71 268, 62 278, 62 294 C 62 306, 70 313, 82 313 ' +
-  'L 104 306 L 110 298 L 116 306 L 138 313 C 150 313, 158 306, 158 294 ' +
-  'C 158 278, 149 268, 147 248 C 147 224, 154 200, 157 168 ' +
-  'C 157 156, 160 145, 162 126 C 150 114, 132 108, 122 102 Z';
+/*
+ * The neck, drawn rather than left as a gap.
+ *
+ * It runs from the chin at y=90 to the shoulder line at y=118, which are two of
+ * the landmarks every point coordinate is measured from. Nothing here may move
+ * those numbers: the 361 points were generated against this table, so redrawing
+ * the figure is only allowed to change how it looks, never where its landmarks
+ * are. That is also why a stock silhouette was not used in its place — the ones
+ * that are genuinely public domain are drawn in their own proportions and with
+ * their own pose, and swapping one in would leave every arm point beside an arm
+ * rather than on it.
+ */
+const NECK = 'M 99 84 C 99 98, 96 104, 92 110 L 128 110 C 124 104, 121 98, 121 84 Z';
 
+/*
+ * The torso.
+ *
+ * Same landmarks as before, better shape: the trapezius slopes up into the neck
+ * instead of meeting it at a corner, the ribcage is fuller, the waist draws in
+ * at the navel (y=230) and the hips flare below it. A chart of acupuncture
+ * points is read by finding a landmark and working from it, so the landmarks
+ * being legible is not decoration.
+ */
+const TORSO =
+  // Left trapezius, shoulder, and down the arm's edge.
+  'M 92 110 C 80 111, 68 116, 58 126 ' +
+  // Ribcage: widening to the chest, then drawing in to the waist.
+  'C 60 146, 64 158, 65 170 ' +
+  'C 68 196, 74 214, 74 232 ' +
+  // Waist, then out over the hip.
+  'C 73 252, 64 266, 62 284 ' +
+  'C 61 300, 68 313, 82 315 ' +
+  // The pelvic floor, dipping at the midline.
+  'L 104 308 L 110 300 L 116 308 L 138 315 ' +
+  // Mirror, right side upwards.
+  'C 152 313, 159 300, 158 284 ' +
+  'C 156 266, 147 252, 146 232 ' +
+  'C 146 214, 152 196, 155 170 ' +
+  'C 156 158, 160 146, 162 126 ' +
+  'C 152 116, 140 111, 128 110 Z';
+
+/*
+ * Limbs, as round-capped strokes down a skeleton.
+ *
+ * The centre lines are exactly the ones the point generator used — an arm point
+ * is placed at a fraction along these segments, so moving an endpoint moves
+ * every point on that limb. Only the widths are touched, tapering a little more
+ * steeply so the figure reads as a body rather than as pipes.
+ */
 const LIMBS: { d: string; width: number }[] = [
   // Arms: upper arm, forearm, hand — each thinner than the last.
-  { d: 'M 62 122 L 47 230', width: 25 },
-  { d: 'M 47 230 L 38 307', width: 19 },
-  { d: 'M 38 307 L 34 342', width: 14 },
-  { d: 'M 158 122 L 173 230', width: 25 },
-  { d: 'M 173 230 L 182 307', width: 19 },
-  { d: 'M 182 307 L 186 342', width: 14 },
+  { d: 'M 62 122 L 47 230', width: 26 },
+  { d: 'M 47 230 L 38 307', width: 18 },
+  { d: 'M 38 307 L 34 342', width: 13 },
+  { d: 'M 158 122 L 173 230', width: 26 },
+  { d: 'M 173 230 L 182 307', width: 18 },
+  { d: 'M 182 307 L 186 342', width: 13 },
   // Legs: thigh, calf, foot.
-  { d: 'M 84 296 L 80 405', width: 44 },
-  { d: 'M 80 405 L 82 524', width: 32 },
-  { d: 'M 82 524 L 80 546', width: 20 },
-  { d: 'M 136 296 L 140 405', width: 44 },
-  { d: 'M 140 405 L 138 524', width: 32 },
-  { d: 'M 138 524 L 140 546', width: 20 },
+  { d: 'M 84 296 L 80 405', width: 46 },
+  { d: 'M 80 405 L 82 524', width: 30 },
+  { d: 'M 82 524 L 80 546', width: 19 },
+  { d: 'M 136 296 L 140 405', width: 46 },
+  { d: 'M 140 405 L 138 524', width: 30 },
+  { d: 'M 138 524 L 140 546', width: 19 },
+];
+
+/*
+ * Joints, as discs at the points where two strokes meet.
+ *
+ * Two round-capped strokes of different widths leave a visible step where they
+ * join. A disc the width of the thicker one fills it, which is what turns an
+ * elbow from a notch into an elbow.
+ */
+const JOINTS: { cx: number; cy: number; r: number }[] = [
+  { cx: 62, cy: 122, r: 13 },
+  { cx: 47, cy: 230, r: 11 },
+  { cx: 38, cy: 307, r: 8 },
+  { cx: 158, cy: 122, r: 13 },
+  { cx: 173, cy: 230, r: 11 },
+  { cx: 182, cy: 307, r: 8 },
+  { cx: 84, cy: 296, r: 23 },
+  { cx: 80, cy: 405, r: 16 },
+  { cx: 82, cy: 524, r: 10 },
+  { cx: 136, cy: 296, r: 23 },
+  { cx: 140, cy: 405, r: 16 },
+  { cx: 138, cy: 524, r: 10 },
 ];
 
 /** Faint marks so the two views are told apart at a glance. */
@@ -147,9 +211,17 @@ export function BodyMap({
               role="img"
               aria-label={t(`${view}Label`, { count: dots.length })}
             >
-              <g fill="var(--color-ink-200)" stroke="var(--color-ink-400)" strokeWidth={1.5}>
-                {/* Head, neck and torso are filled shapes; limbs are strokes.
-                    Drawing the limbs under the torso hides the joins. */}
+              {/*
+                The body is drawn as one silhouette rather than as an outlined
+                pile of parts. Every piece is filled in the same colour with no
+                stroke, so where two of them overlap there is no seam; the whole
+                figure then gets a single outline from the union underneath.
+
+                That is why the order matters: limbs first, then the joint discs
+                that fill the step where two strokes of different widths meet,
+                then the neck, head and torso over the top.
+              */}
+              <g fill="var(--color-ink-200)" stroke="none">
                 {LIMBS.map((limb) => (
                   <path
                     key={limb.d}
@@ -158,23 +230,35 @@ export function BodyMap({
                     stroke="var(--color-ink-200)"
                     strokeWidth={limb.width}
                     strokeLinecap="round"
+                    strokeLinejoin="round"
                   />
                 ))}
-                {LIMBS.map((limb) => (
-                  <path
-                    key={`${limb.d}-edge`}
-                    d={limb.d}
-                    fill="none"
-                    stroke="var(--color-ink-400)"
-                    strokeWidth={limb.width}
-                    strokeLinecap="round"
-                    strokeOpacity={0.25}
-                    style={{ fill: 'none' }}
-                  />
+                {JOINTS.map((joint) => (
+                  <circle key={`${joint.cx}-${joint.cy}`} cx={joint.cx} cy={joint.cy} r={joint.r} />
                 ))}
-                <rect x={98} y={82} width={24} height={34} rx={10} />
-                <ellipse cx={110} cy={56} rx={25} ry={34} />
+                <path d={NECK} />
                 <path d={TORSO} />
+                {/* The head. Slightly narrower than tall, which is what stops a
+                    schematic figure reading as a balloon on a stick. */}
+                <ellipse cx={110} cy={56} rx={23} ry={31} />
+              </g>
+
+              {/* The outline, over the fill: one quiet edge for the whole
+                  figure, thin enough not to compete with the point markers,
+                  which are the thing actually being read. */}
+              <g
+                fill="none"
+                stroke="var(--color-ink-400)"
+                strokeWidth={1.25}
+                strokeOpacity={0.65}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                {LIMBS.map((limb) => (
+                  <path key={`${limb.d}-edge`} d={limb.d} strokeWidth={0.9} strokeOpacity={0.35} />
+                ))}
+                <path d={TORSO} />
+                <ellipse cx={110} cy={56} rx={23} ry={31} />
               </g>
 
               {GUIDES[view].map((d) => (

@@ -2,8 +2,8 @@
 
 import { useTransition } from 'react';
 import { useFormatter, useTranslations } from 'next-intl';
-import { CreditCard, ExternalLink, Receipt } from 'lucide-react';
-import { Badge, Button, Spinner } from '@clinic/ui';
+import { ChevronDown, CreditCard, ExternalLink, FileText, Receipt } from 'lucide-react';
+import { Badge, Button, Popover, Spinner } from '@clinic/ui';
 import { Link, useRouter } from '@clinic/i18n/navigation';
 import { createInvoiceFromEncounter } from './actions';
 
@@ -81,6 +81,8 @@ export function PaymentAction({
   size?: 'sm' | 'md';
 }) {
   const t = useTranslations('billing.payment');
+  const tc = useTranslations('common');
+  const format = useFormatter();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
@@ -92,38 +94,96 @@ export function PaymentAction({
     });
   }
 
+  /*
+   * The badge is the control.
+   *
+   * A row of buttons beside every line is a lot of furniture for something that
+   * is usually just being read — the answer to "was this paid?" is wanted far
+   * more often than the actions are. So the status itself opens them, which also
+   * means one target instead of three and the same target in all three screens.
+   */
   return (
-    <span className="inline-flex flex-wrap items-center gap-2">
-      <PaymentBadge summary={summary} />
+    <Popover
+      width={248}
+      align="end"
+      panelLabel={t('actionsFor', { state: t(`state.${summary.state}`) })}
+      triggerLabel={t('actionsFor', { state: t(`state.${summary.state}`) })}
+      triggerClassName="inline-flex items-center gap-1.5 rounded-md px-1 py-0.5 transition-colors hover:bg-ink-100"
+      triggerContent={
+        <>
+          <PaymentBadge summary={summary} />
+          <ChevronDown className="h-3 w-3 shrink-0 text-ink-500" aria-hidden />
+        </>
+      }
+    >
+      {({ close }) => (
+        <div className="flex flex-col gap-2">
+          {summary.total !== null ? (
+            <p className="flex items-baseline justify-between gap-2 text-sm">
+              <span className="text-ink-600">{tc('total')}</span>
+              <span dir="ltr" className="font-medium tabular-nums text-ink-900">
+                {format.number(Number(summary.total), 'currency')}
+              </span>
+            </p>
+          ) : null}
 
-      {summary.state === 'unbilled' && encounterId && canBill ? (
-        <Button size={size} variant="secondary" onClick={bill} disabled={isPending}>
-          {isPending ? <Spinner className="h-3.5 w-3.5" /> : <Receipt className="h-3.5 w-3.5" />}
-          {t('bill')}
-        </Button>
-      ) : null}
+          {summary.state === 'unbilled' ? (
+            encounterId && canBill ? (
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => {
+                  bill();
+                  close();
+                }}
+                disabled={isPending}
+              >
+                {isPending ? (
+                  <Spinner className="h-3.5 w-3.5" />
+                ) : (
+                  <Receipt className="h-3.5 w-3.5" />
+                )}
+                {t('bill')}
+              </Button>
+            ) : (
+              // Saying why is more use than a disabled button with no reason.
+              <p className="text-xs text-ink-600">
+                {canBill ? t('noEncounterToBill') : t('noProvider')}
+              </p>
+            )
+          ) : null}
 
-      {(summary.state === 'unpaid' || summary.state === 'partially_paid') && summary.paymentUrl ? (
-        <Button size={size} asChild>
-          {/* The patient pays on the provider's own domain. This link leaves the
-              application on purpose — a card number must never be typed into a
-              page this system serves. */}
-          <a href={summary.paymentUrl} target="_blank" rel="noopener noreferrer">
-            <CreditCard className="h-3.5 w-3.5" />
-            {t('pay')}
-            <ExternalLink className="h-3 w-3 opacity-70" aria-hidden />
-          </a>
-        </Button>
-      ) : null}
+          {(summary.state === 'unpaid' || summary.state === 'partially_paid') &&
+          summary.paymentUrl ? (
+            <Button size="sm" asChild>
+              {/* The patient pays on the provider's own domain. This link leaves
+                  the application on purpose — a card number must never be typed
+                  into a page this system serves. */}
+              <a
+                href={summary.paymentUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={close}
+              >
+                <CreditCard className="h-3.5 w-3.5" />
+                {t('pay')}
+                <ExternalLink className="h-3 w-3 opacity-70" aria-hidden />
+              </a>
+            </Button>
+          ) : null}
 
-      {summary.invoiceId && summary.state !== 'unbilled' ? (
-        <Link
-          href={`/billing/${summary.invoiceId}`}
-          className="text-xs text-jade-800 underline-offset-2 hover:underline"
-        >
-          {summary.invoiceNumber ? `#${summary.invoiceNumber}` : t('viewInvoice')}
-        </Link>
-      ) : null}
-    </span>
+          {summary.invoiceId ? (
+            <Button size="sm" variant="secondary" asChild>
+              <Link href={`/billing/${summary.invoiceId}`} onClick={close}>
+                <FileText className="h-3.5 w-3.5" />
+                {summary.invoiceNumber
+                  ? t('openInvoiceNumbered', { number: summary.invoiceNumber })
+                  : t('viewInvoice')}
+              </Link>
+            </Button>
+          ) : null}
+        </div>
+      )}
+    </Popover>
   );
 }

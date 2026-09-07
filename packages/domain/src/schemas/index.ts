@@ -4,3 +4,4 @@ export * from './appointment';
 export * from './encounter';
 export * from './inventory';
 export * from './reference';
+export * from './forms';

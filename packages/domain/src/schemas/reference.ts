@@ -161,6 +161,7 @@ export const prescriptionRequestSchema = z
       .union([z.enum(DOSE_TIMINGS), z.literal(''), z.null()])
       .transform((v) => (v ? v : null))
       .optional(),
+    doses_per_day: optionalNumber,
     items: z.array(prescriptionItemSchema).default([]),
     notes: optionalText(1000),
   })

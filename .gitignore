@@ -63,3 +63,4 @@ botanical_migration_to_run.sql
 7_clinical_workflow_to_run.sql
 8_patient_status_to_run.sql
 9_workflow_round2_to_run.sql
+10_forms_and_dosing_to_run.sql

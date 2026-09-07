@@ -56,7 +56,8 @@
     "invalidEmail": "כתובת אימייל לא תקינה",
     "invalidDate": "תאריך לא תקין",
     "invalidTime": "שעה לא תקינה",
-    "somethingMissing": "חסרים פרטים בטופס"
+    "somethingMissing": "חסרים פרטים בטופס",
+    "duplicate": "שכפול"
   },
   "nav": {
     "dashboard": "לוח בקרה",
@@ -80,7 +81,8 @@
     "syntheticBanner": "סביבת פיתוח — כל המטופלים כאן בדיוניים. אין כאן מידע אמיתי, ואין להזין כאן מידע אמיתי.",
     "collapseSidebar": "קיפול התפריט",
     "expandSidebar": "פתיחת התפריט",
-    "account": "איזור אישי"
+    "account": "איזור אישי",
+    "forms": "שאלונים"
   },
   "auth": {
     "signInTitle": "כניסה למערכת",
@@ -405,7 +407,7 @@
       "retention": "זמן החזקה (דק׳)",
       "remove": "הסרת נקודה",
       "empty": "לא נרשמו נקודות",
-      "placeholder": "לדוגמה LI4",
+      "placeholder": "חיפוש נקודה",
       "none": "אין",
       "hint": "הקלד קוד נקודה (LU7) או שם והרשימה תיפתח. אפשר גם להקליד טקסט חופשי."
     },
@@ -509,7 +511,11 @@
       },
       "bill": "הפקת חשבונית",
       "pay": "לתשלום",
-      "viewInvoice": "לחשבונית"
+      "viewInvoice": "לחשבונית",
+      "actionsFor": "מצב תשלום: {state} — לחיצה לפעולות",
+      "openInvoiceNumbered": "חשבונית #{number}",
+      "noProvider": "לא הוגדר ספק סליקה. אפשר להגדיר תחת הגדרות ← תשלומים.",
+      "noEncounterToBill": "אין טיפול מקושר לחייב עליו."
     },
     "cancel": "ביטול החשבונית",
     "cancelConfirm": "לבטל את החשבונית? לא ניתן לשחזר.",
@@ -790,7 +796,9 @@
         "after_meal": "אחרי ארוחה",
         "with_meal": "עם הארוחה",
         "empty_stomach": "על בטן ריקה"
-      }
+      },
+      "dosesPerDay": "פעמים ביום",
+      "perDay": "{count, plural, one {פעם ביום} two {פעמיים ביום} other {# פעמים ביום}}"
     },
     "tcmCategory": {
       "release_exterior_warm": "משחררי חיצון — חמים",
@@ -1285,5 +1293,52 @@
     "languageHint": "משנה את השפה מיד, ונשאר באותו עמוד.",
     "payments": "תשלומים",
     "paymentsBody": "ספק הסליקה שייך לקליניקה ולא למטפל, ולכן הוא מוגדר תחת הגדרות ← תשלומים."
+  },
+  "forms": {
+    "title": "שאלונים",
+    "subtitle": "שאלוני קליטה, מעקב ומדדי תוצאה — כל אחד נבנה על ידך.",
+    "newForm": "שאלון חדש",
+    "builderHint": "הוסף שאלות, בחר סוג תשובה לכל אחת, וסדר אותן בסדר שבו הן נשאלות.",
+    "empty": "עדיין אין שאלונים",
+    "emptyBody": "שאלון נבנה פעם אחת וממולא שוב ושוב — נתחיל מהראשון.",
+    "formTitle": "שם השאלון",
+    "formDescription": "תיאור",
+    "formActive": "פעיל ומוצע למילוי",
+    "questionCount": "שאלות",
+    "version": "גרסה",
+    "versionNote": "גרסה {version}. תשובות שכבר נמסרו נשמרות מול הנוסח שנשאל בפועל, כך ששינוי כאן לא משנה אותן.",
+    "question": "שאלה",
+    "sectionHeading": "כותרת מקטע",
+    "help": "הסבר מתחת לשדה",
+    "fieldType": "סוג תשובה",
+    "required": "שאלת חובה",
+    "options": "אפשרויות",
+    "optionNumber": "אפשרות {number}",
+    "addOption": "הוספת אפשרות",
+    "addQuestion": "הוספת שאלה",
+    "addSection": "הוספת מקטע",
+    "moveUp": "העברה למעלה",
+    "moveDown": "העברה למטה",
+    "scaleMin": "מינימום",
+    "scaleMax": "מקסימום",
+    "scaleMinLabel": "תווית מינימום",
+    "scaleMaxLabel": "תווית מקסימום",
+    "submit": "שליחה",
+    "submitted": "נשלח",
+    "submitFailed": "השליחה נכשלה",
+    "saveFailed": "השמירה נכשלה",
+    "answerRequired": "נדרשת תשובה",
+    "types": {
+      "short_text": "טקסט קצר",
+      "long_text": "טקסט ארוך",
+      "number": "מספר",
+      "dropdown": "רשימה נפתחת",
+      "single_choice": "בחירה אחת",
+      "multi_choice": "בחירה מרובה",
+      "yes_no": "כן / לא",
+      "scale": "סולם",
+      "date": "תאריך",
+      "section": "מקטע (ללא תשובה)"
+    }
   }
 }

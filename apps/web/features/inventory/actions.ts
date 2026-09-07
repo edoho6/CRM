@@ -219,6 +219,7 @@ export async function dispenseHerbs(input: unknown): Promise<ActionResult<{ id: 
       dose_amount: parsed.data.dose_amount,
       dose_unit: parsed.data.dose_unit ?? null,
       dose_timing: parsed.data.dose_timing ?? null,
+      doses_per_day: parsed.data.doses_per_day,
     })
     .eq('id', recordId);
 
@@ -253,6 +254,7 @@ export async function recordPrescription(input: unknown): Promise<ActionResult<{
     p_dose_amount: parsed.data.dose_amount,
     p_dose_unit: parsed.data.dose_unit ?? null,
     p_dose_timing: parsed.data.dose_timing ?? null,
+    p_doses_per_day: parsed.data.doses_per_day,
   });
 
   if (error) return actionError(error);

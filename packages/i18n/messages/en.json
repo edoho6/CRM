@@ -56,7 +56,8 @@
     "invalidEmail": "Enter a valid email address",
     "invalidDate": "Enter a valid date",
     "invalidTime": "Enter a valid time",
-    "somethingMissing": "Some fields still need attention"
+    "somethingMissing": "Some fields still need attention",
+    "duplicate": "Duplicate"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -80,7 +81,8 @@
     "syntheticBanner": "Development environment — every patient here is fictional. No real data is held here, and none should be entered.",
     "collapseSidebar": "Collapse menu",
     "expandSidebar": "Expand menu",
-    "account": "My area"
+    "account": "My area",
+    "forms": "Forms"
   },
   "auth": {
     "signInTitle": "Sign in",
@@ -405,7 +407,7 @@
       "retention": "Retention (min)",
       "remove": "Remove point",
       "empty": "No points recorded",
-      "placeholder": "e.g. LI4",
+      "placeholder": "Search a point",
       "none": "None",
       "hint": "Type a point code (LU7) or a name and the list opens. Free text is fine too."
     },
@@ -509,7 +511,11 @@
       },
       "bill": "Raise invoice",
       "pay": "Take payment",
-      "viewInvoice": "Invoice"
+      "viewInvoice": "Invoice",
+      "actionsFor": "Payment: {state} — open actions",
+      "openInvoiceNumbered": "Invoice #{number}",
+      "noProvider": "No payment provider configured. Set one under Settings → Payments.",
+      "noEncounterToBill": "No linked treatment to bill for."
     },
     "cancel": "Cancel invoice",
     "cancelConfirm": "Cancel this invoice? It cannot be restored.",
@@ -790,7 +796,9 @@
         "after_meal": "After food",
         "with_meal": "With food",
         "empty_stomach": "On an empty stomach"
-      }
+      },
+      "dosesPerDay": "Times a day",
+      "perDay": "{count, plural, one {once a day} other {# times a day}}"
     },
     "tcmCategory": {
       "release_exterior_warm": "Release the exterior — warm, acrid",
@@ -1285,5 +1293,52 @@
     "languageHint": "Switches immediately and keeps you on the same page.",
     "payments": "Payments",
     "paymentsBody": "The payment provider belongs to the practice rather than to one practitioner, so it is configured under Settings → Payments."
+  },
+  "forms": {
+    "title": "Questionnaires",
+    "subtitle": "Intake forms, follow-ups and outcome scales — each one built by you.",
+    "newForm": "New form",
+    "builderHint": "Add questions, choose an answer type for each, and put them in the order they are asked.",
+    "empty": "No questionnaires yet",
+    "emptyBody": "A form is built once and filled in many times. Start with the first one.",
+    "formTitle": "Form name",
+    "formDescription": "Description",
+    "formActive": "Active and offered for filling in",
+    "questionCount": "Questions",
+    "version": "Version",
+    "versionNote": "Version {version}. Answers already given are kept against the wording that was actually asked, so editing here does not change them.",
+    "question": "Question",
+    "sectionHeading": "Section heading",
+    "help": "Help text under the field",
+    "fieldType": "Answer type",
+    "required": "Required",
+    "options": "Options",
+    "optionNumber": "Option {number}",
+    "addOption": "Add an option",
+    "addQuestion": "Add a question",
+    "addSection": "Add a section",
+    "moveUp": "Move up",
+    "moveDown": "Move down",
+    "scaleMin": "Minimum",
+    "scaleMax": "Maximum",
+    "scaleMinLabel": "Label for the low end",
+    "scaleMaxLabel": "Label for the high end",
+    "submit": "Submit",
+    "submitted": "Submitted",
+    "submitFailed": "Could not submit",
+    "saveFailed": "Could not save",
+    "answerRequired": "An answer is required",
+    "types": {
+      "short_text": "Short text",
+      "long_text": "Long text",
+      "number": "Number",
+      "dropdown": "Dropdown",
+      "single_choice": "Choose one",
+      "multi_choice": "Choose several",
+      "yes_no": "Yes / no",
+      "scale": "Scale",
+      "date": "Date",
+      "section": "Section (no answer)"
+    }
   }
 }

@@ -16,6 +16,9 @@ import type { Herb, HerbStockLevel } from '@clinic/db/types';
 import { TEMPERATURES, type Locale } from '@clinic/domain';
 import { PageHeader } from '@/components/app-shell';
 import { TcmChip, TcmChips } from '@/components/tcm-chip';
+
+/** Every chip links back into this list, filtered by what the chip says. */
+const HERBS_PATH = '/reference/herbs';
 import { getClinicScope } from '@/lib/session';
 import { herbBotanicalName, herbChineseName, herbPrimaryName } from '@/lib/display';
 import { ReferenceNav } from '@/features/reference/reference-nav';
@@ -219,7 +222,11 @@ export default async function HerbsPage({
                     </Td>
                     <Td>
                       {herb.tcm_category ? (
-                        <TcmChip scale="tcmCategory" value={herb.tcm_category}>
+                        <TcmChip
+                          scale="tcmCategory"
+                          value={herb.tcm_category}
+                          href={{ pathname: HERBS_PATH, query: { cat: herb.tcm_category } }}
+                        >
                           {tTcm(herb.tcm_category)}
                         </TcmChip>
                       ) : (
@@ -228,7 +235,11 @@ export default async function HerbsPage({
                     </Td>
                     <Td>
                       {herb.temperature ? (
-                        <TcmChip scale="temperature" value={herb.temperature}>
+                        <TcmChip
+                          scale="temperature"
+                          value={herb.temperature}
+                          href={{ pathname: HERBS_PATH, query: { temp: herb.temperature } }}
+                        >
                           {tTemp(herb.temperature)}
                         </TcmChip>
                       ) : (
@@ -240,6 +251,7 @@ export default async function HerbsPage({
                         scale="taste"
                         values={tastes}
                         render={(value) => tTaste(value as never)}
+                        hrefFor={(value) => ({ pathname: HERBS_PATH, query: { taste: value } })}
                         size="sm"
                       />
                     </Td>
