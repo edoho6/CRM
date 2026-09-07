@@ -275,7 +275,7 @@ export function GlobalSearch() {
             tabIndex={open ? 0 : -1}
             className={cn(
               'h-11 w-full rounded-xl border border-ink-200 bg-white px-3 pe-8 text-sm text-ink-900',
-              'placeholder:text-ink-400 shadow-xs transition-colors text-start',
+              'placeholder:text-ink-500 shadow-xs transition-colors text-start',
               'focus:border-jade-500 focus:outline-2 focus:outline-offset-0 focus:outline-jade-600/30',
             )}
           />
@@ -284,7 +284,7 @@ export function GlobalSearch() {
               type="button"
               onClick={dismiss}
               aria-label={t('search')}
-              className="absolute inset-y-0 end-2 my-auto flex h-6 w-6 items-center justify-center rounded-md text-ink-400 transition-colors hover:bg-ink-100 hover:text-ink-700"
+              className="absolute inset-y-0 end-2 my-auto flex h-6 w-6 items-center justify-center rounded-md text-ink-500 transition-colors hover:bg-ink-100 hover:text-ink-700"
             >
               <X className="h-3.5 w-3.5" />
             </button>
@@ -298,18 +298,18 @@ export function GlobalSearch() {
           style={{ insetInlineEnd: 0 }}
         >
           {loading && results.length === 0 ? (
-            <p className="flex items-center justify-center gap-2 py-6 text-sm text-ink-400">
+            <p className="flex items-center justify-center gap-2 py-6 text-sm text-ink-500">
               <Spinner /> {t('searching')}
             </p>
           ) : grouped.length === 0 ? (
-            <p className="py-6 text-center text-sm text-ink-400">{t('noResults', { query: term })}</p>
+            <p className="py-6 text-center text-sm text-ink-500">{t('noResults', { query: term })}</p>
           ) : (
             grouped.map(({ group, items }) => {
               const meta = GROUP_META[group];
               const Icon = meta.icon;
               return (
                 <div key={group} className="mb-2 last:mb-0">
-                  <p className="px-2 pb-1 text-xs font-semibold tracking-wide text-ink-400 uppercase">
+                  <p className="px-2 pb-1 text-xs font-semibold tracking-wide text-ink-500 uppercase">
                     {t(`groups.${group}`)}
                   </p>
                   <ul>
@@ -323,7 +323,7 @@ export function GlobalSearch() {
                           }}
                           className="flex w-full items-start gap-2.5 rounded-lg px-2 py-2 text-start transition-colors hover:bg-jade-50 focus-visible:bg-jade-50 focus-visible:outline-none"
                         >
-                          <Icon className="mt-0.5 h-4 w-4 shrink-0 text-ink-400" aria-hidden />
+                          <Icon className="mt-0.5 h-4 w-4 shrink-0 text-ink-500" aria-hidden />
                           <span className="min-w-0 flex-1">
                             <span className="flex items-baseline gap-1.5">
                               <span className="truncate text-sm font-medium text-ink-900">

@@ -100,7 +100,7 @@ export function TabsTrigger({
     <TabsPrimitive.Trigger
       className={cn(
         'rounded-md px-3 py-1.5 text-sm font-medium text-ink-600 transition-colors',
-        'hover:bg-ink-50 data-[state=active]:bg-jade-600 data-[state=active]:text-white',
+        'hover:bg-ink-50 data-[state=active]:bg-jade-700 data-[state=active]:text-white',
         className,
       )}
       {...props}

@@ -251,7 +251,7 @@ export default async function StockRoomPage({
             <section>
               <h2 className="mb-2 text-sm font-semibold text-ink-700">
                 {tHerbs('title')}{' '}
-                <span className="font-normal text-ink-400">({shownHerbs.length})</span>
+                <span className="font-normal text-ink-500">({shownHerbs.length})</span>
               </h2>
               <TableWrapper>
                 <SortableTable defaultSortKey="stock">
@@ -308,7 +308,7 @@ export default async function StockRoomPage({
                             >
                               {format.number(remaining)} {tUnit(level.default_unit)}
                             </span>
-                            <span className="block text-xs text-ink-400">
+                            <span className="block text-xs text-ink-500">
                               {t('batches', { count: level.batch_count })}
                             </span>
                           </Td>
@@ -326,7 +326,7 @@ export default async function StockRoomPage({
                                 {format.dateTime(new Date(level.nearest_expiry), 'short')}
                               </span>
                             ) : (
-                              <span className="text-ink-400">{tBatches('noExpiry')}</span>
+                              <span className="text-ink-500">{tBatches('noExpiry')}</span>
                             )}
                           </Td>
                           <Td>
@@ -352,7 +352,7 @@ export default async function StockRoomPage({
             <section>
               <h2 className="mb-2 text-sm font-semibold text-ink-700">
                 {tFormulas('title')}{' '}
-                <span className="font-normal text-ink-400">({shownFormulas.length})</span>
+                <span className="font-normal text-ink-500">({shownFormulas.length})</span>
               </h2>
               <p className="mb-2 text-xs text-ink-500">{t('formulaHint')}</p>
               <TableWrapper>
@@ -407,7 +407,7 @@ export default async function StockRoomPage({
                             >
                               {format.number(doses)}
                             </span>
-                            <span className="ms-1 text-xs text-ink-400">{t('doses')}</span>
+                            <span className="ms-1 text-xs text-ink-500">{t('doses')}</span>
                           </Td>
                           <Td>
                             <ThresholdCell
@@ -427,7 +427,7 @@ export default async function StockRoomPage({
                                 {t('missingCount', { count: level.missing_count })}
                               </Badge>
                             ) : (
-                              <span className="text-xs text-ink-400">
+                              <span className="text-xs text-ink-500">
                                 {t('allIngredients', { count: level.item_count })}
                               </span>
                             )}
@@ -451,7 +451,7 @@ export default async function StockRoomPage({
       )}
 
       {tab !== 'to_order' ? (
-        <p className="mt-4 text-xs text-ink-400">{t('scopeNote')}</p>
+        <p className="mt-4 text-xs text-ink-500">{t('scopeNote')}</p>
       ) : null}
     </>
   );

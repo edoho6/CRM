@@ -254,7 +254,7 @@ function SortableWidget({
   if (!definition) {
     // A layout referencing a widget type that no longer exists must not blank
     // the dashboard — show a placeholder the user can remove.
-    body = <p className="text-sm text-ink-400">{item.type}</p>;
+    body = <p className="text-sm text-ink-500">{item.type}</p>;
   } else {
     const WidgetComponent = definition.component;
     const parsed = definition.configSchema

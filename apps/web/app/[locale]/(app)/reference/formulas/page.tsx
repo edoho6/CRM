@@ -151,7 +151,7 @@ export default async function FormulasPage({
                         </span>
                       ) : null}
                       {preview ? (
-                        <span className="mt-0.5 block text-xs text-ink-400" dir="ltr">
+                        <span className="mt-0.5 block text-xs text-ink-500" dir="ltr">
                           {preview}
                           {formula.items.length > 5 ? ' …' : ''}
                         </span>
@@ -163,7 +163,7 @@ export default async function FormulasPage({
                           {tFormulaTcm(formula.tcm_category)}
                         </TcmChip>
                       ) : (
-                        <span className="text-ink-400">—</span>
+                        <span className="text-ink-500">—</span>
                       )}
                     </Td>
                     <Td>

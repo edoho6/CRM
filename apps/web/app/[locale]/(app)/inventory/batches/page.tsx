@@ -135,7 +135,7 @@ export default async function BatchesPage({ params }: { params: Promise<{ locale
                           ) : null}
                         </span>
                       ) : (
-                        <span className="text-ink-400">{t('noExpiry')}</span>
+                        <span className="text-ink-500">{t('noExpiry')}</span>
                       )}
                     </Td>
                     <Td>{batch.supplier?.name ?? '—'}</Td>

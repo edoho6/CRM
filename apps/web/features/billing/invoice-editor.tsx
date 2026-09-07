@@ -200,7 +200,7 @@ export function InvoiceEditor({ invoice }: { invoice: InvoiceWithDetails }) {
                             aria-label={tc('delete')}
                             disabled={isPending}
                             onClick={() => run(() => deleteInvoiceItem(item.id))}
-                            className="rounded-md p-1.5 text-ink-400 transition-colors hover:bg-red-50 hover:text-red-600"
+                            className="rounded-md p-1.5 text-ink-500 transition-colors hover:bg-red-50 hover:text-red-600"
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
@@ -360,7 +360,7 @@ export function InvoiceEditor({ invoice }: { invoice: InvoiceWithDetails }) {
           </CardHeader>
           <CardBody className="p-0">
             {invoice.payments.length === 0 ? (
-              <p className="px-4 py-5 text-center text-sm text-ink-400">{t('payment.empty')}</p>
+              <p className="px-4 py-5 text-center text-sm text-ink-500">{t('payment.empty')}</p>
             ) : (
               <ul className="divide-y divide-ink-100">
                 {invoice.payments.map((payment) => (

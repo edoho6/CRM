@@ -27,7 +27,7 @@ import { BodyMap, type MappedPoint } from '@/features/reference/body-map';
  */
 
 function Prose({ text }: { text: string | null }) {
-  if (!text) return <span className="text-ink-400">—</span>;
+  if (!text) return <span className="text-ink-500">—</span>;
   return <span className="whitespace-pre-wrap">{text}</span>;
 }
 

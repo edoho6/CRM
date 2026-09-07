@@ -172,14 +172,14 @@ export default async function PortalHomePage({
                     href={`/api/documents/${document.id}`}
                     className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-ink-50"
                   >
-                    <FileText className="h-4 w-4 shrink-0 text-ink-400" aria-hidden />
+                    <FileText className="h-4 w-4 shrink-0 text-ink-500" aria-hidden />
                     <span className="min-w-0 flex-1 truncate text-sm text-ink-800">
                       {document.file_name}
                     </span>
                     <span className="shrink-0 text-xs text-ink-500" dir="ltr">
                       {format.dateTime(new Date(document.created_at), 'short')}
                     </span>
-                    <Download className="h-4 w-4 shrink-0 text-ink-400" aria-hidden />
+                    <Download className="h-4 w-4 shrink-0 text-ink-500" aria-hidden />
                   </a>
                 </li>
               ))}

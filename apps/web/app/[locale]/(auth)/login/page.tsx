@@ -29,7 +29,7 @@ export default async function LoginPage({ params }: { params: Promise<{ locale: 
     <main className="grid min-h-dvh place-items-center bg-ink-50 px-6 py-12">
       <div className="w-full max-w-sm space-y-5">
         <div className="flex flex-col items-center gap-2 text-center">
-          <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-jade-600 text-white">
+          <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-jade-700 text-white">
             <Leaf className="h-5 w-5" />
           </span>
           <div>

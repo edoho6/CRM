@@ -106,7 +106,7 @@ function PointCombobox({
   return (
     <div className="relative">
       <Search
-        className="pointer-events-none absolute inset-y-0 start-2 my-auto h-3.5 w-3.5 text-ink-400"
+        className="pointer-events-none absolute inset-y-0 start-2 my-auto h-3.5 w-3.5 text-ink-500"
         aria-hidden
       />
       <input
@@ -146,7 +146,7 @@ function PointCombobox({
             setOpen(false);
           }
         }}
-        className="h-8 w-full rounded-md border border-ink-200 bg-white ps-7 pe-2 text-sm text-ink-900 shadow-xs outline-none placeholder:text-ink-400 focus:border-jade-500 disabled:bg-ink-50"
+        className="h-8 w-full rounded-md border border-ink-200 bg-white ps-7 pe-2 text-sm text-ink-900 shadow-xs outline-none placeholder:text-ink-500 focus:border-jade-500 disabled:bg-ink-50"
       />
 
       {open && matches.length > 0 ? (
@@ -179,7 +179,7 @@ function PointCombobox({
                 ) : null}
                 {option.chinese ? <span className="text-ink-500">{option.chinese}</span> : null}
                 {option.english ? (
-                  <span dir="ltr" className="ms-auto truncate text-xs text-ink-400">
+                  <span dir="ltr" className="ms-auto truncate text-xs text-ink-500">
                     {option.english}
                   </span>
                 ) : null}
@@ -235,12 +235,12 @@ export function PointsEditor({
             <div className="mb-1.5 flex items-baseline justify-between gap-2">
               <h4 className="text-xs font-semibold text-ink-600">{tRegion(region)}</h4>
               {rows.length > 0 ? (
-                <span className="text-xs tabular-nums text-ink-400">{rows.length}</span>
+                <span className="text-xs tabular-nums text-ink-500">{rows.length}</span>
               ) : null}
             </div>
 
             {rows.length === 0 && disabled ? (
-              <p className="py-1 text-xs text-ink-400">{t('none')}</p>
+              <p className="py-1 text-xs text-ink-500">{t('none')}</p>
             ) : null}
 
             <ul className="space-y-1.5">
@@ -279,7 +279,7 @@ export function PointsEditor({
                       type="button"
                       onClick={() => remove(index)}
                       aria-label={t('remove')}
-                      className="ms-auto rounded p-1 text-ink-400 transition-colors hover:bg-red-50 hover:text-red-600"
+                      className="ms-auto rounded p-1 text-ink-500 transition-colors hover:bg-red-50 hover:text-red-600"
                     >
                       <X className="h-3.5 w-3.5" />
                     </button>

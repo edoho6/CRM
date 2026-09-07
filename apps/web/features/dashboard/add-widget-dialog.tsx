@@ -64,7 +64,7 @@ export function AddWidgetDialog({
                         {definition.displayName[locale] ?? definition.type}
                       </span>
                       {isUsed ? (
-                        <span className="shrink-0 text-xs text-ink-400">{t('alreadyAdded')}</span>
+                        <span className="shrink-0 text-xs text-ink-500">{t('alreadyAdded')}</span>
                       ) : null}
                     </span>
                     {definition.description?.[locale] ? (

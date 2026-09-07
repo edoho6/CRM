@@ -69,8 +69,8 @@ export function ThresholdCell({
         }}
         className="h-7 w-20 rounded-md border border-ink-200 bg-white px-1.5 text-sm tabular-nums text-ink-900 shadow-xs outline-none focus:border-jade-500"
       />
-      <span className="text-xs text-ink-400">{suffix}</span>
-      {isPending ? <Spinner className="h-3 w-3 text-ink-400" /> : null}
+      <span className="text-xs text-ink-500">{suffix}</span>
+      {isPending ? <Spinner className="h-3 w-3 text-ink-500" /> : null}
       {saved ? <Check className="h-3.5 w-3.5 text-jade-600" /> : null}
     </span>
   );

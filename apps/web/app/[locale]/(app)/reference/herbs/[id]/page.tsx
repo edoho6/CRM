@@ -56,7 +56,7 @@ type FormulaUse = {
 };
 
 function Prose({ text }: { text: string | null }) {
-  if (!text) return <span className="text-ink-400">—</span>;
+  if (!text) return <span className="text-ink-500">—</span>;
   return <span className="whitespace-pre-wrap">{text}</span>;
 }
 
@@ -199,7 +199,7 @@ export default async function HerbDetailPage({
                 {dosage}
               </p>
             ) : (
-              <p className="text-3xl leading-tight font-bold text-ink-400">—</p>
+              <p className="text-3xl leading-tight font-bold text-ink-500">—</p>
             )}
           </div>
 
@@ -368,7 +368,7 @@ export default async function HerbDetailPage({
             </CardHeader>
             <CardBody className="p-0">
               {uses.length === 0 ? (
-                <p className="px-4 py-6 text-center text-sm text-ink-400">{t('usedInEmpty')}</p>
+                <p className="px-4 py-6 text-center text-sm text-ink-500">{t('usedInEmpty')}</p>
               ) : (
                 <TableWrapper className="rounded-none border-0">
                   <SortableTable defaultSortKey="name">
@@ -412,7 +412,7 @@ export default async function HerbDetailPage({
                                   {tFormulaTcm(formula.tcm_category)}
                                 </TcmChip>
                               ) : (
-                                <span className="text-ink-400">—</span>
+                                <span className="text-ink-500">—</span>
                               )}
                             </Td>
                             <Td>
@@ -440,7 +440,7 @@ export default async function HerbDetailPage({
             </CardHeader>
             <CardBody className="p-0">
               {batches.length === 0 ? (
-                <p className="px-4 py-6 text-center text-sm text-ink-400">{tBatches('empty')}</p>
+                <p className="px-4 py-6 text-center text-sm text-ink-500">{tBatches('empty')}</p>
               ) : (
                 <TableWrapper className="rounded-none border-0">
                   <SortableTable defaultSortKey="expiry">
@@ -480,7 +480,7 @@ export default async function HerbDetailPage({
                                   {format.dateTime(new Date(batch.expiry_date), 'short')}
                                 </span>
                               ) : (
-                                <span className="text-ink-400">{tBatches('noExpiry')}</span>
+                                <span className="text-ink-500">{tBatches('noExpiry')}</span>
                               )}
                             </Td>
                             <Td>{batch.supplier?.name ?? '—'}</Td>
@@ -500,7 +500,7 @@ export default async function HerbDetailPage({
             </CardHeader>
             <CardBody className="p-0">
               {movements.length === 0 ? (
-                <p className="px-4 py-6 text-center text-sm text-ink-400">{tMovements('empty')}</p>
+                <p className="px-4 py-6 text-center text-sm text-ink-500">{tMovements('empty')}</p>
               ) : (
                 <TableWrapper className="rounded-none border-0">
                   <SortableTable defaultSortKey="date" defaultSortDirection="desc">

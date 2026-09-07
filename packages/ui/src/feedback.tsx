@@ -13,7 +13,7 @@ export function Badge({
       className={cn(
         'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap',
         tone === 'neutral' && 'bg-ink-100 text-ink-700',
-        tone === 'muted' && 'bg-ink-50 text-ink-500',
+        tone === 'muted' && 'bg-ink-50 text-ink-600',
         tone === 'success' && 'bg-jade-100 text-jade-800',
         tone === 'warning' && 'bg-amber-100 text-amber-800',
         tone === 'danger' && 'bg-red-100 text-red-700',
@@ -38,7 +38,10 @@ export function Alert({
 }) {
   return (
     <div
+      // A danger message interrupts; everything else is announced when the
+      // reader next pauses. Both are announced — colour alone is not a message.
       role={tone === 'danger' ? 'alert' : 'status'}
+      aria-live={tone === 'danger' ? 'assertive' : 'polite'}
       className={cn(
         'rounded-lg border px-3 py-2 text-sm',
         tone === 'info' && 'border-sky-200 bg-sky-50 text-sky-900',

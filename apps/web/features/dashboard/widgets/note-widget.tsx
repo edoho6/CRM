@@ -57,7 +57,7 @@ function NoteWidget({ config, onConfigChange }: WidgetProps<NoteConfig>) {
   return (
     <div className="relative h-full">
       {editor.isEmpty ? (
-        <p className="pointer-events-none absolute inset-x-0 top-0 text-sm text-ink-400">
+        <p className="pointer-events-none absolute inset-x-0 top-0 text-sm text-ink-500">
           {t('placeholder')}
         </p>
       ) : null}

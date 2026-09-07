@@ -161,7 +161,7 @@ function DayColumns({ days, labelEvery }: { days: PeriodStats['days']; labelEver
                 <div
                   className={cn(
                     'w-full max-w-6 rounded-t transition-colors',
-                    day.isToday ? 'bg-jade-600' : 'bg-jade-300',
+                    day.isToday ? 'bg-jade-700' : 'bg-jade-300',
                     isHover && (day.isToday ? 'bg-jade-700' : 'bg-jade-400'),
                   )}
                   // 2px surface gap between neighbours; a zero day keeps a 2px
@@ -187,7 +187,7 @@ function DayColumns({ days, labelEvery }: { days: PeriodStats['days']; labelEver
         </div>
       </div>
 
-      <div className="mt-1 flex text-[10px] text-ink-400">
+      <div className="mt-1 flex text-[10px] text-ink-500">
         {days.map((day, index) => (
           <div key={day.key} className="text-center" style={{ width: `${columnWidth}%` }}>
             {index % labelEvery === 0 || day.isToday ? (
@@ -208,13 +208,13 @@ function Delta({ current, previous, periodLabel }: { current: number; previous: 
   const Icon = delta > 0 ? TrendingUp : delta < 0 ? TrendingDown : Minus;
   // More treatments is good, so up is jade and down is muted rather than red:
   // a quieter week is information, not an alarm.
-  const tone = delta > 0 ? 'text-jade-700' : delta < 0 ? 'text-ink-500' : 'text-ink-400';
+  const tone = delta > 0 ? 'text-jade-700' : delta < 0 ? 'text-ink-500' : 'text-ink-500';
 
   return (
     <span className={cn('inline-flex items-center gap-1 text-xs', tone)}>
       <Icon className="h-3.5 w-3.5" aria-hidden />
       <span dir="ltr">{delta > 0 ? `+${delta}` : delta}</span>
-      <span className="text-ink-400">{t('vsPrevious', { period: periodLabel })}</span>
+      <span className="text-ink-500">{t('vsPrevious', { period: periodLabel })}</span>
     </span>
   );
 }
@@ -302,7 +302,7 @@ function TreatmentKpisWidget({ size }: WidgetProps<Record<string, never>>) {
         <div className="mt-4 border-t border-ink-100 pt-3">
           {openPeriod === 'today' ? (
             todaysRows.length === 0 ? (
-              <p className="py-3 text-center text-sm text-ink-400">{t('noTreatmentsToday')}</p>
+              <p className="py-3 text-center text-sm text-ink-500">{t('noTreatmentsToday')}</p>
             ) : (
               <ul className="divide-y divide-ink-100">
                 {todaysRows.map((row) => (

@@ -85,7 +85,7 @@ export function HerbImageCard({
             ) : null}
           </figure>
         ) : (
-          <div className="flex aspect-square w-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-ink-200 bg-ink-50 text-ink-400">
+          <div className="flex aspect-square w-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-ink-200 bg-ink-50 text-ink-500">
             <ImageIcon className="h-8 w-8" aria-hidden />
             <span className="text-sm">{t('none')}</span>
           </div>

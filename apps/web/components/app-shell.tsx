@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import {
+  Accessibility,
   BookOpen,
   Boxes,
   CalendarDays,
@@ -66,7 +67,7 @@ export function AppShell({
             aria-current={isActive ? 'page' : undefined}
             className={cn(
               'flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-              isActive ? 'bg-jade-600 text-white' : 'text-ink-700 hover:bg-ink-100',
+              isActive ? 'bg-jade-700 text-white' : 'text-ink-700 hover:bg-ink-100',
             )}
           >
             <item.icon className="h-4 w-4 shrink-0" aria-hidden />
@@ -79,11 +80,24 @@ export function AppShell({
 
   return (
     <div className="flex min-h-dvh">
+      {/* The first thing a keyboard reaches on every page. It is visually
+          hidden until focused, which is the whole point: a sighted mouse user
+          never sees it, and someone tabbing does not have to walk the entire
+          navigation to reach the content. */}
+      <a
+        href="#main-content"
+        className="sr-only rounded-lg bg-jade-700 px-4 py-2 text-sm font-medium text-white focus:not-sr-only focus:absolute focus:top-2 focus:start-2 focus:z-50"
+      >
+        {t('skipToContent')}
+      </a>
       {/* Desktop sidebar. `border-e` is a logical border, so it sits on the correct
           side in both Hebrew and English without a second rule. */}
-      <aside className="hidden w-60 shrink-0 flex-col border-e border-ink-200 bg-white lg:flex">
+      <aside
+        className="hidden w-60 shrink-0 flex-col border-e border-ink-200 bg-white lg:flex"
+        aria-label={t('sidebar')}
+      >
         <div className="flex items-center gap-2.5 border-b border-ink-100 px-4 py-3.5">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-jade-600 text-white">
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-jade-700 text-white">
             <Leaf className="h-4 w-4" />
           </span>
           <span className="min-w-0">
@@ -97,6 +111,12 @@ export function AppShell({
             <Link href="/settings">
               <Settings className="h-4 w-4" />
               {t('settings')}
+            </Link>
+          </Button>
+          <Button asChild variant="ghost" size="sm" className="w-full justify-start">
+            <Link href="/accessibility">
+              <Accessibility className="h-4 w-4" />
+              {t('accessibility')}
             </Link>
           </Button>
           <LanguageSwitcher className="w-full justify-center" />
@@ -120,6 +140,7 @@ export function AppShell({
               className="lg:hidden"
               onClick={() => setMobileOpen((open) => !open)}
               aria-expanded={mobileOpen}
+              aria-controls="mobile-menu"
               aria-label={t('mainMenu')}
             >
               <Menu className="h-5 w-5" />
@@ -134,7 +155,7 @@ export function AppShell({
         </header>
 
         {mobileOpen ? (
-          <div className="border-b border-ink-200 bg-white p-3 lg:hidden">
+          <div id="mobile-menu" className="border-b border-ink-200 bg-white p-3 lg:hidden">
             <div className="mb-2 flex items-center justify-between">
               <span className="text-xs text-ink-500">{userName}</span>
               <Button variant="ghost" size="icon" onClick={() => setMobileOpen(false)} aria-label={t('mainMenu')}>
@@ -151,7 +172,11 @@ export function AppShell({
           </div>
         ) : null}
 
-        <main className="min-w-0 flex-1 p-4 sm:p-6">{children}</main>
+        {/* `tabIndex={-1}` so the skip link can move focus here, not merely
+            scroll to it — otherwise the next Tab would resume from the top. */}
+        <main id="main-content" tabIndex={-1} className="min-w-0 flex-1 p-4 sm:p-6 focus:outline-none">
+          {children}
+        </main>
       </div>
     </div>
   );

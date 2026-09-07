@@ -242,7 +242,7 @@ export function DispensePanel({
                       type="button"
                       aria-label={tc('delete')}
                       onClick={() => setRows(rows.filter((_, position) => position !== index))}
-                      className="rounded-md p-2 text-ink-400 transition-colors hover:bg-red-50 hover:text-red-600"
+                      className="rounded-md p-2 text-ink-500 transition-colors hover:bg-red-50 hover:text-red-600"
                     >
                       <X className="h-4 w-4" />
                     </button>
@@ -317,7 +317,7 @@ export function DispensePanel({
         </CardHeader>
         <CardBody className="p-0">
           {records.length === 0 ? (
-            <p className="px-4 py-6 text-center text-sm text-ink-400">{t('empty')}</p>
+            <p className="px-4 py-6 text-center text-sm text-ink-500">{t('empty')}</p>
           ) : (
             <div className="space-y-4 p-4">
               {records.map((record) => (

@@ -291,7 +291,7 @@ export function CalendarView({
                   >
                     {isHour ? (
                       <span
-                        className="absolute -top-2 end-1.5 text-[11px] text-ink-400 tabular-nums"
+                        className="absolute -top-2 end-1.5 text-[11px] text-ink-500 tabular-nums"
                         dir="ltr"
                       >
                         {String(Math.floor(minutes / 60)).padStart(2, '0')}:00
@@ -352,7 +352,7 @@ export function CalendarView({
                         className={cn(
                           'absolute overflow-hidden rounded-md border-s-3 px-1.5 py-0.5 text-start transition-shadow hover:shadow-md',
                           isCancelled
-                            ? 'bg-ink-100 text-ink-400 line-through'
+                            ? 'bg-ink-100 text-ink-500 line-through'
                             : 'text-ink-900',
                         )}
                       >

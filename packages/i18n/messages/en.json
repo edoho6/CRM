@@ -72,9 +72,11 @@
     "settings": "Settings",
     "signOut": "Sign out",
     "mainMenu": "Main menu",
-    "skipToContent": "Skip to content",
+    "skipToContent": "Skip to main content",
     "reference": "Reference",
-    "points": "Points"
+    "points": "Points",
+    "sidebar": "Sidebar",
+    "accessibility": "Accessibility statement"
   },
   "auth": {
     "signInTitle": "Sign in",
@@ -1061,5 +1063,37 @@
       "entry": "Entry point",
       "exit": "Exit point"
     }
+  },
+  "accessibility": {
+    "title": "Accessibility statement",
+    "subtitle": "What is accessible, what is not yet, and who to contact",
+    "intro": "We treat accessibility as part of the craft rather than an addition to it. This system is built so that everyone working in the clinic can use it — with a mouse, with a keyboard alone, or with a screen reader.",
+    "standard": "The system is built to Israeli standard 5568, which follows WCAG 2.1 level AA. This statement is updated as the work continues.",
+    "doneTitle": "What is in place",
+    "done": {
+      "keyboard": "Full keyboard navigation on every screen — menus, filters, table sorting and the acupuncture point chart included — with a visible focus indicator throughout.",
+      "contrast": "Every colour pair that carries text is measured automatically against the 4.5:1 requirement. The check runs on the built code and fails if a new pair falls below the threshold.",
+      "landmarks": "Semantic HTML: a correct heading hierarchy, navigation, main content and header marked as such, and a skip-to-content link at the top of every page.",
+      "labels": "Every form field has an associated label, and every error message is linked to its field and announced — not signalled by colour alone.",
+      "rtl": "Full right-to-left Hebrew support, including menus, tables and dialogs mirroring correctly, while phone numbers and Latin codes keep their own direction.",
+      "zoom": "The layout is built in relative units and stays usable at 200% text zoom.",
+      "motion": "No flashing animation, nothing that moves on its own, and no time limit on completing a form."
+    },
+    "gapsTitle": "What is not finished",
+    "gapsIntro": "This list is deliberately specific. A statement that claims full conformance and is wrong is worse than one that names its own limits.",
+    "gaps": {
+      "screenReaderAudit": "A full manual pass with a screen reader (NVDA or VoiceOver) has not been done yet. Fixes so far were driven by the code and by automated checks.",
+      "bodyMap": "The acupuncture body chart is keyboard operable, but it is a schematic visual. The same information is fully available in the point list beside it.",
+      "calendar": "The calendar view has not had a full accessibility pass. Every appointment is also reachable from the patient file.",
+      "pdf": "Uploaded documents are shown as they arrive. If a document we receive is not accessible, we cannot make it so after the fact."
+    },
+    "contactTitle": "Accessibility coordinator",
+    "contactBody": "If something stops you using the system, we want to hear about it and will act on it. Accessibility reports are handled as a priority.",
+    "contactName": "Name:",
+    "contactEmail": "Email:",
+    "contactPhone": "Phone:",
+    "placeholder": "Not filled in",
+    "placeholderWarning": "The accessibility coordinator has not been named. Before this system serves patients, a name, email address and phone number must be entered here — a statement with no way to make contact does not meet the standard.",
+    "updated": "Last updated: {date}"
   }
 }

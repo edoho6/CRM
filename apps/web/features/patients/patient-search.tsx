@@ -43,7 +43,7 @@ export function PatientSearch({
     <div className="flex flex-wrap items-center gap-3">
       <div className="relative min-w-64 flex-1">
         <Search
-          className="pointer-events-none absolute inset-y-0 start-3 my-auto h-4 w-4 text-ink-400"
+          className="pointer-events-none absolute inset-y-0 start-3 my-auto h-4 w-4 text-ink-500"
           aria-hidden
         />
         <Input
@@ -59,7 +59,7 @@ export function PatientSearch({
         <Checkbox checked={inactive} onChange={(event) => setInactive(event.target.checked)} />
         {t('showInactive')}
       </label>
-      {isPending ? <Spinner className="text-ink-400" /> : null}
+      {isPending ? <Spinner className="text-ink-500" /> : null}
     </div>
   );
 }

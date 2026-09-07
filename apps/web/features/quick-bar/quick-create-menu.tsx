@@ -93,7 +93,7 @@ export function QuickCreateMenu() {
         onClick={() => setOpen((value) => !value)}
         onFocus={() => setOpen(true)}
         className={cn(
-          'flex h-11 w-11 items-center justify-center rounded-xl bg-jade-600 text-white',
+          'flex h-11 w-11 items-center justify-center rounded-xl bg-jade-700 text-white',
           'transition-all duration-150 ease-out',
           'hover:-translate-y-px hover:bg-jade-700 hover:shadow-md',
           'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-jade-600',
@@ -127,7 +127,7 @@ export function QuickCreateMenu() {
                   'focus-visible:bg-jade-50 focus-visible:outline-none',
                 )}
               >
-                <action.icon className="h-4 w-4 shrink-0 text-ink-400" aria-hidden />
+                <action.icon className="h-4 w-4 shrink-0 text-ink-500" aria-hidden />
                 {t(`actions.${action.key}`)}
               </button>
             </div>

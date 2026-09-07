@@ -56,7 +56,7 @@ export function WidgetFrame({
         {...(isEditing ? dragHandle?.attributes : {})}
         {...(isEditing ? dragHandle?.listeners : {})}
       >
-        {isEditing ? <GripVertical className="h-3.5 w-3.5 shrink-0 text-ink-400" aria-hidden /> : null}
+        {isEditing ? <GripVertical className="h-3.5 w-3.5 shrink-0 text-ink-500" aria-hidden /> : null}
         <h2 className="min-w-0 flex-1 truncate text-xs font-semibold tracking-wide text-ink-600 uppercase">
           {title}
         </h2>
@@ -81,7 +81,7 @@ export function WidgetFrame({
             onClick={onRemove}
             onPointerDown={(event) => event.stopPropagation()}
             aria-label={t('removeWidget')}
-            className="rounded-md p-1 text-ink-400 transition-colors hover:bg-red-50 hover:text-red-600"
+            className="rounded-md p-1 text-ink-500 transition-colors hover:bg-red-50 hover:text-red-600"
           >
             <X className="h-3.5 w-3.5" />
           </button>
@@ -102,7 +102,7 @@ export function WidgetLoading() {
 
 export function WidgetEmpty({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex h-full items-center justify-center px-2 text-center text-sm text-ink-400">
+    <div className="flex h-full items-center justify-center px-2 text-center text-sm text-ink-500">
       {children}
     </div>
   );

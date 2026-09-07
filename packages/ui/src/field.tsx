@@ -8,7 +8,7 @@ import { cn } from './cn';
 
 export const inputClasses =
   'w-full rounded-lg border border-ink-200 bg-white px-3 py-2 text-sm text-ink-900 ' +
-  'placeholder:text-ink-400 shadow-xs transition-colors text-start ' +
+  'placeholder:text-ink-500 shadow-xs transition-colors text-start ' +
   'focus:border-jade-500 focus:outline-2 focus:outline-offset-0 focus:outline-jade-600/30 ' +
   'disabled:cursor-not-allowed disabled:bg-ink-50 disabled:text-ink-500 ' +
   'read-only:bg-ink-50 read-only:text-ink-700';
@@ -97,7 +97,22 @@ export interface FieldProps {
 }
 
 /** Label + control + error message, with the wiring that keeps them associated. */
+/**
+ * A labelled form field.
+ *
+ * The hint and the error carry ids derived from the field's own, and the input
+ * points at them through `aria-describedby`. Without that the error is a red
+ * paragraph a screen reader may never associate with the control it belongs to
+ * — and colour alone is never a message.
+ *
+ * `aria-live` on the error means a validation failure that appears after
+ * submission is announced rather than silently rendered.
+ */
 export function Field({ label, htmlFor, error, hint, required, className, children }: FieldProps) {
+  const hintId = htmlFor && hint && !error ? `${htmlFor}-hint` : undefined;
+  const errorId = htmlFor && error ? `${htmlFor}-error` : undefined;
+  const describedBy = [hintId, errorId].filter(Boolean).join(' ') || undefined;
+
   return (
     <div className={cn('space-y-1.5', className)}>
       {label ? (
@@ -105,10 +120,21 @@ export function Field({ label, htmlFor, error, hint, required, className, childr
           {label}
         </Label>
       ) : null}
-      {children}
-      {hint && !error ? <p className="text-xs text-ink-500">{hint}</p> : null}
+      {/* The control is cloned only to attach the description and the invalid
+          state; everything else about it is the caller's business. */}
+      {describedBy && React.isValidElement(children)
+        ? React.cloneElement(children as React.ReactElement<Record<string, unknown>>, {
+            'aria-describedby': describedBy,
+            ...(error ? { 'aria-invalid': true } : {}),
+          })
+        : children}
+      {hint && !error ? (
+        <p id={hintId} className="text-xs text-ink-500">
+          {hint}
+        </p>
+      ) : null}
       {error ? (
-        <p className="text-xs font-medium text-red-600" role="alert">
+        <p id={errorId} className="text-xs font-medium text-red-700" role="alert" aria-live="polite">
           {error}
         </p>
       ) : null}

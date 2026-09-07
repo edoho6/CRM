@@ -208,7 +208,7 @@ export default async function HerbsPage({
                             </span>
                           ) : null}
                           {herb.english_name ? (
-                            <span className="block text-xs text-ink-400" dir="ltr">
+                            <span className="block text-xs text-ink-500" dir="ltr">
                               {herb.english_name}
                             </span>
                           ) : null}
@@ -221,7 +221,7 @@ export default async function HerbsPage({
                           {tTcm(herb.tcm_category)}
                         </TcmChip>
                       ) : (
-                        <span className="text-ink-400">—</span>
+                        <span className="text-ink-500">—</span>
                       )}
                     </Td>
                     <Td>
@@ -230,7 +230,7 @@ export default async function HerbsPage({
                           {tTemp(herb.temperature)}
                         </TcmChip>
                       ) : (
-                        <span className="text-ink-400">—</span>
+                        <span className="text-ink-500">—</span>
                       )}
                     </Td>
                     <Td>
@@ -242,7 +242,7 @@ export default async function HerbsPage({
                           {dose}
                         </span>
                       ) : (
-                        <span className="text-ink-400">—</span>
+                        <span className="text-ink-500">—</span>
                       )}
                     </Td>
                     {tracksInventory ? (
@@ -261,7 +261,7 @@ export default async function HerbsPage({
                             {format.number(stock.remaining)} {tUnit(stock.unit as never)}
                           </span>
                         ) : (
-                          <span className="text-xs text-ink-400">{t('notStocked')}</span>
+                          <span className="text-xs text-ink-500">{t('notStocked')}</span>
                         )}
                       </Td>
                     ) : null}

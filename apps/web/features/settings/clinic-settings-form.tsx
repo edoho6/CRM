@@ -90,7 +90,7 @@ export function ClinicSettingsForm({
                     )}
                   >
                     <span className="flex items-center gap-2 text-sm font-semibold text-ink-900">
-                      <Boxes className={cn('h-4 w-4', selected ? 'text-jade-700' : 'text-ink-400')} />
+                      <Boxes className={cn('h-4 w-4', selected ? 'text-jade-700' : 'text-ink-500')} />
                       {t(`${option.key}.title`)}
                       {selected ? <Check className="ms-auto h-4 w-4 text-jade-700" /> : null}
                     </span>

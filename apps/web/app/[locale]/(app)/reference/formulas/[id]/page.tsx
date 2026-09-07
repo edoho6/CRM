@@ -58,7 +58,7 @@ type ItemRow = HerbFormulaItem & {
 type FormulaRow = HerbFormula & { items: ItemRow[] };
 
 function Prose({ text }: { text: string | null }) {
-  if (!text) return <span className="text-ink-400">—</span>;
+  if (!text) return <span className="text-ink-500">—</span>;
   return <span className="whitespace-pre-wrap">{text}</span>;
 }
 
@@ -226,7 +226,7 @@ export default async function FormulaDetailPage({
             </CardHeader>
             <CardBody className="p-0">
               {items.length === 0 ? (
-                <p className="px-4 py-6 text-center text-sm text-ink-400">{t('needsHerb')}</p>
+                <p className="px-4 py-6 text-center text-sm text-ink-500">{t('needsHerb')}</p>
               ) : (
                 <TableWrapper className="rounded-none border-0">
                   <SortableTable defaultSortKey="order">
@@ -257,7 +257,7 @@ export default async function FormulaDetailPage({
                             }}
                           >
                             <Td>
-                              <span className="text-xs tabular-nums text-ink-400">{index + 1}</span>
+                              <span className="text-xs tabular-nums text-ink-500">{index + 1}</span>
                             </Td>
                             <Td>
                               {herb ? (
@@ -281,7 +281,7 @@ export default async function FormulaDetailPage({
                                   ) : null}
                                 </>
                               ) : (
-                                <span className="text-ink-400">—</span>
+                                <span className="text-ink-500">—</span>
                               )}
                               {item.notes ? (
                                 <span className="block text-xs text-ink-600">{item.notes}</span>
@@ -293,7 +293,7 @@ export default async function FormulaDetailPage({
                                   {tTcm(herb.tcm_category)}
                                 </TcmChip>
                               ) : (
-                                <span className="text-ink-400">—</span>
+                                <span className="text-ink-500">—</span>
                               )}
                             </Td>
                             <Td>

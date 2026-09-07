@@ -83,7 +83,7 @@ export function OrderListRowControls({
             }}
             className="h-7 w-24 rounded-md border border-ink-200 bg-white px-1.5 text-sm tabular-nums shadow-xs outline-none focus:border-jade-500"
           />
-          <span className="text-xs text-ink-400">
+          <span className="text-xs text-ink-500">
             {entry.unit === 'dose' ? t('doses') : tUnit(entry.unit as never)}
           </span>
         </span>
@@ -115,14 +115,14 @@ export function OrderListRowControls({
       </Td>
       <Td className="text-end">
         <span className="inline-flex items-center gap-1">
-          {isPending ? <Spinner className="h-3 w-3 text-ink-400" /> : null}
+          {isPending ? <Spinner className="h-3 w-3 text-ink-500" /> : null}
           {saved ? <Check className="h-3.5 w-3.5 text-jade-600" /> : null}
           {entry.status === 'received' ? (
             <button
               type="button"
               onClick={() => save({ status: 'pending' })}
               aria-label={t('status.pending')}
-              className="rounded p-1 text-ink-400 transition-colors hover:bg-ink-100 hover:text-ink-700"
+              className="rounded p-1 text-ink-500 transition-colors hover:bg-ink-100 hover:text-ink-700"
             >
               <Undo2 className="h-4 w-4" />
             </button>
@@ -131,7 +131,7 @@ export function OrderListRowControls({
             type="button"
             onClick={remove}
             aria-label={tc('delete')}
-            className="rounded p-1 text-ink-400 transition-colors hover:bg-red-50 hover:text-red-600"
+            className="rounded p-1 text-ink-500 transition-colors hover:bg-red-50 hover:text-red-600"
           >
             <Trash2 className="h-4 w-4" />
           </button>

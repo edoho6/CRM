@@ -129,11 +129,11 @@ export default async function PatientsPage({
                           {patient.phone}
                         </span>
                       ) : (
-                        <span className="text-ink-400">—</span>
+                        <span className="text-ink-500">—</span>
                       )}
                     </Td>
-                    <Td>{age === null ? <span className="text-ink-400">—</span> : age}</Td>
-                    <Td>{patient.city ?? <span className="text-ink-400">—</span>}</Td>
+                    <Td>{age === null ? <span className="text-ink-500">—</span> : age}</Td>
+                    <Td>{patient.city ?? <span className="text-ink-500">—</span>}</Td>
                     <Td>
                       <Badge tone={patient.is_active ? 'success' : 'muted'}>
                         {patient.is_active ? tc('active') : tc('inactive')}

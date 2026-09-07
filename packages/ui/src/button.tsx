@@ -19,7 +19,7 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        primary: 'bg-jade-600 text-white hover:bg-jade-700 active:bg-jade-800 shadow-xs',
+        primary: 'bg-jade-700 text-white hover:bg-jade-700 active:bg-jade-800 shadow-xs',
         secondary:
           'bg-white text-ink-800 border border-ink-200 hover:bg-ink-50 hover:border-ink-300 active:bg-ink-100 shadow-xs',
         ghost: 'text-ink-700 hover:bg-ink-100 hover:shadow-sm active:bg-ink-200',
