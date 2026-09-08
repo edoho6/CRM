@@ -86,41 +86,42 @@ export type PointRegion = (typeof POINT_REGIONS)[number];
  * the centre: auricular points have no upper or lower, and putting them in one
  * of the quadrants would be a lie for the sake of a tidy grid.
  */
-export const POINT_PLACEMENTS = [
-  'right_upper',
-  'left_upper',
-  'center',
-  'ear',
-  'right_lower',
-  'left_lower',
-] as const;
+export const POINT_PLACEMENTS = ['right', 'left', 'center', 'ear'] as const;
 export type PointPlacement = (typeof POINT_PLACEMENTS)[number];
 
 /**
- * Notes written before placements existed used one of five flat buckets. They
- * still have to open, so the old value is read and translated to the nearest
- * new one. Side is preserved where it was recorded; where it was not, the
- * right-hand quadrant is chosen so the point lands somewhere the practitioner
- * can see and move, rather than vanishing.
+ * Older notes used other vocabularies, and all of them still have to open.
+ *
+ * Two generations precede this one: five flat regions, then four quadrants that
+ * split each side into upper and lower. The quadrants were dropped because the
+ * split was never used the way it was meant to be — a prescription is written as
+ * "right, left, midline, ear", and asking whether SP6 is upper or lower is a
+ * question about the grid rather than about the patient.
+ *
+ * The side is what survives the translation, because the side is the part that
+ * was ever clinically meant. A value with no side at all lands on the right, so
+ * the point appears somewhere the practitioner can see and move it rather than
+ * vanishing from the record.
  */
 const LEGACY_REGION_TO_PLACEMENT: Record<string, PointPlacement> = {
-  upper: 'right_upper',
-  lower: 'right_lower',
-  left: 'left_upper',
-  right: 'right_upper',
-  center: 'center',
+  upper: 'right',
+  lower: 'right',
+  right_upper: 'right',
+  right_lower: 'right',
+  left_upper: 'left',
+  left_lower: 'left',
 };
 
 export function toPointPlacement(value: unknown): PointPlacement {
-  if (typeof value !== 'string') return 'right_upper';
+  if (typeof value !== 'string') return 'right';
   if ((POINT_PLACEMENTS as readonly string[]).includes(value)) return value as PointPlacement;
-  return LEGACY_REGION_TO_PLACEMENT[value] ?? 'right_upper';
+  return LEGACY_REGION_TO_PLACEMENT[value] ?? 'right';
 }
 
 /** Which side of the body a placement is on, or null when it has no side. */
 export function placementSide(placement: PointPlacement): 'left' | 'right' | null {
-  if (placement === 'left_upper' || placement === 'left_lower') return 'left';
-  if (placement === 'right_upper' || placement === 'right_lower') return 'right';
+  if (placement === 'left') return 'left';
+  if (placement === 'right') return 'right';
   return null;
 }
 
@@ -131,13 +132,72 @@ export function placementSide(placement: PointPlacement): 'left' | 'right' | nul
  * tincture is millilitres and a powder is not, and letting the two be picked
  * independently only ever produces "100g of tincture".
  */
-export const HERB_PREPARATIONS = ['dried_herb', 'powder', 'tincture'] as const;
+/**
+ * How a herb is kept and handed over, in the order a practitioner thinks of them.
+ *
+ * `powder` is the stored value for granules, and it stays that way: it is what
+ * every existing row and every CHECK constraint already says, and renaming it to
+ * match the label would mean a data migration to change nothing. The label is
+ * where the 5:1 belongs anyway — the ratio is what the practitioner needs to see
+ * and not what the column needs to hold.
+ *
+ * Three of the six are powders — granules, dry extract and ground herb — and
+ * they behave identically at the point of dispensing, which is why the unit
+ * lists below treat them as one.
+ */
+export const HERB_PREPARATIONS = [
+  'dried_herb',
+  'powder',
+  'tincture',
+  'dry_extract',
+  'ground_herb',
+  'capsule',
+] as const;
 export type HerbPreparation = (typeof HERB_PREPARATIONS)[number];
 
-export function preparationUnit(
+/** The three that are handled as a powder, whatever they are made from. */
+const POWDERS: readonly HerbPreparation[] = ['powder', 'dry_extract', 'ground_herb'];
+
+export function isPowder(preparation: HerbPreparation | null | undefined): boolean {
+  return preparation ? POWDERS.includes(preparation) : false;
+}
+
+/**
+ * The units a dose of each preparation is measured in.
+ *
+ * Not one unit per preparation but a list, because the same tincture is
+ * prescribed in millilitres to one patient and in droppers to another — and a
+ * dried decoction is measured by the gram when it is weighed out and by the cup
+ * when the patient is told how to drink it. Forcing a single unit made the
+ * instruction wrong for half the prescriptions written.
+ *
+ * The first entry is the default, so it is also the one that will be right most
+ * of the time.
+ */
+export const PREPARATION_UNITS: Record<HerbPreparation, readonly HerbUnit[]> = {
+  dried_herb: ['gram', 'teaspoon', 'tablespoon', 'cup', 'dose', 'milliliter', 'cap'],
+  powder: ['gram', 'teaspoon', 'tablespoon'],
+  dry_extract: ['gram', 'teaspoon', 'tablespoon'],
+  ground_herb: ['gram', 'teaspoon', 'tablespoon'],
+  tincture: ['milliliter', 'dropper'],
+  capsule: ['capsule'],
+};
+
+export function preparationUnits(
   preparation: HerbPreparation | null | undefined,
-): 'gram' | 'milliliter' {
-  return preparation === 'tincture' ? 'milliliter' : 'gram';
+): readonly HerbUnit[] {
+  return PREPARATION_UNITS[preparation ?? 'dried_herb'] ?? PREPARATION_UNITS.dried_herb;
+}
+
+/**
+ * The unit a preparation is measured in by default.
+ *
+ * Still here, and still one value, because stock is weighed rather than dosed:
+ * a batch of tincture is received in millilitres whoever it is later prescribed
+ * to in droppers.
+ */
+export function preparationUnit(preparation: HerbPreparation | null | undefined): HerbUnit {
+  return preparationUnits(preparation)[0] ?? 'gram';
 }
 
 /**
@@ -255,7 +315,28 @@ export const HERB_CATEGORIES = [
 ] as const;
 export type HerbCategory = (typeof HERB_CATEGORIES)[number];
 
-export const HERB_UNITS = ['gram', 'capsule', 'bottle', 'box', 'milliliter', 'packet'] as const;
+/**
+ * Units, for stock and for a dose.
+ *
+ * The first six are how a herb is bought and counted on a shelf. The rest are
+ * how a patient is told to take it — a teaspoon, a capful, a dropper — and they
+ * exist because a dosing instruction written in grams is one the patient cannot
+ * follow without scales in the kitchen.
+ */
+export const HERB_UNITS = [
+  'gram',
+  'capsule',
+  'bottle',
+  'box',
+  'milliliter',
+  'packet',
+  'teaspoon',
+  'tablespoon',
+  'cup',
+  'dose',
+  'cap',
+  'dropper',
+] as const;
 export type HerbUnit = (typeof HERB_UNITS)[number];
 
 export const FORMULA_CATEGORIES = ['classical', 'modified', 'custom'] as const;

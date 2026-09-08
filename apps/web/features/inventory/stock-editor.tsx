@@ -7,6 +7,7 @@ import { Button, Field, Input, LtrInput, Popover, Select, Spinner } from '@clini
 import { HERB_PREPARATIONS, preparationUnit, type HerbPreparation } from '@clinic/domain';
 import { Link, useRouter } from '@clinic/i18n/navigation';
 import { receiveBatch, setHerbThreshold } from './actions';
+import { formatDate } from '@clinic/i18n';
 
 export interface StockBatchSummary {
   id: string;
@@ -124,7 +125,7 @@ export function StockEditor({
 
         <div className="space-y-3">
           <div>
-            <h4 className="mb-1 text-xs font-semibold text-ink-600">{t('threshold')}</h4>
+            <h3 className="mb-1 text-xs font-semibold text-ink-600">{t('threshold')}</h3>
             <div className="grid grid-cols-2 gap-1.5">
               <Field label={t('thresholdShort')} htmlFor={`th-${herbId}`} density="compact">
                 <LtrInput
@@ -164,7 +165,7 @@ export function StockEditor({
           </div>
 
           <div className="border-t border-ink-100 pt-2.5">
-            <h4 className="mb-1 text-xs font-semibold text-ink-600">{tBatches('receive')}</h4>
+            <h3 className="mb-1 text-xs font-semibold text-ink-600">{tBatches('receive')}</h3>
             <div className="grid grid-cols-2 gap-1.5">
               <Field label={tPrep('label')} htmlFor={`pr-${herbId}`} density="compact">
                 <Select
@@ -223,7 +224,7 @@ export function StockEditor({
 
           {batches.length > 0 ? (
             <div className="border-t border-ink-100 pt-2.5">
-              <h4 className="mb-1 text-xs font-semibold text-ink-600">{tBatches('title')}</h4>
+              <h3 className="mb-1 text-xs font-semibold text-ink-600">{tBatches('title')}</h3>
               <ul className="space-y-0.5 text-xs">
                 {batches.map((batch) => (
                   <li key={batch.id} className="flex items-baseline justify-between gap-2">
@@ -234,7 +235,7 @@ export function StockEditor({
                     </span>
                     <span dir="ltr" className="tabular-nums text-ink-600">
                       {batch.expiry_date
-                        ? format.dateTime(new Date(batch.expiry_date), 'short')
+                        ? formatDate(new Date(batch.expiry_date))
                         : '—'}
                     </span>
                   </li>

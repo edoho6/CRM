@@ -1,7 +1,8 @@
-import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
+import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Accessibility, AlertTriangle, Check } from 'lucide-react';
 import { Card, CardBody, CardHeader, CardTitle } from '@clinic/ui';
 import { PageHeader } from '@/components/app-shell';
+import { formatDate } from '@clinic/i18n';
 
 /**
  * The accessibility statement.
@@ -27,7 +28,6 @@ export default async function AccessibilityPage({
   setRequestLocale(locale);
 
   const t = await getTranslations('accessibility');
-  const format = await getFormatter();
 
   const done = [
     'keyboard',
@@ -122,7 +122,7 @@ export default async function AccessibilityPage({
         </Card>
 
         <p className="text-xs text-ink-600">
-          {t('updated', { date: format.dateTime(new Date('2026-09-07'), 'short') })}
+          {t('updated', { date: formatDate(new Date('2026-09-07')) })}
         </p>
       </div>
     </>

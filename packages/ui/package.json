@@ -15,6 +15,7 @@
     "clean": "rimraf .turbo node_modules"
   },
   "dependencies": {
+    "@clinic/domain": "workspace:*",
     "@radix-ui/react-dialog": "^1.1.23",
     "@radix-ui/react-direction": "^1.1.4",
     "@radix-ui/react-dropdown-menu": "^2.1.24",

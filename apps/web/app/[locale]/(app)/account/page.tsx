@@ -1,11 +1,26 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { CalendarCog, CreditCard, Palette } from 'lucide-react';
-import { Card, CardBody, CardHeader, CardTitle } from '@clinic/ui';
-import type { AppointmentType } from '@clinic/db/types';
+import {
+  BadgeCheck,
+  CalendarCog,
+  ClipboardList,
+  Clock,
+  CreditCard,
+  Palette,
+} from 'lucide-react';
+import { Collapsible } from '@clinic/ui';
+import { Link } from '@clinic/i18n/navigation';
+import type {
+  AppointmentType,
+  PractitionerSchedule,
+  Profile,
+  ScheduleException,
+} from '@clinic/db/types';
 import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
 import { AppointmentTypesManager } from '@/features/settings/appointment-types-manager';
 import { AppearanceSettings } from '@/features/settings/appearance-settings';
+import { PractitionerForm } from '@/features/settings/practitioner-form';
+import { ScheduleForm } from '@/features/settings/schedule-form';
 
 /**
  * The personal area.
@@ -27,60 +42,128 @@ export default async function AccountPage({ params }: { params: Promise<{ locale
 
   const t = await getTranslations('account');
   const tTypes = await getTranslations('settings.appointmentTypes');
+  const tProtocols = await getTranslations('protocols');
+  const tPractitioner = await getTranslations('account.practitioner');
+  const tSections = await getTranslations('account.sections');
 
   const scope = await getClinicScope();
   if (!scope) return null;
 
-  const { data: types } = await scope.supabase
-    .from('appointment_types')
-    .select('*')
-    .order('sort_order', { ascending: true })
-    .order('created_at', { ascending: true })
-    .returns<AppointmentType[]>();
+  const today = new Date().toISOString().slice(0, 10);
+
+  const [{ data: types }, { data: profile }, schedulesResult, exceptionsResult] =
+    await Promise.all([
+    scope.supabase
+      .from('appointment_types')
+      .select('*')
+      .order('sort_order', { ascending: true })
+      .order('created_at', { ascending: true })
+      .returns<AppointmentType[]>(),
+    // Their own row. RLS keeps it to that, and the id is the session's.
+    scope.supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', scope.context.membership.user_id)
+      .maybeSingle<Profile>(),
+    scope.supabase
+      .from('practitioner_schedules')
+      .select('*')
+      .eq('practitioner_id', scope.context.membership.user_id)
+      .order('weekday', { ascending: true })
+      .order('start_time', { ascending: true })
+      .returns<PractitionerSchedule[]>(),
+    // Future closures only. A holiday from last March is history, and a list
+    // that accumulates them buries next week's.
+    scope.supabase
+      .from('schedule_exceptions')
+      .select('*')
+      .eq('practitioner_id', scope.context.membership.user_id)
+      .gte('date', today)
+      .order('date', { ascending: true })
+      .limit(400)
+      .returns<ScheduleException[]>(),
+  ]);
 
   return (
     <>
       <PageHeader title={t('title')} description={t('subtitle')} />
 
-      <div className="max-w-4xl space-y-5">
-        <Card>
-          <CardHeader>
-            <CardTitle>
-              <span className="inline-flex items-center gap-2">
-                <Palette className="h-4 w-4 text-ink-600" aria-hidden />
-                {t('appearance')}
-              </span>
-            </CardTitle>
-          </CardHeader>
-          <CardBody>
-            <AppearanceSettings />
-          </CardBody>
-        </Card>
+      {/* Collapsed by default, except the one that gates a printed document.
+          Six open panels made a page that had to be scrolled to find anything;
+          six headings make a page you read in one glance and open one of. */}
+      <div className="max-w-4xl space-y-3">
+        <p className="text-xs text-ink-600">{tSections('hint')}</p>
 
-        <section>
-          <h2 className="mb-1 flex items-center gap-2 text-base font-semibold text-ink-900">
-            <CalendarCog className="h-4 w-4 text-ink-600" aria-hidden />
-            {tTypes('title')}
-          </h2>
-          <p className="mb-3 text-sm text-ink-600">{tTypes('subtitle')}</p>
+        {/* Open on arrival, because everything printed for a patient carries
+            these — and a treatment confirmation with them empty is a page a
+            health fund will not accept. */}
+        <Collapsible
+          defaultOpen
+          title={tPractitioner('title')}
+          icon={<BadgeCheck className="h-4 w-4" aria-hidden />}
+        >
+          <PractitionerForm profile={profile} />
+        </Collapsible>
+
+        <Collapsible
+          title={tTypes('title')}
+          icon={<CalendarCog className="h-4 w-4" aria-hidden />}
+          badge={
+            <span className="text-xs text-ink-600">
+              {tTypes('countBadge', { count: types?.length ?? 0 })}
+            </span>
+          }
+        >
           <AppointmentTypesManager types={types ?? []} />
-        </section>
+        </Collapsible>
+
+        <Collapsible
+          title={t('appearance')}
+          icon={<Palette className="h-4 w-4" aria-hidden />}
+        >
+          <AppearanceSettings />
+        </Collapsible>
+
+        {/* Its own screen rather than a panel: seven days of switches and times
+            plus a list of closures is more than belongs inside an accordion. */}
+        <Collapsible
+          title={t('schedule')}
+          description={t('scheduleBody')}
+          icon={<Clock className="h-4 w-4" aria-hidden />}
+        >
+          <ScheduleForm
+            schedules={schedulesResult.data ?? []}
+            exceptions={exceptionsResult.data ?? []}
+          />
+        </Collapsible>
+
+        <Collapsible
+          title={tProtocols('title')}
+          description={tProtocols('subtitle')}
+          icon={<ClipboardList className="h-4 w-4" aria-hidden />}
+        >
+          <Link
+            href="/account/protocols"
+            className="inline-flex items-center gap-1.5 rounded-md text-sm font-medium text-jade-700 underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-jade-700"
+          >
+            {tProtocols('manage')}
+          </Link>
+        </Collapsible>
 
         {/* Where the money is configured is a property of the practice rather
             than of the person, so it is named here and lives in Settings. */}
-        <Card>
-          <CardHeader>
-            <CardTitle>
-              <span className="inline-flex items-center gap-2">
-                <CreditCard className="h-4 w-4 text-ink-600" aria-hidden />
-                {t('payments')}
-              </span>
-            </CardTitle>
-          </CardHeader>
-          <CardBody>
-            <p className="text-sm text-ink-700">{t('paymentsBody')}</p>
-          </CardBody>
-        </Card>
+        <Collapsible
+          title={t('payments')}
+          description={t('paymentsBody')}
+          icon={<CreditCard className="h-4 w-4" aria-hidden />}
+        >
+          <Link
+            href="/settings"
+            className="inline-flex items-center gap-1.5 rounded-md text-sm font-medium text-jade-700 underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-jade-700"
+          >
+            {t('toSettings')}
+          </Link>
+        </Collapsible>
       </div>
     </>
   );

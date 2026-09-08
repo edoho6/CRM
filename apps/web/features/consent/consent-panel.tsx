@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { useFormatter, useTranslations } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import { Check, Download, FileText, X } from 'lucide-react';
 import {
   Alert,
@@ -14,6 +14,8 @@ import {
   EmptyState,
   Select,
   Spinner,
+  SignaturePad,
+  type SignatureValue,
 } from '@clinic/ui';
 import {
   CONSENT_KINDS,
@@ -28,6 +30,7 @@ import type {
   PatientConsentWithDocument,
 } from '@clinic/db/types';
 import { recordConsent } from './actions';
+import { formatDate, formatDateTime } from '@clinic/i18n';
 
 /**
  * Consent, on the patient's file.
@@ -58,11 +61,24 @@ export function ConsentPanel({
 }) {
   const t = useTranslations('consent');
   const tc = useTranslations('common');
-  const format = useFormatter();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [method, setMethod] = useState<ConsentMethod>('in_person');
+
+  /*
+   * The signature is collected once and applies to the next grant.
+   *
+   * Not one pad per row: a patient signing in the room signs once, and four
+   * canvases down the page would ask them to sign the same thing four times.
+   * It is cleared after each decision so it cannot be reused for a consent the
+   * person did not see.
+   *
+   * Withdrawing is deliberately not signed. A withdrawal has to be as easy as
+   * possible, and asking someone to sign in order to take a permission back is
+   * a small obstacle in front of a right.
+   */
+  const [signature, setSignature] = useState<SignatureValue | null>(null);
 
   const statusFor = (kind: ConsentKind) => statuses.find((entry) => entry.kind === kind) ?? null;
   const documentFor = (kind: ConsentKind) =>
@@ -72,18 +88,22 @@ export function ConsentPanel({
     setError(null);
     const document = documentFor(kind);
     startTransition(async () => {
-      const result = await recordConsent({
-        patient_id: patientId,
-        document_id: granted ? (document?.id ?? null) : null,
-        kind,
-        granted,
-        method,
-        notes: null,
-      });
+      const result = await recordConsent(
+        {
+          patient_id: patientId,
+          document_id: granted ? (document?.id ?? null) : null,
+          kind,
+          granted,
+          method,
+          notes: null,
+        },
+        granted ? signature : null,
+      );
       if (!result.ok) {
         setError(tc('errorGeneric'));
         return;
       }
+      setSignature(null);
       router.refresh();
     });
   }
@@ -114,6 +134,27 @@ export function ConsentPanel({
         <CardBody className="space-y-3">
           <p className="text-sm text-ink-700">{t('intro')}</p>
 
+          {/* Above the decisions, because it is signed before the button is
+              pressed rather than after. */}
+          {method === 'in_person' || method === 'paper_form' ? (
+            <div className="rounded-lg border border-ink-200 bg-ink-50 p-3">
+              <SignaturePad
+                value={signature}
+                onChange={setSignature}
+                labels={{
+                  legend: t('signature.legend'),
+                  draw: t('signature.draw'),
+                  type: t('signature.type'),
+                  drawHint: t('signature.drawHint'),
+                  typeHint: t('signature.typeHint'),
+                  typedLabel: t('signature.typedLabel'),
+                  clear: t('signature.clear'),
+                }}
+              />
+              <p className="mt-2 text-xs text-ink-600">{t('signature.optional')}</p>
+            </div>
+          ) : null}
+
           <ul className="divide-y divide-ink-100">
             {CONSENT_KINDS.map((kind) => {
               const status = statusFor(kind);
@@ -128,7 +169,7 @@ export function ConsentPanel({
                     {status ? (
                       <span className="block text-xs text-ink-600">
                         {t(granted ? 'grantedOn' : 'withdrawnOn', {
-                          date: format.dateTime(new Date(status.decided_at), 'short'),
+                          date: formatDate(new Date(status.decided_at)),
                         })}
                         {status.document_version !== null
                           ? ` · ${t('version', { version: status.document_version })}`
@@ -192,7 +233,7 @@ export function ConsentPanel({
                   className="flex flex-wrap items-baseline gap-x-2 gap-y-1 px-4 py-2 text-sm"
                 >
                   <span dir="ltr" className="text-xs tabular-nums text-ink-600">
-                    {format.dateTime(new Date(entry.decided_at), 'dateTime')}
+                    {formatDateTime(new Date(entry.decided_at))}
                   </span>
                   <span className="font-medium text-ink-900">{t(`kinds.${entry.kind}`)}</span>
                   <Badge tone={entry.granted ? 'success' : 'danger'}>

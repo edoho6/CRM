@@ -33,6 +33,9 @@ declare
   v_encounter  uuid;
   v_doc_shared uuid;
   v_doc_private uuid;
+  v_package_a uuid;
+  v_package_b uuid;
+  v_consent_a uuid;
   v_count      integer;
 begin
   -- ==========================================================================
@@ -83,6 +86,66 @@ begin
 
   insert into public.tcm_notes (clinic_id, encounter_id, chief_complaint)
   values (v_clinic_a, v_encounter, 'Isolation test note');
+
+  -- A punch card in each clinic, and a redemption against B's, so the
+  -- balances view has something to leak if it is going to.
+  insert into public.patient_packages (clinic_id, patient_id, name, total_sessions)
+  values (v_clinic_a, v_patient_a, 'Iso Card A', 3) returning id into v_package_a;
+
+  insert into public.patient_packages (clinic_id, patient_id, name, total_sessions)
+  values (v_clinic_b, v_patient_b, 'Iso Card B', 3) returning id into v_package_b;
+
+  insert into public.package_redemptions (clinic_id, package_id)
+  values (v_clinic_b, v_package_b);
+
+  -- A signed consent in each. The signature is the evidence; it must not be
+  -- readable across a tenant boundary any more than the decision is.
+  insert into public.patient_consents (clinic_id, patient_id, kind, granted, method)
+  values (v_clinic_a, v_patient_a, 'treatment', true, 'in_person')
+  returning id into v_consent_a;
+
+  insert into public.signatures (clinic_id, patient_id, consent_id, method, content)
+  values (v_clinic_a, v_patient_a, v_consent_a, 'typed', 'Alice ClinicA');
+
+  insert into public.patient_consents (clinic_id, patient_id, kind, granted, method)
+  values (v_clinic_b, v_patient_b, 'treatment', true, 'in_person');
+
+  insert into public.signatures (clinic_id, patient_id, consent_id, method, content)
+  select v_clinic_b, v_patient_b, c.id, 'typed', 'Bob ClinicB'
+  from public.patient_consents c
+  where c.clinic_id = v_clinic_b limit 1;
+
+  -- A treatment confirmation in each: a statement about a named patient, which
+  -- is as identifying as the record it summarises.
+  insert into public.treatment_confirmations
+    (clinic_id, patient_id, practitioner_id, treatment_dates,
+     practitioner_name, patient_name)
+  values (v_clinic_a, v_patient_a, v_user_a, array[current_date]::date[],
+          'Practitioner A', 'Alice ClinicA');
+
+  insert into public.treatment_confirmations
+    (clinic_id, patient_id, practitioner_id, treatment_dates,
+     practitioner_name, patient_name)
+  values (v_clinic_b, v_patient_b, v_user_b, array[current_date]::date[],
+          'Practitioner B', 'Bob ClinicB');
+
+  -- A protocol in each clinic. Not patient data, but it is a practitioner's
+  -- clinical working material and has exactly the same reason to stay put.
+  insert into public.treatment_protocols (clinic_id, name, indications)
+  values (v_clinic_a, 'Iso Protocol A', 'Isolation test');
+
+  insert into public.treatment_protocols (clinic_id, name, indications)
+  values (v_clinic_b, 'Iso Protocol B', 'Isolation test');
+
+  -- Working hours and a closure for each owner, for the same reason: the diary
+  -- is a schedule of when a named person is at work.
+  insert into public.practitioner_schedules (clinic_id, practitioner_id, weekday, start_time, end_time)
+  values (v_clinic_a, v_user_a, 0, '09:00', '17:00'),
+         (v_clinic_b, v_user_b, 0, '09:00', '17:00');
+
+  insert into public.schedule_exceptions (clinic_id, practitioner_id, date, is_closed, reason)
+  values (v_clinic_a, v_user_a, current_date + 30, true, 'Iso closure A'),
+         (v_clinic_b, v_user_b, current_date + 30, true, 'Iso closure B');
 
   insert into public.patient_documents (clinic_id, patient_id, file_path, file_name, shared_with_patient)
   values (v_clinic_a, v_patient_a, v_clinic_a || '/' || v_patient_a || '/shared.pdf', 'shared.pdf', true)
@@ -138,6 +201,97 @@ begin
   select count(*) into v_count from public.herbs where clinic_id = v_clinic_b;
   if v_count <> 0 then raise exception 'FAIL: herb catalogue leaked across clinics'; end if;
   raise notice 'ok   herb catalogue isolated';
+
+  -- A protocol is a practitioner's own clinical material. Reading a colleague's
+  -- across a tenant boundary is reading how they treat.
+  select count(*) into v_count from public.treatment_protocols where clinic_id = v_clinic_a;
+  if v_count <> 1 then raise exception 'FAIL: clinic A cannot read its own protocol'; end if;
+
+  select count(*) into v_count from public.treatment_protocols where clinic_id = v_clinic_b;
+  if v_count <> 0 then raise exception 'FAIL: treatment protocols leaked across clinics'; end if;
+  raise notice 'ok   treatment protocols isolated';
+
+  -- Punch cards, their redemptions, and the view that counts them. The view is
+  -- security_invoker, and this is the check that says so.
+  select count(*) into v_count from public.patient_packages where clinic_id = v_clinic_b;
+  if v_count <> 0 then raise exception 'FAIL: packages leaked across clinics'; end if;
+
+  select count(*) into v_count from public.package_redemptions where clinic_id = v_clinic_b;
+  if v_count <> 0 then raise exception 'FAIL: package redemptions leaked across clinics'; end if;
+
+  select count(*) into v_count from public.package_balances where clinic_id = v_clinic_b;
+  if v_count <> 0 then raise exception 'FAIL: package_balances bypassed RLS'; end if;
+
+  select count(*) into v_count from public.package_balances where clinic_id = v_clinic_a;
+  if v_count <> 1 then raise exception 'FAIL: clinic A cannot read its own package balance'; end if;
+  raise notice 'ok   packages, redemptions and the balances view isolated';
+
+  -- A signature is the evidence behind a consent, and travels with it.
+  select count(*) into v_count from public.signatures where clinic_id = v_clinic_b;
+  if v_count <> 0 then raise exception 'FAIL: signatures leaked across clinics'; end if;
+
+  select count(*) into v_count from public.treatment_confirmations where clinic_id = v_clinic_b;
+  if v_count <> 0 then raise exception 'FAIL: treatment confirmations leaked across clinics'; end if;
+  raise notice 'ok   signatures and treatment confirmations isolated';
+
+  -- A signature cannot be edited or removed, on the same reasoning as the
+  -- consent it belongs to: it is evidence, and evidence that can be revised is
+  -- not evidence.
+  --
+  -- Two independent things stop the write, and either is a pass: the table has
+  -- no UPDATE policy at all, so RLS makes the row invisible to UPDATE and it
+  -- matches zero rows with no error raised — and the append-only trigger is
+  -- there in case a future policy ever made the row visible. Assuming only the
+  -- second one and treating "the trigger didn't fire" as a leak was the bug
+  -- here: on RLS alone the trigger never runs, and this failed on a target the
+  -- policy already protects more strongly than the trigger does.
+  declare
+    v_blocked boolean := false;
+  begin
+    begin
+      update public.signatures set content = 'Forged' where clinic_id = v_clinic_a;
+    exception
+      when sqlstate 'P0001' then
+        if sqlerrm like '%append_only%' then
+          v_blocked := true;
+        else
+          raise;
+        end if;
+    end;
+    get diagnostics v_count = row_count;
+    if v_blocked then
+      raise notice 'ok   signatures are append-only (trigger refused the update)';
+    elsif v_count = 0 then
+      raise notice 'ok   signatures are append-only (no UPDATE policy leaves no row to touch)';
+    else
+      raise exception 'FAIL: % signature row(s) were edited', v_count;
+    end if;
+  end;
+
+  -- The card cannot be overdrawn, and the refusal comes from the database
+  -- rather than from a button. Three sessions, three redemptions, and the
+  -- fourth must fail.
+  insert into public.package_redemptions (clinic_id, package_id)
+  values (v_clinic_a, v_package_a), (v_clinic_a, v_package_a), (v_clinic_a, v_package_a);
+
+  begin
+    insert into public.package_redemptions (clinic_id, package_id)
+    values (v_clinic_a, v_package_a);
+    raise exception 'FAIL: a package was overdrawn';
+  exception
+    when sqlstate 'P0001' then
+      if sqlerrm not like '%package_exhausted%' then raise; end if;
+      raise notice 'ok   the database refuses to overdraw a package';
+  end;
+
+  -- When someone works, and when they are closed, is not the other clinic's
+  -- business either.
+  select count(*) into v_count from public.practitioner_schedules where clinic_id = v_clinic_b;
+  if v_count <> 0 then raise exception 'FAIL: working hours leaked across clinics'; end if;
+
+  select count(*) into v_count from public.schedule_exceptions where clinic_id = v_clinic_b;
+  if v_count <> 0 then raise exception 'FAIL: schedule exceptions leaked across clinics'; end if;
+  raise notice 'ok   working hours and closures isolated';
 
   -- Views are declared security_invoker, so they must inherit the caller's policies
   -- rather than running with the rights of whoever created them.

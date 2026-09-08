@@ -75,7 +75,9 @@ export const orderListEntrySchema = z
       .union([z.string(), z.number(), z.null(), z.undefined()])
       .transform((v) => (v === null || v === undefined || v === '' ? null : Number(v)))
       .refine((v) => v === null || (Number.isFinite(v) && v > 0), { error: 'invalid_quantity' }),
-    unit: z.enum([...HERB_UNITS, 'dose'] as const).default('gram'),
+    // `dose` used to be appended here because the unit list did not carry it.
+    // It does now, so appending it again would list the same value twice.
+    unit: z.enum(HERB_UNITS).default('gram'),
     /**
      * Part of the identity of a line, not a detail of it: dried root and powder
      * of the same herb are two orders, and were previously treated as one.
@@ -221,7 +223,16 @@ export type PatientConsentValues = z.input<typeof patientConsentSchema>;
  */
 export const appointmentTypeSchema = z.object({
   name_he: requiredText(80),
-  name_en: requiredText(80),
+  /**
+   * Optional, and falls back to the Hebrew name.
+   *
+   * A single-practitioner Hebrew clinic has no reason to name every treatment
+   * twice, and requiring it meant either an invented translation or a copy of
+   * the Hebrew — both of which the calendar then displays to an English reader
+   * as though they were meant. Falling back is the honest version of the same
+   * thing, and it costs nothing to fill in later.
+   */
+  name_en: optionalText(80),
   default_duration_minutes: z
     .union([z.string(), z.number()])
     .transform((v) => (typeof v === 'number' ? v : Number(v)))

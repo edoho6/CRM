@@ -18,6 +18,7 @@ import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
 import { herbPrimaryName } from '@/lib/display';
 import { InventoryNav } from '@/features/inventory/inventory-nav';
+import { formatDate } from '@clinic/i18n';
 
 /** Batches expiring within this window are flagged so they get used first. */
 const EXPIRY_WARNING_DAYS = 60;
@@ -126,7 +127,7 @@ export default async function BatchesPage({ params }: { params: Promise<{ locale
                       {expiry ? (
                         <span className="flex items-center gap-1.5">
                           <span dir="ltr" className="tabular-nums">
-                            {format.dateTime(expiry, 'short')}
+                            {formatDate(expiry)}
                           </span>
                           {expired ? (
                             <Badge tone="danger">{t('expired')}</Badge>

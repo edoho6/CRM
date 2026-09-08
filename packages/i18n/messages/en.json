@@ -82,7 +82,10 @@
     "collapseSidebar": "Collapse menu",
     "expandSidebar": "Expand menu",
     "account": "My area",
-    "forms": "Forms"
+    "forms": "Forms",
+    "assistant": "Ask about the data",
+    "reports": "Reports",
+    "userMenu": "User menu — {name}"
   },
   "auth": {
     "signInTitle": "Sign in",
@@ -201,6 +204,14 @@
       "collectedThisMonth": "Collected this month",
       "outstanding": "Outstanding",
       "invoicesThisMonth": "Invoices this month"
+    },
+    "tasks": {
+      "newTask": "New task",
+      "placeholder": "What needs doing?",
+      "empty": "Nothing outstanding.",
+      "markDone": "Mark “{title}” as done",
+      "urgent": "Urgent",
+      "overdue": "Overdue"
     }
   },
   "patients": {
@@ -230,7 +241,9 @@
       "appointments": "Appointments",
       "documents": "Documents",
       "medical": "Medical background",
-      "consent": "Consent"
+      "consent": "Consent",
+      "forms": "Questionnaires",
+      "encountersWithCount": "{count, plural, =0 {Treatment history — none yet} one {Treatment history — 1 treatment} other {Treatment history — # treatments}}"
     },
     "fields": {
       "firstName": "First name",
@@ -287,7 +300,8 @@
     "kpi": {
       "notActive": "Not in treatment",
       "total": "All patients"
-    }
+    },
+    "singular": "Patient"
   },
   "appointments": {
     "title": "Calendar",
@@ -341,7 +355,20 @@
     "noneInRange": "No appointments in this range",
     "moreInDay": "{count} more",
     "countInView": "{count, plural, =0 {No appointments} one {1 appointment} other {# appointments}}",
-    "searchPatient": "Search for a patient by name"
+    "searchPatient": "Search for a patient by name",
+    "outsideHours": "Outside the working hours you set",
+    "closedDay": "Closed",
+    "repeatSeries": "Course of treatment",
+    "repeatSeriesHint": "This appointment repeats at the interval you choose. Closed days are skipped, and any hour already taken is reported at the end — the rest are booked regardless.",
+    "everyWeeks": "Every N weeks",
+    "occurrences": "Number of times",
+    "bookSeries": "Book {count} appointments",
+    "seriesCreated": "{count} appointments booked. These were not:",
+    "seriesSkipped": {
+      "closed": "Closed day",
+      "overlap": "That hour is taken",
+      "failed": "Not saved"
+    }
   },
   "encounters": {
     "title": "Treatments",
@@ -407,7 +434,6 @@
       "retention": "Retention (min)",
       "remove": "Remove point",
       "empty": "No points recorded",
-      "placeholder": "Search a point",
       "none": "None",
       "hint": "Type a point code (LU7) or a name and the list opens. Free text is fine too."
     },
@@ -435,11 +461,9 @@
       "dietary_advice": "Dietary advice"
     },
     "region": {
+      "right": "Right",
+      "left": "Left",
       "center": "Midline",
-      "right_upper": "Right, upper",
-      "left_upper": "Left, upper",
-      "right_lower": "Right, lower",
-      "left_lower": "Left, lower",
       "ear": "Ear"
     },
     "bodyMap": {
@@ -451,7 +475,25 @@
     },
     "autosaveOn": "Autosave is on",
     "autosavedAt": "Autosaved at {time}",
-    "autosaveFailed": "Autosave failed — save manually"
+    "autosaveFailed": "Autosave failed — save manually",
+    "compare": {
+      "title": "Compared with a previous treatment",
+      "chooseTreatment": "Treatment being compared",
+      "mostRecent": "Most recent",
+      "pointsKept": "Kept",
+      "pointsDropped": "Dropped",
+      "pointsAdded": "Added",
+      "pattern": "Pattern",
+      "principle": "Treatment principle",
+      "prescription": "Prescription",
+      "notes": "What was done",
+      "pointsUsed": "Points used",
+      "complaint": "Complaint",
+      "showMore": "Show all",
+      "showLess": "Show less"
+    },
+    "sessionNav": "Move between treatments",
+    "sessionNumber": "Session {number} of {total}"
   },
   "billing": {
     "title": "Billing",
@@ -669,13 +711,18 @@
       "external_application": "External use"
     },
     "unit": {
-      "gram": "gram",
-      "capsule": "capsule",
+      "gram": "g",
+      "capsule": "capsules",
       "bottle": "bottle",
       "box": "box",
       "milliliter": "ml",
-      "packet": "packet",
-      "dose": "doses"
+      "packet": "sachet",
+      "dose": "doses",
+      "teaspoon": "tsp",
+      "tablespoon": "tbsp",
+      "cup": "cup",
+      "cap": "capful",
+      "dropper": "dropper"
     },
     "formulas": {
       "title": "Formulas",
@@ -798,7 +845,9 @@
         "empty_stomach": "On an empty stomach"
       },
       "dosesPerDay": "Times a day",
-      "perDay": "{count, plural, one {once a day} other {# times a day}}"
+      "perDay": "{count, plural, one {once a day} other {# times a day}}",
+      "printPrescription": "Print prescription and label",
+      "doseUnit": "Unit"
     },
     "tcmCategory": {
       "release_exterior_warm": "Release the exterior — warm, acrid",
@@ -958,10 +1007,13 @@
       "alreadyListedTopUp": "Already listed — this updates that line"
     },
     "preparation": {
-      "label": "Preparation",
+      "label": "Format",
       "dried_herb": "Dried herb",
-      "powder": "Powder",
-      "tincture": "Tincture"
+      "powder": "Granules (5:1)",
+      "tincture": "Tincture",
+      "dry_extract": "DE — dry extract",
+      "ground_herb": "Ground herb (SAN)",
+      "capsule": "Capsules"
     },
     "granules": {
       "title": "Granule conversion",
@@ -983,7 +1035,53 @@
     "download": "Download",
     "signOut": "Sign out",
     "notLinked": "This account isn't linked to a patient file yet. Please contact the clinic.",
-    "clinicContact": "Contact the clinic"
+    "clinicContact": "Contact the clinic",
+    "nav": {
+      "label": "Navigation",
+      "home": "My appointments",
+      "forms": "Questionnaires",
+      "consent": "Consents"
+    },
+    "forms": {
+      "title": "Questionnaires",
+      "intro": "Fill these in before your appointment and there is no paperwork at the clinic. Your answers go straight into your file.",
+      "none": "Nothing to fill in at the moment.",
+      "submit": "Send",
+      "thanks": "Thank you. Your answers have been saved to your file.",
+      "failed": "That did not send. Please try again.",
+      "answerRequired": "This question needs an answer",
+      "answeredOn": "You filled this in on {date}. You can fill it in again if anything has changed.",
+      "signature": {
+        "legend": "Signature",
+        "draw": "Draw",
+        "type": "Type",
+        "drawHint": "Sign with a finger, a mouse or a stylus on the white area.",
+        "typeHint": "Type your full name instead of drawing. Equally valid, and recorded as such.",
+        "typedLabel": "Full name as signature",
+        "clear": "Clear the signature",
+        "optional": "Optional. You can send the questionnaire without signing."
+      }
+    },
+    "consent": {
+      "title": "Consents",
+      "intro": "What you have agreed to, and what you can change. You can withdraw at any time, here.",
+      "none": "Nothing to agree to at the moment.",
+      "version": "Version {version}",
+      "agree": "I agree",
+      "withdraw": "Withdraw consent",
+      "granted": "Your consent has been recorded. Thank you.",
+      "withdrawn": "Your consent has been withdrawn.",
+      "signature": {
+        "legend": "Signature",
+        "draw": "Draw",
+        "type": "Type",
+        "drawHint": "Sign with a finger, a mouse or a stylus on the white area.",
+        "typeHint": "Type your full name instead of drawing. Equally valid, and recorded as such.",
+        "typedLabel": "Full name as signature",
+        "clear": "Clear the signature",
+        "optional": "Optional."
+      }
+    }
   },
   "errors": {
     "notFound": "Page not found",
@@ -1079,7 +1177,8 @@
       "active": "Offered when booking",
       "add": "Add a treatment type",
       "deleteConfirm": "Delete this treatment type?",
-      "inUse": "This type is attached to existing bookings, so it was hidden from the picker rather than deleted — past appointments keep their label."
+      "inUse": "This type is attached to existing bookings, so it was hidden from the picker rather than deleted — past appointments keep their label.",
+      "countBadge": "{count, plural, =0 {No types} one {1 type} other {# types}}"
     }
   },
   "reference": {
@@ -1182,6 +1281,23 @@
       "crossing": "Crossing point",
       "entry": "Entry point",
       "exit": "Exit point"
+    },
+    "compare": {
+      "title": "Compare",
+      "subtitle": "Rows where the entries differ are marked. Only the attributes where a difference is clinical are marked — temperature, taste, channel, action.",
+      "column": "Select for comparison",
+      "toggle": "Add {name} to the comparison",
+      "remove": "Remove {name}",
+      "selected": "{count} of {max} selected",
+      "compare": "Compare",
+      "needTwo": "Pick at least two",
+      "backToList": "Back to the list",
+      "nothingSelected": "Nothing selected to compare",
+      "nothingSelectedBody": "Tick two to four entries in a list — herbs, formulas or points — and press “Compare”.",
+      "differs": "differs",
+      "attribute": "Attribute",
+      "ingredients": "Ingredients",
+      "ingredientCount": "Number of herbs"
     }
   },
   "accessibility": {
@@ -1263,7 +1379,17 @@
     "documentBody": "Document text",
     "bodyHint": "The full text exactly as the patient will see it.",
     "tooShort": "A title and a full text are both required.",
-    "publishWarning": "Once published the text cannot be edited. Make sure it is final — a correction means publishing a new version."
+    "publishWarning": "Once published the text cannot be edited. Make sure it is final — a correction means publishing a new version.",
+    "signature": {
+      "legend": "Patient signature",
+      "draw": "Draw",
+      "type": "Type",
+      "drawHint": "Sign with a finger, a mouse or a stylus on the white area.",
+      "typeHint": "Type your full name instead of drawing. Equally valid, and recorded as such.",
+      "typedLabel": "Full name as signature",
+      "clear": "Clear the signature",
+      "optional": "Optional. A consent is recorded without one, with the date, the method and the document version. Withdrawing never needs a signature."
+    }
   },
   "theme": {
     "label": "Colour theme",
@@ -1292,7 +1418,23 @@
     "language": "Interface language",
     "languageHint": "Switches immediately and keeps you on the same page.",
     "payments": "Payments",
-    "paymentsBody": "The payment provider belongs to the practice rather than to one practitioner, so it is configured under Settings → Payments."
+    "paymentsBody": "The payment provider belongs to the practice rather than to one practitioner, so it is configured under Settings → Payments.",
+    "schedule": "Working hours",
+    "scheduleBody": "The days and hours you see patients.",
+    "practitioner": {
+      "title": "Practitioner details",
+      "fullName": "Full name",
+      "nationalId": "ID number",
+      "nationalIdHint": "Yours, not the patient’s. It appears on a treatment confirmation.",
+      "phone": "Phone",
+      "saveFailed": "Could not save. An ID number must be nine digits.",
+      "email": "Email",
+      "address": "Address"
+    },
+    "sections": {
+      "hint": "Select a heading to open it."
+    },
+    "toSettings": "Go to payment settings"
   },
   "forms": {
     "title": "Questionnaires",
@@ -1339,6 +1481,230 @@
       "scale": "Scale",
       "date": "Date",
       "section": "Section (no answer)"
+    },
+    "fillIn": "Fill in a questionnaire",
+    "chooseForm": "Choose a questionnaire",
+    "previousSubmissions": "Previous submissions",
+    "noSubmissions": "This patient has not filled in a questionnaire yet.",
+    "noTemplatesYet": "No questionnaires have been built yet. Build them on the questionnaires screen, then they can be filled in here and from a treatment.",
+    "duringTreatment": "During a treatment",
+    "unknownForm": "Deleted questionnaire",
+    "outcomeTitle": "Measure over time",
+    "outcomeQuestion": "Question shown",
+    "outcomeSummary": "{count, plural, one {1 answer} other {# answers}} · from {first} to {latest}",
+    "answeredOn": "Date",
+    "showTable": "Show the data as a table",
+    "hideTable": "Hide the table"
+  },
+  "schedule": {
+    "title": "Working hours",
+    "subtitle": "The days and hours you see patients, and diary closures. The calendar shades hours outside these and marks closed days — it does not block them, because sometimes you do see someone at eight in the evening.",
+    "workingHours": "Working week",
+    "weekday": {
+      "0": "Sunday",
+      "1": "Monday",
+      "2": "Tuesday",
+      "3": "Wednesday",
+      "4": "Thursday",
+      "5": "Friday",
+      "6": "Saturday"
+    },
+    "closed": "Closed",
+    "startTime": "From",
+    "endTime": "Until",
+    "reason": "Reason",
+    "hoursSaveFailed": "Could not save the working hours. Please try again.",
+    "hour": "Hour",
+    "minute": "Minutes",
+    "addBreak": "Add",
+    "closures": "Diary closures",
+    "closuresHint": "A holiday, a festival, a course. One day or a range of dates.",
+    "noClosures": "No closures planned.",
+    "closeFrom": "From",
+    "closeTo": "Until",
+    "reasonPlaceholder": "For example: holiday",
+    "closeDiary": "Close the diary",
+    "reopen": "Undo this closure",
+    "dayCount": "{count, plural, one {1 day} other {# days}}",
+    "closureSaveFailed": "Could not close the diary. Please try again.",
+    "allDay": "All day",
+    "openOnlyBetween": "Open only between"
+  },
+  "protocols": {
+    "title": "Treatment protocols",
+    "subtitle": "Point combinations and prescriptions you come back to. A protocol is a starting point — it fills a treatment in and leaves everything editable, and no link is kept between a treatment and the protocol it started from.",
+    "manage": "Manage protocols",
+    "apply": "Apply a protocol",
+    "applyAction": "Apply",
+    "applyPoints": "Fill points from a protocol",
+    "applyPrescription": "Fill prescription from a protocol",
+    "search": "Search by name or indication",
+    "saveFromTreatment": "Save as protocol",
+    "saveFromTreatmentHint": "Saves this treatment’s points and prescription for reuse",
+    "saveFromTreatmentBody": "Saves the points, the treatment principle and the latest prescription from this treatment — as they are stored, not as they are on screen. The treatment is saved first.",
+    "savedFromTreatment": "Saved as a protocol.",
+    "newProtocol": "New protocol",
+    "newProtocolHint": "A new protocol starts empty. Points and a prescription are added by applying it to a treatment and saving from there — that is where the point editor and the body chart are.",
+    "editProtocol": "Edit protocol",
+    "name": "Name",
+    "description": "Notes",
+    "indications": "What it is for",
+    "indicationsHint": "The pattern or complaint. This is what it is searched by.",
+    "treatmentPrinciple": "Treatment principle",
+    "retire": "Retire",
+    "restore": "Restore",
+    "retired": "Retired",
+    "pointCount": "{count, plural, one {1 point} other {# points}}",
+    "hasPrescription": "Has a prescription",
+    "empty": "No protocols yet. The usual way to make one is to finish a treatment and press “Save as protocol”."
+  },
+  "workspace": {
+    "openFiles": "Open files",
+    "closeFile": "Close {name}",
+    "closeAll": "Close all"
+  },
+  "assistant": {
+    "title": "Ask about the data",
+    "subtitle": "A question about the clinic’s numbers — how many, who, when. Not a clinical tool: what to prescribe is what the record is for.",
+    "questionLabel": "Question",
+    "placeholder": "For example: how many new patients in the last six months?",
+    "ask": "Ask",
+    "thinking": "Looking…",
+    "noAnswer": "No answer came back.",
+    "noRows": "That query returned nothing.",
+    "truncated": "Showing the first 50 rows only.",
+    "privacyTitle": "What leaves the clinic",
+    "privacyBody": "Your question and the query results — names, dates and numbers — are sent to Anthropic so the answer can be written. The contents of clinical records, national ID numbers and addresses are never sent. If that is not acceptable, simply do not use this screen; nothing else in the system talks to an external service.",
+    "notConfigured": "The assistant is not set up",
+    "notConfiguredBody": "It needs an Anthropic API key in the {variable} environment variable in apps/web/.env.local, then a server restart. The key stays on the server and never enters the code or git.",
+    "unavailable": "Could not reach the service. Try again in a moment.",
+    "gaveUp": "I could not answer that from the data I can reach. Try putting it another way.",
+    "tooLong": "That question is too long. One sentence is enough.",
+    "examples": {
+      "busy": "When am I busiest?",
+      "inactive": "Who has not been in for three months?",
+      "herbs": "Which herbs do I use most?",
+      "owed": "Who owes me money?"
     }
+  },
+  "reports": {
+    "title": "Reports",
+    "subtitle": "The practice from a distance. The same numbers the assistant answers with, laid out at once.",
+    "period": "Report period",
+    "lastMonths": "{count, plural, one {Last month} other {Last # months}}",
+    "noData": "No data in this period.",
+    "showTable": "Show as a table",
+    "hideTable": "Hide the table",
+    "generatedOn": "Generated {date}",
+    "sections": {
+      "trends": "Trends",
+      "breakdown": "Breakdown",
+      "actions": "What to do about it"
+    },
+    "treatments": "Treatments",
+    "treatmentsHint": "Treatments recorded in the period.",
+    "revenue": "Revenue",
+    "outstandingTotal": "{amount} of it is still unpaid.",
+    "newVsReturning": "First visits",
+    "newVsReturningHint": "How many treatments were a patient’s first, against returns.",
+    "appointmentOutcomes": "Bookings that did not happen",
+    "appointmentOutcomesHint": "Cancellations and no-shows as a share of all bookings in the period.",
+    "missed": "Cancelled or no-show",
+    "weekdayLoad": "Load by day of the week",
+    "patientStatuses": "Patient statuses",
+    "topHerbs": "Most-used herbs",
+    "topHerbsHint": "By how often they were dispensed, not by weight.",
+    "topPoints": "Most-used points",
+    "inactivePatients": "Not seen for a while",
+    "inactivePatientsHint": "Patients with no treatment in the last three months.",
+    "unpaid": "Outstanding",
+    "nothingOutstanding": "Nothing outstanding.",
+    "toBilling": "Go to billing",
+    "lowStock": "Low stock",
+    "stockFine": "No herb is below its threshold.",
+    "toInventory": "Go to inventory",
+    "columns": {
+      "month": "Month",
+      "count": "Treatments",
+      "billed": "Billed",
+      "paid": "Paid",
+      "outstanding": "Outstanding",
+      "firstVisit": "First visit",
+      "returning": "Return",
+      "weekday": "Day",
+      "bookings": "Bookings",
+      "status": "Status",
+      "herb": "Herb",
+      "point": "Point",
+      "times": "Times",
+      "totalQuantity": "Total quantity",
+      "patient": "Patient",
+      "lastTreatment": "Last treatment",
+      "invoice": "Invoice",
+      "issued": "Issued",
+      "remaining": "Remaining",
+      "unit": "Unit"
+    }
+  },
+  "confirmations": {
+    "title": "Treatment confirmation",
+    "subtitle": "The document a patient submits to their health fund to claim. Tick the dates from the record, and add by hand any treatment that predates this system.",
+    "fromRecord": "Dates from the record",
+    "noTreatments": "No treatments recorded for this patient yet.",
+    "addByHand": "Add a date by hand",
+    "addByHandHint": "For treatment given before this system was in use.",
+    "purpose": "Purpose",
+    "purposeHint": "For example: for submission to Maccabi. Optional.",
+    "selectedCount": "{count, plural, =0 {No dates selected} one {1 date} other {# dates}}",
+    "issue": "Issue confirmation",
+    "issuedBefore": "Previously issued",
+    "datesCount": "{count, plural, one {1 treatment} other {# treatments}}",
+    "print": "Print",
+    "missingPractitioner": "Fill in your name in the personal area before issuing a confirmation.",
+    "goToProfile": "Go to the personal area",
+    "document": {
+      "heading": "Confirmation of treatment",
+      "issuedOn": "Issued {date}",
+      "taxId": "Business ID",
+      "statement": "I, the undersigned, {practitioner}, ID {practitionerId}, hereby confirm that I treated {patient}, ID {patientId}, on the dates listed below.",
+      "license": "Certification number",
+      "datesHeading": "{count, plural, one {Date of treatment} other {Dates of treatment (#)}}",
+      "purpose": "Purpose",
+      "signature": "Practitioner’s signature",
+      "print": "Print",
+      "disclaimer": "A supporting document for an insurance claim. It is not a receipt and not a tax document. A receipt is issued separately."
+    }
+  },
+  "packages": {
+    "title": "Packages",
+    "none": "No open package for this patient.",
+    "add": "Open a package",
+    "name": "Package name",
+    "namePlaceholder": "For example: ten treatments",
+    "sessions": "Number of sessions",
+    "price": "Price",
+    "purchasedOn": "Purchased on",
+    "expiresOn": "Expires",
+    "expiresHint": "Leave blank — a package with no expiry is the ordinary case.",
+    "remaining": "{remaining} of {total} left",
+    "redeem": "Use a session",
+    "undo": "Undo this redemption",
+    "usedUp": "Fully used",
+    "expired": "Expired",
+    "exhausted": "This package is fully used. Open another rather than overdrawing it.",
+    "alreadyRedeemed": "That treatment has already been drawn off this package."
+  },
+  "prescriptionPrint": {
+    "heading": "Herbal prescription",
+    "patient": "Patient",
+    "practitioner": "Practitioner",
+    "contents": "Contents",
+    "herb": "Herb",
+    "quantity": "Quantity",
+    "howToTake": "How to take it",
+    "daysSupply": "Supply",
+    "notes": "Notes",
+    "cutHere": "Cut here and attach to the bag",
+    "keepAway": "Store in a cool, dry place, out of reach of children. Contact the clinic with any question or unexpected effect."
   }
 }

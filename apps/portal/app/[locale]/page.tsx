@@ -16,6 +16,8 @@ import type { Appointment, AppointmentType, PatientDocument, Profile } from '@cl
 import type { Locale } from '@clinic/domain';
 import { appointmentTypeName } from './appointment-name';
 import { portalSignOut } from './login/actions';
+import { PortalNav } from './portal-nav';
+import { formatDate } from '@clinic/i18n';
 
 // Everything here is one patient's own data; nothing may be cached at build time.
 export const dynamic = 'force-dynamic';
@@ -115,6 +117,8 @@ export default async function PortalHomePage({
         </form>
       </header>
 
+      <PortalNav current="home" />
+
       <Card>
         <CardHeader>
           <CardTitle>{t('myAppointments')}</CardTitle>
@@ -177,7 +181,7 @@ export default async function PortalHomePage({
                       {document.file_name}
                     </span>
                     <span className="shrink-0 text-xs text-ink-500" dir="ltr">
-                      {format.dateTime(new Date(document.created_at), 'short')}
+                      {formatDate(new Date(document.created_at))}
                     </span>
                     <Download className="h-4 w-4 shrink-0 text-ink-500" aria-hidden />
                   </a>

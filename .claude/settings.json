@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash('C:/Program Files/nodejs/node.exe' -e ' *)",
+      "Bash(\"C:/Program Files/nodejs/node.exe\" i18n-reports.mjs)",
+      "PowerShell($env:Path = \"C:\\\\Program Files\\\\nodejs;$env:APPDATA\\\\npm;$env:Path\"; Set-Location \"C:\\\\Users\\\\User\\\\Desktop\\\\CRM Project\"; pnpm typecheck 2>&1 | Select-String -Pattern \"error TS|Tasks:\" | Select-Object -First 25)",
+      "PowerShell($env:Path = \"C:\\\\Program Files\\\\nodejs;$env:APPDATA\\\\npm;$env:Path\"; Set-Location \"C:\\\\Users\\\\User\\\\Desktop\\\\CRM Project\"; pnpm test 2>&1 | Select-String -Pattern \"Tests |Test Files|FAIL|reports\\\\.|MISSING|×\" | Select-Object -First 20)",
+      "Bash(\"C:/Program Files/nodejs/node.exe\" patch-sidebar-footer.mjs)",
+      "Bash(\"C:/Program Files/nodejs/node.exe\" i18n-usermenu.mjs)"
+    ]
+  }
+}

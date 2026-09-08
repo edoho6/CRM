@@ -7,6 +7,7 @@ import { POINT_BODY_AREAS, POINT_CATEGORIES, POINT_CHANNELS } from '@clinic/doma
 import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
 import { ReferenceNav } from '@/features/reference/reference-nav';
+import { CompareToggle, CompareTray } from '@/features/reference/compare-controls';
 import { PointSearch } from '@/features/reference/point-search';
 
 export default async function PointsPage({
@@ -24,6 +25,7 @@ export default async function PointsPage({
   const tChannel = await getTranslations('reference.pointChannel');
   const tArea = await getTranslations('reference.bodyArea');
   const tc = await getTranslations('common');
+  const tCompare = await getTranslations('reference.compare');
 
   const scope = await getClinicScope();
   if (!scope) return null;
@@ -77,6 +79,9 @@ export default async function PointsPage({
           <SortableTable defaultSortKey="code">
             <thead>
               <tr>
+                <th scope="col" className="w-10 border-b border-ink-200 bg-ink-50 px-3 py-2">
+                  <span className="sr-only">{tCompare('column')}</span>
+                </th>
                 <SortTh sortKey="code">{t('fields.code')}</SortTh>
                 <SortTh sortKey="pinyin">{t('fields.pinyin')}</SortTh>
                 <SortTh sortKey="chinese">{t('fields.chineseName')}</SortTh>
@@ -100,6 +105,9 @@ export default async function PointsPage({
                     area: point.body_area ? tArea(point.body_area) : null,
                   }}
                 >
+                  <Td className="w-10">
+                    <CompareToggle kind="point" id={point.id} label={point.code} />
+                  </Td>
                   <Td>
                     <Link
                       href={`/reference/points/${point.id}`}
@@ -156,6 +164,8 @@ export default async function PointsPage({
           </SortableTable>
         </TableWrapper>
       )}
+
+      <CompareTray />
     </>
   );
 }

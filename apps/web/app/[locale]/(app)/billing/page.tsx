@@ -15,6 +15,7 @@ import { Link } from '@clinic/i18n/navigation';
 import type { Invoice, Patient } from '@clinic/db/types';
 import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
+import { formatDate } from '@clinic/i18n';
 
 type InvoiceRow = Invoice & { patient: Pick<Patient, 'id' | 'full_name'> | null };
 
@@ -123,7 +124,7 @@ export default async function BillingPage({ params }: { params: Promise<{ locale
                   </Td>
                   <Td>
                     <span dir="ltr" className="tabular-nums">
-                      {format.dateTime(new Date(invoice.created_at), 'short')}
+                      {formatDate(new Date(invoice.created_at))}
                     </span>
                   </Td>
                   <Td>

@@ -64,3 +64,11 @@ botanical_migration_to_run.sql
 8_patient_status_to_run.sql
 9_workflow_round2_to_run.sql
 10_forms_and_dosing_to_run.sql
+11_treatment_protocols_to_run.sql
+12_signatures_packages_confirmations_to_run.sql
+14_tasks_to_run.sql
+15_preparations_and_units_to_run.sql
+
+# Same reasoning: a one-off read-only diagnostic, not a schema change. It was
+# sent directly to the user rather than kept in the tree.
+0_status_check.sql

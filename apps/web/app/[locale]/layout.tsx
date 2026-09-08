@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { Assistant } from 'next/font/google';
 import { notFound } from 'next/navigation';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server';
@@ -14,6 +15,34 @@ import '../globals.css';
  * cascades through native CSS and every logical property (ms/me/ps/pe, text-start)
  * resolves correctly, and Radix's DirectionProvider mirrors it for floating UI.
  */
+
+/**
+ * Assistant, self-hosted.
+ *
+ * The stack in `globals.css` has always named this font first, but nothing ever
+ * shipped it — no font file in the repo, no `next/font`, no stylesheet link. So
+ * it only applied to someone who happened to have it installed, and on a stock
+ * Windows machine the app quietly fell through to Segoe UI and looked like a
+ * system dialog. This is the line that was missing, not a change of direction.
+ *
+ * `next/font/google` downloads the file at build time and serves it from our
+ * own domain. The browser never contacts Google, which matters here beyond
+ * performance: a webfont request from the patient portal would hand Google the
+ * IP address of every patient who opens it, and this project does not send
+ * patient traffic to third parties.
+ *
+ * The variable cut carries 200–800 in one file, so the weights already in use
+ * cost nothing extra. Hebrew and Latin both, because a clinical record mixes
+ * them constantly — pinyin, botanical names, point codes.
+ */
+const assistant = Assistant({
+  subsets: ['hebrew', 'latin'],
+  display: 'swap',
+  variable: '--font-assistant',
+  // Falls back to the same stack the CSS names, so a failed download degrades
+  // to what the app looked like before rather than to a serif.
+  fallback: ['Segoe UI', 'system-ui', 'Noto Sans Hebrew', 'Arial'],
+});
 
 export function generateStaticParams() {
   return locales.map((locale) => ({ locale }));
@@ -53,19 +82,35 @@ export default async function LocaleLayout({
   const dir = getDirection(locale);
 
   return (
-    <html lang={locale} dir={dir} suppressHydrationWarning>
-      <head>
-        {/* Sets data-theme before anything paints, from the stored choice or
-            the system preference. Blocking on purpose: the alternative is a
-            flash of the light theme on every page load for anyone using dark.
-            It writes only one attribute, so it costs well under a millisecond. */}
-        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
-      </head>
+    <html lang={locale} dir={dir} className={assistant.variable} suppressHydrationWarning>
       {/* suppressHydrationWarning here (not just on <html>) because some browser
           extensions inject attributes onto <body> before React hydrates — that is
           a false-positive mismatch, not a real bug, and Next.js recommends this
           exact fix for it. */}
       <body className="min-h-dvh antialiased" suppressHydrationWarning>
+        {/* Sets `data-theme` before anything paints, from the stored choice or
+            the system preference. Without it, anyone using dark gets a flash of
+            the light theme on every page load. It writes one attribute and costs
+            well under a millisecond.
+
+            Emitted as raw HTML rather than as a `<script>` element, and the
+            reason is worth stating because both obvious alternatives are wrong.
+
+            A `<script>` rendered as a React child makes React 19 warn — fairly:
+            it cannot execute one during a client render. But `next/script` with
+            `beforeInteractive` is not the fix either. It does not emit a script
+            the parser runs; it pushes the source onto Next's own `__next_s`
+            queue, to be executed once Next's runtime boots. That is after the
+            first paint, which is precisely the flash this exists to prevent.
+
+            Written into the markup, the browser parses and runs it in document
+            order, before the body renders — the original behaviour — and React
+            never has a script element in its tree to object to. On a client-side
+            navigation the tag is inert, which is correct: the theme is set. */}
+        <div
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{ __html: `<script>${themeInitScript}</script>` }}
+        />
         <NextIntlClientProvider messages={messages}>
           <UiDirectionProvider dir={dir}>{children}</UiDirectionProvider>
         </NextIntlClientProvider>

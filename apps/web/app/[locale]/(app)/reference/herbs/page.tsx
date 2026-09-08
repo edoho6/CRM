@@ -23,6 +23,7 @@ import { getClinicScope } from '@/lib/session';
 import { herbBotanicalName, herbChineseName, herbPrimaryName } from '@/lib/display';
 import { ReferenceNav } from '@/features/reference/reference-nav';
 import { CatalogueSearch } from '@/features/reference/catalogue-search';
+import { CompareToggle, CompareTray } from '@/features/reference/compare-controls';
 import { HerbFilters } from '@/features/inventory/herb-filters';
 import { parseHerbFilters, type HerbSearchParams } from '@/features/inventory/herb-filter-params';
 
@@ -44,6 +45,7 @@ export default async function HerbsPage({
   const tTaste = await getTranslations('inventory.taste');
   const tReview = await getTranslations('inventory.review');
   const tc = await getTranslations('common');
+  const tCompare = await getTranslations('reference.compare');
   const format = await getFormatter();
 
   const scope = await getClinicScope();
@@ -135,6 +137,9 @@ export default async function HerbsPage({
           <SortableTable defaultSortKey="name">
             <thead>
               <tr>
+                <th scope="col" className="w-10 border-b border-ink-200 bg-ink-50 px-3 py-2">
+                  <span className="sr-only">{tCompare('column')}</span>
+                </th>
                 <SortTh sortKey="name">{tc('name')}</SortTh>
                 <SortTh sortKey="cat">{t('fields.tcmCategory')}</SortTh>
                 <SortTh sortKey="temp">{t('fields.temperature')}</SortTh>
@@ -170,6 +175,13 @@ export default async function HerbsPage({
                       stock: stock ? stock.remaining : null,
                     }}
                   >
+                    <Td className="w-10">
+                      <CompareToggle
+                        kind="herb"
+                        id={herb.id}
+                        label={herbPrimaryName(herb, locale as Locale)}
+                      />
+                    </Td>
                     <Td>
                       <div className="flex items-start gap-3">
                         {herb.image_url ? (
@@ -291,6 +303,10 @@ export default async function HerbsPage({
           </SortableTable>
         </TableWrapper>
       )}
+
+      {/* Fixed to the bottom of the window, so ticking a row far down the
+          catalogue still leaves the Compare button in reach. */}
+      <CompareTray />
     </>
   );
 }

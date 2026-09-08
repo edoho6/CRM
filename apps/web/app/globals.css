@@ -66,14 +66,49 @@
   --color-danger: #dc2626;
   --color-danger-strong: #b91c1c;
 
-  /* A stack that renders Hebrew and Latin well without a network font download,
-     so the app looks right offline and on first paint. */
+  /* ------------------------------------------------------------------------
+     Chart series.
+
+     Their own variables rather than reusing `jade-700` and `sky-700`, because a
+     fill on a chart and a word on a page are different jobs with different
+     requirements. The text steps are tuned for reading — in dark mode they are
+     deliberately very light — and as a block of colour they are washed out and
+     too close in lightness to sit beside each other.
+
+     Both pairs were measured rather than chosen by eye
+     (`dataviz/scripts/validate_palette.js`): lightness band, chroma floor,
+     colour-blind separation, normal-vision separation, and contrast against the
+     chart surface. Light passes at ΔE 17.9 for deuteranopia and 18.9 for normal
+     vision; dark at 17.9 and 18.5. The floor that matters is 8.
+
+     Two is the whole set. A third series on these charts would need re-measuring
+     against both of these, not a colour picked to look different.
+     ------------------------------------------------------------------------ */
+  --color-series-1: #15803c;
+  --color-series-2: #0369a1;
+
+  /* Assistant, loaded by `next/font` in the locale layout and reached through
+     the variable it defines. The names after it are what a browser uses in the
+     moment before the file arrives, and if it never arrives.
+
+     `var(--font-assistant)` and not `'Assistant'`: naming the family directly
+     would also match a copy installed on the reader's own machine, which is a
+     different version with different metrics. The variable resolves only to the
+     file we shipped. That was the bug this replaces — the family was named
+     first in this list and never shipped at all, so the whole app ran on
+     whatever the operating system offered. */
   --font-sans:
-    'Assistant', 'Rubik', 'Heebo', 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue',
-    Arial, 'Noto Sans Hebrew', sans-serif;
+    var(--font-assistant), 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial,
+    'Noto Sans Hebrew', sans-serif;
   --font-mono: 'Cascadia Code', 'Consolas', ui-monospace, 'SF Mono', Menlo, monospace;
 
   --radius-card: 0.875rem;
+
+  /* The row-hover tint, as a colour rather than a hard-coded black.
+     It was `rgb(0 0 0 / 0.015)`, which is a sound choice on a white table and
+     nothing at all on a dark one — 1.5% black over #1e2225 is a change of about
+     one value step, invisible. Naming it lets dark mode tint upward instead. */
+  --color-row-hover: rgb(0 0 0 / 0.02);
 }
 
 /* ==========================================================================
@@ -155,6 +190,22 @@
   --color-sky-700: #7dd3fc;
   --color-sky-800: #bae6fd;
   --color-sky-900: #e0f2fe;
+
+  /* Chart series, measured against the dark chart surface rather than inverted.
+     The light pair fails here outright — on a dark ground the validator wants
+     OKLCH lightness inside 0.48–0.67, and the text-tuned dark steps
+     (#4ec98d, #7dd3fc) sit at 0.75 and 0.83: correct for a word, far too pale
+     for a block. These two measure ΔE 17.2 for protanopia and 17.7 for normal
+     vision, well above the floor of 8.
+
+     The green is lighter than the `jade-300` it started as. Both cleared the
+     3:1 non-text minimum against this surface, but at 3.04:1 the darker one had
+     no room in it; this measures 4.23:1 for the same separation. */
+  --color-series-1: #349460;
+  --color-series-2: #0284c7;
+
+  /* Light, not dark: on a dark surface a hovered row has to come forward. */
+  --color-row-hover: rgb(255 255 255 / 0.05);
 }
 
 /* ==========================================================================
@@ -221,7 +272,30 @@
   /* Rows that lead somewhere get a quiet tint and a nudge, so the whole row
      reads as one target rather than only the link inside it. */
   tbody tr:hover {
-    box-shadow: inset 0 0 0 9999px rgb(0 0 0 / 0.015);
+    box-shadow: inset 0 0 0 9999px var(--color-row-hover);
+  }
+
+  /* Hover is not a state a keyboard or a touch screen can reach, so the same
+     tint follows focus into the row. Without it, tabbing through a patient list
+     highlights the link and leaves the row it belongs to unmarked. */
+  tbody tr:focus-within {
+    box-shadow: inset 0 0 0 9999px var(--color-row-hover);
+  }
+
+  /* Motion is decoration here — every transition in this app is a convenience,
+     none of them carry meaning — so an operating-system request to stop it is
+     honoured rather than negotiated. Not removed outright: 1ms keeps
+     transition- and animation-end handlers firing, which some libraries
+     (react-grid-layout among them) rely on to settle their layout. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 1ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 1ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }
 
@@ -352,7 +426,53 @@
     display: none !important;
   }
 
+  /* Paper is light, whatever the screen is.
+
+     `body { background: white }` alone was not enough and was in fact the
+     misleading part: it whitened the page behind the cards while every card
+     kept `--color-white`, which in dark mode is #1e2225. A patient file printed
+     in the evening came out as near-white text on dark grey blocks — unreadable
+     once the printer drops the backgrounds, and a wasted cartridge if it does
+     not. Restating the surface and ink tokens costs nothing and makes the
+     printed page independent of the theme the screen happens to be in. */
+  :root[data-theme='dark'] {
+    --color-white: #ffffff;
+    --color-ink-50: #f7f8f8;
+    --color-ink-100: #eef0f1;
+    --color-ink-200: #d9dde0;
+    --color-ink-300: #b8c0c5;
+    --color-ink-400: #78848c;
+    --color-ink-500: #5d686f;
+    --color-ink-600: #545e66;
+    --color-ink-700: #454d53;
+    --color-ink-800: #3b4146;
+    --color-ink-900: #23272a;
+  }
+
   body {
     background: white;
+    color: #23272a;
+  }
+
+  /* Shadows print as grey mush and borders survive; cards need the border they
+     do not have on screen, where the shadow was doing that work. */
+  .shadow-xs,
+  .shadow-sm,
+  .shadow-md,
+  .shadow-lg {
+    box-shadow: none !important;
+  }
+
+  /* A record that breaks across a page in the middle of a row is hard to read
+     back, and a heading stranded at the foot of a page is worse. */
+  tr,
+  img {
+    break-inside: avoid;
+  }
+
+  h1,
+  h2,
+  h3 {
+    break-after: avoid;
   }
 }

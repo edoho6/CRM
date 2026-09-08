@@ -39,6 +39,7 @@ import {
 import { ReferenceNav } from '@/features/reference/reference-nav';
 import { HerbImageCard } from '@/features/inventory/herb-image-card';
 import { OrderDialog } from '@/features/inventory/order-dialog';
+import { formatDate } from '@clinic/i18n';
 
 /** Where a chip on this page sends you: the same herb list, filtered. */
 const HERBS_PATH = '/reference/herbs';
@@ -507,7 +508,7 @@ export default async function HerbDetailPage({
                                         expired ? 'tabular-nums text-red-600' : 'tabular-nums'
                                       }
                                     >
-                                      {format.dateTime(new Date(batch.expiry_date), 'short')}
+                                      {formatDate(new Date(batch.expiry_date))}
                                     </span>
                                   ) : (
                                     <span className="text-ink-500">{tBatches('noExpiry')}</span>
@@ -557,7 +558,7 @@ export default async function HerbDetailPage({
                               >
                                 <Td>
                                   <span dir="ltr" className="tabular-nums">
-                                    {format.dateTime(new Date(movement.created_at), 'short')}
+                                    {formatDate(new Date(movement.created_at))}
                                   </span>
                                 </Td>
                                 <Td>{tMovements(`kind.${movement.movement_type}`)}</Td>

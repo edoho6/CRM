@@ -1,10 +1,22 @@
 import type { Metadata } from 'next';
+import { Assistant } from 'next/font/google';
 import { notFound } from 'next/navigation';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server';
 import { getDirection, isLocale, locales } from '@clinic/i18n';
 import { UiDirectionProvider } from '@clinic/ui';
 import '../globals.css';
+
+/* The same font as the staff app, declared separately because these are two
+   builds — see the note there for why it is self-hosted rather than linked.
+   The privacy half of that reasoning applies most of all here: this is the app
+   patients actually open. */
+const assistant = Assistant({
+  subsets: ['hebrew', 'latin'],
+  display: 'swap',
+  variable: '--font-assistant',
+  fallback: ['Segoe UI', 'system-ui', 'Noto Sans Hebrew', 'Arial'],
+});
 
 export function generateStaticParams() {
   return locales.map((locale) => ({ locale }));
@@ -35,7 +47,7 @@ export default async function PortalLocaleLayout({
   const dir = getDirection(locale);
 
   return (
-    <html lang={locale} dir={dir} suppressHydrationWarning>
+    <html lang={locale} dir={dir} className={assistant.variable} suppressHydrationWarning>
       <body className="min-h-dvh antialiased" suppressHydrationWarning>
         <NextIntlClientProvider messages={messages}>
           <UiDirectionProvider dir={dir}>{children}</UiDirectionProvider>

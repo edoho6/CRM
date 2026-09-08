@@ -69,12 +69,16 @@ export function WidgetFrame({
             onClick={onResize}
             // Stop the drag sensor from treating this click as a drag start.
             onPointerDown={(event) => event.stopPropagation()}
-            aria-label={t('resize')}
+            // The size name is gone from the face of the button: the widget's
+            // own width already says how wide it is, and "full width" printed
+            // inside a full-width panel is a caption on something you are
+            // looking at. It stays in the tooltip and in the accessible name,
+            // where it is the only way to know.
+            aria-label={`${t('resize')} · ${t(`sizes.${size}`)}`}
             title={`${t('resize')} · ${t(`sizes.${size}`)}`}
-            className="flex items-center gap-1 rounded-md px-1.5 py-1 text-[11px] font-medium text-ink-500 transition-colors hover:bg-jade-50 hover:text-jade-800"
+            className="rounded-md p-1 text-ink-500 transition-colors hover:bg-jade-50 hover:text-jade-800"
           >
             <Maximize2 className="h-3.5 w-3.5" />
-            {t(`sizes.${size}`)}
           </button>
         ) : null}
         {isEditing && onRemove ? (

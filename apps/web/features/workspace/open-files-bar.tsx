@@ -1,0 +1,118 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
+import { ClipboardList, User, X } from 'lucide-react';
+import { cn } from '@clinic/ui';
+import { Link, usePathname, useRouter } from '@clinic/i18n/navigation';
+import {
+  closeAllFiles,
+  closeFile,
+  OPEN_FILES_EVENT,
+  readOpenFiles,
+  type OpenFile,
+} from './open-files';
+
+/**
+ * The bar of open files, under the top bar.
+ *
+ * Behaves like the tab strip of an editor, because that is the thing it is: a
+ * row of what you have open, one click to each, an X on each to be done with it.
+ *
+ * Renders nothing at all when nothing is open. A permanently empty strip above
+ * every page is a row of pixels that costs something and says nothing.
+ *
+ * It reads from session storage after mount rather than during render: the
+ * server has no session storage, and rendering tabs the first client pass then
+ * removes is a hydration mismatch.
+ */
+export function OpenFilesBar() {
+  const t = useTranslations('workspace');
+  const pathname = usePathname();
+  const router = useRouter();
+  const [files, setFiles] = useState<OpenFile[]>([]);
+
+  useEffect(() => {
+    const sync = () => setFiles(readOpenFiles());
+    sync();
+
+    window.addEventListener(OPEN_FILES_EVENT, sync);
+    // `storage` fires in the *other* tabs of the same browser. Session storage
+    // is per-tab, so this only matters when a second window shares one — rare,
+    // and cheap to keep in step.
+    window.addEventListener('storage', sync);
+    return () => {
+      window.removeEventListener(OPEN_FILES_EVENT, sync);
+      window.removeEventListener('storage', sync);
+    };
+  }, []);
+
+  if (files.length === 0) return null;
+
+  function handleClose(file: OpenFile, isActive: boolean) {
+    closeFile(file.kind, file.id);
+    const remaining = readOpenFiles();
+    setFiles(remaining);
+
+    // Closing the file you are looking at has to take you somewhere. The next
+    // open one, if there is one; otherwise the list this file came from —
+    // staying on a page you have just closed is the one wrong answer.
+    if (!isActive) return;
+    const next = remaining[remaining.length - 1];
+    router.push(next ? next.href : file.kind === 'patient' ? '/patients' : '/encounters');
+  }
+
+  return (
+    <div className="flex items-center gap-1 border-b border-ink-200 bg-ink-50 px-2 py-1">
+      <nav aria-label={t('openFiles')} className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto">
+        {files.map((file) => {
+          const isActive = pathname === file.href;
+          const Icon = file.kind === 'patient' ? User : ClipboardList;
+          return (
+            <span
+              key={`${file.kind}:${file.id}`}
+              className={cn(
+                'flex shrink-0 items-center rounded-t-md border border-b-0 text-sm transition-colors',
+                isActive
+                  ? 'border-ink-200 bg-white text-ink-900'
+                  : 'border-transparent bg-transparent text-ink-700 hover:bg-ink-100',
+              )}
+            >
+              <Link
+                href={file.href}
+                aria-current={isActive ? 'page' : undefined}
+                className="flex max-w-[14rem] items-center gap-1.5 ps-2.5 pe-1 py-1.5"
+              >
+                <Icon className="h-3.5 w-3.5 shrink-0 text-ink-500" aria-hidden />
+                <span className="truncate" dir="auto">
+                  {file.label}
+                </span>
+              </Link>
+              <button
+                type="button"
+                onClick={() => handleClose(file, isActive)}
+                aria-label={t('closeFile', { name: file.label })}
+                className="me-1 rounded p-1 text-ink-500 transition-colors hover:bg-ink-200 hover:text-ink-900"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </span>
+          );
+        })}
+      </nav>
+
+      {files.length > 1 ? (
+        <button
+          type="button"
+          onClick={() => {
+            closeAllFiles();
+            setFiles([]);
+          }}
+          className="shrink-0 rounded-md px-2 py-1 text-xs text-ink-600 transition-colors hover:bg-ink-100 hover:text-ink-900"
+        >
+          {t('closeAll')}
+        </button>
+      ) : null}
+    </div>
+  );
+}

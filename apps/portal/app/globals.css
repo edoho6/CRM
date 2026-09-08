@@ -20,6 +20,28 @@
   --color-jade-800: #166533;
   --color-jade-900: #14532b;
 
+  /* ------------------------------------------------------------------------
+     Solid surfaces that carry white text.
+
+     These are not decoration and they are not optional. `Button` in
+     `@clinic/ui` paints its primary variant with `bg-accent text-accent-fg` and
+     its destructive one with `bg-danger`. Tailwind only emits a rule for a
+     utility whose token exists in *this* app's theme — so with these absent,
+     `bg-accent` compiled to nothing at all and every primary button in the
+     portal rendered as bare text on the page background. No error, no warning,
+     no missing import: exactly the silent failure the `@source` note above
+     describes, one level further in. The portal renders `Button` nineteen
+     times, so this was every call to action a patient sees.
+
+     Values match the staff app deliberately — the same clinic, the same green.
+     The portal has no dark theme, so unlike there, these never move.
+     ------------------------------------------------------------------------ */
+  --color-accent-fg: #ffffff;
+  --color-accent: #15803c;
+  --color-accent-strong: #166533;
+  --color-danger: #dc2626;
+  --color-danger-strong: #b91c1c;
+
   --color-ink-50: #f7f8f8;
   --color-ink-100: #eef0f1;
   --color-ink-200: #d9dde0;
@@ -31,9 +53,11 @@
   --color-ink-800: #3b4146;
   --color-ink-900: #23272a;
 
+  /* Same as the staff app: the shipped file via its variable, then the stack a
+     browser uses until it arrives. */
   --font-sans:
-    'Assistant', 'Rubik', 'Heebo', 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue',
-    Arial, 'Noto Sans Hebrew', sans-serif;
+    var(--font-assistant), 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial,
+    'Noto Sans Hebrew', sans-serif;
 
   --radius-card: 0.875rem;
 }
@@ -52,5 +76,36 @@
 
   ::placeholder {
     color: var(--color-ink-400);
+  }
+
+  /* Same reasoning as the staff app: the motion here is all convenience, so an
+     operating-system request to stop it is honoured. 1ms rather than 0 keeps
+     transition-end handlers firing. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 1ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 1ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/* A patient printing their own consent form or intake answers is a normal thing
+   to do, and the portal had no print rules at all. */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    background: white;
+  }
+
+  tr,
+  img {
+    break-inside: avoid;
   }
 }

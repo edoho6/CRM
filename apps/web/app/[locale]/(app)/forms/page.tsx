@@ -1,4 +1,4 @@
-import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
+import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { ClipboardList, Plus } from 'lucide-react';
 import {
   Badge,
@@ -15,6 +15,7 @@ import { Link } from '@clinic/i18n/navigation';
 import type { FormTemplate } from '@clinic/db/types';
 import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
+import { formatDate } from '@clinic/i18n';
 
 /**
  * The questionnaires this practice has built.
@@ -29,7 +30,6 @@ export default async function FormsPage({ params }: { params: Promise<{ locale: 
 
   const t = await getTranslations('forms');
   const tc = await getTranslations('common');
-  const format = await getFormatter();
 
   const scope = await getClinicScope();
   if (!scope) return null;
@@ -127,7 +127,7 @@ export default async function FormsPage({ params }: { params: Promise<{ locale: 
                     </Td>
                     <Td>
                       <span dir="ltr" className="tabular-nums text-ink-600">
-                        {format.dateTime(new Date(template.updated_at), 'short')}
+                        {formatDate(new Date(template.updated_at))}
                       </span>
                     </Td>
                   </Tr>

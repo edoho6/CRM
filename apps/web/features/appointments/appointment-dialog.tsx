@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState, useTransition } from 'react';
-import { useLocale, useTranslations } from 'next-intl';
+import { useFormatter, useLocale, useTranslations } from 'next-intl';
 import { Trash2 } from 'lucide-react';
 import {
   Alert,
@@ -25,8 +25,16 @@ import { useRouter } from '@clinic/i18n/navigation';
 import type { AppointmentType, AppointmentWithRelations, Patient } from '@clinic/db/types';
 import { appointmentTypeName } from '@/lib/display';
 import { StartEncounterButton } from '@/features/encounters/start-encounter-button';
-import { createAppointment, deleteAppointment, updateAppointment } from './actions';
+import {
+  createAppointment,
+  createAppointmentSeries,
+  deleteAppointment,
+  updateAppointment,
+  type SeriesResult,
+} from './actions';
+import { closureFor, isWithinWorkingHours, type Availability } from './availability';
 import { addMinutes, differenceInMinutes, toDateTimeLocalValue } from './date-utils';
+import { formatDate } from '@clinic/i18n';
 
 export interface AppointmentDraft {
   id?: string;
@@ -52,6 +60,7 @@ export function AppointmentDialog({
   patients,
   appointmentTypes,
   practitionerId,
+  availability,
   onOpenChange,
 }: {
   open: boolean;
@@ -59,11 +68,14 @@ export function AppointmentDialog({
   patients: Pick<Patient, 'id' | 'full_name' | 'phone'>[];
   appointmentTypes: AppointmentType[];
   practitionerId: string;
+  /** Working hours, for the out-of-hours notice. Nothing here blocks a save. */
+  availability: Availability;
   onOpenChange: (open: boolean) => void;
 }) {
   const t = useTranslations('appointments');
   const tc = useTranslations('common');
   const tErrors = useTranslations('errors');
+  const format = useFormatter();
   const locale = useLocale() as Locale;
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -90,6 +102,14 @@ export function AppointmentDialog({
   const [location, setLocation] = useState('');
   const [notes, setNotes] = useState('');
 
+  // A course of treatment. Only offered on a new booking: turning an existing
+  // appointment into a series would have to decide what the original row means,
+  // and "book ten more like this one" is a different action from "edit this".
+  const [repeats, setRepeats] = useState(false);
+  const [everyWeeks, setEveryWeeks] = useState('1');
+  const [occurrences, setOccurrences] = useState('4');
+  const [seriesResult, setSeriesResult] = useState<SeriesResult | null>(null);
+
   const isEditing = Boolean(draft?.id);
 
   useEffect(() => {
@@ -109,12 +129,30 @@ export function AppointmentDialog({
     setLocation(draft.location ?? '');
     setNotes(draft.notes ?? '');
     setErrorKey(null);
+    setRepeats(false);
+    setSeriesResult(null);
   }, [draft]);
 
   const activeTypes = useMemo(
     () => appointmentTypes.filter((type) => type.is_active || type.id === typeId),
     [appointmentTypes, typeId],
   );
+
+  /*
+   * Whether this hour is one the practitioner works, and why not if not.
+   *
+   * A notice, never a block: they do see someone at eight in the evening, and a
+   * dialog that refuses is a dialog they route around. It also stays silent when
+   * no hours have been set at all — a warning on every booking because a settings
+   * screen is empty is a warning nobody reads.
+   */
+  const outsideHours = useMemo(() => {
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+    if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) return null;
+    if (isWithinWorkingHours(startDate, endDate, availability)) return null;
+    return { reason: closureFor(startDate, availability)?.reason ?? null };
+  }, [start, end, availability]);
 
   /** Picking a type re-ends the appointment at its default duration. */
   function handleTypeChange(nextTypeId: string) {
@@ -145,6 +183,7 @@ export function AppointmentDialog({
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setErrorKey(null);
+    setSeriesResult(null);
 
     const startDate = new Date(start);
     const endDate = new Date(end);
@@ -170,6 +209,27 @@ export function AppointmentDialog({
     };
 
     startTransition(async () => {
+      if (!draft?.id && repeats) {
+        const result = await createAppointmentSeries(payload, {
+          every_weeks: everyWeeks,
+          occurrences,
+        });
+        if (!result.ok) {
+          setErrorKey(result.error.key);
+          return;
+        }
+        router.refresh();
+        // The dialog stays open when part of the series did not fit, because
+        // closing it would take the list of which dates need a different hour
+        // away with it.
+        if (result.data.skipped.length === 0) {
+          onOpenChange(false);
+          return;
+        }
+        setSeriesResult(result.data);
+        return;
+      }
+
       const result = draft?.id
         ? await updateAppointment(draft.id, payload)
         : await createAppointment(payload);
@@ -290,6 +350,80 @@ export function AppointmentDialog({
             </Field>
           </FieldGrid>
 
+          {outsideHours ? (
+            <Alert tone="warning">
+              {outsideHours.reason
+                ? `${t('outsideHours')} · ${outsideHours.reason}`
+                : t('outsideHours')}
+            </Alert>
+          ) : null}
+
+          {/* A course of treatment, booked in one go.
+              Offered only on a new appointment: "repeat this ten times" is a
+              different action from editing the one in front of you. */}
+          {!isEditing ? (
+            <div className="rounded-lg border border-ink-200 p-3">
+              <label className="flex items-center gap-2 text-sm font-medium text-ink-800">
+                <input
+                  type="checkbox"
+                  checked={repeats}
+                  onChange={(event) => setRepeats(event.target.checked)}
+                  className="h-4 w-4 rounded border-ink-300"
+                />
+                {t('repeatSeries')}
+              </label>
+
+              {repeats ? (
+                <div className="mt-3 space-y-2">
+                  <div className="flex flex-wrap items-end gap-3">
+                    <Field label={t('everyWeeks')} htmlFor="every_weeks" density="compact">
+                      <LtrInput
+                        id="every_weeks"
+                        type="number"
+                        min={1}
+                        max={12}
+                        className="w-24"
+                        value={everyWeeks}
+                        onChange={(event) => setEveryWeeks(event.target.value)}
+                      />
+                    </Field>
+                    <Field label={t('occurrences')} htmlFor="occurrences" density="compact">
+                      <LtrInput
+                        id="occurrences"
+                        type="number"
+                        min={2}
+                        max={52}
+                        className="w-24"
+                        value={occurrences}
+                        onChange={(event) => setOccurrences(event.target.value)}
+                      />
+                    </Field>
+                  </div>
+                  <p className="text-xs text-ink-600">{t('repeatSeriesHint')}</p>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+
+          {/* What the series actually managed to book. A clash is information,
+              not an error: nine of ten were made, and this says which one was
+              not and why. */}
+          {seriesResult ? (
+            <Alert tone="warning" title={t('seriesCreated', { count: seriesResult.created })}>
+              <ul className="mt-1 space-y-0.5">
+                {seriesResult.skipped.map((entry) => (
+                  <li key={entry.start_at} className="flex flex-wrap items-baseline gap-1.5">
+                    <span dir="ltr" className="tabular-nums">
+                      {formatDate(new Date(entry.start_at))}{' '}
+                      {format.dateTime(new Date(entry.start_at), 'time')}
+                    </span>
+                    <span>· {t(`seriesSkipped.${entry.reason}`)}</span>
+                  </li>
+                ))}
+              </ul>
+            </Alert>
+          ) : null}
+
           <Field label={tc('notes')} htmlFor="notes">
             <Textarea
               id="notes"
@@ -333,7 +467,11 @@ export function AppointmentDialog({
             </Button>
             <Button type="submit" disabled={isPending}>
               {isPending ? <Spinner /> : null}
-              {isPending ? tc('saving') : tc('save')}
+              {isPending
+                ? tc('saving')
+                : !isEditing && repeats
+                  ? t('bookSeries', { count: Number(occurrences) || 0 })
+                  : tc('save')}
             </Button>
           </DialogFooter>
         </form>

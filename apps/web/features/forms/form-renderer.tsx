@@ -3,28 +3,19 @@
 import { useState, useTransition } from 'react';
 import { useTranslations } from 'next-intl';
 import { Check, Send } from 'lucide-react';
-import {
-  Alert,
-  Button,
-  Card,
-  CardBody,
-  Field,
-  Input,
-  LtrInput,
-  Select,
-  Spinner,
-  Textarea,
-} from '@clinic/ui';
-import { cn } from '@clinic/ui/cn';
+import { Alert, Button, FormFields, Spinner } from '@clinic/ui';
 import { validateAnswers, type FormField } from '@clinic/domain';
 import { useRouter } from '@clinic/i18n/navigation';
 import { submitForm } from './actions';
 
 /**
- * Fills in a questionnaire.
+ * Fills in a questionnaire, in the clinic.
  *
- * The same component renders any form the builder can produce, which is the
- * point: a new questionnaire needs no new code.
+ * The questions themselves are drawn by `FormFields` in `@clinic/ui`, shared
+ * with the patient portal — nine field types with their accessibility and their
+ * right-to-left handling are the same work whoever is answering. What lives here
+ * is the half that is specific to this app: the words, and the Server Action the
+ * answers go to.
  *
  * Validation runs here for the immediate red outline and again in the Server
  * Action, against the same function — a Server Action is a public endpoint, and
@@ -97,172 +88,14 @@ export function FormRenderer({
       {error ? <Alert tone="danger">{error}</Alert> : null}
       {saved ? <Alert tone="success">{t('submitted')}</Alert> : null}
 
-      {fields.map((field) => {
-        const bad = invalid.includes(field.id);
-        const value = answers[field.id];
-
-        if (field.type === 'section') {
-          return (
-            <div key={field.id} className="pt-3">
-              <h3 className="text-base font-semibold text-ink-900">{field.label}</h3>
-              {field.help ? <p className="mt-0.5 text-sm text-ink-600">{field.help}</p> : null}
-            </div>
-          );
-        }
-
-        return (
-          <Card key={field.id} id={`field-${field.id}`} className={cn(bad && 'border-red-600')}>
-            <CardBody>
-              <Field
-                label={field.label}
-                htmlFor={`in-${field.id}`}
-                hint={field.help || undefined}
-                required={field.required}
-                error={bad ? t('answerRequired') : null}
-              >
-                {field.type === 'short_text' ? (
-                  <Input
-                    id={`in-${field.id}`}
-                    disabled={readOnly}
-                    value={String(value ?? '')}
-                    onChange={(e) => set(field.id, e.target.value)}
-                  />
-                ) : field.type === 'long_text' ? (
-                  <Textarea
-                    id={`in-${field.id}`}
-                    rows={4}
-                    disabled={readOnly}
-                    value={String(value ?? '')}
-                    onChange={(e) => set(field.id, e.target.value)}
-                  />
-                ) : field.type === 'number' ? (
-                  <LtrInput
-                    id={`in-${field.id}`}
-                    type="number"
-                    disabled={readOnly}
-                    value={value === undefined || value === null ? '' : String(value)}
-                    onChange={(e) =>
-                      set(field.id, e.target.value === '' ? undefined : Number(e.target.value))
-                    }
-                  />
-                ) : field.type === 'date' ? (
-                  <LtrInput
-                    id={`in-${field.id}`}
-                    type="date"
-                    disabled={readOnly}
-                    value={String(value ?? '')}
-                    onChange={(e) => set(field.id, e.target.value)}
-                  />
-                ) : field.type === 'dropdown' ? (
-                  <Select
-                    id={`in-${field.id}`}
-                    disabled={readOnly}
-                    value={String(value ?? '')}
-                    onChange={(e) => set(field.id, e.target.value || undefined)}
-                  >
-                    <option value="">—</option>
-                    {field.options.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </Select>
-                ) : field.type === 'single_choice' || field.type === 'multi_choice' ? (
-                  /* A real fieldset: the group needs one accessible name, not
-                     one per button, or a screen reader reads thirty unrelated
-                     options with no idea what they belong to. */
-                  <fieldset id={`in-${field.id}`} className="space-y-1.5">
-                    <legend className="sr-only">{field.label}</legend>
-                    {field.options.map((option) => {
-                      const multi = field.type === 'multi_choice';
-                      const selected = multi
-                        ? Array.isArray(value) && value.includes(option)
-                        : value === option;
-                      return (
-                        <label
-                          key={option}
-                          className="flex items-center gap-2 text-sm text-ink-800"
-                        >
-                          <input
-                            type={multi ? 'checkbox' : 'radio'}
-                            name={field.id}
-                            disabled={readOnly}
-                            checked={selected}
-                            onChange={(e) => {
-                              if (!multi) {
-                                set(field.id, option);
-                                return;
-                              }
-                              const current = Array.isArray(value) ? [...value] : [];
-                              set(
-                                field.id,
-                                e.target.checked
-                                  ? [...current, option]
-                                  : current.filter((entry) => entry !== option),
-                              );
-                            }}
-                            className="h-4 w-4 border-ink-300"
-                          />
-                          {option}
-                        </label>
-                      );
-                    })}
-                  </fieldset>
-                ) : field.type === 'yes_no' ? (
-                  <fieldset id={`in-${field.id}`} className="flex gap-4">
-                    <legend className="sr-only">{field.label}</legend>
-                    {[true, false].map((option) => (
-                      <label
-                        key={String(option)}
-                        className="flex items-center gap-2 text-sm text-ink-800"
-                      >
-                        <input
-                          type="radio"
-                          name={field.id}
-                          disabled={readOnly}
-                          checked={value === option}
-                          onChange={() => set(field.id, option)}
-                          className="h-4 w-4 border-ink-300"
-                        />
-                        {option ? tc('yes') : tc('no')}
-                      </label>
-                    ))}
-                  </fieldset>
-                ) : (
-                  /* Scale. A range slider alone leaves the value invisible to
-                     anyone not watching the handle, so the number is printed
-                     beside it and the ends are labelled. */
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-3">
-                      <input
-                        id={`in-${field.id}`}
-                        type="range"
-                        min={field.scale_min}
-                        max={field.scale_max}
-                        step={1}
-                        disabled={readOnly}
-                        value={typeof value === 'number' ? value : field.scale_min}
-                        onChange={(e) => set(field.id, Number(e.target.value))}
-                        className="h-2 flex-1 cursor-pointer accent-jade-700"
-                      />
-                      <span
-                        dir="ltr"
-                        className="w-10 shrink-0 text-end text-sm font-semibold tabular-nums text-ink-900"
-                      >
-                        {typeof value === 'number' ? value : '—'}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-xs text-ink-600">
-                      <span>{field.scale_min_label || field.scale_min}</span>
-                      <span>{field.scale_max_label || field.scale_max}</span>
-                    </div>
-                  </div>
-                )}
-              </Field>
-            </CardBody>
-          </Card>
-        );
-      })}
+      <FormFields
+        fields={fields}
+        answers={answers}
+        invalid={invalid}
+        onChange={set}
+        readOnly={readOnly}
+        labels={{ yes: tc('yes'), no: tc('no'), required: t('answerRequired') }}
+      />
 
       {!readOnly ? (
         <div className="flex justify-end">

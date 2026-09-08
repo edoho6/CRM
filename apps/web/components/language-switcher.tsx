@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState, useTransition } from 'react';
+import { useState, useTransition } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Check, Languages } from 'lucide-react';
 import { LOCALE_LABELS, locales, type Locale } from '@clinic/i18n';
@@ -12,9 +12,13 @@ import { cn } from '@clinic/ui';
  *
  * Collapsed to the globe alone, because two permanently visible language names
  * are two words of furniture for a choice made about twice a year. The list
- * opens on hover, and — since hover is not available to a keyboard or a touch
- * screen — on focus and on click as well, which is what keeps it usable rather
- * than merely tidy.
+ * opens on click, and only on click.
+ *
+ * It used to open on hover as well. That is the wrong behaviour for a control
+ * that changes the language of the whole application: the menu appeared when the
+ * pointer merely crossed it on the way somewhere else, and a menu that opens
+ * without being asked is one you close by accident and open by accident. Click
+ * is also the one gesture a keyboard, a mouse and a touch screen all have.
  *
  * `usePathname` from the locale-aware navigation returns the path *without* the
  * locale prefix, so replacing it with a new locale keeps the user exactly where
@@ -27,21 +31,6 @@ export function LanguageSwitcher({ className }: { className?: string }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
-  const closeTimer = useRef<number | null>(null);
-
-  function cancelClose() {
-    if (closeTimer.current !== null) {
-      window.clearTimeout(closeTimer.current);
-      closeTimer.current = null;
-    }
-  }
-
-  // A short grace period, so crossing the gap between the button and the menu
-  // does not close it under the pointer.
-  function scheduleClose() {
-    cancelClose();
-    closeTimer.current = window.setTimeout(() => setOpen(false), 160);
-  }
 
   function switchTo(next: Locale) {
     setOpen(false);
@@ -57,11 +46,8 @@ export function LanguageSwitcher({ className }: { className?: string }) {
   return (
     <div
       className={cn('relative inline-flex', className)}
-      onMouseEnter={() => {
-        cancelClose();
-        setOpen(true);
-      }}
-      onMouseLeave={scheduleClose}
+      // Still closes when focus leaves the group and on Escape — those are how
+      // the menu is dismissed without a pointer, and neither of them opens it.
       onBlur={(event) => {
         if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOpen(false);
       }}
@@ -75,7 +61,6 @@ export function LanguageSwitcher({ className }: { className?: string }) {
         aria-expanded={open}
         aria-label={t('language')}
         title={t('language')}
-        onFocus={() => setOpen(true)}
         onClick={() => setOpen((value) => !value)}
         className={cn(
           'inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-lg border border-ink-200 bg-white px-2 text-ink-600 transition-colors hover:bg-ink-50 hover:text-ink-900',

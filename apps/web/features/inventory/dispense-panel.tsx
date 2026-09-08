@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from 'react';
 import { useFormatter, useLocale, useTranslations } from 'next-intl';
-import { Plus, Sprout, X } from 'lucide-react';
+import { Plus, Printer, Sprout, X } from 'lucide-react';
 import {
   Alert,
   Button,
@@ -10,6 +10,7 @@ import {
   CardBody,
   CardHeader,
   CardTitle,
+  Collapsible,
   Combobox,
   Field,
   LtrInput,
@@ -29,16 +30,25 @@ import {
   DOSE_TIMINGS,
   HERB_PREPARATIONS,
   preparationUnit,
+  preparationUnits,
   type DoseTiming,
   type HerbPreparation,
+  type HerbUnit,
   type Locale,
 } from '@clinic/domain';
 import { useRouter } from '@clinic/i18n/navigation';
-import type { DispensingRecordWithItems, Herb, HerbFormulaWithItems } from '@clinic/db/types';
+import type {
+  DispensingRecordWithItems,
+  Herb,
+  HerbFormulaWithItems,
+  TreatmentProtocol,
+} from '@clinic/db/types';
 import { formulaPrimaryName, herbPrimaryName, herbSecondaryName } from '@/lib/display';
+import { ProtocolPicker } from '@/features/encounters/protocol-picker';
 import { GranuleCalculator } from './granule-calculator';
 import { multiplierForTotal, round2, splitByParts } from './dosing';
 import { dispenseHerbs, recordPrescription } from './actions';
+import { formatDateTime } from '@clinic/i18n';
 
 interface HerbRow {
   /** Null when the name was typed rather than chosen — an off-catalogue line. */
@@ -71,6 +81,7 @@ export function DispensePanel({
   formulas,
   herbs,
   records,
+  protocols,
   tracksInventory,
   disabled,
 }: {
@@ -78,6 +89,8 @@ export function DispensePanel({
   formulas: HerbFormulaWithItems[];
   herbs: Herb[];
   records: DispensingRecordWithItems[];
+  /** Saved protocols, for filling the prescription in from one. */
+  protocols: TreatmentProtocol[];
   /** False when the clinic holds no stock: the panel records a prescription instead. */
   tracksInventory: boolean;
   disabled: boolean;
@@ -87,6 +100,7 @@ export function DispensePanel({
   const tUnit = useTranslations('inventory.unit');
   const tc = useTranslations('common');
   const tErrors = useTranslations('errors');
+  const tProtocols = useTranslations('protocols');
   const locale = useLocale() as Locale;
   const format = useFormatter();
   const router = useRouter();
@@ -97,6 +111,7 @@ export function DispensePanel({
   const [totalQuantity, setTotalQuantity] = useState('');
   const [rows, setRows] = useState<HerbRow[]>([{ choice: null, dose: '' }]);
   const [doseAmount, setDoseAmount] = useState('');
+  const [doseUnit, setDoseUnit] = useState<HerbUnit>(() => preparationUnit('dried_herb'));
   const [dosesPerDay, setDosesPerDay] = useState('');
   const [doseTiming, setDoseTiming] = useState<DoseTiming | ''>('');
   const [notes, setNotes] = useState('');
@@ -178,6 +193,56 @@ export function DispensePanel({
     setDoseAmount('');
     setDosesPerDay('');
     setDoseTiming('');
+    setDoseUnit(preparationUnit(preparation));
+  }
+
+  /**
+   * Fills the prescription in from a protocol.
+   *
+   * Replaces rather than appends, unlike the points: two prescriptions merged
+   * into one is not a bigger prescription, it is a different and wrong one. The
+   * fields stay editable afterwards, which is the whole contract of a protocol.
+   *
+   * A herb the protocol names but the catalogue no longer carries still comes
+   * through, as a typed line — the same way an off-catalogue herb has always
+   * been allowed here.
+   */
+  function applyProtocol(protocol: TreatmentProtocol) {
+    setError(null);
+
+    if (protocol.formula_id) {
+      const formula = formulas.find((entry) => entry.id === protocol.formula_id);
+      setMode('formula');
+      setFormulaChoice(
+        formula
+          ? { id: formula.id, label: formulaPrimaryName(formula, locale) }
+          : { id: protocol.formula_id, label: '' },
+      );
+    } else if (protocol.herbs.length > 0) {
+      setMode('herb');
+      setRows(
+        protocol.herbs.map((entry) => {
+          const herb = entry.herb_id ? herbs.find((h) => h.id === entry.herb_id) : undefined;
+          return {
+            choice: herb
+              ? { id: herb.id, label: herbPrimaryName(herb, locale) }
+              : { id: '', label: entry.name },
+            dose: entry.quantity === null ? '' : String(entry.quantity),
+          };
+        }),
+      );
+    }
+
+    if (protocol.preparation) setPreparation(protocol.preparation as HerbPreparation);
+    // The protocol's own unit when it has one, otherwise the default for its
+    // format — never the unit left over from the last prescription.
+    setDoseUnit(
+      (protocol.dose_unit as HerbUnit | null) ??
+        preparationUnit((protocol.preparation as HerbPreparation | null) ?? preparation),
+    );
+    setDoseAmount(protocol.dose_amount === null ? '' : String(protocol.dose_amount));
+    setDosesPerDay(protocol.doses_per_day === null ? '' : String(protocol.doses_per_day));
+    setDoseTiming((protocol.dose_timing as DoseTiming | null) ?? '');
   }
 
   function handleSubmit() {
@@ -196,7 +261,9 @@ export function DispensePanel({
       // unit is not asked for separately — it follows from the preparation, the
       // same way it does everywhere else in this panel.
       dose_amount: doseAmount,
-      dose_unit: unit,
+      // What the patient measures, which is not necessarily what the stock was
+      // weighed in — the lines below still carry `unit` for that.
+      dose_unit: doseUnit,
       doses_per_day: dosesPerDay,
       dose_timing: doseTiming,
       multiplier: mode === 'formula' ? multiplier : 1,
@@ -247,13 +314,31 @@ export function DispensePanel({
 
   return (
     <div className="space-y-4">
+      {/* Closed until it is wanted.
+
+          Not every treatment involves herbs — plenty are needles alone — and an
+          open prescription form with a formula search, a herb table and four
+          dosing fields was the largest thing on the page for practitioners who
+          never used it. Shut, it is one line; open, it is exactly what it was.
+
+          Past prescriptions stay visible below, because those are a record of
+          what happened rather than a form to fill in. */}
       {!disabled ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>{tracksInventory ? t('title') : t('prescriptionTitle')}</CardTitle>
-          </CardHeader>
-          <CardBody className="space-y-4">
+        <Collapsible
+          title={tracksInventory ? t('title') : t('prescriptionTitle')}
+          icon={<Sprout className="h-4 w-4" aria-hidden />}
+        >
+          <div className="space-y-4">
             {error ? <Alert tone="danger">{renderError()}</Alert> : null}
+
+            {/* Above the formula/herb switch, because applying a protocol is
+                what decides which of the two you are in. */}
+            <ProtocolPicker
+              protocols={protocols}
+              disabled={disabled || isPending}
+              onApply={applyProtocol}
+              label={tProtocols('applyPrescription')}
+            />
 
             <div className="flex flex-wrap items-center gap-1">
               <Button
@@ -280,7 +365,15 @@ export function DispensePanel({
                 <Select
                   id="preparation"
                   value={preparation}
-                  onChange={(event) => setPreparation(event.target.value as HerbPreparation)}
+                  onChange={(event) => {
+                    const next = event.target.value as HerbPreparation;
+                    setPreparation(next);
+                    // Grams is not an option for capsules. Rather than leave an
+                    // impossible unit selected, the default for the new format
+                    // is taken — the picker beside the amount is one click away
+                    // if it is the wrong one.
+                    setDoseUnit(preparationUnit(next));
+                  }}
                 >
                   {HERB_PREPARATIONS.map((option) => (
                     <option key={option} value={option}>
@@ -322,7 +415,7 @@ export function DispensePanel({
             ) : (
               <div className="space-y-2">
                 <div className="flex items-baseline justify-between gap-2">
-                  <h4 className="text-sm font-medium text-ink-800">{t('herbs')}</h4>
+                  <h3 className="text-sm font-medium text-ink-800">{t('herbs')}</h3>
                   <span className="text-xs text-ink-600">
                     {hasTotal ? t('doseAsParts') : t('doseAsGrams', { unit: tUnit(unit) })}
                   </span>
@@ -420,39 +513,84 @@ export function DispensePanel({
                 cannot be read back, cannot be printed onto a label, and cannot
                 be carried into the next prescription. */}
             <div className="rounded-lg border border-ink-200 bg-ink-50/60 p-3">
-              <h4 className="mb-2 text-sm font-medium text-ink-800">{t('doseTitle')}</h4>
-              <div className="grid gap-3 sm:grid-cols-3">
-                <Field
-                  label={`${t('doseAmount')} · ${tUnit(unit)}`}
-                  htmlFor="dose_amount"
-                  density="compact"
-                >
-                  <LtrInput
-                    id="dose_amount"
-                    type="number"
-                    min={0}
-                    step="0.1"
-                    value={doseAmount}
-                    onChange={(event) => setDoseAmount(event.target.value)}
-                  />
-                </Field>
+              <h3 className="mb-2 text-sm font-medium text-ink-800">{t('doseTitle')}</h3>
+              {/*
+                One sentence, one row: how much, of what, how often.
+                When to take it goes underneath.
 
-                {/* The preparation is chosen once at the top of the panel, so
-                    repeating it here said nothing. What was actually missing is
-                    how often — "1g after food" is not an instruction until you
-                    know whether that is once or three times a day. */}
-                <Field label={t('dosesPerDay')} htmlFor="doses_per_day" density="compact">
-                  <LtrInput
-                    id="doses_per_day"
-                    type="number"
-                    min={1}
-                    max={12}
-                    step={1}
-                    value={dosesPerDay}
-                    onChange={(event) => setDosesPerDay(event.target.value)}
-                  />
-                </Field>
+                Sized rather than shared equally. This panel lives in the side
+                column of the treatment page, about a third of the width, and an
+                even three-way split gave each field roughly a hundred pixels —
+                too narrow to read a number in, let alone type one. The two
+                numbers are two or three digits and get fixed widths; the unit
+                takes whatever is left, because it is the only one holding a
+                word.
+              */}
+              <div className="space-y-3">
+                <div className="flex flex-wrap items-end gap-2">
+                  {/* The unit is chosen, not stated. It used to be printed into
+                      the label from the preparation, which made "1 gram" the
+                      only instruction expressible — and a patient told to take
+                      one gram of loose herb has no way to measure it. A teaspoon
+                      they have. */}
+                  <Field
+                    label={t('doseAmount')}
+                    htmlFor="dose_amount"
+                    density="compact"
+                    className="w-20 shrink-0"
+                  >
+                    <LtrInput
+                      id="dose_amount"
+                      type="number"
+                      min={0}
+                      step="0.1"
+                      value={doseAmount}
+                      onChange={(event) => setDoseAmount(event.target.value)}
+                    />
+                  </Field>
 
+                  <Field
+                    label={t('doseUnit')}
+                    htmlFor="dose_unit"
+                    density="compact"
+                    className="min-w-24 flex-1"
+                  >
+                    <Select
+                      id="dose_unit"
+                      value={doseUnit}
+                      onChange={(event) => setDoseUnit(event.target.value as HerbUnit)}
+                    >
+                      {preparationUnits(preparation).map((option) => (
+                        <option key={option} value={option}>
+                          {tUnit(option)}
+                        </option>
+                      ))}
+                    </Select>
+                  </Field>
+
+                  {/* The preparation is chosen once at the top of the panel, so
+                      repeating it here said nothing. What was actually missing
+                      is how often — "1g after food" is not an instruction until
+                      you know whether that is once a day or three times. */}
+                  <Field
+                    label={t('dosesPerDay')}
+                    htmlFor="doses_per_day"
+                    density="compact"
+                    className="w-20 shrink-0"
+                  >
+                    <LtrInput
+                      id="doses_per_day"
+                      type="number"
+                      min={1}
+                      max={12}
+                      step={1}
+                      value={dosesPerDay}
+                      onChange={(event) => setDosesPerDay(event.target.value)}
+                    />
+                  </Field>
+                </div>
+
+                <div>
                 <Field label={t('doseTiming')} htmlFor="dose_timing" density="compact">
                   <Select
                     id="dose_timing"
@@ -467,6 +605,7 @@ export function DispensePanel({
                     ))}
                   </Select>
                 </Field>
+                </div>
               </div>
             </div>
 
@@ -516,8 +655,8 @@ export function DispensePanel({
                 {tracksInventory ? t('dispense') : t('prescribe')}
               </Button>
             </div>
-          </CardBody>
-        </Card>
+          </div>
+        </Collapsible>
       ) : null}
 
       <Card>
@@ -536,8 +675,22 @@ export function DispensePanel({
                       {record.formula ? formulaPrimaryName(record.formula, locale) : t('herb')}
                       {record.preparation ? ` · ${tPrep(record.preparation)}` : ''}
                     </span>
-                    <span className="text-xs text-ink-500" dir="ltr">
-                      {format.dateTime(new Date(record.dispensed_at), 'dateTime')}
+                    <span className="flex items-center gap-2">
+                      <span className="text-xs text-ink-500" dir="ltr">
+                        {formatDateTime(new Date(record.dispensed_at))}
+                      </span>
+                      {/* The whole reason the dosing fields exist. A new tab,
+                          because printing is the point and losing the treatment
+                          behind it is a needless step back. */}
+                      <a
+                        href={`/print/prescription/${record.id}`}
+                        target="_blank"
+                        rel="noopener"
+                        className="inline-flex items-center gap-1 rounded-md text-xs font-medium text-jade-700 underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-jade-700"
+                      >
+                        <Printer className="h-3.5 w-3.5" aria-hidden />
+                        {t('printPrescription')}
+                      </a>
                     </span>
                   </div>
                   <TableWrapper className="rounded-lg">

@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import { Stethoscope } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@clinic/ui';
 
 /**
@@ -13,16 +14,21 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@clinic/ui';
 export function PatientTabs({
   overview,
   encounters,
+  encounterCount,
   appointments,
   documents,
   medical,
+  forms,
   consent,
 }: {
   overview: React.ReactNode;
   encounters: React.ReactNode;
+  /** How many treatments this patient has had — shown on the tab itself. */
+  encounterCount: number;
   appointments: React.ReactNode;
   documents: React.ReactNode;
   medical: React.ReactNode;
+  forms: React.ReactNode;
   consent: React.ReactNode;
 }) {
   const t = useTranslations('patients.tabs');
@@ -31,10 +37,28 @@ export function PatientTabs({
     <Tabs defaultValue="overview">
       <TabsList>
         <TabsTrigger value="overview">{t('overview')}</TabsTrigger>
-        <TabsTrigger value="encounters">{t('encounters')}</TabsTrigger>
+        {/* The count on the tab, so "how many times have I seen this person"
+            is answered without opening it. The number is inside the button's
+            accessible name too — a bare digit beside a word is read as two
+            unrelated things. */}
+        <TabsTrigger value="encounters" aria-label={t('encountersWithCount', { count: encounterCount })}>
+          <span className="inline-flex items-center gap-1.5">
+            <Stethoscope aria-hidden className="h-3.5 w-3.5 shrink-0" />
+            <span aria-hidden>{t('encounters')}</span>
+            {encounterCount > 0 ? (
+              <span
+                aria-hidden
+                className="inline-flex min-w-5 items-center justify-center rounded-full bg-ink-100 px-1.5 text-xs font-semibold text-ink-700 tabular-nums group-data-[state=active]:bg-white/25 data-[state=active]:bg-white/25"
+              >
+                {encounterCount}
+              </span>
+            ) : null}
+          </span>
+        </TabsTrigger>
         <TabsTrigger value="appointments">{t('appointments')}</TabsTrigger>
         <TabsTrigger value="documents">{t('documents')}</TabsTrigger>
         <TabsTrigger value="medical">{t('medical')}</TabsTrigger>
+        <TabsTrigger value="forms">{t('forms')}</TabsTrigger>
         <TabsTrigger value="consent">{t('consent')}</TabsTrigger>
       </TabsList>
       <TabsContent value="overview">{overview}</TabsContent>
@@ -42,6 +66,7 @@ export function PatientTabs({
       <TabsContent value="appointments">{appointments}</TabsContent>
       <TabsContent value="documents">{documents}</TabsContent>
       <TabsContent value="medical">{medical}</TabsContent>
+      <TabsContent value="forms">{forms}</TabsContent>
       <TabsContent value="consent">{consent}</TabsContent>
     </Tabs>
   );

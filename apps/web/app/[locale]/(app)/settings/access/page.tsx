@@ -1,4 +1,4 @@
-import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
+import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { AlertTriangle, ShieldCheck } from 'lucide-react';
 import {
   Badge,
@@ -18,6 +18,7 @@ import { Link } from '@clinic/i18n/navigation';
 import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
 import { SettingsNav } from '@/features/settings/settings-nav';
+import { formatDateTime } from '@clinic/i18n';
 
 /**
  * Who read what, and when.
@@ -65,7 +66,6 @@ export default async function AccessLogPage({
 
   const t = await getTranslations('settings.access');
   const tc = await getTranslations('common');
-  const format = await getFormatter();
 
   const scope = await getClinicScope();
   if (!scope) return null;
@@ -130,7 +130,7 @@ export default async function AccessLogPage({
                   </span>
                   <span>{t(`anomalies.kind.${row.kind}`, { count: row.records_touched })}</span>
                   <span dir="ltr" className="text-xs tabular-nums text-amber-800">
-                    {format.dateTime(new Date(row.window_start), 'dateTime')}
+                    {formatDateTime(new Date(row.window_start))}
                   </span>
                 </li>
               ))}
@@ -197,7 +197,7 @@ export default async function AccessLogPage({
                   >
                     <Td>
                       <span dir="ltr" className="tabular-nums text-ink-700">
-                        {format.dateTime(new Date(row.changed_at), 'dateTime')}
+                        {formatDateTime(new Date(row.changed_at))}
                       </span>
                     </Td>
                     <Td>{row.actor_name || t('unknownActor')}</Td>

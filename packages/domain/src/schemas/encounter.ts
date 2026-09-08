@@ -32,7 +32,7 @@ export const acupuncturePointSchema = z.object({
     .unknown()
     .transform(toPointPlacement)
     .pipe(z.enum(POINT_PLACEMENTS))
-    .default('right_upper'),
+    .default('right'),
   side: z.enum(POINT_SIDES).optional(),
   technique: z.enum(NEEDLE_TECHNIQUES).default('even'),
   retention_minutes: optionalNumber,
@@ -89,3 +89,51 @@ export const encounterFormSchema = z.object({
 });
 
 export type EncounterFormValues = z.input<typeof encounterFormSchema>;
+
+/* ---------------------------------------------------------------------------
+ * Treatment protocols
+ * ------------------------------------------------------------------------- */
+
+/** One herb in a protocol's prescription, in the shape `record_prescription` takes. */
+export const protocolHerbSchema = z.object({
+  herb_id: z
+    .union([z.string().uuid(), z.literal(''), z.null(), z.undefined()])
+    .transform((value) => (value ? value : null)),
+  // Kept alongside the id so a protocol still reads correctly if the herb is
+  // later removed from the catalogue, and so a herb that was never in it — a
+  // practitioner's own shorthand — can be listed at all.
+  name: requiredText(120),
+  quantity: optionalNumber,
+  preparation: optionalText(40),
+});
+
+export type ProtocolHerb = z.output<typeof protocolHerbSchema>;
+
+/**
+ * A reusable point combination and prescription.
+ *
+ * Everything except the name is optional, because a protocol is often only half
+ * of a treatment: some are a set of points with no herbs, some a formula with no
+ * points. Requiring both would push practitioners into inventing filler.
+ */
+export const treatmentProtocolSchema = z.object({
+  name: requiredText(120),
+  description: optionalText(1000),
+  indications: optionalText(1000),
+  treatment_principle: optionalText(1000),
+  points_used: z.array(acupuncturePointSchema).default([]),
+  formula_id: z
+    .union([z.string().uuid(), z.literal(''), z.null()])
+    .transform((value) => (value ? value : null)),
+  herbs: z.array(protocolHerbSchema).default([]),
+  preparation: optionalText(40),
+  days_supply: optionalText(40),
+  dose_amount: optionalNumber,
+  dose_unit: optionalText(20),
+  dose_timing: optionalText(20),
+  doses_per_day: optionalNumber,
+  is_active: z.boolean().default(true),
+});
+
+export type TreatmentProtocolValues = z.input<typeof treatmentProtocolSchema>;
+export type TreatmentProtocolData = z.output<typeof treatmentProtocolSchema>;

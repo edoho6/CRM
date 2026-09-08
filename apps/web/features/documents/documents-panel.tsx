@@ -27,6 +27,7 @@ import { DOCUMENT_CATEGORIES, type Locale } from '@clinic/domain';
 import { useRouter } from '@clinic/i18n/navigation';
 import type { PatientDocument } from '@clinic/db/types';
 import { deleteDocument, setDocumentShared, uploadDocument } from './actions';
+import { formatDate } from '@clinic/i18n';
 
 /** Human-readable file size, e.g. "1.4 MB". Locale-formatted so digits read correctly in both languages. */
 function useFormatSize() {
@@ -218,7 +219,7 @@ export function DocumentsPanel({
                     <Td>{t(`categories.${document.category}`)}</Td>
                     <Td>
                       <span dir="ltr" className="tabular-nums">
-                        {format.dateTime(new Date(document.created_at), 'short')}
+                        {formatDate(new Date(document.created_at))}
                       </span>
                     </Td>
                     <Td>

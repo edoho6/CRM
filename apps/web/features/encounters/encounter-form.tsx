@@ -2,12 +2,15 @@
 
 import { useState, useTransition } from 'react';
 import { useFormatter, useTranslations } from 'next-intl';
-import { Lock, Save } from 'lucide-react';
+import { BookmarkPlus, Lock, Save } from 'lucide-react';
 import {
   Alert,
   Button,
   Card,
   CardBody,
+  Dialog,
+  DialogContent,
+  DialogFooter,
   Field,
   FieldGrid,
   Input,
@@ -17,10 +20,13 @@ import {
 } from '@clinic/ui';
 import { toPointPlacement, type BodyView, type TreatmentModality } from '@clinic/domain';
 import { useRouter } from '@clinic/i18n/navigation';
-import type { TcmNote } from '@clinic/db/types';
+import type { TcmNote, TreatmentProtocol } from '@clinic/db/types';
 import { useAutosave } from '@/lib/use-autosave';
 import { BodyMap, type MappedPoint } from '@/features/reference/body-map';
 import { PointsEditor, type PointOption, type PointRow } from './points-editor';
+import { EncounterCompare, type PreviousEncounter } from './encounter-compare';
+import { ProtocolPicker } from './protocol-picker';
+import { saveProtocolFromEncounter } from './protocol-actions';
 import { saveEncounterNote, signEncounter } from './actions';
 
 /** Everything the body chart needs to draw one catalogued point. */
@@ -75,19 +81,17 @@ function toState(note: TcmNote | null): NoteState {
     points_used: (note?.points_used ?? []).map((point) => ({
       point: point.point,
       point_id: point.point_id ?? null,
-      // Two generations of older notes have to keep opening: ones that recorded
-      // a `side` and no region, and ones that recorded one of the five flat
-      // regions. toPointPlacement handles the second; the side is read first
-      // because it is the more specific of the two.
+      // Three generations of older notes have to keep opening: ones that
+      // recorded a `side` and no region, ones with one of the five flat
+      // regions, and ones with the four quadrants. `toPointPlacement` handles
+      // the last two; the side is read first because it is the more specific.
       region: point.region
         ? toPointPlacement(point.region)
         : point.side === 'left'
-          ? 'left_upper'
-          : point.side === 'right'
-            ? 'right_upper'
-            : point.side === 'midline'
-              ? 'center'
-              : 'right_upper',
+          ? 'left'
+          : point.side === 'midline'
+            ? 'center'
+            : 'right',
       technique: point.technique,
       retention_minutes: point.retention_minutes ?? '',
       notes: point.notes ?? '',
@@ -115,7 +119,10 @@ export function EncounterForm({
   isSigned,
   pointCatalogue,
   pointPositions,
+  protocols,
+  previousEncounters,
   dispensePanel,
+  formsPanel,
 }: {
   encounterId: string;
   note: TcmNote | null;
@@ -124,12 +131,18 @@ export function EncounterForm({
   pointCatalogue: PointOption[];
   /** Where each catalogued point sits on the body chart, keyed by point id. */
   pointPositions: Record<string, PointPosition>;
+  /** Saved protocols, for filling the points in from one. */
+  protocols: TreatmentProtocol[];
+  /** This patient's earlier treatments, newest first, for the comparison. */
+  previousEncounters: PreviousEncounter[];
   dispensePanel?: React.ReactNode;
+  formsPanel?: React.ReactNode;
 }) {
   const t = useTranslations('encounters');
   const tf = useTranslations('encounters.fields');
   const tc = useTranslations('common');
   const tErrors = useTranslations('errors');
+  const tProtocols = useTranslations('protocols');
   const format = useFormatter();
   const router = useRouter();
 
@@ -137,6 +150,12 @@ export function EncounterForm({
   const [isPending, startTransition] = useTransition();
   const [status, setStatus] = useState<'idle' | 'saved' | 'error'>('idle');
   const [errorKey, setErrorKey] = useState<string | null>(null);
+
+  // Saving this treatment as a protocol.
+  const [protocolOpen, setProtocolOpen] = useState(false);
+  const [protocolName, setProtocolName] = useState('');
+  const [protocolDescription, setProtocolDescription] = useState('');
+  const [protocolSaved, setProtocolSaved] = useState(false);
 
   const disabled = isSigned || isPending;
 
@@ -231,6 +250,71 @@ export function EncounterForm({
     });
   }
 
+  /**
+   * Fills the points in from a protocol.
+   *
+   * Appended rather than replacing: a practitioner who has already written two
+   * points and then reaches for a protocol meant to add to them, not to lose
+   * them. Points already present are not duplicated.
+   */
+  function applyProtocol(protocol: TreatmentProtocol) {
+    const existing = new Set(state.points_used.map((row) => row.point.trim().toLowerCase()));
+    const added: PointRow[] = protocol.points_used
+      .filter((point) => !existing.has(point.point.trim().toLowerCase()))
+      .map((point) => ({
+        point: point.point,
+        point_id: point.point_id ?? null,
+        region: point.region ? toPointPlacement(point.region) : 'right',
+        technique: point.technique,
+        retention_minutes: point.retention_minutes ?? '',
+        notes: point.notes ?? '',
+      }));
+
+    setState((current) => ({
+      ...current,
+      // An empty first row is a placeholder, not a point; the protocol fills it.
+      points_used: [...current.points_used.filter((row) => row.point.trim()), ...added],
+      // The principle is filled only when the field is empty. Overwriting what
+      // the practitioner has already concluded would be the protocol arguing
+      // with the clinician.
+      treatment_principle:
+        current.treatment_principle.trim() || (protocol.treatment_principle ?? ''),
+    }));
+    setStatus('idle');
+  }
+
+  function handleSaveAsProtocol() {
+    if (!protocolName.trim()) return;
+    setErrorKey(null);
+    startTransition(async () => {
+      // Save the note first, because the protocol is built from what is on disk
+      // rather than from what is on screen — see saveProtocolFromEncounter.
+      const saveResult = await saveEncounterNote(encounterId, buildPayload());
+      if (!saveResult.ok) {
+        setErrorKey(saveResult.error.key);
+        setStatus('error');
+        return;
+      }
+      const result = await saveProtocolFromEncounter(
+        encounterId,
+        protocolName,
+        protocolDescription,
+      );
+      if (!result.ok) {
+        setErrorKey(result.error.key);
+        setStatus('error');
+        return;
+      }
+      autosave.markSaved();
+      setProtocolOpen(false);
+      setProtocolName('');
+      setProtocolDescription('');
+      setProtocolSaved(true);
+      window.setTimeout(() => setProtocolSaved(false), 3000);
+      router.refresh();
+    });
+  }
+
   function handleSign() {
     if (!window.confirm(t('signConfirmBody'))) return;
     setErrorKey(null);
@@ -267,37 +351,43 @@ export function EncounterForm({
         <Section title={t('sections.examination')}>
           <div className="space-y-4">
             <div>
-              <h4 className="mb-1.5 text-sm font-semibold text-ink-900">{tf('tongue')}</h4>
+              <h3 className="mb-1.5 text-sm font-semibold text-ink-900">{tf('tongue')}</h3>
               <div className="grid grid-cols-3 gap-1.5">
                 <Field label={tf('tongueColorShort')} htmlFor="tongue_body_color" density="compact">
-                  <Input
+                  <Textarea
                     id="tongue_body_color"
+                    rows={1}
                     disabled={disabled}
                     value={state.tongue_body_color}
                     onChange={(event) => set('tongue_body_color', event.target.value)}
+                    className="min-h-10 field-sizing-content"
                   />
                 </Field>
                 <Field label={tf('tongueShapeShort')} htmlFor="tongue_shape" density="compact">
-                  <Input
+                  <Textarea
                     id="tongue_shape"
+                    rows={1}
                     disabled={disabled}
                     value={state.tongue_shape}
                     onChange={(event) => set('tongue_shape', event.target.value)}
+                    className="min-h-10 field-sizing-content"
                   />
                 </Field>
                 <Field label={tf('tongueCoatingShort')} htmlFor="tongue_coating" density="compact">
-                  <Input
+                  <Textarea
                     id="tongue_coating"
+                    rows={1}
                     disabled={disabled}
                     value={state.tongue_coating}
                     onChange={(event) => set('tongue_coating', event.target.value)}
+                    className="min-h-10 field-sizing-content"
                   />
                 </Field>
               </div>
               <Textarea
                 id="tongue_notes"
                 rows={2}
-                className="mt-1.5"
+                className="mt-1.5 field-sizing-content"
                 aria-label={tf('tongueNotes')}
                 placeholder={tf('tongueNotes')}
                 disabled={disabled}
@@ -307,33 +397,37 @@ export function EncounterForm({
             </div>
 
             <div className="border-t border-ink-100 pt-3">
-              <h4 className="mb-1.5 text-sm font-semibold text-ink-900">{tf('pulse')}</h4>
+              <h3 className="mb-1.5 text-sm font-semibold text-ink-900">{tf('pulse')}</h3>
               {/* Qualities used to be a third field. They are written into the
                   same phrase as the sides in practice — "left wiry, right thin"
                   — so the row that asked for them separately is gone and the
                   column is still stored for notes that have one. */}
               <div className="grid grid-cols-2 gap-1.5">
                 <Field label={tf('pulseRightShort')} htmlFor="pulse_right" density="compact">
-                  <Input
+                  <Textarea
                     id="pulse_right"
+                    rows={1}
                     disabled={disabled}
                     value={state.pulse_right}
                     onChange={(event) => set('pulse_right', event.target.value)}
+                    className="min-h-10 field-sizing-content"
                   />
                 </Field>
                 <Field label={tf('pulseLeftShort')} htmlFor="pulse_left" density="compact">
-                  <Input
+                  <Textarea
                     id="pulse_left"
+                    rows={1}
                     disabled={disabled}
                     value={state.pulse_left}
                     onChange={(event) => set('pulse_left', event.target.value)}
+                    className="min-h-10 field-sizing-content"
                   />
                 </Field>
               </div>
               <Textarea
                 id="pulse_notes"
                 rows={2}
-                className="mt-1.5"
+                className="mt-1.5 field-sizing-content"
                 aria-label={tf('pulseNotes')}
                 placeholder={tf('pulseNotes')}
                 disabled={disabled}
@@ -352,6 +446,9 @@ export function EncounterForm({
       <div className="space-y-4">
         {isSigned ? <Alert tone="info" title={t('lockedNotice')} /> : null}
         {status === 'saved' ? <Alert tone="success">{tc('saved')}</Alert> : null}
+        {protocolSaved ? (
+          <Alert tone="success">{tProtocols('savedFromTreatment')}</Alert>
+        ) : null}
         {status === 'error' ? (
           <Alert tone="danger">
             {errorKey === 'errors.encounterLocked'
@@ -432,8 +529,21 @@ export function EncounterForm({
                       before the fields, not after them — underneath, it was
                       below six panels and a body chart, which is where nobody
                       looks for how to start. */}
-                  <h4 className="text-sm font-medium text-ink-700">{tf('pointsUsed')}</h4>
+                  <h3 className="text-sm font-medium text-ink-700">{tf('pointsUsed')}</h3>
                   <p className="mt-0.5 mb-2 text-xs text-ink-600">{t('points.hint')}</p>
+
+                  {/* Above the grid rather than beside it: a protocol is chosen
+                      before the points are typed, not after. */}
+                  {!isSigned ? (
+                    <div className="mb-3">
+                      <ProtocolPicker
+                        protocols={protocols}
+                        disabled={disabled}
+                        onApply={applyProtocol}
+                        label={tProtocols('applyPoints')}
+                      />
+                    </div>
+                  ) : null}
 
                   <div className="grid gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,1fr)]">
                     <PointsEditor
@@ -505,6 +615,15 @@ export function EncounterForm({
                       })
                     : t('autosaveOn')}
             </p>
+            <Button
+              variant="ghost"
+              onClick={() => setProtocolOpen(true)}
+              disabled={isPending}
+              title={tProtocols('saveFromTreatmentHint')}
+            >
+              <BookmarkPlus className="h-4 w-4" />
+              {tProtocols('saveFromTreatment')}
+            </Button>
             <Button variant="secondary" onClick={handleSave} disabled={isPending}>
               {isPending ? <Spinner /> : <Save className="h-4 w-4" />}
               {isPending ? tc('saving') : tc('save')}
@@ -517,10 +636,59 @@ export function EncounterForm({
         ) : null}
       </div>
 
+      <Dialog open={protocolOpen} onOpenChange={setProtocolOpen}>
+        <DialogContent title={tProtocols('saveFromTreatment')} closeLabel={tc('close')}>
+          <div className="space-y-4">
+            <p className="text-sm text-ink-700">{tProtocols('saveFromTreatmentBody')}</p>
+            <Field label={tProtocols('name')} htmlFor="protocol_name" required>
+              <Input
+                id="protocol_name"
+                value={protocolName}
+                onChange={(event) => setProtocolName(event.target.value)}
+              />
+            </Field>
+            <Field label={tProtocols('description')} htmlFor="protocol_description">
+              <Textarea
+                id="protocol_description"
+                rows={2}
+                value={protocolDescription}
+                onChange={(event) => setProtocolDescription(event.target.value)}
+              />
+            </Field>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setProtocolOpen(false)}
+                disabled={isPending}
+              >
+                {tc('cancel')}
+              </Button>
+              <Button
+                type="button"
+                onClick={handleSaveAsProtocol}
+                disabled={isPending || !protocolName.trim()}
+              >
+                {isPending ? <Spinner /> : null}
+                {tc('save')}
+              </Button>
+            </DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Side column: what you observe at the couch, and what you hand over
           because of it. */}
       <div className="space-y-4">
         {examinationCard}
+
+        {/* Inside the form rather than passed in as a prop, because the diff is
+            against the points being typed right now — an element built by the
+            page could only ever compare against what is already saved. */}
+        <EncounterCompare
+          previous={previousEncounters}
+          currentPoints={state.points_used.map((row) => row.point).filter(Boolean)}
+        />
         {/* The wrapper is not decoration. `dispensePanel` is an element built by
             the page and handed in as a prop, so putting it straight into this
             list makes React validate a child it did not create and ask for a key
@@ -528,6 +696,9 @@ export function EncounterForm({
             rather than an entry in an array, which is the condition the warning
             is actually about. */}
         <div>{dispensePanel}</div>
+        {/* Same reason as the dispensing panel above: an element built by the
+            page is a single child of its own wrapper, not an array entry. */}
+        <div>{formsPanel}</div>
       </div>
     </div>
   );

@@ -119,7 +119,10 @@
   הוא `text-accent-fg` ולעולם לא `text-white` — הבודק נכשל על כך
 - **מחלקות ב-`packages/ui`:** Tailwind לא סורק `node_modules`, ולכן החבילה
   המשותפת מוצהרת ב-`@source` ב-`globals.css` של שתי האפליקציות. בלי זה
-  מחלקה שקיימת רק שם פשוט לא מייצרת CSS — בלי שגיאה
+  מחלקה שקיימת רק שם פשוט לא מייצרת CSS — בלי שגיאה.
+  **`@source` לבדו לא מספיק:** Tailwind מייצר כלל רק אם ה-token קיים ב-`@theme`
+  של האפליקציה **הנבנית**. טוקן שיש רק באחת מהן מתקמפל שם ונעלם בשנייה —
+  כך כל כפתור ראשי בפורטל היה טקסט חשוף בלי רקע. `pnpm check:tokens` תופס את זה
 - **חלוניות נפתחות:** תמיד דרך `Popover` / `FloatingList` מ-`@clinic/ui`.
   `absolute` נחתך על ידי `overflow` של אב — ו-`TableWrapper` הוא
   `overflow-x-auto`, כלומר כל חלונית בתוך טבלה נחתכת. הפתרון מרנדר
@@ -140,7 +143,7 @@
 ## לפני commit
 
 ```
-pnpm typecheck && pnpm test && pnpm build && pnpm check:contrast
+pnpm typecheck && pnpm test && pnpm build && pnpm check:contrast && pnpm check:tokens
 ```
 
 ואם השרת רץ, גם `pnpm check:a11y` (axe מול העמודים הציבוריים).

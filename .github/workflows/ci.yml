@@ -53,6 +53,13 @@ jobs:
       - name: Contrast (WCAG 2.1 AA)
         run: pnpm check:contrast
 
+      # A shared class that compiles in one app and not the other. Nothing else
+      # here sees it: the types are fine, the build is quiet, and the contrast
+      # check only measures colours that were emitted — so a button whose
+      # background vanished entirely passes every other gate.
+      - name: Shared classes compile in both apps
+        run: pnpm check:tokens
+
       - name: Start the built app
         run: |
           nohup pnpm --filter @clinic/web start > /tmp/web.log 2>&1 &

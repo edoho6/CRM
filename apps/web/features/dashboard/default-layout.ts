@@ -11,6 +11,7 @@ import type { DashboardLayout } from '@clinic/domain/widgets';
 export const DEFAULT_DASHBOARD_LAYOUT: DashboardLayout = [
   { id: 'treatment-kpis-default', type: 'treatment-kpis', size: 'xl' },
   { id: 'today-appointments-default', type: 'today-appointments', size: 'lg' },
+  { id: 'tasks-default', type: 'tasks', size: 'md' },
   { id: 'patient-stats-default', type: 'patient-stats', size: 'sm' },
   { id: 'revenue-default', type: 'revenue', size: 'sm' },
   { id: 'upcoming-appointments-default', type: 'upcoming-appointments', size: 'lg' },

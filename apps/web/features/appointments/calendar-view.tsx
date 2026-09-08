@@ -10,6 +10,12 @@ import type { AppointmentType, AppointmentWithRelations, Patient } from '@clinic
 import { appointmentTypeName, patientFullName } from '@/lib/display';
 import { AppointmentDialog, type AppointmentDraft } from './appointment-dialog';
 import {
+  closureFor,
+  isClosedDay,
+  openIntervalsFor,
+  type Availability,
+} from './availability';
+import {
   addDays,
   addMinutes,
   addMonths,
@@ -24,6 +30,7 @@ import {
   startOfWeek,
   toDateKey,
 } from './date-utils';
+import { formatDate } from '@clinic/i18n';
 
 /**
  * Four ways to look at the diary.
@@ -124,6 +131,7 @@ export function CalendarView({
   view,
   rangeFrom,
   rangeTo,
+  availability,
   defaultPatientId,
   openNewOnLoad,
 }: {
@@ -136,6 +144,8 @@ export function CalendarView({
   /** Inclusive bounds for the range view, as `YYYY-MM-DD`. */
   rangeFrom?: string | null;
   rangeTo?: string | null;
+  /** When this practitioner works, for shading and for the booking warning. */
+  availability: Availability;
   defaultPatientId?: string;
   openNewOnLoad?: boolean;
 }) {
@@ -166,6 +176,23 @@ export function CalendarView({
 
   /** Day and week draw a time grid; month and range draw lists. */
   const isTimeGrid = view === 'day' || view === 'week';
+
+  /*
+   * The open hours for each visible day, keyed by date.
+   *
+   * Computed once for the whole grid rather than per slot: a week view has 7
+   * days times 30 slots, and working that out inside the loop would run the
+   * lookup two hundred times for an answer that changes seven times.
+   *
+   * An empty map means no schedule has been set, which shades nothing: an empty
+   * setting must not make the whole grid look closed.
+   */
+  const openMinutes = useMemo(() => {
+    const map = new Map<string, { start: number; end: number }[] | null>();
+    if (availability.blocks.length === 0 && availability.exceptions.length === 0) return map;
+    for (const day of days) map.set(toDateKey(day), openIntervalsFor(day, availability));
+    return map;
+  }, [days, availability]);
 
   const defaultDuration = appointmentTypes[0]?.default_duration_minutes ?? 60;
 
@@ -266,7 +293,7 @@ export function CalendarView({
       ? format.dateTime(anchor, 'weekday')
       : view === 'month'
         ? format.dateTime(startOfMonth(anchor), 'monthYear')
-        : `${format.dateTime(days[0]!, 'short')} – ${format.dateTime(days[days.length - 1]!, 'short')}`;
+        : `${formatDate(days[0]!)} – ${formatDate(days[days.length - 1]!)}`;
 
   const totalInView = days.reduce((sum, day) => sum + (byDay.get(toDateKey(day))?.length ?? 0), 0);
 
@@ -377,6 +404,7 @@ export function CalendarView({
           view={view}
           anchor={anchor}
           byDay={byDay}
+          availability={availability}
           locale={locale}
           onOpen={openAppointment}
           onAddOn={(day) => openSlot(day, 4)}
@@ -454,6 +482,8 @@ export function CalendarView({
                 const dayAppointments = byDay.get(key) ?? [];
                 const positioned = positionDay(dayAppointments);
                 const today = isSameDay(day, new Date());
+                // Undefined means no schedule has been set, which shades nothing.
+                const open = openMinutes.get(key);
 
                 return (
                   <div
@@ -463,9 +493,17 @@ export function CalendarView({
                       today && 'bg-jade-50/40',
                     )}
                   >
-                    {/* Clickable background slots. */}
+                    {/* Clickable background slots.
+
+                        Hours outside the working day are shaded rather than
+                        removed: a practitioner does see someone at eight in the
+                        evening, and a grid that will not let them book it is a
+                        grid they work around. The shading says what the schedule
+                        expects; the slot still takes a booking. */}
                     {Array.from({ length: SLOT_COUNT }, (_, index) => {
                       const minutes = DAY_START_HOUR * 60 + index * SLOT_MINUTES;
+                      const working =
+                        !open || open.some(({ start, end }) => minutes >= start && minutes < end);
                       return (
                         <button
                           key={index}
@@ -477,8 +515,9 @@ export function CalendarView({
                             minutes % 60 === 0
                               ? 'border-t border-ink-100'
                               : 'border-t border-ink-50',
+                            !working && 'bg-ink-100/70',
                           )}
-                          aria-label={`${format.dateTime(day, 'short')} ${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`}
+                          aria-label={`${formatDate(day)} ${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}${working ? '' : ' · ' + t('outsideHours')}`}
                         />
                       );
                     })}
@@ -532,6 +571,7 @@ export function CalendarView({
       )}
 
       <AppointmentDialog
+        availability={availability}
         open={dialogOpen}
         draft={draft}
         patients={patients}
@@ -561,6 +601,7 @@ function MonthOrRangeView({
   view,
   anchor,
   byDay,
+  availability,
   locale,
   onOpen,
   onAddOn,
@@ -569,6 +610,7 @@ function MonthOrRangeView({
   view: CalendarViewMode;
   anchor: Date;
   byDay: Map<string, AppointmentWithRelations[]>;
+  availability: Availability;
   locale: Locale;
   onOpen: (appointment: AppointmentWithRelations) => void;
   onAddOn: (day: Date) => void;
@@ -640,6 +682,10 @@ function MonthOrRangeView({
             const key = toDateKey(day);
             const dayAppointments = byDay.get(key) ?? [];
             const today = isSameDay(day, new Date());
+            // A closed day is tinted and named. The tint alone would be one more
+            // grey among several here; the word is what actually reads.
+            const closure = closureFor(day, availability);
+            const closed = isClosedDay(day, availability);
             // Leading and trailing days belong to the neighbouring months. They
             // are shown, because a week that stops halfway is worse, but muted
             // so the month being looked at is still obvious.
@@ -651,6 +697,7 @@ function MonthOrRangeView({
                 className={cn(
                   'min-h-24 border-b border-e border-ink-100 p-1 last:border-e-0',
                   outside && 'bg-ink-50/60',
+                  closed && !today && 'bg-ink-100/70',
                   today && 'bg-jade-50',
                 )}
               >
@@ -676,6 +723,12 @@ function MonthOrRangeView({
                     +
                   </button>
                 </div>
+
+                {closed ? (
+                  <p className="truncate px-1 text-[11px] text-ink-600">
+                    {closure?.reason ? closure.reason : t('closedDay')}
+                  </p>
+                ) : null}
 
                 <ul className="mt-0.5 space-y-0.5">
                   {dayAppointments.slice(0, 3).map((appointment) => (

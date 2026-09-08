@@ -28,6 +28,7 @@ import { ThresholdCell } from '@/features/inventory/stock-controls';
 import { OrderDialog } from '@/features/inventory/order-dialog';
 import { StockEditor, type StockBatchSummary } from '@/features/inventory/stock-editor';
 import { OrderListRowControls } from '@/features/inventory/order-list-row';
+import { formatDate } from '@clinic/i18n';
 
 /** Just enough of a batch for the stock editor's list. */
 type BatchRow = StockBatchSummary & { herb_id: string };
@@ -271,7 +272,7 @@ export default async function StockRoomPage({
                       />
                       <Td>
                         <span dir="ltr" className="text-xs tabular-nums text-ink-500">
-                          {format.dateTime(new Date(entry.created_at), 'short')}
+                          {formatDate(new Date(entry.created_at))}
                         </span>
                       </Td>
                     </Tr>
@@ -395,7 +396,7 @@ export default async function StockRoomPage({
                           <Td>
                             {level.nearest_expiry ? (
                               <span dir="ltr" className="tabular-nums">
-                                {format.dateTime(new Date(level.nearest_expiry), 'short')}
+                                {formatDate(new Date(level.nearest_expiry))}
                               </span>
                             ) : (
                               <span className="text-ink-500">—</span>

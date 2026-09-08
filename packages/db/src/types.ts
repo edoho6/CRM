@@ -73,6 +73,11 @@ export interface Profile {
   avatar_url: string | null;
   title: string | null;
   license_number: string | null;
+  /** The practitioner's own ID number, printed on a treatment confirmation. */
+  national_id: string | null;
+  /** Theirs, not the clinic's — a room rented two days a week is not the practice. */
+  email: string | null;
+  address: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -874,5 +879,169 @@ export interface FormSubmission {
 
 export interface FormSubmissionWithTemplate extends FormSubmission {
   template: Pick<FormTemplate, 'id' | 'title'> | null;
+  patient: Pick<Patient, 'id' | 'full_name'> | null;
+}
+
+/**
+ * One signature, against a consent decision or a filled-in form.
+ *
+ * `typed` is the accessible route rather than a lesser one: drawing with a
+ * finger is impossible for some people, so confirming by typing your own name is
+ * offered as an equal option. Which was used is recorded because they are
+ * different evidence.
+ */
+export interface Signature {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  /** Exactly one of these is set. */
+  consent_id: string | null;
+  form_submission_id: string | null;
+  method: 'drawn' | 'typed';
+  /** A PNG data URL for `drawn`, the typed name for `typed`. */
+  content: string;
+  signed_at: string;
+  witnessed_by: string | null;
+  created_at: string;
+}
+
+/** A punch card: sessions bought up front and drawn down one visit at a time. */
+export interface PatientPackage {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  name: string;
+  total_sessions: number;
+  price: number | null;
+  purchased_on: string;
+  /** Null means it does not expire, which is the common case. */
+  expires_on: string | null;
+  invoice_id: string | null;
+  notes: string | null;
+  is_active: boolean;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** One session drawn off a card. The treatment link is optional — see the migration. */
+export interface PackageRedemption {
+  id: string;
+  clinic_id: string;
+  package_id: string;
+  encounter_id: string | null;
+  redeemed_on: string;
+  notes: string | null;
+  created_by: string | null;
+  created_at: string;
+}
+
+/** A card with its sessions counted, from the `package_balances` view. */
+export interface PackageBalance {
+  package_id: string;
+  clinic_id: string;
+  patient_id: string;
+  name: string;
+  total_sessions: number;
+  price: number | null;
+  purchased_on: string;
+  expires_on: string | null;
+  is_active: boolean;
+  used_sessions: number;
+  remaining_sessions: number;
+  last_redeemed_on: string | null;
+  is_expired: boolean;
+}
+
+/**
+ * A practitioner's attestation that they treated a patient on given dates.
+ *
+ * Every printed detail is stored rather than re-derived. A confirmation is a
+ * statement made on a day, and it has to keep saying what it said even after a
+ * record is corrected — and it may include dates typed by hand, for treatment
+ * given before this system existed.
+ */
+export interface TreatmentConfirmation {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  practitioner_id: string;
+  treatment_dates: string[];
+  practitioner_name: string;
+  practitioner_national_id: string | null;
+  practitioner_title: string | null;
+  practitioner_license: string | null;
+  patient_name: string;
+  patient_national_id: string | null;
+  purpose: string | null;
+  notes: string | null;
+  issued_at: string;
+  issued_by: string | null;
+  created_at: string;
+}
+
+/** One herb in a protocol's prescription. */
+export interface ProtocolHerb {
+  herb_id: string | null;
+  /** Kept beside the id so the protocol still reads if the herb is retired. */
+  name: string;
+  quantity: number | null;
+  preparation: string | null;
+}
+
+/**
+ * A reusable point combination and prescription.
+ *
+ * Applying one fills a treatment in and leaves it editable. Nothing links a
+ * treatment back to the protocol it started from — the record says what was
+ * done, not what was intended.
+ */
+export interface TreatmentProtocol {
+  id: string;
+  clinic_id: string;
+  name: string;
+  description: string | null;
+  indications: string | null;
+  treatment_principle: string | null;
+  points_used: RecordedPoint[];
+  formula_id: string | null;
+  herbs: ProtocolHerb[];
+  preparation: string | null;
+  days_supply: string | null;
+  dose_amount: number | null;
+  dose_unit: string | null;
+  dose_timing: string | null;
+  doses_per_day: number | null;
+  is_active: boolean;
+  sort_order: number;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * One item on the practitioner's to-do list.
+ *
+ * Deliberately small: what, by when, whether it is urgent, and optionally which
+ * patient it concerns. Everything beyond that turns a list into a thing that
+ * itself needs managing.
+ */
+export interface ClinicTask {
+  id: string;
+  clinic_id: string;
+  title: string;
+  notes: string | null;
+  /** Null is a real answer — a task with an invented date nags on a day nobody chose. */
+  due_on: string | null;
+  is_urgent: boolean;
+  /** Null is the whole of "still to do". */
+  done_at: string | null;
+  patient_id: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ClinicTaskWithPatient extends ClinicTask {
   patient: Pick<Patient, 'id' | 'full_name'> | null;
 }

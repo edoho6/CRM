@@ -9,6 +9,7 @@ import { useAsyncData } from '@/lib/use-supabase';
 import { appointmentTypeName, patientFullName } from '@/lib/display';
 import { registerWidget } from '../registry';
 import { WidgetEmpty, WidgetLoading } from '../widget-frame';
+import { formatDate } from '@clinic/i18n';
 
 interface AppointmentRow {
   id: string;
@@ -68,7 +69,7 @@ function AppointmentList({
             />
             <span className="w-24 shrink-0 text-xs font-medium text-ink-700 tabular-nums" dir="ltr">
               {showDate
-                ? format.dateTime(new Date(row.start_at), 'short')
+                ? formatDate(new Date(row.start_at))
                 : format.dateTime(new Date(row.start_at), 'time')}
             </span>
             <span className="min-w-0 flex-1">

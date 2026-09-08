@@ -11,5 +11,6 @@ import './appointment-widgets';
 import './inventory-widgets';
 import './overview-widgets';
 import './revenue-widget';
+import './tasks-widget';
 
 export { getWidgetDefinition, listWidgetDefinitions, isWidgetRegistered } from '../registry';

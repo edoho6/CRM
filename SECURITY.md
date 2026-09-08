@@ -30,7 +30,11 @@ Isolation is tested, not merely inspected. `supabase/tests/tenant_isolation.sql`
 builds two throwaway clinics plus a portal patient inside a transaction,
 impersonates each identity in turn, and asserts what each one cannot reach:
 another clinic's patients, medical history, clinical notes, herb catalogue and
-views; cross-clinic writes; a forged or edited audit entry. It then checks the
+views; its treatment protocols, working hours and closures; its packages,
+signatures and treatment confirmations; cross-clinic writes; a forged or edited
+audit entry. It also proves two rules hold in the database rather than in a
+button: that a signature cannot be edited, and that a punch card cannot be
+overdrawn. It then checks the
 portal patient — an auth user with no membership — sees their own file and their
 shared documents and nothing clinical, and that an anonymous caller sees nothing
 at all. Everything is rolled back, so it is safe to run against the live project
@@ -165,6 +169,96 @@ The Grow payment credentials live in `clinic_payment_settings`, readable only by
 the clinic owner. The webhook cannot read that table directly and instead calls
 `grow_credentials_for_process(process_id)`, a definer function that returns the
 credentials for one known process and nothing else.
+
+### The assistant's API key
+
+`ANTHROPIC_API_KEY` is read on the server only. It is deliberately not a
+`NEXT_PUBLIC_*` variable, so it cannot reach the browser bundle even by mistake,
+and with it unset the assistant screen reports itself unconfigured rather than
+failing on the first question. See §8b for what that feature sends.
+
+## 8b · The assistant, and what leaves the clinic
+
+`/assistant` answers questions about the clinic's own numbers — how many patients,
+who has not been in, which herbs get used, what is outstanding. It is the only
+part of this system that talks to a third party, and it is off unless a key is set.
+
+**The boundary is a file, not a prompt.** `apps/web/features/assistant/queries.ts`
+holds a closed list of eleven queries. The model chooses one and supplies at most
+a number of months; it cannot compose a query, and there is no path by which it
+can reach a table that is not on that list. A prompt instructing a model to behave
+is not a control — a list it cannot extend is.
+
+Every query runs through the caller's own RLS-scoped client, so the assistant can
+never see further than the person asking. Results are capped at fifty rows.
+
+**What is sent to Anthropic:** the practitioner's question, and the rows a query
+returned — patient names, dates, counts and amounts.
+
+**What is never sent:** national ID numbers, addresses, dates of birth, and the
+free text of any clinical record — the complaint, the treatment note, the pattern,
+the questionnaire answers. No query selects those columns, so there is no request
+in which they could appear.
+
+A failed query is reported to the model as a failure, never as an empty result:
+the assistant saying "you saw nobody in September" because a query errored is a
+worse outcome than no answer at all.
+
+**Decision on record:** the practitioner was asked whether the model should see
+query results or only aggregate counts, and chose narrowed results, having been
+shown that this sends names and dates to an external API. The screen states this
+in both languages every time it is opened.
+
+**Before real patients:** this is the one feature to raise with the privacy
+adviser alongside the database registration. Sending identifying data to a
+processor outside the clinic is a processing decision, not a technical one, and
+the answer may be a data-processing agreement, or may be to leave the key unset.
+
+## 8c · Signatures, and what the patient portal can do
+
+**Signatures.** `signatures` holds one mark per consent decision or filled-in
+form. It is append-only in the same strong sense as the consents themselves, with
+the same single exception for erasing a patient's file, and it carries no audit
+trigger of its own — the row it points at is already audited, and copying a
+base64 image into every audit entry would bury the readable diff.
+
+Two routes are offered and recorded distinctly: `drawn` and `typed`. Typing is
+not a lesser signature but the accessible one — drawing is impossible with a
+keyboard alone and hard with a tremor, and a consent form that can only be
+completed by drawing is a form some patients cannot give consent on.
+
+**The portal.** A patient can now fill in a questionnaire and record a consent
+decision from their own device. Nothing about this widened the database: the
+policies — `form_templates_patient_read`, `form_submissions_patient_insert`,
+`consent_documents_patient_read`, `patient_consents_patient_insert` — were
+written when those features were, and had no screen until now.
+
+No portal query takes a patient id from the caller. Every one resolves through
+`current_patient_id()`, a definer function that reads the portal-access row for
+the signed-in user, so there is no identifier in the request to tamper with. A
+portal consent is forced to `method = 'portal'` by the policy itself, so a
+decision made at home can never be recorded as though it had been witnessed in
+the room.
+
+## 8d · Treatment confirmations — what this document is not
+
+`treatment_confirmations` produces a page attesting that a named practitioner
+treated a named patient on given dates. Israeli health funds require exactly
+that, with the practitioner's qualification, before they will reimburse a
+patient — which is why the feature exists.
+
+**It is deliberately not a receipt and not a tax document.** Receipts here are
+subject to the Income Tax (Bookkeeping) Regulations, 1973, and are to be issued
+by a licensed invoicing provider through its API, not by this system. The printed
+page says so in both languages, in its footer, because a page listing a
+practitioner, a patient and a list of dates looks enough like a receipt that
+somebody will eventually try to use it as one.
+
+Every printed value — both names, both ID numbers, the qualification, the dates —
+is copied onto the row when it is issued rather than looked up on each print. A
+document already handed to an insurer must keep saying what it said, whatever is
+corrected in the record afterwards. Deleting one is possible and is itself
+audited.
 
 ## 9 · Payments
 
@@ -312,6 +406,9 @@ as everything else here: they need a database CI can reach.
 6. A rehearsed backup restore (§7)
 7. Database registration under the Privacy Protection Law — a legal step, not a
    technical one
+8. A decision on the assistant (§8b) — either a data-processing agreement with
+   Anthropic, or leaving `ANTHROPIC_API_KEY` unset. Not a blocker for the rest of
+   the system: with no key, nothing here reaches an external service at all
 
 Closed since the first version of this document: consent records with document
 version and timestamp (§10), patient file export (§11), tenant isolation tests

@@ -3,10 +3,8 @@
 import { useMemo, useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import {
-  ArrowDownLeft,
-  ArrowDownRight,
-  ArrowUpLeft,
-  ArrowUpRight,
+  ArrowLeft,
+  ArrowRight,
   Ear,
   Minus,
   Search,
@@ -26,15 +24,17 @@ import {
 /**
  * The point prescription, written the way it is spoken.
  *
- * Laid out as a cross, with each quadrant where it belongs on the body: upper
- * left and upper right along the top, lower left and lower right along the
- * bottom, midline and ear down the middle. A prescription is remembered
- * spatially — "ST36 and SP6 below, LI4 above, Ren 6 on the midline" — and a
- * grid in that shape can be read at a glance without labels being parsed.
+ * Three columns and the ear: right, midline, left, with auricular points below.
+ * A prescription is remembered spatially — "ST36 and SP6 on the right, Ren 6 on
+ * the midline" — and a layout in that shape is read at a glance without labels
+ * being parsed.
  *
- * Side and level are one choice rather than two. Asking separately meant
- * answering the same question twice, and left the body chart unable to do
- * anything but mark both sides.
+ * There were six panels once, splitting each side into upper and lower. The
+ * split went because nobody used it the way it was meant: a prescription is
+ * dictated as right, left, midline and ear, and asking whether SP6 belongs in
+ * the upper or the lower box was a question about the grid rather than about the
+ * patient. Notes written under the old scheme still open — `toPointPlacement`
+ * keeps the side, which is the part that was ever clinically meant.
  *
  * Right sits on the physical right of the screen and left on the physical left,
  * in both languages — the column order is reversed for Hebrew so that reading
@@ -64,36 +64,22 @@ import {
 const PLACEMENT_STYLES: Record<
   PointPlacement,
   {
-    icon: typeof ArrowUpRight;
+    icon: typeof ArrowRight;
     panel: string;
     label: string;
     icon_class: string;
     count: string;
   }
 > = {
-  right_upper: {
-    icon: ArrowUpRight,
+  right: {
+    icon: ArrowRight,
     panel: 'border-jade-200 bg-jade-50/60',
     label: 'text-jade-800',
     icon_class: 'text-jade-700',
     count: 'bg-jade-100 text-jade-800',
   },
-  right_lower: {
-    icon: ArrowDownRight,
-    panel: 'border-jade-200 bg-jade-50/60',
-    label: 'text-jade-800',
-    icon_class: 'text-jade-700',
-    count: 'bg-jade-100 text-jade-800',
-  },
-  left_upper: {
-    icon: ArrowUpLeft,
-    panel: 'border-sky-200 bg-sky-50/60',
-    label: 'text-sky-800',
-    icon_class: 'text-sky-700',
-    count: 'bg-sky-100 text-sky-800',
-  },
-  left_lower: {
-    icon: ArrowDownLeft,
+  left: {
+    icon: ArrowLeft,
     panel: 'border-sky-200 bg-sky-50/60',
     label: 'text-sky-800',
     icon_class: 'text-sky-700',
@@ -218,7 +204,10 @@ function PointCombobox({
         dir="ltr"
         value={term}
         disabled={disabled}
-        placeholder={t('placeholder')}
+        // No placeholder. The field sits inside a panel already headed "right"
+        // or "ear", under a hint that says what to type — a third repetition of
+        // "search for a point" only added grey text to look past. The accessible
+        // name stays, so nothing is lost to a screen reader.
         aria-label={t('point')}
         aria-expanded={open && matches.length > 0}
         role="combobox"
@@ -333,23 +322,17 @@ export function PointsEditor({
   }
 
   /*
-   * Which quadrants sit in the left and right columns.
+   * Which side sits in which column.
    *
    * Right always lands on the physical right of the screen and left on the
-   * physical left, in both languages — so the column order is reversed for
-   * Hebrew, where the grid flows the other way. Reading the word and looking at
-   * the position give the same answer either way, which is the entire reason
-   * for laying this out rather than listing it.
+   * physical left, in both languages — so the order is reversed for Hebrew,
+   * where the grid flows the other way. Reading the word and looking at the
+   * position give the same answer either way, which is the entire reason for
+   * laying this out rather than listing it.
    */
-  const [firstColumn, lastColumn]: [PointPlacement[], PointPlacement[]] = isRtl
-    ? [
-        ['right_upper', 'right_lower'],
-        ['left_upper', 'left_lower'],
-      ]
-    : [
-        ['left_upper', 'left_lower'],
-        ['right_upper', 'right_lower'],
-      ];
+  const [firstColumn, lastColumn]: [PointPlacement, PointPlacement] = isRtl
+    ? ['right', 'left']
+    : ['left', 'right'];
 
   function panel(region: PointPlacement, compact = false) {
     const rows = byRegion[region];
@@ -359,7 +342,12 @@ export function PointsEditor({
     return (
       <section
         key={region}
-        className={cn('flex flex-col rounded-lg border p-2', style.panel, !compact && 'flex-1')}
+        className={cn(
+          'flex flex-col rounded-lg border p-2',
+          style.panel,
+          !compact && 'min-h-64 flex-1 resize-y overflow-auto',
+          compact && 'min-h-28',
+        )}
       >
         <div className="mb-1.5 flex items-center gap-1.5">
           {/* The arrow points at the physical corner the panel occupies, so a
@@ -367,7 +355,7 @@ export function PointsEditor({
               matters when left and right are the thing being told apart in a
               hurry. */}
           <Icon className={cn('h-3.5 w-3.5 shrink-0', style.icon_class)} aria-hidden />
-          <h4 className={cn('text-xs font-semibold', style.label)}>{tRegion(region)}</h4>
+          <h3 className={cn('text-xs font-semibold', style.label)}>{tRegion(region)}</h3>
           {rows.length > 0 ? (
             <span
               className={cn(
@@ -398,7 +386,12 @@ export function PointsEditor({
           <p className="py-1 text-xs text-ink-500">{t('none')}</p>
         ) : null}
 
-        <ul className={cn('space-y-1.5', compact && 'flex flex-wrap gap-1.5 space-y-0')}>
+        <ul
+          className={cn(
+            'min-h-0 flex-1 space-y-1.5',
+            compact && 'flex flex-wrap gap-1.5 space-y-0',
+          )}
+        >
           {rows.map(({ row, index }) => (
             <li
               key={index}
@@ -453,26 +446,25 @@ export function PointsEditor({
       {/*
        * Three equal columns: a side, the midline, the other side.
        *
-       * The middle one holds a single panel that runs the full height of the
-       * block rather than two half-height boxes, because the midline is one
-       * place on the body and not an upper and a lower one. It being taller is
-       * also what makes the shape read as a body at a glance instead of as six
-       * boxes in a grid.
+       * The upper/lower split is gone. A prescription is dictated as "right,
+       * left, midline, ear" — nobody asks whether SP6 belongs in the upper or
+       * the lower box, and the two extra panels were a question about the grid
+       * rather than about the patient.
        *
        * On a narrow screen the three stack, and the arrows and labels are then
        * the whole of the orientation — which is why neither is optional.
        */}
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-        <div className="flex flex-col gap-2">{firstColumn.map((region) => panel(region))}</div>
+        <div className="flex">{panel(firstColumn)}</div>
 
         <div className="flex">{panel('center')}</div>
 
-        <div className="flex flex-col gap-2">{lastColumn.map((region) => panel(region))}</div>
+        <div className="flex">{panel(lastColumn)}</div>
       </div>
 
       {/* The ear sits outside the block, and smaller. Auricular points have no
-          upper or lower and no side in the sense the quadrants mean, so putting
-          them in the grid would make the grid say something untrue. */}
+          side in the sense the columns mean, so putting them in the grid would
+          make the grid say something untrue. */}
       {panel('ear', true)}
     </div>
   );

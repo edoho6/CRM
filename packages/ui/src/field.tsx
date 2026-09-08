@@ -75,11 +75,32 @@ Textarea.displayName = 'Textarea';
  * flips direction with the page for free. A custom listbox would have to
  * reimplement all three.
  */
+/**
+ * A dropdown.
+ *
+ * The trailing padding is the whole reason this is not just `inputClasses`. A
+ * `<select>` draws its own arrow on the inline-end edge, inside the box, and
+ * with equal padding on both sides the text runs underneath it — a long option
+ * like "בחירה מרובה" came out visibly clipped. `pe-9` reserves the arrow its
+ * room. It is a logical property, so it is the left edge in Hebrew and the right
+ * in English, which is where the browser puts the arrow in each.
+ *
+ * `text-ellipsis` covers the rest: an option longer than the control now ends in
+ * a dash rather than being cut mid-letter, which at least reads as truncation.
+ */
 export const Select = React.forwardRef<
   HTMLSelectElement,
   React.SelectHTMLAttributes<HTMLSelectElement>
 >(({ className, children, ...props }, ref) => (
-  <select ref={ref} className={cn(inputClasses, 'h-10 cursor-pointer', className)} {...props}>
+  <select
+    ref={ref}
+    className={cn(
+      inputClasses,
+      'h-10 cursor-pointer pe-9 text-ellipsis',
+      className,
+    )}
+    {...props}
+  >
     {children}
   </select>
 ));

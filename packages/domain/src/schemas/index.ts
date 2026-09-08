@@ -5,3 +5,4 @@ export * from './encounter';
 export * from './inventory';
 export * from './reference';
 export * from './forms';
+export * from './practice';

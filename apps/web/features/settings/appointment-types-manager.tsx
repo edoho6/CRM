@@ -132,7 +132,9 @@ export function AppointmentTypesManager({ types }: { types: AppointmentType[] })
                   onChange={(event) => update(index, { name_he: event.target.value })}
                 />
               </Field>
-              <Field label={t('nameEn')} htmlFor={`en-${index}`} required>
+              {/* Not required. A Hebrew practice has no reason to name every
+                  treatment twice, and the calendar falls back to the Hebrew. */}
+              <Field label={t('nameEn')} htmlFor={`en-${index}`}>
                 <Input
                   id={`en-${index}`}
                   dir="ltr"

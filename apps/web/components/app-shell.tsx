@@ -7,6 +7,7 @@ import {
   BookOpen,
   Boxes,
   CalendarDays,
+  ChartColumn,
   ChevronsRight,
   ClipboardList,
   FileText,
@@ -17,7 +18,7 @@ import {
   Menu,
   Receipt,
   Settings,
-  UserCog,
+  Sparkles,
   Users,
   X,
 } from 'lucide-react';
@@ -25,8 +26,12 @@ import { Link, usePathname } from '@clinic/i18n/navigation';
 import { Button, cn } from '@clinic/ui';
 import { LanguageSwitcher } from './language-switcher';
 import { ThemeToggle } from './theme-toggle';
+import { UserMenu } from './user-menu';
 import { GlobalSearch } from '@/features/quick-bar/global-search';
 import { QuickCreateMenu } from '@/features/quick-bar/quick-create-menu';
+import { BackButton } from './back-button';
+import { OpenFilesBar } from '@/features/workspace/open-files-bar';
+import { clearOpenFiles } from '@/features/workspace/open-files';
 
 /**
  * The reference library and the stock room are separate destinations, because
@@ -50,6 +55,8 @@ const NAV_ITEMS = [
   { href: '/reference', labelKey: 'reference', icon: BookOpen, exact: false, stockOnly: false },
   { href: '/inventory', labelKey: 'inventory', icon: Boxes, exact: false, stockOnly: true },
   { href: '/billing', labelKey: 'billing', icon: Receipt, exact: false, stockOnly: false },
+  { href: '/reports', labelKey: 'reports', icon: ChartColumn, exact: false, stockOnly: false },
+  { href: '/assistant', labelKey: 'assistant', icon: Sparkles, exact: false, stockOnly: false },
 ] as const;
 
 export function AppShell({
@@ -173,12 +180,12 @@ export function AppShell({
           <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent text-accent-fg">
             <Leaf className="h-4 w-4" />
           </span>
+          {/* The clinic at the top, the person at the foot. Where you are is a
+              property of the window; who you are is a property of you, and
+              putting the name in both places said it twice. */}
           {!collapsed ? (
-            <span className="min-w-0">
-              <span className="block truncate text-sm font-semibold text-ink-900">
-                {clinicName}
-              </span>
-              <span className="block truncate text-xs text-ink-500">{userName}</span>
+            <span className="min-w-0 truncate text-sm font-semibold text-ink-900">
+              {clinicName}
             </span>
           ) : null}
         </div>
@@ -190,24 +197,17 @@ export function AppShell({
           {navList(collapsed)}
         </div>
 
-        {/* Ordered by how far each one is from ordinary work: settings and the
-            two display switches first, then the accessibility statement, then
-            signing out at the very bottom — the one action you never want to hit
-            while reaching for something else. */}
+        {/* Two links and a menu, where there were six controls.
+
+            Settings and the accessibility statement stay as visible links: the
+            first is a destination, and the second is a legal obligation that a
+            statement folded into a menu would not meet. Everything that belongs
+            to the person rather than to the practice — the personal area, the
+            theme, the language, signing out — is behind their own name, because
+            those are settings you set once and then stop looking at. */}
         <div
-          className={cn('shrink-0 space-y-2 border-t border-ink-100', collapsed ? 'p-2' : 'p-3')}
+          className={cn('shrink-0 space-y-1 border-t border-ink-100', collapsed ? 'p-2' : 'p-3')}
         >
-          <Button
-            asChild
-            variant="ghost"
-            size="sm"
-            className={cn('w-full', collapsed ? 'justify-center px-0' : 'justify-start')}
-          >
-            <Link href="/account" title={collapsed ? t('account') : undefined}>
-              <UserCog className="h-4 w-4" />
-              {!collapsed ? t('account') : <span className="sr-only">{t('account')}</span>}
-            </Link>
-          </Button>
           <Button
             asChild
             variant="ghost"
@@ -219,13 +219,6 @@ export function AppShell({
               {!collapsed ? t('settings') : <span className="sr-only">{t('settings')}</span>}
             </Link>
           </Button>
-
-          {!collapsed ? (
-            <>
-              <ThemeToggle className="w-full" />
-              <LanguageSwitcher className="w-full justify-center" />
-            </>
-          ) : null}
 
           <Button
             asChild
@@ -243,18 +236,9 @@ export function AppShell({
             </Link>
           </Button>
 
-          <form action={onSignOut}>
-            <Button
-              type="submit"
-              variant="ghost"
-              size="sm"
-              className={cn('w-full', collapsed ? 'justify-center px-0' : 'justify-start')}
-              title={collapsed ? t('signOut') : undefined}
-            >
-              <LogOut className="h-4 w-4" />
-              {!collapsed ? t('signOut') : <span className="sr-only">{t('signOut')}</span>}
-            </Button>
-          </form>
+          <div className="border-t border-ink-100 pt-1">
+            <UserMenu userName={userName} collapsed={collapsed} onSignOut={onSignOut} />
+          </div>
         </div>
 
         {/* A handle on the panel's own edge, halfway down: an arrow and nothing
@@ -302,7 +286,7 @@ export function AppShell({
 
         {/* Top bar, on every screen and every size: the quick-create "+" and the
             global search live here so they are never more than one click away. */}
-        <header className="flex items-center justify-between gap-2 border-b border-ink-200 bg-white px-4 py-2">
+        <header className="sticky top-0 z-30 flex items-center justify-between gap-2 border-b border-ink-200 bg-white px-4 py-2">
           <div className="flex min-w-0 items-center gap-2">
             <Button
               variant="ghost"
@@ -318,6 +302,9 @@ export function AppShell({
             <span className="truncate text-sm font-semibold text-ink-900 lg:hidden">
               {clinicName}
             </span>
+            {/* Beside the menu rather than in the page: every screen has one,
+                and a control that moves about is a control you hunt for. */}
+            <BackButton />
           </div>
           <div className="flex shrink-0 items-center gap-1.5">
             <GlobalSearch />
@@ -325,6 +312,13 @@ export function AppShell({
             <LanguageSwitcher className="hidden sm:inline-flex lg:hidden" />
           </div>
         </header>
+
+        {/* Open files, under the top bar and above the page. It renders
+            nothing when nothing is open, and sticks just below the header so
+            the two travel together. */}
+        <div className="sticky top-[3.25rem] z-20">
+          <OpenFilesBar />
+        </div>
 
         {mobileOpen ? (
           <div id="mobile-menu" className="border-b border-ink-200 bg-white p-3 lg:hidden">
@@ -344,7 +338,7 @@ export function AppShell({
               <ThemeToggle />
               <LanguageSwitcher />
             </div>
-            <form action={onSignOut} className="mt-2">
+            <form action={onSignOut} onSubmit={() => clearOpenFiles()} className="mt-2">
               <Button type="submit" variant="ghost" size="sm" className="w-full justify-start">
                 <LogOut className="h-4 w-4" />
                 {t('signOut')}
@@ -381,7 +375,15 @@ export function PageHeader({
     <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
       <div className="min-w-0">
         <h1 className="text-xl font-semibold text-ink-900">{title}</h1>
-        {description ? <p className="mt-0.5 text-sm text-ink-500">{description}</p> : null}
+        {/* A `div`, not a `p`.
+
+            `description` is a ReactNode and callers pass real markup into it —
+            the treatment page puts a `<nav>` there. A `<nav>` inside a `<p>` is
+            invalid HTML, and the browser silently closes the paragraph before
+            it, so the server's tree and the client's disagree and React reports
+            a hydration error. Nothing about a one-line caption needs to be a
+            paragraph. */}
+        {description ? <div className="mt-0.5 text-sm text-ink-500">{description}</div> : null}
       </div>
       {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
     </div>

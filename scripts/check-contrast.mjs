@@ -122,7 +122,17 @@ const componentPairs = [
   { bg: 'white', fg: 'amber-700', where: 'warning text' },
   { bg: 'ink-50', fg: 'ink-500', where: 'muted badge' },
   { bg: 'ink-50', fg: 'ink-600', where: 'table header' },
+  { bg: 'ink-50', fg: 'ink-700', where: 'protocol picker label, compare tray chip' },
+  { bg: 'ink-50', fg: 'ink-800', where: 'unchanged points in the treatment comparison' },
+  /* The comparison chips: what stayed, what was dropped, what was added. The
+     words say which is which; these are the tints behind them. */
+  { bg: 'jade-50', fg: 'jade-900', where: 'points added since the last treatment' },
+  { bg: 'white', fg: 'amber-800', where: 'differs marker in the comparison table' },
   { bg: 'ink-100', fg: 'ink-700', where: 'neutral badge' },
+  /* A closed day in the month grid is tinted and named. The tint is `ink-100/70`
+     over white, which is lighter than flat `ink-100`; measuring the flat colour
+     is the harder case, so passing here passes there too. */
+  { bg: 'ink-100', fg: 'ink-600', where: 'closed day in the month grid' },
   { bg: 'jade-100', fg: 'jade-800', where: 'success badge' },
   { bg: 'amber-100', fg: 'amber-800', where: 'warning badge' },
   { bg: 'red-100', fg: 'red-700', where: 'danger badge' },
@@ -145,9 +155,16 @@ const componentPairs = [
 ];
 
 const AA_SMALL = 4.5;
+
+/* WCAG 1.4.11, non-text contrast: a shape that carries meaning needs 3:1, not
+   4.5:1. A bar on a chart is such a shape — it is read for its size and its
+   identity, not for text sitting on it. Measured here rather than assumed,
+   because "it looked fine" is how a chart ends up invisible in dark mode. */
+const AA_NON_TEXT = 3;
+
 let failures = 0;
 
-function measure(pairs, title, palette, seen) {
+function measure(pairs, title, palette, seen, threshold = AA_SMALL) {
   console.log(`\n${title}`);
   let checked = 0;
   for (const { bg, fg, where } of pairs) {
@@ -164,7 +181,7 @@ function measure(pairs, title, palette, seen) {
       continue;
     }
     const ratio = contrast(bgHex, fgHex);
-    const ok = ratio >= AA_SMALL;
+    const ok = ratio >= threshold;
     if (!ok) failures += 1;
     if (!ok || process.env.VERBOSE) {
       console.log(
@@ -176,9 +193,25 @@ function measure(pairs, title, palette, seen) {
   console.log(`  ${checked} pairs checked`);
 }
 
+/* The chart fills, against every surface they are drawn on.
+   Their separation *from each other* — the part that matters for a
+   colour-blind reader — is a different measurement and is checked by the
+   dataviz palette validator; see the note beside `--color-series-1`. */
+const graphicPairs = [
+  { bg: 'white', fg: 'series-1', where: 'chart bar on a card' },
+  { bg: 'white', fg: 'series-2', where: 'second chart series on a card' },
+];
+
 const lightSeen = new Set();
 measure(chipPairs, `Light · materia medica chips — AA small text needs ${AA_SMALL}:1`, vars, lightSeen);
 measure(componentPairs, 'Light · text, badges and buttons', vars, lightSeen);
+measure(
+  graphicPairs,
+  `Light · chart fills — non-text needs ${AA_NON_TEXT}:1`,
+  vars,
+  new Set(),
+  AA_NON_TEXT,
+);
 
 if (darkVars) {
   // Same pairs, dark palette. `white` here is the card surface, because dark
@@ -186,6 +219,7 @@ if (darkVars) {
   const darkSeen = new Set();
   measure(chipPairs, 'Dark · materia medica chips', darkVars, darkSeen);
   measure(componentPairs, 'Dark · text, badges and buttons', darkVars, darkSeen);
+  measure(graphicPairs, 'Dark · chart fills', darkVars, new Set(), AA_NON_TEXT);
 } else {
   console.log('\nNo dark palette found in the stylesheet — dark pairs not measured.');
 }

@@ -10,6 +10,7 @@ import {
   startOfWeek,
   toDateKey,
 } from '@/features/appointments/date-utils';
+import type { DayException, WorkingBlock } from '@/features/appointments/availability';
 
 const APPOINTMENT_SELECT =
   'id, clinic_id, patient_id, practitioner_id, appointment_type_id, start_at, end_at, status, location, notes, cancelled_reason, cancelled_at, created_by, created_at, updated_at, ' +
@@ -86,7 +87,8 @@ export default async function CalendarPage({
   const rangeStart = windowStart;
   const rangeEnd = windowEnd;
 
-  const [appointmentsResult, typesResult, patientsResult] = await Promise.all([
+  const [appointmentsResult, typesResult, patientsResult, blocksResult, exceptionsResult] =
+    await Promise.all([
     scope.supabase
       .from('appointments')
       .select(APPOINTMENT_SELECT)
@@ -106,6 +108,21 @@ export default async function CalendarPage({
       .order('last_name', { ascending: true })
       .limit(1000)
       .returns<Pick<Patient, 'id' | 'full_name' | 'phone'>[]>(),
+    // When this practitioner works, so the grid can shade the hours they do not
+    // and the dialog can say so before a booking is saved.
+    scope.supabase
+      .from('practitioner_schedules')
+      .select('weekday, start_time, end_time')
+      .eq('practitioner_id', scope.context.membership.user_id)
+      .eq('is_active', true)
+      .returns<WorkingBlock[]>(),
+    scope.supabase
+      .from('schedule_exceptions')
+      .select('date, is_closed, start_time, end_time, reason')
+      .eq('practitioner_id', scope.context.membership.user_id)
+      .gte('date', toDateKey(windowStart))
+      .lte('date', toDateKey(windowEnd))
+      .returns<DayException[]>(),
   ]);
 
   return (
@@ -120,6 +137,10 @@ export default async function CalendarPage({
         view={view}
         rangeFrom={rangeFrom}
         rangeTo={rangeTo}
+        availability={{
+          blocks: blocksResult.data ?? [],
+          exceptions: exceptionsResult.data ?? [],
+        }}
         defaultPatientId={patientParam}
         openNewOnLoad={newParam === '1'}
       />

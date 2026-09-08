@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
+import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { CalendarPlus, Pencil } from 'lucide-react';
 import {
   Badge,
@@ -23,7 +23,13 @@ import type {
   AppointmentType,
   ConsentDocument,
   Encounter,
+  FormSubmission,
+  FormTemplate,
+  PackageBalance,
+  PackageRedemption,
   Patient,
+  Profile,
+  TreatmentConfirmation,
   PatientConsentStatus,
   PatientConsentWithDocument,
   PatientDocument,
@@ -37,15 +43,26 @@ import { toPaymentSummary } from '@/features/billing/payment-summary';
 import { getClinicScope } from '@/lib/session';
 import { logRecordAccess } from '@/lib/access-log';
 import { ageFromDateOfBirth, appointmentTypeName, patientStatusTone } from '@/lib/display';
+import { RegisterOpenFile } from '@/features/workspace/register-open-file';
 import { PatientTabs } from '@/features/patients/patient-tabs';
+import { PatientFormsPanel } from '@/features/forms/patient-forms-panel';
+import { TreatmentConfirmationPanel } from '@/features/documents/treatment-confirmation-panel';
+import { PackagesPanel } from '@/features/billing/packages-panel';
 import { MedicalHistoryForm } from '@/features/patients/medical-history-form';
 import { StartEncounterButton } from '@/features/encounters/start-encounter-button';
 import { DocumentsPanel } from '@/features/documents/documents-panel';
 import { ConsentPanel } from '@/features/consent/consent-panel';
+import { formatDate, formatDateTime } from '@clinic/i18n';
 
 type AppointmentRow = Appointment & {
   appointment_type: Pick<AppointmentType, 'name_he' | 'name_en'> | null;
 };
+
+/** Only what the questionnaire picker needs — not every template column. */
+type FormTemplateOption = Pick<
+  FormTemplate,
+  'id' | 'title' | 'description' | 'fields' | 'version'
+>;
 
 export default async function PatientDetailPage({
   params,
@@ -60,7 +77,6 @@ export default async function PatientDetailPage({
   const tEnc = await getTranslations('encounters');
   const tApp = await getTranslations('appointments');
   const tBilling = await getTranslations('billing');
-  const format = await getFormatter();
 
   const scope = await getClinicScope();
   if (!scope) return null;
@@ -86,6 +102,12 @@ export default async function PatientDetailPage({
     consentStatusResult,
     consentHistoryResult,
     consentDocumentsResult,
+    formTemplatesResult,
+    formSubmissionsResult,
+    confirmationsResult,
+    practitionerResult,
+    packagesResult,
+    redemptionsResult,
   ] = await Promise.all([
     scope.supabase
       .from('patient_medical_history')
@@ -132,6 +154,50 @@ export default async function PatientDetailPage({
       .eq('locale', locale)
       .order('version', { ascending: false })
       .returns<ConsentDocument[]>(),
+    // Only active questionnaires can be filled in. A retired one is retired so
+    // it stops being offered — its past answers are still read below.
+    scope.supabase
+      .from('form_templates')
+      .select('id, title, description, fields, version')
+      .eq('is_active', true)
+      .order('title', { ascending: true })
+      .limit(200)
+      .returns<FormTemplateOption[]>(),
+    scope.supabase
+      .from('form_submissions')
+      .select('*')
+      .eq('patient_id', id)
+      .order('submitted_at', { ascending: false })
+      .limit(200)
+      .returns<FormSubmission[]>(),
+    scope.supabase
+      .from('treatment_confirmations')
+      .select('*')
+      .eq('patient_id', id)
+      .order('issued_at', { ascending: false })
+      .limit(50)
+      .returns<TreatmentConfirmation[]>(),
+    // Only to know whether a confirmation can be issued at all. Said before the
+    // work rather than after it.
+    scope.supabase
+      .from('profiles')
+      .select('full_name')
+      .eq('id', scope.context.membership.user_id)
+      .maybeSingle<Pick<Profile, 'full_name'>>(),
+    // The balance comes from the view rather than being counted here, so this
+    // page and the trigger that refuses an overdraw agree by construction.
+    scope.supabase
+      .from('package_balances')
+      .select('*')
+      .eq('patient_id', id)
+      .order('purchased_on', { ascending: false })
+      .returns<PackageBalance[]>(),
+    scope.supabase
+      .from('package_redemptions')
+      .select('*')
+      .order('redeemed_on', { ascending: false })
+      .limit(500)
+      .returns<PackageRedemption[]>(),
   ]);
 
   /*
@@ -185,7 +251,7 @@ export default async function PatientDetailPage({
           <DetailRow label={t('fields.dateOfBirth')}>
             {patient.date_of_birth ? (
               <span dir="ltr">
-                {format.dateTime(new Date(patient.date_of_birth), 'short')}
+                {formatDate(new Date(patient.date_of_birth))}
                 {age !== null ? ` · ${t('years', { count: age })}` : ''}
               </span>
             ) : (
@@ -250,7 +316,7 @@ export default async function PatientDetailPage({
               >
                 <Td>
                   <span dir="ltr">
-                    {format.dateTime(new Date(encounter.encounter_date), 'short')}
+                    {formatDate(new Date(encounter.encounter_date))}
                   </span>
                 </Td>
                 <Td>
@@ -300,7 +366,7 @@ export default async function PatientDetailPage({
               >
                 <Td>
                   <span dir="ltr">
-                    {format.dateTime(new Date(appointment.start_at), 'dateTime')}
+                    {formatDateTime(new Date(appointment.start_at))}
                   </span>
                 </Td>
                 <Td>
@@ -358,12 +424,51 @@ export default async function PatientDetailPage({
         }
       />
 
+      {/* Puts this file on the tab strip in the shell, which knows the URL
+          but not whose name is on it. */}
+      <RegisterOpenFile
+        kind="patient"
+        id={patient.id}
+        label={patient.full_name}
+        href={`/patients/${patient.id}`}
+      />
+
       <PatientTabs
         overview={overview}
         encounters={encountersPanel}
-        appointments={appointmentsPanel}
-        documents={<DocumentsPanel patientId={patient.id} documents={documents} />}
+        encounterCount={encounters.length}
+        appointments={
+          <div className="space-y-5">
+            <PackagesPanel
+              patientId={patient.id}
+              balances={packagesResult.data ?? []}
+              redemptions={redemptionsResult.data ?? []}
+            />
+            {appointmentsPanel}
+          </div>
+        }
+        documents={
+          <div className="space-y-5">
+            <TreatmentConfirmationPanel
+              patientId={patient.id}
+              treatments={encounters.map((encounter) => ({
+                id: encounter.id,
+                date: encounter.encounter_date.slice(0, 10),
+              }))}
+              issued={confirmationsResult.data ?? []}
+              practitionerReady={Boolean(practitionerResult.data?.full_name?.trim())}
+            />
+            <DocumentsPanel patientId={patient.id} documents={documents} />
+          </div>
+        }
         medical={<MedicalHistoryForm patientId={patient.id} history={history} />}
+        forms={
+          <PatientFormsPanel
+            patientId={patient.id}
+            templates={formTemplatesResult.data ?? []}
+            submissions={formSubmissionsResult.data ?? []}
+          />
+        }
         consent={
           <ConsentPanel
             patientId={patient.id}

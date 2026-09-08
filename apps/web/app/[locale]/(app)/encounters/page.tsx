@@ -18,6 +18,7 @@ import { getClinicScope } from '@/lib/session';
 import { resolveRange, toDateKey } from '@/lib/date-range';
 import { PaymentAction } from '@/features/billing/payment-status';
 import { toPaymentSummary } from '@/features/billing/payment-summary';
+import { formatDate } from '@clinic/i18n';
 
 type EncounterRow = Encounter & {
   patient: Pick<Patient, 'id' | 'full_name'> | null;
@@ -167,9 +168,9 @@ export default async function EncountersPage({
           <SortableTable defaultSortKey="date" defaultSortDirection="desc">
             <thead>
               <tr>
-                <SortTh sortKey="date">{tc('date')}</SortTh>
-                <SortTh sortKey="time">{tc('time')}</SortTh>
-                <SortTh sortKey="patient">{tPatients('title')}</SortTh>
+                <SortTh sortKey="date" className="w-28 pe-1">{tc('date')}</SortTh>
+                <SortTh sortKey="time" className="w-20 px-1">{tc('time')}</SortTh>
+                <SortTh sortKey="patient">{tPatients('singular')}</SortTh>
                 <SortTh sortKey="status">{tc('status')}</SortTh>
                 <SortTh sortKey="payment">{tBilling('title')}</SortTh>
               </tr>
@@ -192,19 +193,19 @@ export default async function EncountersPage({
                     payment: payments.get(encounter.id)?.payment_state ?? 'unbilled',
                   }}
                 >
-                  <Td>
+                  <Td className="w-28 pe-1">
                     <Link
                       href={`/encounters/${encounter.id}`}
                       className="font-medium text-jade-800 underline-offset-2 hover:underline"
                       dir="ltr"
                     >
-                      {format.dateTime(new Date(encounter.encounter_date), 'short')}
+                      {formatDate(new Date(encounter.encounter_date))}
                     </Link>
                   </Td>
                   {/* Its own column rather than trailing the date. They are two
                       different facts, they sort differently, and on a day with
                       six patients the hour is what tells two records apart. */}
-                  <Td>
+                  <Td className="w-20 px-1">
                     {treatmentTime(encounter, bookedTimes) ? (
                       <span dir="ltr" className="tabular-nums text-ink-700">
                         {format.dateTime(new Date(treatmentTime(encounter, bookedTimes)!), 'time')}

@@ -1,4 +1,4 @@
-import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
+import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { FileText } from 'lucide-react';
 import { Badge, Card, CardBody, CardHeader, CardTitle, EmptyState } from '@clinic/ui';
 import { CONSENT_KINDS } from '@clinic/domain';
@@ -7,6 +7,7 @@ import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
 import { SettingsNav } from '@/features/settings/settings-nav';
 import { ConsentDocumentForm } from '@/features/consent/consent-document-form';
+import { formatDate } from '@clinic/i18n';
 
 /**
  * The consent texts the clinic asks patients to accept.
@@ -25,7 +26,6 @@ export default async function ConsentDocumentsPage({
   setRequestLocale(locale);
 
   const t = await getTranslations('consent');
-  const format = await getFormatter();
 
   const scope = await getClinicScope();
   if (!scope) return null;
@@ -77,7 +77,7 @@ export default async function ConsentDocumentsPage({
                         <span className="text-xs text-ink-600">{doc.locale.toUpperCase()}</span>
                         {doc.published_at ? (
                           <span dir="ltr" className="text-xs tabular-nums text-ink-600">
-                            {format.dateTime(new Date(doc.published_at), 'short')}
+                            {formatDate(new Date(doc.published_at))}
                           </span>
                         ) : null}
                       </li>

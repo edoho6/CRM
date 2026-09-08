@@ -20,6 +20,7 @@ import { getClinicScope } from '@/lib/session';
 import { formulaChineseName, formulaPrimaryName, herbPrimaryName } from '@/lib/display';
 import { ReferenceNav } from '@/features/reference/reference-nav';
 import { CatalogueSearch } from '@/features/reference/catalogue-search';
+import { CompareToggle, CompareTray } from '@/features/reference/compare-controls';
 import { FormulaFilters } from '@/features/inventory/formula-filters';
 import {
   parseFormulaFilters,
@@ -41,6 +42,7 @@ export default async function FormulasPage({
   const tFormulaTcm = await getTranslations('inventory.formulaTcmCategory');
   const tReview = await getTranslations('inventory.review');
   const tc = await getTranslations('common');
+  const tCompare = await getTranslations('reference.compare');
   const format = await getFormatter();
 
   const scope = await getClinicScope();
@@ -104,6 +106,9 @@ export default async function FormulasPage({
           <SortableTable defaultSortKey="name">
             <thead>
               <tr>
+                <th scope="col" className="w-10 border-b border-ink-200 bg-ink-50 px-3 py-2">
+                  <span className="sr-only">{tCompare('column')}</span>
+                </th>
                 <SortTh sortKey="name">{tc('name')}</SortTh>
                 <SortTh sortKey="cat">{t('fields.tcmCategory')}</SortTh>
                 <SortTh sortKey="source">{t('fields.sourceText')}</SortTh>
@@ -135,6 +140,13 @@ export default async function FormulasPage({
                       weight: total,
                     }}
                   >
+                    <Td className="w-10">
+                      <CompareToggle
+                        kind="formula"
+                        id={formula.id}
+                        label={formulaPrimaryName(formula, locale as Locale)}
+                      />
+                    </Td>
                     <Td>
                       <Link
                         href={`/reference/formulas/${formula.id}`}
@@ -186,6 +198,8 @@ export default async function FormulasPage({
           </SortableTable>
         </TableWrapper>
       )}
+
+      <CompareTray />
     </>
   );
 }
