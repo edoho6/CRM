@@ -116,7 +116,7 @@ export function PackagesPanel({
     });
   }
 
-  const money = (value: number) => format.number(value, { style: 'currency', currency: 'ILS' });
+  const money = (value: number) => format.number(value, 'currency');
 
   return (
     <Card>

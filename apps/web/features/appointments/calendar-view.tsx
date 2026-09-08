@@ -695,7 +695,10 @@ function MonthOrRangeView({
               <div
                 key={key}
                 className={cn(
-                  'min-h-24 border-b border-e border-ink-100 p-1 last:border-e-0',
+                  // `group` is what the "+" below keys its reveal on. It was
+                  // missing, so the button was permanently invisible except
+                  // under keyboard focus.
+                  'group min-h-24 border-b border-e border-ink-100 p-1 last:border-e-0',
                   outside && 'bg-ink-50/60',
                   closed && !today && 'bg-ink-100/70',
                   today && 'bg-jade-50',
@@ -718,7 +721,10 @@ function MonthOrRangeView({
                     type="button"
                     onClick={() => onAddOn(day)}
                     aria-label={t('new')}
-                    className="rounded px-1 text-xs text-ink-500 opacity-0 transition-opacity hover:bg-ink-100 hover:text-ink-900 focus-visible:opacity-100 group-hover:opacity-100 [.group:hover_&]:opacity-100"
+                    // Revealed on hover and on focus within the cell, and shown
+                    // outright on a touch screen, where there is no hover to
+                    // reveal it with.
+                    className="rounded px-1 text-xs text-ink-500 opacity-0 transition-opacity hover:bg-ink-100 hover:text-ink-900 focus-visible:opacity-100 group-hover:opacity-100 group-focus-within:opacity-100 pointer-coarse:opacity-100"
                   >
                     +
                   </button>

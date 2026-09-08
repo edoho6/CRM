@@ -24,7 +24,19 @@ import { cn } from '@clinic/ui';
  * locale prefix, so replacing it with a new locale keeps the user exactly where
  * they were rather than bouncing them to the dashboard.
  */
-export function LanguageSwitcher({ className }: { className?: string }) {
+export function LanguageSwitcher({
+  className,
+  placement = 'up',
+}: {
+  className?: string;
+  /**
+   * Which way the list opens. Up is right for the sidebar foot and the user
+   * menu, where the control sits at the bottom of the screen. The instance in
+   * the top bar was opening upward too — straight off the top of the viewport
+   * at tablet widths, where it is the only language control on the page.
+   */
+  placement?: 'up' | 'down';
+}) {
   const locale = useLocale() as Locale;
   const t = useTranslations('common');
   const pathname = usePathname();
@@ -74,7 +86,10 @@ export function LanguageSwitcher({ className }: { className?: string }) {
         <ul
           role="menu"
           aria-label={t('language')}
-          className="absolute bottom-full z-30 mb-1 min-w-32 rounded-lg border border-ink-200 bg-white py-1 shadow-lg"
+          className={cn(
+            'absolute z-30 min-w-32 rounded-lg border border-ink-200 bg-white py-1 shadow-lg',
+            placement === 'up' ? 'bottom-full mb-1' : 'top-full mt-1',
+          )}
         >
           {locales.map((option) => (
             <li key={option}>

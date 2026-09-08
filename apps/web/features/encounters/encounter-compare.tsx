@@ -99,7 +99,7 @@ export function EncounterCompare({
             {previous.map((entry, index) => (
               <option key={entry.id} value={entry.id}>
                 {index === 0 ? `${t('mostRecent')} · ` : ''}
-                {new Date(entry.date).toLocaleDateString()}
+                {formatDate(entry.date)}
               </option>
             ))}
           </Select>

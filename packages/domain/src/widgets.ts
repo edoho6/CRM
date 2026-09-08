@@ -1,6 +1,6 @@
 import type { ComponentType } from 'react';
 import type { ZodType } from 'zod';
-import type { Locale, MembershipRole } from './enums';
+import type { MembershipRole } from './enums';
 
 /**
  * Contract for the modular dashboard.
@@ -46,11 +46,15 @@ export interface WidgetProps<TConfig = unknown> {
 }
 
 export interface WidgetDefinition<TConfig = unknown> {
-  /** Unique registry key, e.g. `upcoming-appointments`. Persisted in the layout JSON. */
+  /**
+   * Unique registry key, e.g. `upcoming-appointments`. Persisted in the layout JSON.
+   *
+   * Also the widget's address in the message catalogue: its name and
+   * description are `widgets.<camelCase(type)>.name` / `.description`, in both
+   * languages, alongside the strings the widget itself shows. They used to be
+   * declared here as well, in a second copy that drifted from the first.
+   */
   type: string;
-  /** Shown in the "add widget" panel, in the user's language. */
-  displayName: Record<Locale, string>;
-  description?: Record<Locale, string>;
   /** Lucide icon name, resolved by the UI layer so this package stays icon-library agnostic. */
   icon?: string;
   defaultSize: WidgetSize;

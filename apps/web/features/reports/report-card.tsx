@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Card, CardBody, Table, TableWrapper, Td, Th, Tr } from '@clinic/ui';
+import { Alert, Card, CardBody, Table, TableWrapper, Td, Th, Tr } from '@clinic/ui';
 
 /**
  * The frame every chart on the report sits in.
@@ -28,6 +28,7 @@ export function ReportCard({
   headline,
   hint,
   table,
+  failed = false,
   children,
 }: {
   title: string;
@@ -35,12 +36,19 @@ export function ReportCard({
   headline?: string;
   hint?: string;
   table: ReportTable;
+  /**
+   * The query behind this section did not run. Said as such, and separately
+   * from "no data": a clinic with no bookings and a report that could not
+   * reach the bookings table used to show the same sentence, and only one of
+   * those is something to act on.
+   */
+  failed?: boolean;
   children: React.ReactNode;
 }) {
   const t = useTranslations('reports');
   const [showTable, setShowTable] = useState(false);
 
-  const empty = table.rows.length === 0;
+  const empty = failed || table.rows.length === 0;
 
   return (
     <Card>
@@ -57,7 +65,13 @@ export function ReportCard({
 
         {/* Nothing to draw is said in words. A chart with no bars looks like a
             chart that failed to load. */}
-        {empty ? <p className="py-6 text-center text-sm text-ink-600">{t('noData')}</p> : children}
+        {failed ? (
+          <Alert tone="warning">{t('unavailable')}</Alert>
+        ) : empty ? (
+          <p className="py-6 text-center text-sm text-ink-600">{t('noData')}</p>
+        ) : (
+          children
+        )}
 
         {!empty ? (
           <div className="no-print">

@@ -1,10 +1,11 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { CalendarPlus, PackagePlus, UserPlus, CalendarDays } from 'lucide-react';
+import { CalendarPlus, ChartColumn, PackagePlus, UserPlus, CalendarDays } from 'lucide-react';
 import { defineWidget } from '@clinic/domain/widgets';
 import { Link } from '@clinic/i18n/navigation';
 import { useAsyncData } from '@/lib/use-supabase';
+import { useDashboardContext } from '../dashboard-context';
 import { registerWidget } from '../registry';
 import { WidgetLoading } from '../widget-frame';
 
@@ -58,11 +59,17 @@ function PatientStatsWidget() {
 
 function QuickActionsWidget() {
   const t = useTranslations('widgets.quickActions');
+  const { tracksInventory } = useDashboardContext();
 
+  // Four tiles, always: the grid is two by two, and three tiles leave a hole.
+  // A clinic that keeps no stock has no use for "receive stock", so its slot
+  // goes to the reports instead of to a page the sidebar does not even list.
   const actions = [
     { href: '/patients/new' as const, label: t('newPatient'), icon: UserPlus },
     { href: '/calendar' as const, label: t('newAppointment'), icon: CalendarPlus },
-    { href: '/inventory/batches/receive' as const, label: t('receiveStock'), icon: PackagePlus },
+    tracksInventory
+      ? { href: '/inventory/batches/receive' as const, label: t('receiveStock'), icon: PackagePlus }
+      : { href: '/reports' as const, label: t('openReports'), icon: ChartColumn },
     { href: '/calendar' as const, label: t('openCalendar'), icon: CalendarDays },
   ];
 
@@ -85,7 +92,6 @@ function QuickActionsWidget() {
 registerWidget(
   defineWidget<Record<string, never>>({
     type: 'patient-stats',
-    displayName: { he: 'מטופלים', en: 'Patients' },
     icon: 'Users',
     defaultSize: 'sm',
     defaultConfig: {},
@@ -97,7 +103,6 @@ registerWidget(
 registerWidget(
   defineWidget<Record<string, never>>({
     type: 'quick-actions',
-    displayName: { he: 'פעולות מהירות', en: 'Quick actions' },
     icon: 'Zap',
     defaultSize: 'sm',
     defaultConfig: {},

@@ -1,5 +1,5 @@
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
-import { Card, CardBody, Table, TableWrapper, Td, Th, Tr } from '@clinic/ui';
+import { Alert, Card, CardBody, Table, TableWrapper, Td, Th, Tr } from '@clinic/ui';
 import { Link } from '@clinic/i18n/navigation';
 import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
@@ -133,6 +133,7 @@ export default async function ReportsPage({
           <div className="grid gap-4 lg:grid-cols-3">
             <ReportCard
               title={t('weekdayLoad')}
+              failed={get('bookings_by_weekday') === null}
               table={buildTable(get('bookings_by_weekday'), {
                 weekday: t('columns.weekday'),
                 bookings: t('columns.bookings'),
@@ -148,6 +149,7 @@ export default async function ReportsPage({
 
             <ReportCard
               title={t('patientStatuses')}
+              failed={get('patient_counts') === null}
               table={buildTable(get('patient_counts'), {
                 status: t('columns.status'),
                 count: t('columns.count'),
@@ -164,6 +166,7 @@ export default async function ReportsPage({
             <ReportCard
               title={t('topHerbs')}
               hint={t('topHerbsHint')}
+              failed={get('top_herbs') === null}
               table={buildTable(get('top_herbs'), {
                 herb: t('columns.herb'),
                 times: t('columns.times'),
@@ -180,6 +183,7 @@ export default async function ReportsPage({
 
             <ReportCard
               title={t('topPoints')}
+              failed={get('top_points') === null}
               table={buildTable(get('top_points'), {
                 point: t('columns.point'),
                 times: t('columns.times'),
@@ -203,6 +207,8 @@ export default async function ReportsPage({
               title={t('inactivePatients')}
               hint={t('inactivePatientsHint')}
               result={get('inactive_patients')}
+              failed={get('inactive_patients') === null}
+              unavailableLabel={t('unavailable')}
               headers={{
                 patient: t('columns.patient'),
                 last_treatment: t('columns.lastTreatment'),
@@ -214,6 +220,8 @@ export default async function ReportsPage({
             <ListCard
               title={t('unpaid')}
               result={get('unpaid_invoices')}
+              failed={get('unpaid_invoices') === null}
+              unavailableLabel={t('unavailable')}
               headers={{
                 invoice: t('columns.invoice'),
                 patient: t('columns.patient'),
@@ -235,6 +243,8 @@ export default async function ReportsPage({
               <ListCard
                 title={t('lowStock')}
                 result={get('low_stock')}
+                failed={get('low_stock') === null}
+                unavailableLabel={t('unavailable')}
                 headers={{
                   herb: t('columns.herb'),
                   remaining: t('columns.remaining'),
@@ -299,6 +309,7 @@ async function TreatmentsCard({
   return (
     <ReportCard
       title={t('treatments')}
+      failed={result === null}
       headline={String(total)}
       hint={t('treatmentsHint')}
       table={buildTable(result, { month: t('columns.month'), count: t('columns.count') })}
@@ -325,11 +336,12 @@ async function RevenueCard({
   const billed = rows.reduce((sum, row) => sum + (Number(row.billed) || 0), 0);
   const outstanding = rows.reduce((sum, row) => sum + (Number(row.outstanding) || 0), 0);
 
-  const money = (value: number) => format.number(value, { style: 'currency', currency: 'ILS' });
+  const money = (value: number) => format.number(value, 'currency');
 
   return (
     <ReportCard
       title={t('revenue')}
+      failed={result === null}
       headline={money(billed)}
       // Outstanding is stated rather than drawn: it is the gap between the two
       // bars, and a third bar for a difference is a bar that double-counts.
@@ -367,6 +379,7 @@ async function NewVsReturningCard({
   return (
     <ReportCard
       title={t('newVsReturning')}
+      failed={result === null}
       headline={String(first)}
       hint={t('newVsReturningHint')}
       table={buildTable(result, {
@@ -418,6 +431,7 @@ async function AppointmentOutcomesCard({
   return (
     <ReportCard
       title={t('appointmentOutcomes')}
+      failed={result === null}
       headline={allTotal > 0 ? `${Math.round((missedTotal / allTotal) * 100)}%` : undefined}
       hint={t('appointmentOutcomesHint')}
       table={buildTable(result, {
@@ -442,6 +456,8 @@ function ListCard({
   result,
   headers,
   emptyLabel,
+  unavailableLabel,
+  failed,
   footer,
 }: {
   title: string;
@@ -449,6 +465,8 @@ function ListCard({
   result: QueryResult | null;
   headers: Record<string, string>;
   emptyLabel: string;
+  unavailableLabel: string;
+  failed?: boolean;
   footer?: React.ReactNode;
 }) {
   const rows = result?.rows ?? [];
@@ -462,7 +480,11 @@ function ListCard({
           {hint ? <p className="mt-0.5 text-xs text-ink-600">{hint}</p> : null}
         </div>
 
-        {rows.length === 0 ? (
+        {/* Same distinction as ReportCard: a query that failed is not a clinic
+            with nothing to show. */}
+        {failed ? (
+          <Alert tone="warning">{unavailableLabel}</Alert>
+        ) : rows.length === 0 ? (
           <p className="py-4 text-sm text-ink-600">{emptyLabel}</p>
         ) : (
           <TableWrapper>

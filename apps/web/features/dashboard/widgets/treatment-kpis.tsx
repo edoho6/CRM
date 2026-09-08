@@ -357,11 +357,6 @@ function TreatmentKpisWidget({ size }: WidgetProps<Record<string, never>>) {
 registerWidget(
   defineWidget<Record<string, never>>({
     type: 'treatment-kpis',
-    displayName: { he: 'טיפולים — היום, השבוע, החודש', en: 'Treatments — today, week, month' },
-    description: {
-      he: 'שלושה מספרים במבט אחד, עם שינוי מול התקופה הקודמת ופירוט בלחיצה.',
-      en: 'Three numbers at a glance, with change against the previous period and detail on click.',
-    },
     icon: 'Activity',
     defaultSize: 'xl',
     allowedSizes: ['lg', 'xl'],

@@ -188,11 +188,6 @@ function TasksWidget() {
 registerWidget(
   defineWidget<Record<string, never>>({
     type: 'tasks',
-    displayName: { he: 'משימות', en: 'Tasks' },
-    description: {
-      he: 'מה צריך לעשות, ומה דחוף. אפשר להוסיף ישירות מכאן.',
-      en: 'What needs doing, and what is urgent. Added straight from here.',
-    },
     icon: 'ListChecks',
     defaultSize: 'md',
     defaultConfig: {},

@@ -18,13 +18,14 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { useLocale, useTranslations } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import { Check, LayoutGrid, RotateCcw } from 'lucide-react';
 import { Alert, Button, EmptyState, cn } from '@clinic/ui';
 import type { DashboardLayout, DashboardWidgetInstance, WidgetSize } from '@clinic/domain/widgets';
-import type { Locale } from '@clinic/domain';
 import { AddWidgetDialog } from './add-widget-dialog';
-import { DEFAULT_DASHBOARD_LAYOUT } from './default-layout';
+import { DashboardProvider } from './dashboard-context';
+import { defaultDashboardLayout } from './default-layout';
+import { useWidgetLabels } from './widget-labels';
 import {
   SIZE_CLASSES,
   SIZE_MIN_HEIGHT,
@@ -50,9 +51,15 @@ const SAVE_DEBOUNCE_MS = 800;
  * to forget, and the cost of a lost drag is an annoyed user rebuilding their
  * dashboard.
  */
-export function DashboardGrid({ initialLayout }: { initialLayout: DashboardLayout }) {
+export function DashboardGrid({
+  initialLayout,
+  tracksInventory,
+}: {
+  initialLayout: DashboardLayout;
+  /** Whether the clinic keeps herb stock — decides which widgets exist here at all. */
+  tracksInventory: boolean;
+}) {
   const t = useTranslations('dashboard');
-  const locale = useLocale() as Locale;
 
   const [layout, setLayout] = useState<DashboardLayout>(initialLayout);
   const [isEditing, setIsEditing] = useState(false);
@@ -151,8 +158,8 @@ export function DashboardGrid({ initialLayout }: { initialLayout: DashboardLayou
 
   const handleReset = useCallback(() => {
     if (!window.confirm(t('resetConfirm'))) return;
-    update(DEFAULT_DASHBOARD_LAYOUT);
-  }, [t, update]);
+    update(defaultDashboardLayout(tracksInventory));
+  }, [t, update, tracksInventory]);
 
   const toolbar = (
     <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
@@ -177,20 +184,25 @@ export function DashboardGrid({ initialLayout }: { initialLayout: DashboardLayou
     </div>
   );
 
+  // The provider wraps both branches: the add-widget panel lives in the
+  // toolbar, and the toolbar is on the empty dashboard too.
   if (layout.length === 0) {
     return (
-      <div>
-        {toolbar}
-        <EmptyState
-          icon={<LayoutGrid className="h-8 w-8" />}
-          title={t('emptyTitle')}
-          description={t('emptyBody')}
-        />
-      </div>
+      <DashboardProvider value={{ tracksInventory }}>
+        <div>
+          {toolbar}
+          <EmptyState
+            icon={<LayoutGrid className="h-8 w-8" />}
+            title={t('emptyTitle')}
+            description={t('emptyBody')}
+          />
+        </div>
+      </DashboardProvider>
     );
   }
 
   return (
+    <DashboardProvider value={{ tracksInventory }}>
     <div>
       {toolbar}
 
@@ -212,7 +224,6 @@ export function DashboardGrid({ initialLayout }: { initialLayout: DashboardLayou
               <SortableWidget
                 key={item.id}
                 item={item}
-                locale={locale}
                 isEditing={isEditing}
                 onRemove={() => handleRemove(item.id)}
                 onResize={() => handleResize(item.id)}
@@ -223,19 +234,18 @@ export function DashboardGrid({ initialLayout }: { initialLayout: DashboardLayou
         </SortableContext>
       </DndContext>
     </div>
+    </DashboardProvider>
   );
 }
 
 function SortableWidget({
   item,
-  locale,
   isEditing,
   onRemove,
   onResize,
   onConfigChange,
 }: {
   item: DashboardWidgetInstance;
-  locale: Locale;
   isEditing: boolean;
   onRemove: () => void;
   onResize: () => void;
@@ -252,6 +262,7 @@ function SortableWidget({
   };
 
   const definition = getWidgetDefinition(item.type);
+  const labels = useWidgetLabels();
 
   let body: React.ReactNode;
   let title: React.ReactNode = item.type;
@@ -267,7 +278,7 @@ function SortableWidget({
       : null;
     const config =
       parsed && parsed.success ? parsed.data : (item.config ?? definition.defaultConfig);
-    title = definition.displayName[locale] ?? definition.type;
+    title = labels.name(definition.type);
     body = (
       <WidgetComponent
         instanceId={item.id}

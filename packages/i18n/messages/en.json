@@ -178,7 +178,8 @@
       "newPatient": "New patient",
       "newAppointment": "New appointment",
       "receiveStock": "Receive stock",
-      "openCalendar": "Open calendar"
+      "openCalendar": "Open calendar",
+      "openReports": "Reports"
     },
     "upcomingAppointments": {
       "name": "Upcoming appointments",
@@ -187,6 +188,7 @@
     },
     "treatmentKpis": {
       "name": "Treatments — today, week, month",
+      "description": "Three numbers at a glance, with change against the previous period and detail on click.",
       "today": "Today",
       "week": "This week",
       "month": "This month",
@@ -201,11 +203,14 @@
     },
     "revenue": {
       "name": "Revenue this month",
+      "description": "Payments collected this month, and what is still outstanding.",
       "collectedThisMonth": "Collected this month",
       "outstanding": "Outstanding",
       "invoicesThisMonth": "Invoices this month"
     },
     "tasks": {
+      "name": "Tasks",
+      "description": "What needs doing, and what is urgent. Added straight from here.",
       "newTask": "New task",
       "placeholder": "What needs doing?",
       "empty": "Nothing outstanding.",
@@ -505,6 +510,7 @@
     "emptyBody": "Create an invoice from a treatment, or a blank one for a patient.",
     "items": "Invoice lines",
     "addItem": "Add line",
+    "noLines": "No lines yet — add one below.",
     "description": "Description",
     "quantity": "Qty",
     "unitPrice": "Unit price",
@@ -1593,6 +1599,7 @@
     "period": "Report period",
     "lastMonths": "{count, plural, one {Last month} other {Last # months}}",
     "noData": "No data in this period.",
+    "unavailable": "This section could not be loaded. Refresh to try again.",
     "showTable": "Show as a table",
     "hideTable": "Hide the table",
     "generatedOn": "Generated {date}",

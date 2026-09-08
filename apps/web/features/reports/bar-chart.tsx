@@ -50,7 +50,7 @@ export function BarChart({
 
   const formatValue = (value: number) =>
     unit === 'currency'
-      ? format.number(value, { style: 'currency', currency: 'ILS' })
+      ? format.number(value, 'currency')
       : format.number(value);
 
   // A single scale across both series, so the two are comparable. Two scales

@@ -151,7 +151,6 @@ function UpcomingAppointmentsWidget() {
 registerWidget(
   defineWidget<Record<string, never>>({
     type: 'today-appointments',
-    displayName: { he: 'התורים של היום', en: "Today's appointments" },
     icon: 'CalendarClock',
     defaultSize: 'lg',
     defaultConfig: {},
@@ -163,7 +162,6 @@ registerWidget(
 registerWidget(
   defineWidget<Record<string, never>>({
     type: 'upcoming-appointments',
-    displayName: { he: 'התורים הקרובים', en: 'Upcoming appointments' },
     icon: 'CalendarRange',
     defaultSize: 'lg',
     defaultConfig: {},

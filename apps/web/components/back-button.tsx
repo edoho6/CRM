@@ -9,11 +9,17 @@ import { useRouter } from '@clinic/i18n/navigation';
 /**
  * Back, without reaching for the browser's own.
  *
- * Hidden on the first page of a visit, because there is nowhere to go back to
- * and a button that does nothing is worse than no button. `history.length` is
- * the only signal available for that, and it is imperfect — it counts entries
- * from before this tab reached the app — so it is read once after mount rather
- * than trusted mid-render, and the fallback is simply to show the control.
+ * Invisible — not absent — on the first page of a visit, because there is
+ * nowhere to go back to and a button that does nothing is worse than no button.
+ * `history.length` is the only signal available for that, and it is imperfect —
+ * it counts entries from before this tab reached the app — so it is read once
+ * after mount rather than trusted mid-render.
+ *
+ * It keeps its space while hidden. Returning `null` meant the top bar's leading
+ * half was empty on the first page and then jumped when the button appeared on
+ * the second, and every control beside it shifted with it. `invisible` holds
+ * the box and takes the control out of the tab order and the accessibility
+ * tree, so nothing moves and nothing is announced.
  *
  * The arrow is mirrored for Hebrew. "Back" is towards the start of the line,
  * which is left in English and right in Hebrew — an arrow that points the same
@@ -31,16 +37,17 @@ export function BackButton({ className }: { className?: string }) {
     setCanGoBack(window.history.length > 1);
   }, []);
 
-  if (!canGoBack) return null;
-
   return (
     <button
       type="button"
       onClick={() => router.back()}
+      aria-hidden={!canGoBack}
+      tabIndex={canGoBack ? undefined : -1}
       className={cn(
         'no-print inline-flex items-center gap-1 rounded-md px-2 py-1 text-sm font-medium',
         'text-ink-600 transition-colors hover:bg-ink-100 hover:text-ink-900',
         'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
+        !canGoBack && 'invisible',
         className,
       )}
     >

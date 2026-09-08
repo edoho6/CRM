@@ -93,11 +93,6 @@ function RevenueWidget() {
 registerWidget(
   defineWidget<Record<string, never>>({
     type: 'revenue',
-    displayName: { he: 'הכנסות החודש', en: 'Revenue this month' },
-    description: {
-      he: 'תשלומים שנגבו החודש, ויתרות פתוחות בחשבוניות.',
-      en: 'Payments collected this month, and what is still outstanding.',
-    },
     icon: 'Wallet',
     defaultSize: 'sm',
     allowedSizes: ['sm', 'md'],

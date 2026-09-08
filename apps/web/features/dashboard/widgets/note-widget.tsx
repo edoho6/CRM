@@ -74,7 +74,6 @@ function NoteWidget({ config, onConfigChange }: WidgetProps<NoteConfig>) {
 registerWidget(
   defineWidget<NoteConfig>({
     type: 'note',
-    displayName: { he: 'תיבת טקסט', en: 'Text box' },
     icon: 'StickyNote',
     defaultSize: 'md',
     defaultConfig: { html: '' },

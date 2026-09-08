@@ -286,7 +286,7 @@ export function AppShell({
 
         {/* Top bar, on every screen and every size: the quick-create "+" and the
             global search live here so they are never more than one click away. */}
-        <header className="sticky top-0 z-30 flex items-center justify-between gap-2 border-b border-ink-200 bg-white px-4 py-2">
+        <header className="sticky top-0 z-30 flex h-15 items-center justify-between gap-2 border-b border-ink-200 bg-white px-4">
           <div className="flex min-w-0 items-center gap-2">
             <Button
               variant="ghost"
@@ -309,14 +309,21 @@ export function AppShell({
           <div className="flex shrink-0 items-center gap-1.5">
             <GlobalSearch />
             <QuickCreateMenu />
-            <LanguageSwitcher className="hidden sm:inline-flex lg:hidden" />
+            <LanguageSwitcher className="hidden sm:inline-flex lg:hidden" placement="down" />
           </div>
         </header>
 
         {/* Open files, under the top bar and above the page. It renders
             nothing when nothing is open, and sticks just below the header so
-            the two travel together. */}
-        <div className="sticky top-[3.25rem] z-20">
+            the two travel together.
+
+            `top-15` is the header's `h-15`, and the two must agree. The header
+            used to take its height from its content — 44px buttons plus
+            padding and a border came to 61px — while this sat at a
+            hand-written 52px, so the strip stuck nine pixels *under* the
+            header and was clipped on every scroll. A fixed header height is
+            the honest fix: one number, used twice. */}
+        <div className="sticky top-15 z-20">
           <OpenFilesBar />
         </div>
 

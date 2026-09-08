@@ -86,7 +86,6 @@ function LowStockWidget() {
 registerWidget(
   defineWidget<Record<string, never>>({
     type: 'low-stock',
-    displayName: { he: 'מלאי צמחים נמוך', en: 'Low herb stock' },
     icon: 'PackageMinus',
     defaultSize: 'sm',
     defaultConfig: {},

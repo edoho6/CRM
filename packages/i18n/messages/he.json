@@ -178,7 +178,8 @@
       "newPatient": "מטופל חדש",
       "newAppointment": "תור חדש",
       "receiveStock": "קליטת מלאי",
-      "openCalendar": "פתיחת היומן"
+      "openCalendar": "פתיחת היומן",
+      "openReports": "דוחות"
     },
     "upcomingAppointments": {
       "name": "התורים הקרובים",
@@ -187,6 +188,7 @@
     },
     "treatmentKpis": {
       "name": "טיפולים — היום, השבוע, החודש",
+      "description": "שלושה מספרים במבט אחד, עם שינוי מול התקופה הקודמת ופירוט בלחיצה.",
       "today": "היום",
       "week": "השבוע",
       "month": "החודש",
@@ -201,11 +203,14 @@
     },
     "revenue": {
       "name": "הכנסות החודש",
+      "description": "תשלומים שנגבו החודש, ויתרות פתוחות בחשבוניות.",
       "collectedThisMonth": "נגבה החודש",
       "outstanding": "יתרות פתוחות",
       "invoicesThisMonth": "חשבוניות החודש"
     },
     "tasks": {
+      "name": "משימות",
+      "description": "מה צריך לעשות, ומה דחוף. אפשר להוסיף ישירות מכאן.",
       "newTask": "משימה חדשה",
       "placeholder": "מה צריך לעשות?",
       "empty": "אין משימות פתוחות.",
@@ -505,6 +510,7 @@
     "emptyBody": "אפשר ליצור חשבונית מתוך טיפול, או חשבונית ריקה למטופל.",
     "items": "שורות החשבונית",
     "addItem": "הוספת שורה",
+    "noLines": "עדיין אין שורות — הוסיפו אחת למטה.",
     "description": "תיאור",
     "quantity": "כמות",
     "unitPrice": "מחיר ליחידה",
@@ -1593,6 +1599,7 @@
     "period": "טווח הדוח",
     "lastMonths": "{count, plural, one {חודש אחרון} two {חודשיים אחרונים} other {# חודשים אחרונים}}",
     "noData": "אין נתונים בטווח הזה.",
+    "unavailable": "לא ניתן היה לטעון את המקטע הזה. רעננו כדי לנסות שוב.",
     "showTable": "הצגה כטבלה",
     "hideTable": "הסתרת הטבלה",
     "generatedOn": "הופק ב-{date}",

@@ -1,11 +1,13 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { useLocale, useTranslations } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import { Plus } from 'lucide-react';
 import { Button, Dialog, DialogContent, DialogTrigger, EmptyState } from '@clinic/ui';
 import type { AnyWidgetDefinition, DashboardLayout } from '@clinic/domain/widgets';
-import type { Locale } from '@clinic/domain';
+import { useDashboardContext } from './dashboard-context';
+import { INVENTORY_WIDGET_TYPES } from './default-layout';
+import { useWidgetLabels } from './widget-labels';
 import { listWidgetDefinitions } from './widgets';
 
 /**
@@ -23,10 +25,19 @@ export function AddWidgetDialog({
   onAdd: (definition: AnyWidgetDefinition) => void;
 }) {
   const t = useTranslations('dashboard');
-  const locale = useLocale() as Locale;
+  const labels = useWidgetLabels();
+  const { tracksInventory } = useDashboardContext();
   const [open, setOpen] = useState(false);
 
-  const definitions = useMemo(() => listWidgetDefinitions(), []);
+  // Stock widgets are not offered to a clinic that keeps no stock — the same
+  // rule the default layout applies, read from the same list.
+  const definitions = useMemo(
+    () =>
+      listWidgetDefinitions().filter(
+        (definition) => tracksInventory || !INVENTORY_WIDGET_TYPES.has(definition.type),
+      ),
+    [tracksInventory],
+  );
   const usedTypes = useMemo(() => new Set(layout.map((item) => item.type)), [layout]);
 
   const available = definitions.filter(
@@ -61,15 +72,15 @@ export function AddWidgetDialog({
                   >
                     <span className="flex items-center justify-between gap-2">
                       <span className="text-sm font-medium text-ink-900">
-                        {definition.displayName[locale] ?? definition.type}
+                        {labels.name(definition.type)}
                       </span>
                       {isUsed ? (
                         <span className="shrink-0 text-xs text-ink-500">{t('alreadyAdded')}</span>
                       ) : null}
                     </span>
-                    {definition.description?.[locale] ? (
+                    {labels.description(definition.type) ? (
                       <span className="mt-0.5 block text-xs text-ink-500">
-                        {definition.description[locale]}
+                        {labels.description(definition.type)}
                       </span>
                     ) : null}
                   </button>

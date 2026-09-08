@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { useTranslations } from 'next-intl';
-import { ChevronDown, ChevronUp, Copy, GripVertical, Plus, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronUp, Copy, Plus, Trash2 } from 'lucide-react';
 import {
   Alert,
   Button,
@@ -171,7 +171,9 @@ export function FormBuilder({
         <Card key={field.id}>
           <CardBody className="space-y-3">
             <div className="flex flex-wrap items-center gap-2">
-              <GripVertical className="h-4 w-4 shrink-0 text-ink-400" aria-hidden />
+              {/* No grip: reordering is by the arrow buttons (see the note at
+                  the top), and a drag handle on a thing that cannot be dragged
+                  is a promise the row does not keep. */}
               <span className="text-xs tabular-nums text-ink-500">{index + 1}</span>
 
               <Select

@@ -144,21 +144,26 @@ export function patientFullName(
 /**
  * The badge colour for a patient's status.
  *
- * Green for in-treatment and for a full recovery, red only for a course that
- * did not help, amber for someone who stopped partway — the onestate worth
+ * Blue for in-treatment, green for a full recovery, red only for a course that
+ * did not help, amber for someone who stopped partway — the one state worth
  * noticing — and neutral for the rest. Colour is never the only signal: the
  * badge always carries its label.
+ *
+ * In-treatment and recovered used to share the green, which made the two
+ * outcomes a practitioner most needs to tell apart look identical on the
+ * patient list. "Still going" is the in-progress blue; green is reserved for
+ * done.
  */
 export function patientStatusTone(
   status: TreatmentStatus | null | undefined,
-): 'success' | 'danger' | 'warning' | 'neutral' | 'muted' {
+): 'success' | 'info' | 'danger' | 'warning' | 'neutral' | 'muted' {
   switch (status) {
     case 'full_success':
       return 'success';
     case 'active':
     case null:
     case undefined:
-      return 'success';
+      return 'info';
     case 'unsuccessful':
       return 'danger';
     case 'dropped_out':

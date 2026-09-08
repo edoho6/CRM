@@ -162,6 +162,16 @@ export function InvoiceEditor({ invoice }: { invoice: InvoiceWithDetails }) {
                   </tr>
                 </thead>
                 <tbody>
+                  {/* A header row over nothing reads as a table that failed to
+                      load. Said in words instead, inside the table so the frame
+                      stays where the lines will go. */}
+                  {invoice.items.length === 0 ? (
+                    <Tr>
+                      <Td colSpan={5} className="py-6 text-center text-ink-500">
+                        {t('noLines')}
+                      </Td>
+                    </Tr>
+                  ) : null}
                   {invoice.items.map((item) => (
                     <Tr key={item.id}>
                       <Td>{item.description}</Td>

@@ -62,7 +62,11 @@ export function Tr({
 }) {
   return (
     <tr
-      className={cn('transition-colors hover:bg-ink-50/70', className)}
+      // The hover tint itself is a global rule (`tbody tr:hover` in each app's
+      // globals.css) so that it also follows keyboard focus into the row and
+      // flips correctly in dark mode. This used to paint a second, different
+      // tint on top of that one. All that is left here is the fade.
+      className={cn('transition-shadow', className)}
       data-sort={sort ? JSON.stringify(sort) : undefined}
       {...props}
     />
