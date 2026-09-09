@@ -13,7 +13,7 @@ import {
 } from '@clinic/ui';
 import { getCurrentUser, isSupabaseConfigured, tryCreateServerSupabase } from '@clinic/db';
 import type { Appointment, AppointmentType, PatientDocument, Profile } from '@clinic/db/types';
-import type { Locale } from '@clinic/domain';
+import { APPOINTMENT_STATUS_TONES, statusTone, type Locale } from '@clinic/domain';
 import { appointmentTypeName } from './appointment-name';
 import { portalSignOut } from './login/actions';
 import { PortalNav } from './portal-nav';
@@ -147,7 +147,7 @@ export default async function PortalHomePage({
                         : ''}
                     </p>
                   </div>
-                  <Badge tone={appointment.status === 'confirmed' ? 'success' : 'neutral'}>
+                  <Badge tone={statusTone(APPOINTMENT_STATUS_TONES, appointment.status)}>
                     {tApp(`status.${appointment.status}`)}
                   </Badge>
                 </li>

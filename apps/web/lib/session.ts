@@ -33,14 +33,22 @@ export const getMembershipContext = cache(async (): Promise<MembershipContext | 
 
   if (error || !membership) return null;
 
-  const [{ data: clinic }, { data: profile }] = await Promise.all([
+  const [{ data: clinic }, { data: profile }, { data: platformAdmin }] = await Promise.all([
     supabase.from('clinics').select('*').eq('id', membership.clinic_id).maybeSingle<Clinic>(),
     supabase.from('profiles').select('*').eq('id', user.id).maybeSingle<Profile>(),
+    // Whether this person runs the service. A function rather than a table
+    // read so the answer is the same one every policy uses.
+    supabase.rpc('is_platform_admin'),
   ]);
 
   if (!clinic) return null;
 
-  return { membership, clinic, profile: profile ?? null };
+  return {
+    membership,
+    clinic,
+    profile: profile ?? null,
+    isPlatformAdmin: platformAdmin === true,
+  };
 });
 
 export interface ClinicScope {

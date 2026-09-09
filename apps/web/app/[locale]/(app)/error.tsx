@@ -10,13 +10,17 @@ import { Alert, Button } from '@clinic/ui';
  * A failed query in one module must not blank the whole app. The message stays
  * generic on purpose: a raw database error can name tables and columns, which is
  * neither useful to a practitioner nor safe to show.
+ *
+ * `retry` rather than `reset`: reset only re-renders what is already in the
+ * browser, so a page that failed on its data would fail the same way again.
+ * Retry fetches it afresh.
  */
 export default function AppError({
   error,
-  reset,
+  retry,
 }: {
   error: Error & { digest?: string };
-  reset: () => void;
+  retry: () => void;
 }) {
   const t = useTranslations('common');
 
@@ -29,7 +33,7 @@ export default function AppError({
       <Alert tone="danger" title={t('errorTitle')}>
         {t('errorGeneric')}
       </Alert>
-      <Button className="mt-4" onClick={reset}>
+      <Button className="mt-4" onClick={retry}>
         {t('retry')}
       </Button>
     </div>

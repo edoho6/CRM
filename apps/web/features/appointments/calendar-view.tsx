@@ -7,6 +7,7 @@ import type { Room } from '@clinic/db/types';
 import { ConfirmationDot } from './confirmation-status';
 import { BlockDayDialog } from './block-day-dialog';
 import { DayAddMenu } from './day-add-menu';
+import { NowLine } from './now-line';
 import { Button, cn, TIME_INPUT_LANG } from '@clinic/ui';
 import type { Locale } from '@clinic/domain';
 import { usePathname, useRouter } from '@clinic/i18n/navigation';
@@ -548,6 +549,15 @@ export function CalendarView({
                         />
                       );
                     })}
+
+                    {today ? (
+                      <NowLine
+                        dayStartHour={DAY_START_HOUR}
+                        slotMinutes={SLOT_MINUTES}
+                        slotHeight={SLOT_HEIGHT}
+                        slotCount={SLOT_COUNT}
+                      />
+                    ) : null}
 
                     {positioned.map(({ appointment, top, height, column, columns }) => {
                       const color = appointment.appointment_type?.color ?? '#0ea5e9';

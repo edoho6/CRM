@@ -34,6 +34,7 @@ import {
   GripVertical,
   LayoutDashboard,
   ListTodo,
+  Building2,
   Leaf,
   LogOut,
   Menu,
@@ -49,6 +50,7 @@ import { LanguageSwitcher } from './language-switcher';
 import { ThemeToggle } from './theme-toggle';
 import { UserMenu } from './user-menu';
 import { TaskBell } from './task-bell';
+import { LinkPending } from './link-pending';
 import { GlobalSearch } from '@/features/quick-bar/global-search';
 import { QuickCreateMenu } from '@/features/quick-bar/quick-create-menu';
 import { BackButton } from './back-button';
@@ -134,6 +136,7 @@ export function AppShell({
   userName,
   tracksInventory,
   isSynthetic = false,
+  isPlatformAdmin = false,
   onSignOut,
 }: {
   children: React.ReactNode;
@@ -142,6 +145,8 @@ export function AppShell({
   tracksInventory: boolean;
   /** True for a sandbox clinic holding fictional patients. */
   isSynthetic?: boolean;
+  /** Shows the service-wide overview link. Decided by the database, not here. */
+  isPlatformAdmin?: boolean;
   onSignOut: () => Promise<void>;
 }) {
   const t = useTranslations('nav');
@@ -289,6 +294,9 @@ export function AppShell({
               {/* The label stays in the accessibility tree when collapsed —
                   a rail of unlabelled icons is unusable with a screen reader. */}
               <span className={iconOnly ? 'sr-only' : 'truncate'}>{label}</span>
+              {/* A dot that appears when this link is the one being waited
+                  on. Hidden in the icon rail, where there is no room. */}
+              {!iconOnly ? <LinkPending className="ms-auto" /> : null}
             </Link>
           );
         })}
@@ -386,6 +394,22 @@ export function AppShell({
         <div
           className={cn('shrink-0 space-y-1 border-t border-ink-100', collapsed ? 'p-2' : 'p-3')}
         >
+          {/* Only for whoever runs the service. The database decides; this
+              merely draws the door where it exists. */}
+          {isPlatformAdmin ? (
+            <Button
+              asChild
+              variant="ghost"
+              size="sm"
+              className={cn('w-full', collapsed ? 'justify-center px-0' : 'justify-start')}
+            >
+              <Link href="/platform" title={collapsed ? t('platform') : undefined}>
+                <Building2 className="h-4 w-4" />
+                {!collapsed ? t('platform') : <span className="sr-only">{t('platform')}</span>}
+              </Link>
+            </Button>
+          ) : null}
+
           <Button
             asChild
             variant="ghost"

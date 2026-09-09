@@ -1,4 +1,16 @@
 {
+  "platform": {
+    "title": "All clinics",
+    "subtitle": "{count, plural, =0 {No clinics} one {One clinic} other {# clinics}} on the service",
+    "empty": "No clinics yet.",
+    "owner": "Owner",
+    "joined": "Joined",
+    "members": "Team",
+    "patients": "Patients",
+    "appointments30d": "Bookings in 30 days",
+    "lastBooking": "Last booking made",
+    "synthetic": "Sandbox"
+  },
   "confirm": {
     "greeting": "Hello {name},",
     "youHave": "You have an appointment",
@@ -30,7 +42,7 @@
       "email": "Email",
       "sms": "SMS"
     },
-    "channelHint": "An in-app alert shows on the bell at the top, and as a browser notification if you allowed one. Email and SMS switch on once a sending provider is connected. Needs a date and a time.",
+    "channelHint": "An in-app alert shows on the bell at the top, and as a browser notification if you allowed one. Email and SMS are coming soon. Needs a date and a time.",
     "sections": {
       "overdue": "Overdue",
       "today": "Today",
@@ -58,6 +70,7 @@
     "openAll": "All tasks"
   },
   "common": {
+    "showingOf": "Showing {shown} of {total}",
     "appName": "Herbalist",
     "appTagline": "Chinese medicine clinic management",
     "save": "Save",
@@ -119,6 +132,7 @@
     "duplicate": "Duplicate"
   },
   "nav": {
+    "platform": "All clinics",
     "tasks": "Tasks",
     "dashboard": "Dashboard",
     "patients": "Patients",
@@ -151,6 +165,37 @@
     "userMenu": "User menu — {name}"
   },
   "auth": {
+    "signup": {
+      "title": "Open a new clinic",
+      "subtitle": "One minute, and you can start working.",
+      "fullName": "Your name",
+      "clinicName": "Clinic name",
+      "clinicNameHint": "As patients will see it — on reminders, prescriptions and confirmations.",
+      "phone": "Clinic phone",
+      "passwordHint": "At least 8 characters.",
+      "terms": "By opening an account you agree to the terms of use and the privacy policy.",
+      "create": "Open the clinic",
+      "creating": "Opening…",
+      "checkEmailTitle": "Almost there",
+      "checkEmailBody": "We sent a confirmation link to {email}. Click it and the clinic opens.",
+      "haveAccount": "Already have an account?",
+      "signInInstead": "Sign in",
+      "noAccount": "No account yet?",
+      "createOne": "Open a new clinic",
+      "errors": {
+        "missing": "Something is missing. Please fill in every marked field.",
+        "weakPassword": "The password is too short — at least 8 characters.",
+        "emailTaken": "We could not open an account with this email. If you already signed up, sign in.",
+        "generic": "Something went wrong. Please try again in a moment."
+      }
+    },
+    "welcome": {
+      "title": "Welcome",
+      "subtitle": "All that is left is to name the clinic.",
+      "open": "Open the clinic",
+      "portalTitle": "This is a patient account",
+      "portalBody": "This account belongs to the patient portal, not the clinic app. To run a clinic, open a new account with a different email."
+    },
     "signInTitle": "Sign in",
     "signInSubtitle": "Enter your clinic account details",
     "email": "Email",
@@ -160,7 +205,7 @@
     "invalidCredentials": "Incorrect email or password",
     "sessionExpired": "Your session expired. Please sign in again.",
     "signOut": "Sign out",
-    "notConfigured": "The app is not connected to a database yet",
+    "notConfigured": "The app is not switched on yet. Please try again later.",
     "magicLinkTitle": "Patient portal sign in",
     "magicLinkSubtitle": "We'll email you a sign-in link",
     "sendMagicLink": "Send sign-in link",
@@ -1258,7 +1303,7 @@
     "notFound": "Page not found",
     "notFoundBody": "The address may be wrong, or the item was deleted.",
     "unauthorized": "You don't have access to this page",
-    "serverError": "Server error",
+    "serverError": "Something went wrong. Please try again.",
     "backHome": "Back to dashboard",
     "insufficientStock": "Not enough stock to complete this dispensing",
     "appointmentOverlap": "This appointment overlaps an existing one",
@@ -1368,7 +1413,7 @@
         "title": "Unusual patterns",
         "clear": "Nothing unusual",
         "clearBody": "No unusual access patterns in the last 30 days.",
-        "rules": "Two rules, deliberately blunt: thirty or more distinct records in one hour, or five or more reads between 23:00 and 06:00. A flag is not proof of anything — it is a reason to look. Failed logins and login location are not monitored yet: they live in the authentication layer rather than the database.",
+        "rules": "Two rules, deliberately blunt: thirty or more distinct records in one hour, or five or more reads between 23:00 and 06:00. A flag is not proof of anything — it is a reason to look. Failed logins and login location are not monitored yet.",
         "kind": {
           "bulk_access": "{count, plural, one {opened 1 record} other {opened # records}} in one hour",
           "after_hours": "{count, plural, one {1 read} other {# reads}} overnight"
@@ -1395,7 +1440,7 @@
     "points": {
       "title": "Acupuncture points",
       "empty": "No points in the catalogue",
-      "emptyBody": "Run the point catalogue SQL file to load all 361 points.",
+      "emptyBody": "The points catalogue has not been loaded for this clinic yet.",
       "searchPlaceholder": "Search by code, pinyin, Chinese or English",
       "allChannels": "All channels",
       "midlinePoint": "Midline point",

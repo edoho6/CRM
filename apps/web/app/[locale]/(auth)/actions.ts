@@ -77,3 +77,111 @@ export async function signOutAction(locale: Locale): Promise<void> {
   }
   redirect({ href: '/login', locale });
 }
+
+/* ---------------------------------------------------------------------------
+ * Sign-up: a person, then their clinic
+ * ------------------------------------------------------------------------ */
+
+export interface SignUpState {
+  status?: 'checkEmail';
+  email?: string;
+  error?: 'missing' | 'weakPassword' | 'emailTaken' | 'tooManyAttempts' | 'generic';
+  retryAfterSeconds?: number;
+}
+
+/**
+ * Creates the account, and — when the sign-up hands back a session at once —
+ * the clinic too, in the same breath. When email confirmation is on, the
+ * session only exists after the link is clicked; the clinic's name travels in
+ * the account's metadata and the welcome page finishes the job with one click.
+ *
+ * Rate-limited by address, so the form cannot be used to make accounts in
+ * bulk or to probe which addresses exist.
+ */
+export async function signUpAction(
+  locale: Locale,
+  _prevState: SignUpState,
+  formData: FormData,
+): Promise<SignUpState> {
+  if (!isSupabaseConfigured()) return { error: 'generic' };
+
+  const fullName = String(formData.get('full_name') ?? '').trim();
+  const clinicName = String(formData.get('clinic_name') ?? '').trim();
+  const phone = String(formData.get('phone') ?? '').trim();
+  const email = String(formData.get('email') ?? '').trim();
+  const password = String(formData.get('password') ?? '');
+
+  if (!fullName || !clinicName || !email || !password) return { error: 'missing' };
+  if (password.length < 8) return { error: 'weakPassword' };
+
+  const key = await rateLimitKey(`signup:${email}`);
+  const limit = checkRateLimit(key);
+  if (!limit.allowed) {
+    return { error: 'tooManyAttempts', retryAfterSeconds: limit.retryAfterSeconds };
+  }
+
+  const supabase = await createServerSupabase();
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: { full_name: fullName, clinic_name: clinicName, phone, preferred_locale: locale },
+    },
+  });
+
+  if (error) {
+    recordFailure(key);
+    const message = error.message.toLowerCase();
+    if (message.includes('already') || message.includes('registered')) return { error: 'emailTaken' };
+    if (message.includes('password')) return { error: 'weakPassword' };
+    return { error: 'generic' };
+  }
+
+  // Supabase answers an already-registered address with a user that has no
+  // identities rather than an error, so the form cannot tell who has an
+  // account. Treat it exactly like a fresh sign-up that needs its email.
+  if (!data.session) {
+    return { status: 'checkEmail', email };
+  }
+
+  const { error: clinicError } = await supabase.rpc('create_clinic_for_current_user', {
+    p_name: clinicName,
+    p_phone: phone || null,
+  });
+  if (clinicError) {
+    // The account exists; the clinic can still be made on the welcome page.
+    redirect({ href: '/welcome', locale });
+    return {};
+  }
+
+  redirect({ href: '/', locale });
+  return {};
+}
+
+export interface CreateClinicState {
+  error?: 'missing' | 'generic';
+}
+
+/** The welcome page's one action: make the clinic for the signed-in account. */
+export async function createClinicAction(
+  locale: Locale,
+  _prevState: CreateClinicState,
+  formData: FormData,
+): Promise<CreateClinicState> {
+  if (!isSupabaseConfigured()) return { error: 'generic' };
+
+  const clinicName = String(formData.get('clinic_name') ?? '').trim();
+  const phone = String(formData.get('phone') ?? '').trim();
+  if (!clinicName) return { error: 'missing' };
+
+  const supabase = await createServerSupabase();
+  const { error } = await supabase.rpc('create_clinic_for_current_user', {
+    p_name: clinicName,
+    p_phone: phone || null,
+  });
+  // Already a member means a double click, and home is the right answer.
+  if (error && error.code !== '23505') return { error: 'generic' };
+
+  redirect({ href: '/', locale });
+  return {};
+}

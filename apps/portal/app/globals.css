@@ -60,6 +60,24 @@
     'Noto Sans Hebrew', sans-serif;
 
   --radius-card: 0.875rem;
+
+  /* One scale of corners and one of elevation, for both apps.
+     The four radii snap every existing `rounded-*` to three steps and the
+     card; the three shadows name what a surface is doing — sitting on the
+     page, floating over it, or covering it — and the Tailwind names map onto
+     them so `shadow-md` in an old file means the same as `shadow-floating`
+     in a new one. */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.625rem;
+  --radius-xl: var(--radius-card);
+  --shadow-raised: 0 1px 2px rgb(0 0 0 / 0.04), 0 1px 3px rgb(0 0 0 / 0.06);
+  --shadow-floating: 0 4px 12px rgb(0 0 0 / 0.08), 0 1px 3px rgb(0 0 0 / 0.06);
+  --shadow-overlay: 0 16px 40px rgb(0 0 0 / 0.18), 0 2px 6px rgb(0 0 0 / 0.08);
+  --shadow-xs: var(--shadow-raised);
+  --shadow-sm: var(--shadow-raised);
+  --shadow-md: var(--shadow-floating);
+  --shadow-lg: var(--shadow-overlay);
 }
 
 /* Motion, focus and layering — identical to the staff app's block, and kept

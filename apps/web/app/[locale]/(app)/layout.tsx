@@ -4,6 +4,7 @@ import { isSupabaseConfigured } from '@clinic/db';
 import type { Locale } from '@clinic/domain';
 import { AppShell } from '@/components/app-shell';
 import { getMembershipContext } from '@/lib/session';
+import { getCurrentUser } from '@clinic/db/server';
 import { signOutAction } from '../(auth)/actions';
 
 /**
@@ -35,7 +36,11 @@ export default async function AppLayout({
 
   const context = await getMembershipContext();
   if (!context) {
-    redirect({ href: '/login', locale: locale as Locale });
+    // Signed in but in no clinic: a new account whose clinic is one step
+    // away, or a portal patient in the wrong app. Both are told, on the
+    // welcome page, rather than being bounced to a login they just passed.
+    const user = await getCurrentUser();
+    redirect({ href: user ? '/welcome' : '/login', locale: locale as Locale });
     // Unreachable: next-intl's redirect throws but is typed as returning void.
     return null;
   }
@@ -55,6 +60,7 @@ export default async function AppLayout({
       // A sandbox clinic announces itself on every screen. Read here, once, for
       // the same reason as the setting above.
       isSynthetic={context.clinic.is_synthetic === true}
+      isPlatformAdmin={context.isPlatformAdmin}
       onSignOut={handleSignOut}
     >
       {children}

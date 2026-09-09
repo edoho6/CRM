@@ -101,6 +101,8 @@ export interface MembershipContext {
   membership: Membership;
   clinic: Clinic;
   profile: Profile | null;
+  /** On the short list that runs the service; sees the overview of every clinic. */
+  isPlatformAdmin: boolean;
 }
 
 export interface Patient {

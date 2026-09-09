@@ -59,7 +59,9 @@ export default async function PatientsPage({
   // appointment in the practice.
   let query = scope.supabase
     .from('patients_with_diary')
-    .select('*')
+    // The count is of everything the filters match, so the header can say
+    // "showing 200 of 1,340" instead of silently stopping at 200.
+    .select('*', { count: 'exact' })
     .order('last_name', { ascending: true })
     .limit(200);
 
@@ -110,7 +112,7 @@ export default async function PatientsPage({
     );
   }
 
-  const { data } = await query.returns<PatientWithDiary[]>();
+  const { data, count: matching } = await query.returns<PatientWithDiary[]>();
   const patients = data ?? [];
 
   /*
@@ -192,7 +194,11 @@ export default async function PatientsPage({
     <>
       <PageHeader
         title={t('title')}
-        description={t('count', { count: patients.length })}
+        description={
+          matching && matching > patients.length
+            ? `${t('count', { count: matching })} · ${tc('showingOf', { shown: patients.length, total: matching })}`
+            : t('count', { count: patients.length })
+        }
         actions={
           <Button asChild>
             <Link href="/patients/new">

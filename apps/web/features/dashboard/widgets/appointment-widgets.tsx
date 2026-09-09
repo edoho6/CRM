@@ -3,7 +3,7 @@
 import { useFormatter, useLocale, useTranslations } from 'next-intl';
 import { Badge } from '@clinic/ui';
 import { defineWidget } from '@clinic/domain/widgets';
-import type { Locale } from '@clinic/domain';
+import { APPOINTMENT_STATUS_TONES, statusTone, type Locale } from '@clinic/domain';
 import { Link } from '@clinic/i18n/navigation';
 import { useAsyncData } from '@/lib/use-supabase';
 import { appointmentTypeName, patientFullName } from '@/lib/display';
@@ -23,19 +23,6 @@ interface AppointmentRow {
 const SELECT =
   'id, start_at, end_at, status, patient:patients(id, first_name, last_name, full_name), appointment_type:appointment_types(name_he, name_en, color)';
 
-function statusTone(status: string) {
-  switch (status) {
-    case 'completed':
-      return 'success' as const;
-    case 'cancelled':
-    case 'no_show':
-      return 'danger' as const;
-    case 'checked_in':
-      return 'info' as const;
-    default:
-      return 'neutral' as const;
-  }
-}
 
 function AppointmentList({
   rows,
@@ -80,7 +67,7 @@ function AppointmentList({
                 {appointmentTypeName(row.appointment_type, locale)}
               </span>
             </span>
-            <Badge tone={statusTone(row.status)}>{tStatus(row.status)}</Badge>
+            <Badge tone={statusTone(APPOINTMENT_STATUS_TONES, row.status)}>{tStatus(row.status)}</Badge>
           </Link>
         </li>
       ))}

@@ -13,26 +13,13 @@ import {
 } from '@clinic/ui';
 import { Link } from '@clinic/i18n/navigation';
 import type { Invoice, Patient } from '@clinic/db/types';
+import { INVOICE_STATUS_TONES, statusTone } from '@clinic/domain';
 import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
 import { formatDate } from '@clinic/i18n';
 
 type InvoiceRow = Invoice & { patient: Pick<Patient, 'id' | 'full_name'> | null };
 
-function statusTone(status: Invoice['status']) {
-  switch (status) {
-    case 'paid':
-      return 'success' as const;
-    case 'partially_paid':
-      return 'warning' as const;
-    case 'cancelled':
-      return 'muted' as const;
-    case 'sent':
-      return 'info' as const;
-    default:
-      return 'neutral' as const;
-  }
-}
 
 export default async function BillingPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -138,7 +125,7 @@ export default async function BillingPage({ params }: { params: Promise<{ locale
                     </span>
                   </Td>
                   <Td>
-                    <Badge tone={statusTone(invoice.status)}>{t(`status.${invoice.status}`)}</Badge>
+                    <Badge tone={statusTone(INVOICE_STATUS_TONES, invoice.status)}>{t(`status.${invoice.status}`)}</Badge>
                   </Td>
                 </Tr>
               ))}

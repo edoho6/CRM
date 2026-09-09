@@ -39,7 +39,7 @@ const baseUrl = (process.argv[2] || process.env.A11Y_BASE_URL || 'http://localho
 );
 
 /* The pages that render without a session. Everything else needs a database. */
-const ROUTES = ['/he/login', '/en/login', '/he/setup', '/en/setup'];
+const ROUTES = ['/he/login', '/en/login', '/he/signup', '/en/signup', '/he/setup', '/en/setup'];
 
 /* Israeli standard 5568 is WCAG 2.1 AA, which is exactly these tags. */
 const TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];

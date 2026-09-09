@@ -4,12 +4,18 @@ import { isSupabaseConfigured } from '@clinic/db';
 import { Card, CardBody } from '@clinic/ui';
 import type { Locale } from '@clinic/domain';
 import { Leaf } from 'lucide-react';
+import { Link } from '@clinic/i18n/navigation';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { getMembershipContext } from '@/lib/session';
-import { LoginForm } from './login-form';
-import { Link } from '@clinic/i18n/navigation';
+import { SignupForm } from './signup-form';
 
-export default async function LoginPage({ params }: { params: Promise<{ locale: string }> }) {
+/**
+ * A new clinic, from nothing.
+ *
+ * The same frame as sign-in, so the two read as one door. Someone already
+ * signed in and already in a clinic has no business here and goes home.
+ */
+export default async function SignupPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   setRequestLocale(locale);
 
@@ -17,13 +23,12 @@ export default async function LoginPage({ params }: { params: Promise<{ locale: 
     redirect({ href: '/setup', locale: locale as Locale });
   }
 
-  // Already signed in — no reason to show a login form.
   const context = await getMembershipContext();
   if (context) {
     redirect({ href: '/', locale: locale as Locale });
   }
 
-  const t = await getTranslations('auth');
+  const t = await getTranslations('auth.signup');
   const tc = await getTranslations('common');
 
   return (
@@ -42,17 +47,17 @@ export default async function LoginPage({ params }: { params: Promise<{ locale: 
         <Card>
           <CardBody className="space-y-4">
             <div>
-              <h2 className="text-sm font-semibold text-ink-900">{t('signInTitle')}</h2>
-              <p className="text-xs text-ink-500">{t('signInSubtitle')}</p>
+              <h2 className="text-sm font-semibold text-ink-900">{t('title')}</h2>
+              <p className="text-xs text-ink-500">{t('subtitle')}</p>
             </div>
-            <LoginForm locale={locale as Locale} />
+            <SignupForm locale={locale as Locale} />
           </CardBody>
         </Card>
 
         <p className="text-center text-sm text-ink-600">
-          {t('signup.noAccount')}{' '}
-          <Link href="/signup" className="font-medium text-jade-800 underline-offset-2 hover:underline">
-            {t('signup.createOne')}
+          {t('haveAccount')}{' '}
+          <Link href="/login" className="font-medium text-jade-800 underline-offset-2 hover:underline">
+            {t('signInInstead')}
           </Link>
         </p>
 

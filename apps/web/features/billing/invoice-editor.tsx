@@ -26,6 +26,7 @@ import {
 } from '@clinic/ui';
 import { useRouter } from '@clinic/i18n/navigation';
 import type { InvoiceWithDetails, PaymentMethod } from '@clinic/db/types';
+import { INVOICE_STATUS_TONES, statusTone } from '@clinic/domain';
 import {
   cancelInvoice,
   createGrowPaymentLink,
@@ -151,7 +152,7 @@ export function InvoiceEditor({ invoice }: { invoice: InvoiceWithDetails }) {
         <Card>
           <CardHeader>
             <CardTitle>{t('items')}</CardTitle>
-            <Badge tone={invoice.status === 'paid' ? 'success' : 'neutral'}>
+            <Badge tone={statusTone(INVOICE_STATUS_TONES, invoice.status)}>
               {t(`status.${invoice.status}`)}
             </Badge>
           </CardHeader>

@@ -382,6 +382,19 @@ begin
   if v_count <> 1 then raise exception 'FAIL: patients_with_diary hid clinic A''s own patient'; end if;
   raise notice 'ok   patients_with_diary reads as the caller';
 
+  -- The service overview is empty for a clinic owner who is not on the
+  -- platform list, and the clinic-making function refuses someone who already
+  -- belongs somewhere — a second clinic is never one click away.
+  select count(*) into v_count from public.platform_clinics();
+  if v_count <> 0 then raise exception 'FAIL: platform_clinics() showed % clinic(s) to a plain owner', v_count; end if;
+  begin
+    perform public.create_clinic_for_current_user('Iso Second Clinic', null);
+    raise exception 'FAIL: an existing member created a second clinic';
+  exception
+    when unique_violation then
+      raise notice 'ok   platform overview hidden; one clinic per account';
+  end;
+
   -- Writing into another clinic must be refused outright, not silently redirected
   -- into the caller's own clinic.
   begin

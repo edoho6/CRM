@@ -1,4 +1,9 @@
-import type { Locale, TreatmentStatus } from '@clinic/domain';
+import {
+  TREATMENT_STATUS_TONES,
+  type Locale,
+  type StatusTone,
+  type TreatmentStatus,
+} from '@clinic/domain';
 
 /**
  * Naming helpers.
@@ -156,21 +161,7 @@ export function patientFullName(
  */
 export function patientStatusTone(
   status: TreatmentStatus | null | undefined,
-): 'success' | 'info' | 'danger' | 'warning' | 'neutral' | 'muted' {
-  switch (status) {
-    case 'full_success':
-      return 'success';
-    case 'active':
-    case null:
-    case undefined:
-      return 'info';
-    case 'unsuccessful':
-      return 'danger';
-    case 'dropped_out':
-      return 'warning';
-    case 'inactive':
-      return 'muted';
-    default:
-      return 'neutral';
-  }
+): StatusTone {
+  // Null is a file nobody has classified yet, which is a file in treatment.
+  return TREATMENT_STATUS_TONES[status ?? 'active'];
 }

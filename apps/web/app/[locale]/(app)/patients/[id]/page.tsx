@@ -35,7 +35,7 @@ import type {
   PatientMedicalHistory,
   PatientTag,
 } from '@clinic/db/types';
-import type { Locale } from '@clinic/domain';
+import { APPOINTMENT_STATUS_TONES, type Locale } from '@clinic/domain';
 import { PageHeader } from '@/components/app-shell';
 import { PhoneActions } from '@/components/phone-actions';
 import { PaymentAction } from '@/features/billing/payment-status';
@@ -394,7 +394,7 @@ export default async function PatientDetailPage({
                   <ConfirmationBadge appointment={appointment} />
                 </Td>
                 <Td>
-                  <Badge tone={appointment.status === 'cancelled' ? 'danger' : 'neutral'}>
+                  <Badge tone={APPOINTMENT_STATUS_TONES[appointment.status]}>
                     {tApp(`status.${appointment.status}`)}
                   </Badge>
                 </Td>
