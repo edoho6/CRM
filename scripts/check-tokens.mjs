@@ -33,9 +33,13 @@ const APPS = ['web', 'portal'];
 
 /* Utilities whose rendering depends on a theme token. A missing `flex` would be
    a bug in the package; a missing `bg-accent` is a bug in an app's theme, and
-   those are the ones this looks for. */
+   those are the ones this looks for.
+
+   Colour first, and since the motion tokens: `animate-*`, `ease-*`,
+   `duration-*` and `z-*` — a dialog whose exit keyframe exists in one app and
+   not the other is the same silent failure in a different property. */
 const COLOR_UTILITY =
-  /^-?(?:bg|text|border|ring|outline|fill|stroke|divide|shadow|accent|caret|from|via|to|decoration|placeholder)-/;
+  /^-?(?:bg|text|border|ring|outline|fill|stroke|divide|shadow|accent|caret|from|via|to|decoration|placeholder|animate|ease|duration|z)-/;
 
 function walk(dir) {
   const out = [];
@@ -62,17 +66,18 @@ for (const file of walk(SHARED)) {
     for (const token of match[1].split(/\s+/)) {
       const candidate = token.trim();
       if (!candidate || !COLOR_UTILITY.test(candidate)) continue;
-      // A theme colour always ends in a name or a name/opacity pair.
-      if (!/^[-a-z0-9:/[\].%_]+$/i.test(candidate)) continue;
+      // A theme colour always ends in a name or a name/opacity pair; a motion
+      // token may be reached as `duration-(--duration-fast)`.
+      if (!/^[-a-z0-9:/[\].%_()]+$/i.test(candidate)) continue;
       if (!used.has(candidate)) used.set(candidate, new Set());
       used.get(candidate).add(relative);
     }
   }
 }
 
-/** Tailwind escapes `:` `/` `.` `[` `]` and `%` in the selector it emits. */
+/** Tailwind escapes `:` `/` `.` `[` `]` `%` `(` and `)` in the selector it emits. */
 function selectorFor(candidate) {
-  return `.${candidate.replace(/[:/.[\]%]/g, (c) => `\\${c}`)}`;
+  return `.${candidate.replace(/[:/.[\]%()]/g, (c) => `\\${c}`)}`;
 }
 
 const cssByApp = new Map();

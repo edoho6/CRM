@@ -13,6 +13,7 @@ import {
   LtrInput,
   Select,
   Spinner,
+  useToast,
 } from '@clinic/ui';
 import type { ClinicPaymentSettings } from '@clinic/db/types';
 import { saveGrowSettings } from './actions';
@@ -27,7 +28,8 @@ export function GrowSettingsForm({
   const t = useTranslations('billing.settings');
   const tc = useTranslations('common');
   const [isPending, startTransition] = useTransition();
-  const [status, setStatus] = useState<'idle' | 'saved' | 'error'>('idle');
+  const [status, setStatus] = useState<'idle' | 'error'>('idle');
+  const { toast } = useToast();
 
   const [environment, setEnvironment] = useState<'sandbox' | 'production'>(
     settings?.environment ?? 'sandbox',
@@ -46,13 +48,13 @@ export function GrowSettingsForm({
         growPageCode: pageCode,
         isActive,
       });
-      setStatus(result.ok ? 'saved' : 'error');
+      if (result.ok) toast({ tone: 'success', title: t('saved') });
+      else setStatus('error');
     });
   }
 
   return (
     <form onSubmit={handleSubmit} className="max-w-2xl space-y-4">
-      {status === 'saved' ? <Alert tone="success">{t('saved')}</Alert> : null}
       {status === 'error' ? <Alert tone="danger">{tc('errorGeneric')}</Alert> : null}
 
       <Card>

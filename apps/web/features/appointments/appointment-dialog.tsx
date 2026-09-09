@@ -2,10 +2,11 @@
 
 import { useEffect, useMemo, useState, useTransition } from 'react';
 import { useFormatter, useLocale, useTranslations } from 'next-intl';
-import { Trash2 } from 'lucide-react';
+import { Check, Copy, Link2, MessageCircle, Trash2, X } from 'lucide-react';
 import {
   Alert,
   Button,
+  Combobox,
   Dialog,
   DialogContent,
   DialogFooter,
@@ -13,28 +14,35 @@ import {
   FieldGrid,
   Input,
   LtrInput,
-  Combobox,
   Select,
-  type ComboboxOption,
-  type ComboboxValue,
   Spinner,
   Textarea,
+  cn,
+  useConfirm,
+  useToast,
+  type ComboboxOption,
+  type ComboboxValue,
 } from '@clinic/ui';
 import { APPOINTMENT_STATUSES, type AppointmentStatus, type Locale } from '@clinic/domain';
 import { useRouter } from '@clinic/i18n/navigation';
-import type { AppointmentType, AppointmentWithRelations, Patient } from '@clinic/db/types';
+import type { AppointmentType, AppointmentWithRelations, Patient, Room } from '@clinic/db/types';
 import { appointmentTypeName } from '@/lib/display';
+import { whatsappNumber } from '@/components/phone-actions';
 import { StartEncounterButton } from '@/features/encounters/start-encounter-button';
 import {
   createAppointment,
   createAppointmentSeries,
   deleteAppointment,
+  markReminderSent,
+  setConfirmationResponse,
   updateAppointment,
   type SeriesResult,
 } from './actions';
 import { closureFor, isWithinWorkingHours, type Availability } from './availability';
 import { addMinutes, differenceInMinutes, toDateTimeLocalValue } from './date-utils';
-import { formatDate } from '@clinic/i18n';
+import { confirmationPath, fillReminderTemplate } from './confirmation';
+import { ConfirmationBadge } from './confirmation-status';
+import { formatDate, formatDateTime, formatTime } from '@clinic/i18n';
 
 export interface AppointmentDraft {
   id?: string;
@@ -43,8 +51,15 @@ export interface AppointmentDraft {
   end: Date;
   typeId?: string | null;
   status?: AppointmentStatus;
+  roomId?: string | null;
   location?: string | null;
   notes?: string | null;
+  /** The reminder trail, for an existing booking. */
+  reminderSentAt?: string | null;
+  confirmationToken?: string | null;
+  confirmationResponse?: 'confirmed' | 'declined' | null;
+  respondedAt?: string | null;
+  patientPhone?: string | null;
 }
 
 /**
@@ -53,23 +68,33 @@ export interface AppointmentDraft {
  * Times are handled as `datetime-local` values (local wall-clock) and converted to
  * ISO instants only on submit. Binding a UTC string straight to the input would
  * show the practitioner a time that is not the one they booked.
+ *
+ * With rooms defined, the room replaces the free-text location: it is what
+ * decides whether two bookings at one hour are a clash or two beds.
  */
 export function AppointmentDialog({
   open,
   draft,
   patients,
   appointmentTypes,
+  rooms,
   practitionerId,
   availability,
+  reminderTemplate,
+  clinicName,
   onOpenChange,
 }: {
   open: boolean;
   draft: AppointmentDraft | null;
   patients: Pick<Patient, 'id' | 'full_name' | 'phone'>[];
   appointmentTypes: AppointmentType[];
+  rooms: Room[];
   practitionerId: string;
   /** Working hours, for the out-of-hours notice. Nothing here blocks a save. */
   availability: Availability;
+  /** The clinic's reminder wording; null means the built-in text. */
+  reminderTemplate: string | null;
+  clinicName: string;
   onOpenChange: (open: boolean) => void;
 }) {
   const t = useTranslations('appointments');
@@ -78,6 +103,8 @@ export function AppointmentDialog({
   const format = useFormatter();
   const locale = useLocale() as Locale;
   const router = useRouter();
+  const confirm = useConfirm();
+  const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [errorKey, setErrorKey] = useState<string | null>(null);
 
@@ -99,6 +126,7 @@ export function AppointmentDialog({
   const [start, setStart] = useState('');
   const [end, setEnd] = useState('');
   const [status, setStatus] = useState<AppointmentStatus>('scheduled');
+  const [roomId, setRoomId] = useState('');
   const [location, setLocation] = useState('');
   const [notes, setNotes] = useState('');
 
@@ -110,7 +138,18 @@ export function AppointmentDialog({
   const [occurrences, setOccurrences] = useState('4');
   const [seriesResult, setSeriesResult] = useState<SeriesResult | null>(null);
 
+  // The reminder trail is edited in place, without closing the dialog, so it
+  // is held here and written back through its own actions.
+  const [reminderSentAt, setReminderSentAt] = useState<string | null>(null);
+  const [response, setResponse] = useState<'confirmed' | 'declined' | null>(null);
+  const [respondedAt, setRespondedAt] = useState<string | null>(null);
+
   const isEditing = Boolean(draft?.id);
+  const activeRooms = useMemo(
+    () => rooms.filter((room) => room.is_active || room.id === roomId),
+    [rooms, roomId],
+  );
+  const hasRooms = rooms.some((room) => room.is_active);
 
   useEffect(() => {
     if (!draft) return;
@@ -126,12 +165,18 @@ export function AppointmentDialog({
     setStart(toDateTimeLocalValue(draft.start));
     setEnd(toDateTimeLocalValue(draft.end));
     setStatus(draft.status ?? 'scheduled');
+    // A new booking in a clinic with rooms goes into the first one: with
+    // rooms, every booking has one, or the clash rule has nothing to hold.
+    setRoomId(draft.roomId ?? (draft.id ? '' : (rooms.find((room) => room.is_active)?.id ?? '')));
     setLocation(draft.location ?? '');
     setNotes(draft.notes ?? '');
+    setReminderSentAt(draft.reminderSentAt ?? null);
+    setResponse(draft.confirmationResponse ?? null);
+    setRespondedAt(draft.respondedAt ?? null);
     setErrorKey(null);
     setRepeats(false);
     setSeriesResult(null);
-  }, [draft]);
+  }, [draft, patients, rooms]);
 
   const activeTypes = useMemo(
     () => appointmentTypes.filter((type) => type.is_active || type.id === typeId),
@@ -196,6 +241,10 @@ export function AppointmentDialog({
       setErrorKey('errors.endMustBeAfterStart');
       return;
     }
+    if (hasRooms && !roomId) {
+      setErrorKey('common.somethingMissing');
+      return;
+    }
 
     const payload = {
       patient_id: patientId,
@@ -204,6 +253,7 @@ export function AppointmentDialog({
       start_at: startDate.toISOString(),
       end_at: endDate.toISOString(),
       status,
+      room_id: roomId || null,
       location,
       notes,
     };
@@ -224,6 +274,7 @@ export function AppointmentDialog({
         // away with it.
         if (result.data.skipped.length === 0) {
           onOpenChange(false);
+          toast({ tone: 'success', title: t('created') });
           return;
         }
         setSeriesResult(result.data);
@@ -239,13 +290,21 @@ export function AppointmentDialog({
         return;
       }
       onOpenChange(false);
+      // The dialog closes on success, so the confirmation has to outlive it.
+      toast({ tone: 'success', title: t(draft?.id ? 'updated' : 'created') });
       router.refresh();
     });
   }
 
-  function handleDelete() {
+  async function handleDelete() {
     if (!draft?.id) return;
-    if (!window.confirm(tc('deleteConfirmBody'))) return;
+    const confirmed = await confirm({
+      title: tc('deleteConfirmTitle'),
+      body: tc('deleteConfirmBody'),
+      confirmLabel: tc('delete'),
+      destructive: true,
+    });
+    if (!confirmed) return;
     startTransition(async () => {
       const result = await deleteAppointment(draft.id!);
       if (!result.ok) {
@@ -253,6 +312,69 @@ export function AppointmentDialog({
         return;
       }
       onOpenChange(false);
+      toast({ tone: 'success', title: t('deleted') });
+      router.refresh();
+    });
+  }
+
+  /* ---- the reminder trail ------------------------------------------------ */
+
+  const startDate = new Date(start);
+  const confirmLink =
+    draft?.confirmationToken && typeof window !== 'undefined'
+      ? `${window.location.origin}${confirmationPath(locale, draft.confirmationToken)}`
+      : '';
+  const reminderText = fillReminderTemplate(
+    reminderTemplate?.trim() || t('reminder.defaultTemplate'),
+    {
+      name: patientChoice?.label ?? '',
+      date: Number.isNaN(startDate.getTime()) ? '' : formatDate(startDate),
+      time: Number.isNaN(startDate.getTime()) ? '' : formatTime(startDate),
+      clinic: clinicName,
+      link: confirmLink,
+    },
+  );
+  const wa = draft?.patientPhone ? whatsappNumber(draft.patientPhone) : null;
+  const whatsappHref = wa ? `https://wa.me/${wa}?text=${encodeURIComponent(reminderText)}` : null;
+
+  async function copyText(text: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast({ tone: 'success', title: t('reminder.copied') });
+    } catch {
+      toast({ tone: 'danger', title: t('reminder.copyFailed') });
+    }
+  }
+
+  function sent(next: boolean) {
+    if (!draft?.id) return;
+    const previous = reminderSentAt;
+    setReminderSentAt(next ? new Date().toISOString() : null);
+    startTransition(async () => {
+      const result = await markReminderSent(draft.id!, next);
+      if (!result.ok) {
+        setReminderSentAt(previous);
+        toast({ tone: 'danger', title: tc('errorGeneric') });
+        return;
+      }
+      router.refresh();
+    });
+  }
+
+  function answer(next: 'confirmed' | 'declined' | null) {
+    if (!draft?.id) return;
+    const previous = { response, respondedAt };
+    setResponse(next);
+    setRespondedAt(next ? new Date().toISOString() : null);
+    if (next === 'confirmed' && status === 'scheduled') setStatus('confirmed');
+    startTransition(async () => {
+      const result = await setConfirmationResponse(draft.id!, next);
+      if (!result.ok) {
+        setResponse(previous.response);
+        setRespondedAt(previous.respondedAt);
+        toast({ tone: 'danger', title: tc('errorGeneric') });
+        return;
+      }
       router.refresh();
     });
   }
@@ -260,6 +382,7 @@ export function AppointmentDialog({
   function renderError() {
     if (!errorKey) return null;
     if (errorKey === 'errors.appointmentOverlap') return t('overlapError');
+    if (errorKey === 'errors.roomOverlap') return tErrors('roomOverlap');
     if (errorKey === 'errors.endMustBeAfterStart') return tErrors('endMustBeAfterStart');
     if (errorKey === 'common.somethingMissing') return tc('somethingMissing');
     return tc('errorGeneric');
@@ -341,13 +464,31 @@ export function AppointmentDialog({
               />
             </Field>
 
-            <Field label={t('location')} htmlFor="location">
-              <Input
-                id="location"
-                value={location}
-                onChange={(event) => setLocation(event.target.value)}
-              />
-            </Field>
+            {hasRooms ? (
+              <Field label={t('room')} htmlFor="room_id" required>
+                <Select
+                  id="room_id"
+                  value={roomId}
+                  onChange={(event) => setRoomId(event.target.value)}
+                  required
+                >
+                  <option value="">{t('selectRoom')}</option>
+                  {activeRooms.map((room) => (
+                    <option key={room.id} value={room.id}>
+                      {room.name}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+            ) : (
+              <Field label={t('location')} htmlFor="location">
+                <Input
+                  id="location"
+                  value={location}
+                  onChange={(event) => setLocation(event.target.value)}
+                />
+              </Field>
+            )}
           </FieldGrid>
 
           {outsideHours ? (
@@ -433,6 +574,116 @@ export function AppointmentDialog({
             />
           </Field>
 
+          {/* The reminder, and the answer to it.
+
+              Sending is by hand, through WhatsApp with the message already
+              written, because no sending service is connected yet; the mark
+              "sent" is what turns the calendar's dot amber. The answer comes
+              back through the link on its own, and can be set here as well
+              for a patient who rang instead. */}
+          {isEditing && draft?.confirmationToken ? (
+            <section
+              aria-labelledby="reminder-heading"
+              className="space-y-3 rounded-lg border border-ink-200 p-3"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h3 id="reminder-heading" className="text-sm font-semibold text-ink-900">
+                  {t('reminder.title')}
+                </h3>
+                <ConfirmationBadge
+                  appointment={{
+                    status,
+                    reminder_sent_at: reminderSentAt,
+                    confirmation_response: response,
+                  }}
+                />
+              </div>
+
+              <p className="text-xs text-ink-600">{t('reminder.intro')}</p>
+
+              <div className="flex flex-wrap items-center gap-1.5">
+                {whatsappHref ? (
+                  <Button asChild size="sm" variant="secondary">
+                    <a href={whatsappHref} target="_blank" rel="noopener noreferrer">
+                      <MessageCircle className="h-4 w-4" aria-hidden />
+                      {t('reminder.sendWhatsApp')}
+                    </a>
+                  </Button>
+                ) : null}
+                <Button type="button" size="sm" variant="ghost" onClick={() => copyText(reminderText)}>
+                  <Copy className="h-4 w-4" aria-hidden />
+                  {t('reminder.copyMessage')}
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  disabled={!confirmLink}
+                  onClick={() => copyText(confirmLink)}
+                >
+                  <Link2 className="h-4 w-4" aria-hidden />
+                  {t('reminder.copyLink')}
+                </Button>
+              </div>
+              {!whatsappHref ? <p className="text-xs text-ink-500">{t('reminder.noPhone')}</p> : null}
+
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-ink-600">
+                <label className="inline-flex items-center gap-1.5">
+                  <input
+                    type="checkbox"
+                    checked={reminderSentAt !== null}
+                    disabled={isPending}
+                    onChange={(event) => sent(event.target.checked)}
+                    className="h-4 w-4 rounded border-ink-300"
+                  />
+                  {t('reminder.markSent')}
+                </label>
+                {reminderSentAt ? (
+                  <span>
+                    {t('reminder.sentAt')}{' '}
+                    <span dir="ltr" className="tabular-nums">
+                      {formatDateTime(new Date(reminderSentAt))}
+                    </span>
+                  </span>
+                ) : null}
+                {respondedAt ? (
+                  <span>
+                    {t('reminder.answeredAt')}{' '}
+                    <span dir="ltr" className="tabular-nums">
+                      {formatDateTime(new Date(respondedAt))}
+                    </span>
+                  </span>
+                ) : null}
+              </div>
+
+              <div className="flex flex-wrap items-center gap-1.5">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={response === 'confirmed' ? 'primary' : 'secondary'}
+                  aria-pressed={response === 'confirmed'}
+                  disabled={isPending}
+                  onClick={() => answer(response === 'confirmed' ? null : 'confirmed')}
+                >
+                  <Check className="h-4 w-4" aria-hidden />
+                  {t('reminder.setConfirmed')}
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  aria-pressed={response === 'declined'}
+                  disabled={isPending}
+                  className={cn(response === 'declined' && 'border-red-600 bg-red-50 text-red-700')}
+                  onClick={() => answer(response === 'declined' ? null : 'declined')}
+                >
+                  <X className="h-4 w-4" aria-hidden />
+                  {t('reminder.setDeclined')}
+                </Button>
+              </div>
+            </section>
+          ) : null}
+
           {isEditing && patientId ? (
             <div className="rounded-lg border border-ink-200 bg-ink-50 p-3">
               <StartEncounterButton
@@ -440,6 +691,7 @@ export function AppointmentDialog({
                 appointmentId={draft?.id}
                 variant="secondary"
                 size="sm"
+                onStarted={() => onOpenChange(false)}
               />
             </div>
           ) : null}

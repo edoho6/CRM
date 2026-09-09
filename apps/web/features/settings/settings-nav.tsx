@@ -6,6 +6,8 @@ import { cn } from '@clinic/ui';
 
 const SECTIONS = [
   { href: '/settings', labelKey: 'general', exact: true },
+  { href: '/settings/rooms', labelKey: 'rooms', exact: false },
+  { href: '/settings/tags', labelKey: 'tags', exact: false },
   { href: '/settings/access', labelKey: 'access', exact: false },
   { href: '/settings/consent', labelKey: 'consent', exact: false },
   { href: '/billing/settings', labelKey: 'billing', exact: false },

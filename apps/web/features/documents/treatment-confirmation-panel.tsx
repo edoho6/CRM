@@ -15,6 +15,8 @@ import {
   LtrInput,
   Spinner,
   TIME_INPUT_LANG,
+  useConfirm,
+  useToast,
 } from '@clinic/ui';
 import { Link, useRouter } from '@clinic/i18n/navigation';
 import type { TreatmentConfirmation } from '@clinic/db/types';
@@ -61,6 +63,8 @@ export function TreatmentConfirmationPanel({
   const t = useTranslations('confirmations');
   const tc = useTranslations('common');
   const router = useRouter();
+  const confirm = useConfirm();
+  const { toast } = useToast();
 
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [manual, setManual] = useState<string[]>([]);
@@ -107,6 +111,7 @@ export function TreatmentConfirmationPanel({
       setSelected(new Set());
       setManual([]);
       setPurpose('');
+      toast({ tone: 'success', title: t('issuedToast') });
       router.refresh();
     });
   }
@@ -270,10 +275,22 @@ export function TreatmentConfirmationPanel({
                       type="button"
                       aria-label={tc('delete')}
                       disabled={isPending}
-                      onClick={() => {
-                        if (!window.confirm(tc('deleteConfirmBody'))) return;
+                      onClick={async () => {
+                        const confirmed = await confirm({
+                          title: tc('deleteConfirmTitle'),
+                          body: tc('deleteConfirmBody'),
+                          confirmLabel: tc('delete'),
+                          destructive: true,
+                        });
+                        if (!confirmed) return;
+                        setErrorKey(null);
                         startTransition(async () => {
-                          await deleteTreatmentConfirmation(confirmation.id);
+                          const result = await deleteTreatmentConfirmation(confirmation.id);
+                          if (!result.ok) {
+                            setErrorKey(result.error.key);
+                            return;
+                          }
+                          toast({ tone: 'success', title: tc('deleted') });
                           router.refresh();
                         });
                       }}

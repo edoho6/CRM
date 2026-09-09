@@ -16,6 +16,7 @@ import {
   LtrInput,
   Select,
   Spinner,
+  useToast,
 } from '@clinic/ui';
 import { HERB_UNITS, receiveBatchSchema, type Locale } from '@clinic/domain';
 import type { z } from 'zod';
@@ -49,7 +50,8 @@ export function ReceiveForm({
   const locale = useLocale() as Locale;
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [status, setStatus] = useState<'idle' | 'saved' | 'error'>('idle');
+  const [status, setStatus] = useState<'idle' | 'error'>('idle');
+  const { toast } = useToast();
 
   const today = new Date().toISOString().slice(0, 10);
 
@@ -82,7 +84,7 @@ export function ReceiveForm({
         setStatus('error');
         return;
       }
-      setStatus('saved');
+      toast({ tone: 'success', title: t('received') });
       reset({
         herb_id: '',
         supplier_id: '',
@@ -101,7 +103,6 @@ export function ReceiveForm({
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-      {status === 'saved' ? <Alert tone="success">{t('received')}</Alert> : null}
       {status === 'error' ? <Alert tone="danger">{tc('errorGeneric')}</Alert> : null}
 
       <Card>

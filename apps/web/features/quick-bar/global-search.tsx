@@ -246,7 +246,7 @@ export function GlobalSearch() {
             'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-ink-200 bg-white text-ink-600',
             'transition-all duration-150 ease-out',
             'hover:-translate-y-px hover:border-jade-300 hover:bg-jade-50 hover:text-jade-800 hover:shadow-md',
-            'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-jade-600',
+            'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus',
             open && 'border-jade-300 bg-jade-50 text-jade-800',
           )}
         >
@@ -272,7 +272,7 @@ export function GlobalSearch() {
             className={cn(
               'h-11 w-full rounded-xl border border-ink-200 bg-white px-3 pe-8 text-sm text-ink-900',
               'placeholder:text-ink-500 shadow-xs transition-colors text-start',
-              'focus:border-jade-500 focus:outline-2 focus:outline-offset-0 focus:outline-jade-600/30',
+              'focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-focus focus-visible:border-focus',
             )}
           />
           {query ? (
@@ -290,7 +290,7 @@ export function GlobalSearch() {
 
       {showPanel ? (
         <div
-          className="absolute top-full z-50 mt-1.5 max-h-96 w-80 overflow-y-auto rounded-xl border border-ink-200 bg-white p-1.5 shadow-lg sm:w-96"
+          className="absolute top-full z-popover mt-1.5 max-h-96 w-80 overflow-y-auto rounded-xl border border-ink-200 bg-white p-1.5 shadow-lg transition-[opacity,translate] duration-(--duration-fast) ease-standard starting:translate-y-1 starting:opacity-0 sm:w-96"
           style={{ insetInlineEnd: 0 }}
         >
           {loading && results.length === 0 ? (

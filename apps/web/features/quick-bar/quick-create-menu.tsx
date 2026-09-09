@@ -96,7 +96,7 @@ export function QuickCreateMenu() {
           'flex h-11 w-11 items-center justify-center rounded-xl bg-accent text-accent-fg',
           'transition-all duration-150 ease-out',
           'hover:-translate-y-px hover:bg-accent hover:shadow-md',
-          'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-jade-600',
+          'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus',
           open && 'bg-accent shadow-md',
         )}
       >
@@ -108,7 +108,7 @@ export function QuickCreateMenu() {
           role="menu"
           // Hangs from the trailing edge, which is the left in Hebrew and the
           // right in English — a logical offset gets that for free.
-          className="absolute top-full z-50 mt-1.5 min-w-56 rounded-xl border border-ink-200 bg-white p-1.5 shadow-lg"
+          className="absolute top-full z-popover mt-1.5 min-w-56 rounded-xl border border-ink-200 bg-white p-1.5 shadow-lg transition-[opacity,translate] duration-(--duration-fast) ease-standard starting:translate-y-1 starting:opacity-0"
           style={{ insetInlineEnd: 0 }}
         >
           {QUICK_ACTIONS.map((action) => (

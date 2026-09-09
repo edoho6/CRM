@@ -62,6 +62,82 @@
   --radius-card: 0.875rem;
 }
 
+/* Motion, focus and layering — identical to the staff app's block, and kept
+   identical by `check:tokens`. See the comment there for why it is `static`. */
+@theme static {
+  --duration-fast: 120ms;
+  --duration-base: 180ms;
+  --duration-slow: 260ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-emphasized: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+
+  --animate-fade-in: fade-in var(--duration-base) var(--ease-standard) both;
+  --animate-fade-out: fade-out var(--duration-fast) var(--ease-exit) both;
+  --animate-dialog-in: dialog-in var(--duration-base) var(--ease-emphasized) both;
+  --animate-dialog-out: dialog-out var(--duration-fast) var(--ease-exit) both;
+  --animate-menu-in: menu-in var(--duration-fast) var(--ease-standard) both;
+  --animate-menu-out: fade-out var(--duration-fast) var(--ease-exit) both;
+  --animate-sheet-in: sheet-in var(--duration-slow) var(--ease-emphasized) both;
+  --animate-sheet-out: sheet-out var(--duration-base) var(--ease-exit) both;
+  --animate-toast-in: toast-in var(--duration-base) var(--ease-emphasized) both;
+  --animate-toast-out: fade-out var(--duration-fast) var(--ease-exit) both;
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes fade-out {
+    to {
+      opacity: 0;
+    }
+  }
+  @keyframes dialog-in {
+    from {
+      opacity: 0;
+      scale: 0.97;
+      translate: 0 6px;
+    }
+  }
+  @keyframes dialog-out {
+    to {
+      opacity: 0;
+      scale: 0.98;
+    }
+  }
+  @keyframes menu-in {
+    from {
+      opacity: 0;
+      scale: 0.96;
+    }
+  }
+  @keyframes sheet-in {
+    from {
+      translate: var(--sheet-offset, -100%) 0;
+    }
+  }
+  @keyframes sheet-out {
+    to {
+      translate: var(--sheet-offset, -100%) 0;
+    }
+  }
+  @keyframes toast-in {
+    from {
+      opacity: 0;
+      translate: 0 8px;
+    }
+  }
+
+  --color-focus: #15803c;
+  --color-focus-ring: #15803c;
+
+  --z-index-sticky: 30;
+  --z-index-overlay: 40;
+  --z-index-popover: 50;
+  --z-index-toast: 60;
+}
+
 @layer base {
   body {
     background-color: var(--color-ink-50);
@@ -69,9 +145,10 @@
     font-family: var(--font-sans);
   }
 
-  :where(input, textarea, select, button):focus-visible {
-    outline: 2px solid var(--color-jade-600);
-    outline-offset: 1px;
+  /* One focus ring on everything focusable — same rule as the staff app. */
+  :where(a, button, input, textarea, select, summary, [role='button'], [tabindex]):focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
   }
 
   ::placeholder {

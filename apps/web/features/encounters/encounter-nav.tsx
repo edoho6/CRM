@@ -51,7 +51,7 @@ export async function EncounterNav({
   const linkClass =
     'inline-flex items-center gap-1 rounded-md px-2 py-1 text-sm text-ink-700 transition-colors ' +
     'hover:bg-ink-100 hover:text-ink-900 focus-visible:outline-2 focus-visible:outline-offset-2 ' +
-    'focus-visible:outline-accent';
+    'focus-visible:outline-focus';
 
   return (
     <nav aria-label={t('sessionNav')} className="no-print flex flex-wrap items-center gap-1">

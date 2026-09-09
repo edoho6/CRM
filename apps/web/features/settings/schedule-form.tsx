@@ -13,6 +13,7 @@ import {
   TIME_INPUT_LANG,
   TimeSelect,
   Toggle,
+  useToast,
 } from '@clinic/ui';
 import { formatDate } from '@clinic/i18n';
 import { useRouter } from '@clinic/i18n/navigation';
@@ -69,7 +70,7 @@ export function ScheduleForm({
 
   const [blocks, setBlocks] = useState<Block[]>(() => toBlocks(schedules));
   const [error, setError] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
+  const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
 
   const today = new Date().toISOString().slice(0, 10);
@@ -113,7 +114,6 @@ export function ScheduleForm({
    * keeping them hidden would let the switch and the saved data disagree.
    */
   function toggleDay(weekday: number, on: boolean) {
-    setSaved(false);
     setBlocks((current) =>
       on
         ? [
@@ -130,7 +130,6 @@ export function ScheduleForm({
   }
 
   function addBlock(weekday: number) {
-    setSaved(false);
     setBlocks((current) => [
       ...current,
       {
@@ -143,7 +142,6 @@ export function ScheduleForm({
   }
 
   function setBlockTime(key: string, field: 'start_time' | 'end_time', value: string) {
-    setSaved(false);
     setBlocks((current) =>
       current.map((block) => (block.key === key ? { ...block, [field]: value } : block)),
     );
@@ -164,8 +162,7 @@ export function ScheduleForm({
         setError(t('hoursSaveFailed'));
         return;
       }
-      setSaved(true);
-      window.setTimeout(() => setSaved(false), 2000);
+      toast({ tone: 'success', title: tc('saved') });
       router.refresh();
     });
   }
@@ -193,7 +190,6 @@ export function ScheduleForm({
   return (
     <div className="space-y-5">
       {error ? <Alert tone="danger">{error}</Alert> : null}
-      {saved ? <Alert tone="success">{tc('saved')}</Alert> : null}
 
       <section className="space-y-2">
         <h3 className="text-sm font-semibold text-ink-900">{t('workingHours')}</h3>

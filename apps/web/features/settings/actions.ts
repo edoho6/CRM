@@ -3,6 +3,9 @@
 import { z } from 'zod';
 import {
   appointmentTypeSchema,
+  patientTagSchema,
+  reminderTemplateSchema,
+  roomSchema,
   closurePeriodSchema,
   practitionerProfileSchema,
   scheduleExceptionSchema,
@@ -354,4 +357,175 @@ export async function savePractitionerProfile(input: unknown): Promise<ActionRes
 
   if (error) return actionError(error);
   return actionOk();
+}
+
+/* ---------------------------------------------------------------------------
+ * Rooms
+ * ------------------------------------------------------------------------ */
+
+export async function saveRoom(id: string | null, input: unknown): Promise<ActionResult<{ id: string }>> {
+  const scope = await getClinicScope();
+  if (!scope) return actionError(new Error('unauthorized'));
+
+  const parsed = roomSchema.safeParse(input);
+  if (!parsed.success) return actionError(new Error('validation'));
+
+  if (id) {
+    const { error } = await scope.supabase.from('rooms').update(parsed.data).eq('id', id);
+    if (error) return actionError(error);
+    return actionOk({ id });
+  }
+
+  const { data, error } = await scope.supabase
+    .from('rooms')
+    .insert({ ...parsed.data, clinic_id: scope.context.clinic.id })
+    .select('id')
+    .single<{ id: string }>();
+
+  if (error) return actionError(error);
+  return actionOk({ id: data.id });
+}
+
+/**
+ * Removes a room, or retires it once bookings refer to it.
+ *
+ * Same reasoning as a treatment type: a room that has held appointments is
+ * part of what happened, and the calendar of last March should still say
+ * where. It stops being offered and keeps its name on every past booking.
+ */
+export async function deleteRoom(id: string): Promise<ActionResult> {
+  const scope = await getClinicScope();
+  if (!scope) return actionError(new Error('unauthorized'));
+
+  const { count } = await scope.supabase
+    .from('appointments')
+    .select('id', { count: 'exact', head: true })
+    .eq('room_id', id);
+
+  if ((count ?? 0) > 0) {
+    const { error } = await scope.supabase.from('rooms').update({ is_active: false }).eq('id', id);
+    if (error) return actionError(error);
+    return actionError(new Error('room_in_use_deactivated'));
+  }
+
+  const { error } = await scope.supabase.from('rooms').delete().eq('id', id);
+  if (error) return actionError(error);
+  return actionOk();
+}
+
+/* ---------------------------------------------------------------------------
+ * Patient tags
+ * ------------------------------------------------------------------------ */
+
+export async function savePatientTag(
+  id: string | null,
+  input: unknown,
+): Promise<ActionResult<{ id: string }>> {
+  const scope = await getClinicScope();
+  if (!scope) return actionError(new Error('unauthorized'));
+
+  const parsed = patientTagSchema.safeParse(input);
+  if (!parsed.success) return actionError(new Error('validation'));
+
+  if (id) {
+    const { error } = await scope.supabase.from('patient_tags').update(parsed.data).eq('id', id);
+    if (error) return actionError(error);
+    return actionOk({ id });
+  }
+
+  const { data, error } = await scope.supabase
+    .from('patient_tags')
+    .insert({ ...parsed.data, clinic_id: scope.context.clinic.id })
+    .select('id')
+    .single<{ id: string }>();
+
+  if (error) return actionError(error);
+  return actionOk({ id: data.id });
+}
+
+/**
+ * Deleting a tag takes it off every file that carried it — the link table
+ * cascades — so the confirmation in the UI says how many that is.
+ */
+export async function deletePatientTag(id: string): Promise<ActionResult> {
+  const scope = await getClinicScope();
+  if (!scope) return actionError(new Error('unauthorized'));
+
+  const { error } = await scope.supabase.from('patient_tags').delete().eq('id', id);
+  if (error) return actionError(error);
+  return actionOk();
+}
+
+/* ---------------------------------------------------------------------------
+ * Reminder wording
+ * ------------------------------------------------------------------------ */
+
+export async function saveReminderTemplate(input: unknown): Promise<ActionResult> {
+  const scope = await getClinicScope();
+  if (!scope) return actionError(new Error('unauthorized'));
+
+  const parsed = reminderTemplateSchema.safeParse(input);
+  if (!parsed.success) return actionError(new Error('validation'));
+
+  const { error } = await scope.supabase
+    .from('clinics')
+    .update({ reminder_template: parsed.data.reminder_template })
+    .eq('id', scope.context.clinic.id);
+
+  if (error) return actionError(error);
+  return actionOk();
+}
+
+/* ---------------------------------------------------------------------------
+ * Calendar feed
+ * ------------------------------------------------------------------------ */
+
+/**
+ * The practitioner's feed row, created on first request.
+ *
+ * Made lazily rather than at sign-up, so a token exists only for someone who
+ * has asked to subscribe — and only they can read it back, by policy.
+ */
+export async function ensureCalendarFeed(): Promise<ActionResult<{ token: string }>> {
+  const scope = await getClinicScope();
+  if (!scope) return actionError(new Error('unauthorized'));
+
+  const practitionerId = scope.context.membership.user_id;
+
+  const { data: existing } = await scope.supabase
+    .from('calendar_feeds')
+    .select('token')
+    .eq('practitioner_id', practitionerId)
+    .maybeSingle<{ token: string }>();
+
+  if (existing) return actionOk({ token: existing.token });
+
+  const { data, error } = await scope.supabase
+    .from('calendar_feeds')
+    .insert({ clinic_id: scope.context.clinic.id, practitioner_id: practitionerId })
+    .select('token')
+    .single<{ token: string }>();
+
+  if (error) return actionError(error);
+  return actionOk({ token: data.token });
+}
+
+/**
+ * A new token, which is how a leaked URL is revoked: the old address returns
+ * nothing from the moment this commits. Every subscribed device must be given
+ * the new link, and the UI says so before this is called.
+ */
+export async function regenerateCalendarFeed(): Promise<ActionResult<{ token: string }>> {
+  const scope = await getClinicScope();
+  if (!scope) return actionError(new Error('unauthorized'));
+
+  const { data, error } = await scope.supabase
+    .from('calendar_feeds')
+    .update({ token: crypto.randomUUID(), last_fetched_at: null })
+    .eq('practitioner_id', scope.context.membership.user_id)
+    .select('token')
+    .single<{ token: string }>();
+
+  if (error) return actionError(error);
+  return actionOk({ token: data.token });
 }

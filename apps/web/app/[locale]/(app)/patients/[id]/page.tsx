@@ -13,7 +13,6 @@ import {
   SortableTable,
   TableWrapper,
   Td,
-  Th,
   Tr,
 } from '@clinic/ui';
 import { Link } from '@clinic/i18n/navigation';
@@ -34,6 +33,7 @@ import type {
   PatientConsentWithDocument,
   PatientDocument,
   PatientMedicalHistory,
+  PatientTag,
 } from '@clinic/db/types';
 import type { Locale } from '@clinic/domain';
 import { PageHeader } from '@/components/app-shell';
@@ -52,6 +52,9 @@ import { MedicalHistoryForm } from '@/features/patients/medical-history-form';
 import { StartEncounterButton } from '@/features/encounters/start-encounter-button';
 import { DocumentsPanel } from '@/features/documents/documents-panel';
 import { ConsentPanel } from '@/features/consent/consent-panel';
+import { PatientTags, type TagChip } from '@/features/patients/patient-tags';
+import { ConfirmationBadge } from '@/features/appointments/confirmation-status';
+import { confirmationState } from '@/features/appointments/confirmation';
 import { formatDate, formatDateTime } from '@clinic/i18n';
 
 type AppointmentRow = Appointment & {
@@ -108,6 +111,8 @@ export default async function PatientDetailPage({
     practitionerResult,
     packagesResult,
     redemptionsResult,
+    tagLinksResult,
+    allTagsResult,
   ] = await Promise.all([
     scope.supabase
       .from('patient_medical_history')
@@ -198,6 +203,17 @@ export default async function PatientDetailPage({
       .order('redeemed_on', { ascending: false })
       .limit(500)
       .returns<PackageRedemption[]>(),
+    scope.supabase
+      .from('patient_tag_links')
+      .select('tag:patient_tags(id, name, color)')
+      .eq('patient_id', id)
+      .returns<{ tag: TagChip | null }[]>(),
+    scope.supabase
+      .from('patient_tags')
+      .select('id, name, color')
+      .order('name', { ascending: true })
+      .limit(500)
+      .returns<Pick<PatientTag, 'id' | 'name' | 'color'>[]>(),
   ]);
 
   /*
@@ -302,7 +318,6 @@ export default async function PatientDetailPage({
             <tr>
               <SortTh sortKey="date">{tc('date')}</SortTh>
               <SortTh sortKey="status">{tc('status')}</SortTh>
-              <Th />
             </tr>
           </thead>
           <SortBody locale={locale}>
@@ -314,23 +329,24 @@ export default async function PatientDetailPage({
                   status: tEnc(`status.${encounter.status}`),
                 }}
               >
+                {/* The date is the way in, as it is on the treatments page.
+                    It used to be plain text with a separate "view" link at
+                    the far end of the row — the one place in the app where
+                    the thing you look at and the thing you click were
+                    different cells. */}
                 <Td>
-                  <span dir="ltr">
+                  <Link
+                    href={`/encounters/${encounter.id}`}
+                    className="font-medium text-jade-800 underline-offset-2 hover:underline"
+                    dir="ltr"
+                  >
                     {formatDate(new Date(encounter.encounter_date))}
-                  </span>
+                  </Link>
                 </Td>
                 <Td>
                   <Badge tone={encounter.status === 'signed' ? 'success' : 'warning'}>
                     {tEnc(`status.${encounter.status}`)}
                   </Badge>
-                </Td>
-                <Td className="text-end">
-                  <Link
-                    href={`/encounters/${encounter.id}`}
-                    className="text-sm font-medium text-jade-800 underline-offset-2 hover:underline"
-                  >
-                    {tc('viewAll')}
-                  </Link>
                 </Td>
               </Tr>
             ))}
@@ -349,6 +365,7 @@ export default async function PatientDetailPage({
             <tr>
               <SortTh sortKey="date">{tc('date')}</SortTh>
               <SortTh sortKey="type">{tApp('type')}</SortTh>
+              <SortTh sortKey="arrival">{tApp('confirmation.title')}</SortTh>
               <SortTh sortKey="status">{tc('status')}</SortTh>
               <SortTh sortKey="payment">{tBilling('title')}</SortTh>
             </tr>
@@ -360,6 +377,7 @@ export default async function PatientDetailPage({
                 sort={{
                   date: new Date(appointment.start_at).getTime(),
                   type: appointmentTypeName(appointment.appointment_type, locale as Locale),
+                  arrival: tApp(`confirmation.${confirmationState(appointment)}`),
                   status: tApp(`status.${appointment.status}`),
                   payment: appointmentPayments.get(appointment.id)?.payment_state ?? 'unbilled',
                 }}
@@ -371,6 +389,9 @@ export default async function PatientDetailPage({
                 </Td>
                 <Td>
                   {appointmentTypeName(appointment.appointment_type, locale as Locale) || '—'}
+                </Td>
+                <Td>
+                  <ConfirmationBadge appointment={appointment} />
                 </Td>
                 <Td>
                   <Badge tone={appointment.status === 'cancelled' ? 'danger' : 'neutral'}>
@@ -423,6 +444,17 @@ export default async function PatientDetailPage({
           </>
         }
       />
+
+      {/* The labels the practitioner put on this file, each a link to
+          everyone else who carries it. Under the header rather than in it:
+          the header is a paragraph, and this is a toolbar. */}
+      <div className="-mt-3 mb-4">
+        <PatientTags
+          patientId={patient.id}
+          tags={(tagLinksResult.data ?? []).flatMap((row) => (row.tag ? [row.tag] : []))}
+          allTags={allTagsResult.data ?? []}
+        />
+      </div>
 
       {/* Puts this file on the tab strip in the shell, which knows the URL
           but not whose name is on it. */}

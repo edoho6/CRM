@@ -9,7 +9,17 @@ import {
   type PatientMedicalHistoryData,
   type PatientMedicalHistoryValues,
 } from '@clinic/domain';
-import { Alert, Button, Card, CardBody, Field, FieldGrid, Spinner, Textarea } from '@clinic/ui';
+import {
+  Alert,
+  Button,
+  Card,
+  CardBody,
+  Field,
+  FieldGrid,
+  Spinner,
+  Textarea,
+  useToast,
+} from '@clinic/ui';
 import type { PatientMedicalHistory } from '@clinic/db/types';
 import { saveMedicalHistory } from './actions';
 
@@ -23,7 +33,8 @@ export function MedicalHistoryForm({
   const t = useTranslations('patients.fields');
   const tc = useTranslations('common');
   const [isPending, startTransition] = useTransition();
-  const [status, setStatus] = useState<'idle' | 'saved' | 'error'>('idle');
+  const [status, setStatus] = useState<'idle' | 'error'>('idle');
+  const { toast } = useToast();
 
   const { register, handleSubmit } = useForm<
     PatientMedicalHistoryValues,
@@ -46,13 +57,13 @@ export function MedicalHistoryForm({
     setStatus('idle');
     startTransition(async () => {
       const result = await saveMedicalHistory(patientId, values);
-      setStatus(result.ok ? 'saved' : 'error');
+      if (result.ok) toast({ tone: 'success', title: tc('saved') });
+      else setStatus('error');
     });
   }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      {status === 'saved' ? <Alert tone="success">{tc('saved')}</Alert> : null}
       {status === 'error' ? <Alert tone="danger">{tc('errorGeneric')}</Alert> : null}
 
       <Card>

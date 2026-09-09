@@ -2,6 +2,7 @@ import * as React from 'react';
 import { Slot } from '@radix-ui/react-slot';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from './cn';
+import { focusRing } from './focus';
 
 /**
  * Every enabled button lifts slightly and casts a shadow on hover, and settles
@@ -13,7 +14,7 @@ const buttonVariants = cva(
   'inline-flex items-center justify-center gap-2 rounded-lg font-medium select-none ' +
     'transition-all duration-150 ease-out cursor-pointer ' +
     'hover:-translate-y-px hover:shadow-md active:translate-y-0 active:shadow-sm ' +
-    'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-jade-600 ' +
+    `${focusRing} ` +
     'disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none disabled:translate-y-0 ' +
     'disabled:cursor-not-allowed',
   {

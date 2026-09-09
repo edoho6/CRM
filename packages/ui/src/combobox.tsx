@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { Search, X } from 'lucide-react';
 import { cn } from './cn';
+import { focusField } from './focus';
 import { FloatingList, useAnchoredPosition } from './popover';
 
 /**
@@ -214,8 +215,8 @@ export function Combobox({
         }}
         className={cn(
           'h-10 w-full rounded-lg border border-ink-200 bg-white ps-8 pe-8 text-sm text-ink-900',
-          'shadow-xs outline-none placeholder:text-ink-500',
-          'focus:border-jade-600 focus:ring-2 focus:ring-jade-600/25',
+          'shadow-xs placeholder:text-ink-500',
+          focusField,
           'disabled:bg-ink-50 disabled:text-ink-600',
         )}
       />

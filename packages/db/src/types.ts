@@ -1,5 +1,8 @@
 import type {
   AppointmentStatus,
+  ConfirmationResponse,
+  RemindChannel,
+  TagColor,
   AuditAction,
   BodyView,
   Channel,
@@ -61,6 +64,8 @@ export interface Clinic {
    * screen so a development database can never be mistaken for the real one.
    */
   is_synthetic: boolean;
+  /** The reminder wording, with {name} {date} {time} {clinic} {link}. Null uses the built-in text. */
+  reminder_template: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -155,6 +160,8 @@ export interface PatientDocument {
   size_bytes: number | null;
   category: DocumentCategory;
   shared_with_patient: boolean;
+  /** The treatment it was taken at, for a tongue photograph. Null for an ordinary file. */
+  encounter_id: string | null;
   created_at: string;
 }
 
@@ -189,6 +196,15 @@ export interface Appointment {
   notes: string | null;
   cancelled_reason: string | null;
   cancelled_at: string | null;
+  /** Which room, when the clinic has any. The room, not the practitioner, is what cannot be double-booked. */
+  room_id: string | null;
+  /** When the reminder went out, by whatever channel. Null: not yet. */
+  reminder_sent_at: string | null;
+  /** The secret in the reminder link. Never rendered to anyone but the patient. */
+  confirmation_token: string;
+  /** What the patient tapped. Null until they answer. */
+  confirmation_response: ConfirmationResponse | null;
+  responded_at: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
@@ -200,6 +216,7 @@ export interface AppointmentWithRelations extends Appointment {
   appointment_type: Pick<AppointmentType, 'id' | 'name_he' | 'name_en' | 'color'> | null;
   practitioner: Pick<Profile, 'id' | 'full_name'> | null;
   encounter_id?: string | null;
+  room?: Pick<Room, 'id' | 'name' | 'color'> | null;
 }
 
 export interface PractitionerSchedule {
@@ -1037,6 +1054,11 @@ export interface ClinicTask {
   /** Null is the whole of "still to do". */
   done_at: string | null;
   patient_id: string | null;
+  /** The instant the alert fires, when the task has one. */
+  due_at: string | null;
+  remind_via: RemindChannel;
+  /** Set once the alert has fired, so it fires once. */
+  reminded_at: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
@@ -1044,4 +1066,52 @@ export interface ClinicTask {
 
 export interface ClinicTaskWithPatient extends ClinicTask {
   patient: Pick<Patient, 'id' | 'full_name'> | null;
+}
+
+/** A patient row from the `patients_with_diary` view: the file plus what the diary knows. */
+export interface PatientWithDiary extends Patient {
+  next_appointment_at: string | null;
+  last_appointment_at: string | null;
+}
+
+/** A treatment room or branch. Bookings in it cannot overlap. */
+export interface Room {
+  id: string;
+  clinic_id: string;
+  name: string;
+  color: string;
+  sort_order: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+/** One practitioner's private iCalendar subscription. The token is the whole secret. */
+export interface CalendarFeed {
+  id: string;
+  clinic_id: string;
+  practitioner_id: string;
+  token: string;
+  created_at: string;
+  last_fetched_at: string | null;
+}
+
+/** A free label the clinic puts on patient files. */
+export interface PatientTag {
+  id: string;
+  clinic_id: string;
+  name: string;
+  color: TagColor;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PatientTagLink {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  tag_id: string;
+  created_by: string | null;
+  created_at: string;
 }

@@ -1,4 +1,62 @@
 {
+  "confirm": {
+    "greeting": "Hello {name},",
+    "youHave": "You have an appointment",
+    "yes": "I'll be there",
+    "no": "I can't make it",
+    "thanksConfirmed": "Thank you! Your arrival is confirmed.",
+    "thanksDeclined": "Thanks for letting us know. Call the clinic to find another time.",
+    "expired": "This link is no longer valid, or the appointment has passed.",
+    "error": "Something went wrong. Please try again in a moment.",
+    "cancelled": "This appointment was cancelled.",
+    "questions": "Questions? Call:",
+    "changeLater": "You can come back to this link and change your answer."
+  },
+  "tasks": {
+    "title": "Tasks",
+    "subtitle": "What needs doing, when — and a reminder when the time comes.",
+    "new": "New task",
+    "edit": "Edit task",
+    "titleField": "What needs doing?",
+    "dueDate": "Date",
+    "dueTime": "Time",
+    "noTime": "No time",
+    "patient": "Patient (optional)",
+    "searchPatient": "Search for a patient",
+    "urgent": "Urgent",
+    "remindVia": "How to remind",
+    "channels": {
+      "app": "In-app alert",
+      "email": "Email",
+      "sms": "SMS"
+    },
+    "channelHint": "An in-app alert shows on the bell at the top, and as a browser notification if you allowed one. Email and SMS switch on once a sending provider is connected. Needs a date and a time.",
+    "sections": {
+      "overdue": "Overdue",
+      "today": "Today",
+      "later": "Later",
+      "undated": "No date",
+      "done": "Done"
+    },
+    "empty": "Nothing outstanding. Well done.",
+    "markDone": "Mark “{title}” as done",
+    "markOpen": "Put “{title}” back",
+    "created": "Task added",
+    "updated": "Task updated",
+    "deleted": "Task deleted",
+    "deleteConfirm": "Delete this task?",
+    "browserNotifications": "Browser notifications",
+    "browserHint": "While the app is open in the browser — even in another tab or a minimised window — a task whose time has come pops up as a browser notification. When the app is closed, it waits on the bell for your next visit.",
+    "enableBrowser": "Turn on browser notifications",
+    "browserOn": "Browser notifications are on",
+    "browserBlocked": "The browser blocks notifications for this site. It can be changed in the browser's site settings.",
+    "browserUnsupported": "This browser does not support notifications.",
+    "bell": "Reminders",
+    "bellEmpty": "Nothing is due.",
+    "dueNow": "Due now",
+    "soon": "Soon",
+    "openAll": "All tasks"
+  },
   "common": {
     "appName": "Herbalist",
     "appTagline": "Chinese medicine clinic management",
@@ -34,6 +92,7 @@
     "errorGeneric": "An unexpected error occurred. Please try again.",
     "retry": "Try again",
     "saved": "Saved",
+    "deleted": "Deleted",
     "deleteConfirmTitle": "Delete this?",
     "deleteConfirmBody": "This action cannot be undone.",
     "unit": "Unit",
@@ -60,6 +119,7 @@
     "duplicate": "Duplicate"
   },
   "nav": {
+    "tasks": "Tasks",
     "dashboard": "Dashboard",
     "patients": "Patients",
     "calendar": "Calendar",
@@ -73,6 +133,9 @@
     "settings": "Settings",
     "signOut": "Sign out",
     "mainMenu": "Main menu",
+    "arrangeMenu": "Arrange the menu",
+    "doneArranging": "Done arranging",
+    "arrangeHint": "Drag an item, or focus it and use the arrow keys. Press the tick when done.",
     "skipToContent": "Skip to main content",
     "reference": "Reference",
     "points": "Points",
@@ -220,6 +283,22 @@
     }
   },
   "patients": {
+    "tags": {
+      "title": "Tags",
+      "add": "Add a tag",
+      "placeholder": "Search, or a name for a new tag",
+      "createHint": "Enter makes a new tag with what you typed",
+      "remove": "Remove the tag {name}",
+      "filterBy": "Showing patients tagged",
+      "clearFilter": "Show everyone",
+      "none": "No tags",
+      "column": "Tags",
+      "saveFailed": "The tags were not saved"
+    },
+    "nextAppointment": "Next appointment",
+    "noUpcoming": "Nothing booked",
+    "noUpcomingHint": "An active patient with no further appointment",
+    "noUpcomingFilter": "Only with nothing booked",
     "title": "Patients",
     "new": "New patient",
     "edit": "Edit patient",
@@ -303,12 +382,59 @@
     "treatmentStatusHint": "Only \"in treatment\" keeps the file in the working list.",
     "statusSaveFailed": "Not saved",
     "kpi": {
+      "view": "How the numbers show",
+      "modes": {
+        "tiles": "Tiles",
+        "pills": "Row",
+        "bar": "Bar",
+        "hidden": "Hidden"
+      },
       "notActive": "Not in treatment",
       "total": "All patients"
     },
     "singular": "Patient"
   },
   "appointments": {
+    "room": "Room",
+    "selectRoom": "Choose a room",
+    "addOn": "Add on this day",
+    "blockDay": "Block the day",
+    "confirmation": {
+      "title": "Arrival",
+      "none": "No reminder sent",
+      "sent": "Reminder sent — awaiting reply",
+      "confirmed": "Confirmed",
+      "declined": "Not coming"
+    },
+    "reminder": {
+      "title": "Reminder and arrival confirmation",
+      "intro": "The message opens in WhatsApp ready to send. After sending, mark it here as sent; the patient confirms through the link in the message.",
+      "sendWhatsApp": "Send on WhatsApp",
+      "copyMessage": "Copy the message",
+      "copyLink": "Copy the link",
+      "copied": "Copied",
+      "copyFailed": "Copy failed",
+      "markSent": "Reminder sent",
+      "sentAt": "Sent",
+      "answeredAt": "Answered",
+      "setConfirmed": "Confirmed arrival",
+      "setDeclined": "Not coming",
+      "noPhone": "No phone number on file, so there is no WhatsApp button. Copy the message and send it another way.",
+      "defaultTemplate": "Hi '{name}', a reminder of your appointment at '{clinic}' on '{date}' at '{time}'. Please confirm here: '{link}'"
+    },
+    "block": {
+      "title": "Block the day",
+      "wholeDay": "All day",
+      "openOnlyBetween": "Open only between",
+      "reason": "Reason",
+      "reasonPlaceholder": "e.g. a course",
+      "save": "Block",
+      "saved": "The day is blocked",
+      "alreadyBlocked": "This day is already blocked. You can change the block or lift it.",
+      "reopen": "Lift the block",
+      "reopened": "The block was lifted",
+      "failed": "The block was not saved. Try again."
+    },
     "title": "Calendar",
     "new": "New appointment",
     "edit": "Edit appointment",
@@ -482,20 +608,44 @@
     "autosavedAt": "Autosaved at {time}",
     "autosaveFailed": "Autosave failed — save manually",
     "compare": {
-      "title": "Compared with a previous treatment",
+      "title": "Last time, beside now",
       "chooseTreatment": "Treatment being compared",
       "mostRecent": "Most recent",
-      "pointsKept": "Kept",
-      "pointsDropped": "Dropped",
-      "pointsAdded": "Added",
-      "pattern": "Pattern",
-      "principle": "Treatment principle",
-      "prescription": "Prescription",
-      "notes": "What was done",
-      "pointsUsed": "Points used",
-      "complaint": "Complaint",
-      "showMore": "Show all",
-      "showLess": "Show less"
+      "previous": "Then",
+      "current": "Now",
+      "draft": "Not recorded yet",
+      "points": "Points",
+      "herbs": "Herbs",
+      "none": "None",
+      "was": "was {quantity}",
+      "firstVisit": "First visit — nothing to compare with yet.",
+      "legend": "Amber on the left: given then, not now. Green on the right: new now. Amber on the right: the dose changed."
+    },
+    "tonguePhotos": {
+      "zoomIn": "Zoom in",
+      "zoomOut": "Zoom out",
+      "zoomHint": "Wheel to zoom, drag to move, double-click to reset. Keyboard: + − and the arrows.",
+      "take": "Tongue photo",
+      "replace": "Replace the photo",
+      "remove": "Delete the photo",
+      "deleted": "Photo deleted",
+      "open": "Open the photo",
+      "panHint": "Drag to reposition · pull the bottom corner to resize",
+      "compareWith": "Compare with",
+      "current": "this treatment",
+      "earlier": "Earlier photos",
+      "saved": "Photo saved to the patient's file",
+      "uploadFailed": "The photo could not be saved. Try again.",
+      "alt": "Tongue, {date}"
+    },
+    "panels": {
+      "arrange": "Arrange the panels",
+      "done": "Done",
+      "hint": "Drag a panel by its bar, or focus the bar and use the arrow keys.",
+      "examination": "Tongue and pulse",
+      "compare": "Then and now",
+      "dispensing": "Herbs",
+      "forms": "Questionnaires"
     },
     "sessionNav": "Move between treatments",
     "sessionNumber": "Session {number} of {total}"
@@ -637,6 +787,7 @@
       "intake_form": "Intake form",
       "lab_result": "Lab result",
       "id_scan": "ID scan",
+      "tongue": "Tongue photo",
       "other": "Other"
     },
     "uploadedAt": "Uploaded",
@@ -852,8 +1003,22 @@
       },
       "dosesPerDay": "Times a day",
       "perDay": "{count, plural, one {once a day} other {# times a day}}",
-      "printPrescription": "Print prescription and label",
-      "doseUnit": "Unit"
+      "printPrescription": "Print prescription",
+      "doseUnit": "Unit",
+      "compare": "Compare",
+      "compareSelected": "Compare ({count})",
+      "selectToCompare": "Tick two or more prescriptions, then press Compare.",
+      "compareTitle": "Prescriptions, side by side",
+      "details": "Show the herbs and doses",
+      "dailyDose": "Daily dose",
+      "perDaySuffix": "a day",
+      "perDose": "per dose",
+      "totalShort": "Total",
+      "noDosing": "No dosing recorded",
+      "sharedHerbs": "{shared} of {total} herbs appear in more than one prescription",
+      "inAll": "in all of them",
+      "doseDiffers": "dose differs",
+      "compareLegend": "Green rows: the herb is in more than one prescription. A marked dose changed between them."
     },
     "tcmCategory": {
       "release_exterior_warm": "Release the exterior — warm, acrid",
@@ -1100,9 +1265,46 @@
     "encounterLocked": "A signed record cannot be edited",
     "formulaOrItemsRequired": "Pick a formula or add herbs",
     "quantityCannotBeZero": "Quantity cannot be zero",
-    "endMustBeAfterStart": "The end time must be after the start time"
+    "endMustBeAfterStart": "The end time must be after the start time",
+    "roomOverlap": "That room is already booked at this hour"
   },
   "settings": {
+    "rooms": {
+      "subtitle": "Treatment rooms. With rooms, several patients can be booked for the same hour — each in their own.",
+      "intro": "Every booking goes into a room. A room cannot be taken twice at the same hour, but one practitioner can work several rooms at once. With no rooms the diary behaves as before — one booking per hour.",
+      "name": "Room name",
+      "colour": "Colour",
+      "active": "Active",
+      "add": "Add a room",
+      "deleteConfirm": "Delete this room? Bookings already in it stay, without a room.",
+      "inUse": "There are bookings in this room, so it was retired rather than deleted."
+    },
+    "tags": {
+      "subtitle": "Patient tags — edited in one place.",
+      "intro": "Tags are made from the patient file. Here you rename and colour them, and see how many patients carry each. The count opens all of them.",
+      "name": "Tag name",
+      "colour": "Colour",
+      "colours": {
+        "ink": "Grey",
+        "jade": "Green",
+        "sky": "Blue",
+        "amber": "Amber",
+        "red": "Red"
+      },
+      "add": "Add a tag",
+      "usage": "{count, plural, =0 {no patients} one {one patient} other {# patients}}",
+      "deleteConfirm": "Delete this tag? It will be removed from {count} files.",
+      "saveFailed": "Not saved. There may already be a tag with this name.",
+      "empty": "No tags yet. Add one here, or from a patient file."
+    },
+    "reminders": {
+      "title": "Reminder wording",
+      "intro": "The message sent to a patient before their appointment. Empty means the built-in wording in the app's language.",
+      "template": "Wording",
+      "placeholders": "You can use '{name}' '{date}' '{time}' '{clinic}' '{link}' — they are filled in from the booking.",
+      "preview": "How it will read",
+      "sampleName": "Dana"
+    },
     "title": "Settings",
     "subtitle": "Clinic-wide preferences",
     "sections": {
@@ -1123,6 +1325,8 @@
     },
     "inventoryReversible": "Change it whenever you like. Turning it off hides your stock data rather than deleting it, so turning it back on restores exactly what was there.",
     "nav": {
+      "rooms": "Rooms",
+      "tags": "Tags",
       "general": "General",
       "access": "Access log",
       "billing": "Billing",
@@ -1353,6 +1557,7 @@
     "version": "Version {version}",
     "historyTitle": "Decision history",
     "historyEmpty": "No decisions recorded",
+    "decisionRecorded": "Decision recorded",
     "status": {
       "granted": "Given",
       "withdrawn": "Withdrawn",
@@ -1503,6 +1708,36 @@
     "hideTable": "Hide the table"
   },
   "schedule": {
+    "feed": {
+      "title": "The diary on your phone — Google Calendar and iPhone",
+      "intro": "A private address that Google Calendar or the iPhone calendar subscribes to once; from then on bookings appear there by themselves. One way only: a change on the phone does not change anything here.",
+      "url": "Calendar address",
+      "copy": "Copy",
+      "copied": "Address copied",
+      "copyFailed": "Copy failed — select the address and copy it by hand.",
+      "secretWarning": "Whoever holds this address sees the diary, names included. Keep it like a password, and if it leaks, replace it.",
+      "lastFetched": "Last read:",
+      "neverFetched": "Not yet read by any calendar.",
+      "create": "Create a calendar address",
+      "regenerate": "Replace the address",
+      "regenerateTitle": "Replace the address?",
+      "regenerateBody": "The old address stops working, and Google and the iPhone need subscribing again with the new one.",
+      "regenerated": "Address replaced",
+      "google": {
+        "title": "Instructions for Google Calendar",
+        "step1": "On a computer, in Google Calendar: next to \"Other calendars\" click + and then \"From URL\".",
+        "step2": "Paste the address above and click \"Add calendar\".",
+        "step3": "The calendar also appears in the Google app on your phone, under the same account.",
+        "note": "Google refreshes a URL calendar every few hours — a booking made now shows up there a little later."
+      },
+      "iphone": {
+        "title": "Instructions for iPhone",
+        "step1": "Settings → Apps → Calendar → Accounts → Add Account → Other → Add Subscribed Calendar.",
+        "step2": "Paste the address, tap \"Next\", then \"Save\".",
+        "step3": "The calendar appears in the iPhone's Calendar app, and you can give it a colour.",
+        "note": "The iPhone refreshes on its own schedule — in the calendar settings you can choose \"Every hour\"."
+      }
+    },
     "title": "Working hours",
     "subtitle": "The days and hours you see patients, and diary closures. The calendar shades hours outside these and marks closed days — it does not block them, because sometimes you do see someone at eight in the evening.",
     "workingHours": "Working week",
@@ -1664,6 +1899,7 @@
     "purposeHint": "For example: for submission to Maccabi. Optional.",
     "selectedCount": "{count, plural, =0 {No dates selected} one {1 date} other {# dates}}",
     "issue": "Issue confirmation",
+    "issuedToast": "Confirmation issued",
     "issuedBefore": "Previously issued",
     "datesCount": "{count, plural, one {1 treatment} other {# treatments}}",
     "print": "Print",
@@ -1695,6 +1931,9 @@
     "expiresHint": "Leave blank — a package with no expiry is the ordinary case.",
     "remaining": "{remaining} of {total} left",
     "redeem": "Use a session",
+    "redeemed": "Session recorded",
+    "undone": "Session restored",
+    "deleted": "Package deleted",
     "undo": "Undo this redemption",
     "usedUp": "Fully used",
     "expired": "Expired",
@@ -1712,6 +1951,7 @@
     "daysSupply": "Supply",
     "notes": "Notes",
     "cutHere": "Cut here and attach to the bag",
+    "dailyTotal": "Total per day",
     "keepAway": "Store in a cool, dry place, out of reach of children. Contact the clinic with any question or unexpected effect."
   }
 }

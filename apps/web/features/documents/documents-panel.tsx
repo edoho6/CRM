@@ -22,6 +22,8 @@ import {
   Td,
   Th,
   Tr,
+  useConfirm,
+  useToast,
 } from '@clinic/ui';
 import { DOCUMENT_CATEGORIES, type Locale } from '@clinic/domain';
 import { useRouter } from '@clinic/i18n/navigation';
@@ -47,6 +49,7 @@ function UploadForm({ patientId, onUploaded }: { patientId: string; onUploaded: 
   const formRef = useRef<HTMLFormElement>(null);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -66,6 +69,8 @@ function UploadForm({ patientId, onUploaded }: { patientId: string; onUploaded: 
         return;
       }
       formRef.current?.reset();
+      // The row appearing in the list below was the only sign it worked.
+      toast({ tone: 'success', title: t('uploaded') });
       onUploaded();
     });
   }
@@ -128,6 +133,8 @@ export function DocumentsPanel({
   const [isPending, startTransition] = useTransition();
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [listError, setListError] = useState(false);
+  const confirm = useConfirm();
+  const { toast } = useToast();
 
   function refresh() {
     router.refresh();
@@ -143,12 +150,21 @@ export function DocumentsPanel({
         setListError(true);
         return;
       }
+      toast({ tone: 'success', title: tc('saved') });
       refresh();
     });
   }
 
-  function handleDelete(document: PatientDocument) {
-    if (!window.confirm(t('deleteConfirm'))) return;
+  async function handleDelete(document: PatientDocument) {
+    // Asked before the transition starts, as the browser prompt was, so the
+    // row does not show as busy while the question is still open.
+    const confirmed = await confirm({
+      title: tc('deleteConfirmTitle'),
+      body: t('deleteConfirm'),
+      confirmLabel: tc('delete'),
+      destructive: true,
+    });
+    if (!confirmed) return;
     setListError(false);
     setPendingId(document.id);
     startTransition(async () => {
@@ -158,6 +174,7 @@ export function DocumentsPanel({
         setListError(true);
         return;
       }
+      toast({ tone: 'success', title: t('deleted') });
       refresh();
     });
   }

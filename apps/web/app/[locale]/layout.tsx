@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server';
 import { getDirection, isLocale, locales } from '@clinic/i18n';
-import { UiDirectionProvider } from '@clinic/ui';
+import { ConfirmProvider, ToastProvider, UiDirectionProvider } from '@clinic/ui';
 import { themeInitScript } from '@/lib/theme';
 import '../globals.css';
 
@@ -80,6 +80,10 @@ export default async function LocaleLayout({
   setRequestLocale(locale);
   const messages = await getMessages();
   const dir = getDirection(locale);
+  // The feedback providers are client components with no access to the
+  // catalogue; their few labels cross the boundary as strings, which is the
+  // one kind of value that may.
+  const t = await getTranslations({ locale, namespace: 'common' });
 
   return (
     <html lang={locale} dir={dir} className={assistant.variable} suppressHydrationWarning>
@@ -112,7 +116,20 @@ export default async function LocaleLayout({
           dangerouslySetInnerHTML={{ __html: `<script>${themeInitScript}</script>` }}
         />
         <NextIntlClientProvider messages={messages}>
-          <UiDirectionProvider dir={dir}>{children}</UiDirectionProvider>
+          <UiDirectionProvider dir={dir}>
+            {/* Toasts and the confirm dialog live at the root so any screen can
+                raise one, and inside the direction provider so the dialog's
+                Radix primitives lay out for Hebrew. */}
+            <ToastProvider closeLabel={t('close')}>
+              <ConfirmProvider
+                confirmLabel={t('confirm')}
+                cancelLabel={t('cancel')}
+                closeLabel={t('close')}
+              >
+                {children}
+              </ConfirmProvider>
+            </ToastProvider>
+          </UiDirectionProvider>
         </NextIntlClientProvider>
       </body>
     </html>

@@ -119,7 +119,7 @@ export default async function BatchesPage({ params }: { params: Promise<{ locale
                       <span dir="ltr">{batch.batch_number ?? '—'}</span>
                     </Td>
                     <Td>
-                      <span dir="ltr" className="tabular-nums">
+                      <span className="tabular-nums">
                         {format.number(Number(batch.quantity_remaining))} {tUnit(batch.unit)}
                       </span>
                     </Td>

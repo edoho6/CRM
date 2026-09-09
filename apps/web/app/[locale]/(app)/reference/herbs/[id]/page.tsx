@@ -358,7 +358,7 @@ export default async function HerbDetailPage({
               <CardBody className="flex flex-wrap items-end justify-between gap-3">
                 <dl className="grid grid-cols-2 gap-x-6">
                   <DetailRow label={t('inStock')}>
-                    <span dir="ltr" className="text-base font-semibold tabular-nums">
+                    <span className="text-base font-semibold tabular-nums">
                       {format.number(remaining)} {tUnit(herb.default_unit)}
                     </span>
                   </DetailRow>
@@ -437,7 +437,7 @@ export default async function HerbDetailPage({
                               )}
                             </Td>
                             <Td>
-                              <span dir="ltr" className="font-semibold tabular-nums">
+                              <span className="font-semibold tabular-nums">
                                 {format.number(Number(use.dosage))} {tUnit(use.unit)}
                               </span>
                             </Td>

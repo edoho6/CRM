@@ -10,15 +10,12 @@ import { formatDate } from '@clinic/i18n';
 /**
  * The prescription, on paper, for the patient to take home with the bag.
  *
- * The dosing fields were added a round ago precisely so this page could exist —
- * "one gram of granule twice daily after food" cannot be read back off a free
- * text note, cannot be printed onto a label, and cannot be carried forward. Until
- * now the patient left with a bag of herbs and nothing written on it.
- *
- * Two things on one sheet, separated by a cut line: the full prescription, and a
- * label small enough to go on the bag. The label repeats only what someone
- * standing at their kitchen counter needs — how much, how often, when — because
- * a label carrying the whole ingredient list is a label nobody reads.
+ * One plain sheet: who prescribed, for whom, what, and how to take it. It
+ * used to carry a second, cut-off label as well; that made a page of two
+ * documents in two sizes, and the practitioner asked for one. The thing a
+ * patient reads at the kitchen counter is the dose — so that is the largest
+ * type on the page, and the day's total is worked out for them rather than
+ * left as a multiplication to do with the kettle on.
  */
 const DISPENSING_SELECT =
   '*, items:dispensing_items(*, herb:herbs(id, pinyin_name, chinese_name, english_name, hebrew_name)), ' +
@@ -57,37 +54,34 @@ export default async function PrescriptionPrintPage({
       .maybeSingle<Pick<Patient, 'full_name'>>(),
     scope.supabase
       .from('profiles')
-      .select('full_name, title')
+      .select('full_name, title, phone')
       .eq('id', scope.context.membership.user_id)
-      .maybeSingle<Pick<Profile, 'full_name' | 'title'>>(),
+      .maybeSingle<Pick<Profile, 'full_name' | 'title' | 'phone'>>(),
   ]);
 
   const clinic = scope.context.clinic;
+  const uiLocale = locale as Locale;
 
-  const formulaName = record.formula
-    ? formulaPrimaryName(record.formula, locale as Locale)
-    : null;
+  const formulaName = record.formula ? formulaPrimaryName(record.formula, uiLocale) : null;
+  const doseUnit = record.dose_unit ?? 'gram';
 
   /*
-   * How to take it, as one line.
-   *
-   * Assembled from the parts that were actually recorded rather than from a
-   * sentence template: a prescription with an amount but no timing should read
-   * "2 g, twice a day" and not "2 g, twice a day, ." — and the parts are
-   * separated by a middle dot for the same reason, because a comma implies a
-   * grammar the pieces do not have.
+   * How to take it, as parts rather than a sentence template: a prescription
+   * with an amount but no timing reads "2 g · twice a day" and not
+   * "2 g, twice a day, ." — the middle dot implies no grammar the pieces lack.
    */
-  const dosing = [
-    record.dose_amount
-      ? `${format.number(Number(record.dose_amount))} ${tUnit(record.dose_unit ?? 'gram')}`
-      : null,
-    record.doses_per_day
-      ? tDispensing('perDay', { count: Number(record.doses_per_day) })
-      : null,
-    record.dose_timing ? tDispensing(`timing.${record.dose_timing}`) : null,
-  ]
-    .filter(Boolean)
-    .join(' · ');
+  const perDose = record.dose_amount
+    ? `${format.number(Number(record.dose_amount))} ${tUnit(doseUnit)}`
+    : null;
+  const timesADay = record.doses_per_day
+    ? tDispensing('perDay', { count: Number(record.doses_per_day) })
+    : null;
+  const timing = record.dose_timing ? tDispensing(`timing.${record.dose_timing}`) : null;
+  const dailyTotal =
+    record.dose_amount && record.doses_per_day
+      ? `${format.number(Number(record.dose_amount) * Number(record.doses_per_day))} ${tUnit(doseUnit)}`
+      : null;
+  const dosing = [perDose, timesADay, timing].filter(Boolean).join(' · ');
 
   return (
     <article className="space-y-6">
@@ -117,6 +111,11 @@ export default async function PrescriptionPrintPage({
           <dd dir="auto">
             {[profile?.full_name, profile?.title].filter(Boolean).join(' · ') || '—'}
           </dd>
+          {profile?.phone ? (
+            <dd className="text-xs text-ink-600" dir="ltr">
+              {profile.phone}
+            </dd>
+          ) : null}
         </div>
       </dl>
 
@@ -127,11 +126,30 @@ export default async function PrescriptionPrintPage({
         </p>
       ) : null}
 
-      <section>
-        <h3 className="mb-2 text-sm font-semibold">{t('contents')}</h3>
-        {record.items.length === 0 ? (
-          <p className="text-sm text-ink-600">—</p>
-        ) : (
+      {/* The dose first and largest: it is the one thing on the sheet that is
+          read again and again after the day it was handed over. */}
+      {dosing || dailyTotal || record.days_supply ? (
+        <section className="rounded-lg border border-ink-300 p-4">
+          <h3 className="text-sm font-semibold text-ink-700">{t('howToTake')}</h3>
+          <p className="mt-1 text-2xl font-semibold" dir="auto">
+            {dosing || '—'}
+          </p>
+          {dailyTotal ? (
+            <p className="mt-1 text-base text-ink-800" dir="auto">
+              {t('dailyTotal')}: {dailyTotal}
+            </p>
+          ) : null}
+          {record.days_supply ? (
+            <p className="mt-0.5 text-sm text-ink-700" dir="auto">
+              {t('daysSupply')}: {record.days_supply}
+            </p>
+          ) : null}
+        </section>
+      ) : null}
+
+      {record.items.length > 0 ? (
+        <section>
+          <h3 className="mb-2 text-sm font-semibold">{t('contents')}</h3>
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr>
@@ -153,34 +171,18 @@ export default async function PrescriptionPrintPage({
               {record.items.map((item) => (
                 <tr key={item.id}>
                   <td className="border-b border-ink-100 py-1" dir="auto">
-                    {item.herb
-                      ? herbPrimaryName(item.herb, locale as Locale)
-                      : (item.custom_name ?? '—')}
+                    {item.herb ? herbPrimaryName(item.herb, uiLocale) : (item.custom_name ?? '—')}
                   </td>
-                  {/* The wrapper carries the direction, not just the number:
-                      in Hebrew the unit would otherwise be laid out before the
-                      figure and "0 גרם" would read as "גרם 0". */}
-                  <td className="border-b border-ink-100 py-1 text-end tabular-nums" dir="ltr">
+                  {/* No direction override: in a Hebrew line the bidi algorithm
+                      already puts the figure before its unit, and forcing LTR is
+                      what made "20 מ״ל" read as "מ״ל 20". */}
+                  <td className="border-b border-ink-100 py-1 text-end tabular-nums">
                     {format.number(Number(item.quantity))} {tUnit(item.unit)}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-        )}
-      </section>
-
-      {dosing || record.days_supply ? (
-        <section className="rounded-lg border border-ink-300 p-3">
-          <h3 className="text-sm font-semibold">{t('howToTake')}</h3>
-          <p className="mt-1 text-base" dir="auto">
-            {dosing || '—'}
-          </p>
-          {record.days_supply ? (
-            <p className="mt-0.5 text-sm text-ink-700" dir="auto">
-              {t('daysSupply')}: {record.days_supply}
-            </p>
-          ) : null}
         </section>
       ) : null}
 
@@ -192,27 +194,6 @@ export default async function PrescriptionPrintPage({
           </p>
         </section>
       ) : null}
-
-      {/* The label. A dashed rule and a note to cut, because the alternative is
-          a second sheet for four lines of text. */}
-      <section className="border-t-2 border-dashed border-ink-400 pt-4">
-        <p className="mb-2 text-xs text-ink-500">{t('cutHere')}</p>
-        <div className="max-w-sm rounded-lg border border-ink-400 p-3">
-          <p className="text-sm font-semibold" dir="auto">
-            {clinic.name}
-          </p>
-          <p className="mt-1 text-sm" dir="auto">
-            {patient?.full_name ?? '—'}
-            {formulaName ? ` · ${formulaName}` : ''}
-          </p>
-          <p className="mt-1 text-base font-medium" dir="auto">
-            {dosing || '—'}
-          </p>
-          <p className="mt-1 text-xs text-ink-600" dir="ltr">
-            {formatDate(new Date(record.dispensed_at))}
-          </p>
-        </div>
-      </section>
 
       <footer className="border-t border-ink-200 pt-3 text-xs text-ink-600">
         {t('keepAway')}

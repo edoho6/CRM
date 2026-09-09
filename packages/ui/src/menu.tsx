@@ -5,6 +5,7 @@ import * as DropdownMenuPrimitive from '@radix-ui/react-dropdown-menu';
 import * as TabsPrimitive from '@radix-ui/react-tabs';
 import { DirectionProvider } from '@radix-ui/react-direction';
 import { cn } from './cn';
+import { focusRing } from './focus';
 
 /**
  * Radix's DirectionProvider is what makes every floating primitive below open on
@@ -36,7 +37,11 @@ export function DropdownMenuContent({
         align={align}
         sideOffset={sideOffset}
         className={cn(
-          'z-50 min-w-44 overflow-hidden rounded-lg border border-ink-200 bg-white p-1 shadow-lg',
+          'z-popover min-w-44 overflow-hidden rounded-lg border border-ink-200 bg-white p-1 shadow-lg',
+          // Grows out of the trigger, not out of its own centre: Radix reports
+          // where it anchored, and the origin follows.
+          'origin-(--radix-dropdown-menu-content-transform-origin)',
+          'data-[state=open]:animate-menu-in data-[state=closed]:animate-menu-out',
           className,
         )}
         {...props}
@@ -98,6 +103,7 @@ export function TabsTrigger({
       className={cn(
         'rounded-md px-3 py-1.5 text-sm font-medium text-ink-600 transition-colors',
         'hover:bg-ink-50 data-[state=active]:bg-accent data-[state=active]:text-accent-fg',
+        focusRing,
         className,
       )}
       {...props}

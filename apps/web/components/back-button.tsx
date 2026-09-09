@@ -46,7 +46,7 @@ export function BackButton({ className }: { className?: string }) {
       className={cn(
         'no-print inline-flex items-center gap-1 rounded-md px-2 py-1 text-sm font-medium',
         'text-ink-600 transition-colors hover:bg-ink-100 hover:text-ink-900',
-        'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
+        'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus',
         !canGoBack && 'invisible',
         className,
       )}

@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { cn } from './cn';
+import { focusField, focusRing } from './focus';
 
 /* Form primitives.
  *
@@ -9,7 +10,7 @@ import { cn } from './cn';
 export const inputClasses =
   'w-full rounded-lg border border-ink-200 bg-white px-3 py-2 text-sm text-ink-900 ' +
   'placeholder:text-ink-500 shadow-xs transition-colors text-start ' +
-  'focus:border-jade-500 focus:outline-2 focus:outline-offset-0 focus:outline-jade-600/30 ' +
+  `${focusField} ` +
   'disabled:cursor-not-allowed disabled:bg-ink-50 disabled:text-ink-500 ' +
   'read-only:bg-ink-50 read-only:text-ink-700';
 
@@ -115,7 +116,7 @@ export const Checkbox = React.forwardRef<
     type="checkbox"
     className={cn(
       'h-4 w-4 shrink-0 rounded border-ink-300 text-jade-600 accent-jade-600',
-      'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-jade-600',
+      focusRing,
       className,
     )}
     {...props}

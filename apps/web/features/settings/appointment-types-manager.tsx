@@ -13,6 +13,8 @@ import {
   LtrInput,
   Spinner,
   Textarea,
+  useConfirm,
+  useToast,
 } from '@clinic/ui';
 import { useRouter } from '@clinic/i18n/navigation';
 import type { AppointmentType } from '@clinic/db/types';
@@ -60,6 +62,8 @@ export function AppointmentTypesManager({ types }: { types: AppointmentType[] })
   const tc = useTranslations('common');
   const format = useFormatter();
   const router = useRouter();
+  const confirm = useConfirm();
+  const { toast } = useToast();
 
   const [drafts, setDrafts] = useState<Draft[]>(() => types.map((type) => toDraft(type)));
   const [error, setError] = useState<string | null>(null);
@@ -90,11 +94,12 @@ export function AppointmentTypesManager({ types }: { types: AppointmentType[] })
         setError(tc('errorGeneric'));
         return;
       }
+      toast({ tone: 'success', title: tc('saved') });
       router.refresh();
     });
   }
 
-  function remove(index: number) {
+  async function remove(index: number) {
     const draft = drafts[index]!;
 
     if (!draft.id) {
@@ -102,7 +107,13 @@ export function AppointmentTypesManager({ types }: { types: AppointmentType[] })
       return;
     }
 
-    if (!window.confirm(t('deleteConfirm'))) return;
+    const confirmed = await confirm({
+      title: tc('deleteConfirmTitle'),
+      body: t('deleteConfirm'),
+      confirmLabel: tc('delete'),
+      destructive: true,
+    });
+    if (!confirmed) return;
 
     startTransition(async () => {
       const result = await deleteAppointmentType(draft.id!);
@@ -113,6 +124,7 @@ export function AppointmentTypesManager({ types }: { types: AppointmentType[] })
         return;
       }
       setDrafts((current) => current.filter((_, position) => position !== index));
+      toast({ tone: 'success', title: tc('deleted') });
       router.refresh();
     });
   }

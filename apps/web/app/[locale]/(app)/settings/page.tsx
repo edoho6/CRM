@@ -3,6 +3,7 @@ import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
 import { SettingsNav } from '@/features/settings/settings-nav';
 import { ClinicSettingsForm } from '@/features/settings/clinic-settings-form';
+import { ReminderTemplateForm } from '@/features/settings/reminder-template-form';
 
 export default async function SettingsPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -20,6 +21,12 @@ export default async function SettingsPage({ params }: { params: Promise<{ local
         name={scope.context.clinic.name}
         tracksInventory={scope.context.clinic.tracks_inventory !== false}
       />
+      <div className="mt-6 max-w-3xl">
+        <ReminderTemplateForm
+          template={scope.context.clinic.reminder_template ?? null}
+          clinicName={scope.context.clinic.name}
+        />
+      </div>
     </>
   );
 }

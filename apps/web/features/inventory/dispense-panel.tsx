@@ -1,28 +1,30 @@
 'use client';
 
-import { useMemo, useState, useTransition } from 'react';
+import { useEffect, useMemo, useState, useTransition } from 'react';
 import { useFormatter, useLocale, useTranslations } from 'next-intl';
-import { Plus, Printer, Sprout, X } from 'lucide-react';
+import { Check, Columns2, Plus, Printer, Sprout, X } from 'lucide-react';
 import {
   Alert,
+  Badge,
   Button,
   Card,
   CardBody,
   CardHeader,
   CardTitle,
+  Checkbox,
   Collapsible,
   Combobox,
+  Dialog,
+  DialogContent,
   Field,
   LtrInput,
   Select,
-  SortBody,
-  SortTh,
-  SortableTable,
   Spinner,
+  Table,
   TableWrapper,
   Td,
+  Th,
   Textarea,
-  Tr,
   type ComboboxOption,
   type ComboboxValue,
 } from '@clinic/ui';
@@ -45,10 +47,15 @@ import type {
 } from '@clinic/db/types';
 import { formulaPrimaryName, herbPrimaryName, herbSecondaryName } from '@/lib/display';
 import { ProtocolPicker } from '@/features/encounters/protocol-picker';
+import {
+  prescriptionKey,
+  useCurrentPrescriptionPublisher,
+} from '@/features/encounters/current-prescription-context';
 import { GranuleCalculator } from './granule-calculator';
 import { multiplierForTotal, round2, splitByParts } from './dosing';
 import { dispenseHerbs, recordPrescription } from './actions';
-import { formatDateTime } from '@clinic/i18n';
+import { formatDate, formatDateTime } from '@clinic/i18n';
+import { cn } from '@clinic/ui/cn';
 
 interface HerbRow {
   /** Null when the name was typed rather than chosen — an off-catalogue line. */
@@ -122,6 +129,18 @@ export function DispensePanel({
   } | null>(null);
 
   const unit = preparationUnit(preparation);
+
+  // The list of past prescriptions: one opened for its herbs, and a set ticked
+  // for comparison. Comparing is a mode so the checkboxes exist only while it is on.
+  const [detail, setDetail] = useState<DispensingRecordWithItems | null>(null);
+  const [comparing, setComparing] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [compareOpen, setCompareOpen] = useState(false);
+  function toggleSelected(id: string) {
+    setSelectedIds((current) =>
+      current.includes(id) ? current.filter((entry) => entry !== id) : [...current, id],
+    );
+  }
   const requestedTotal = Number(totalQuantity);
   const hasTotal = Number.isFinite(requestedTotal) && requestedTotal > 0;
 
@@ -184,6 +203,71 @@ export function DispensePanel({
 
   const canSubmit =
     mode === 'formula' ? Boolean(formulaChoice?.label.trim()) : herbLines.length > 0;
+
+  /*
+   * Tell the comparison what is being given.
+   *
+   * What is being composed comes first: a formula picked or a herb line filled
+   * in is the answer to "what am I giving now" even before it is saved, and it
+   * is flagged as a draft so the panel can say so. With nothing in hand, the
+   * latest record for this treatment stands in. With neither, nothing.
+   *
+   * Names travel with a pinyin key so the other side can match them across
+   * languages — see the context for why.
+   */
+  const publish = useCurrentPrescriptionPublisher();
+  useEffect(() => {
+    if (mode === 'formula' && selectedFormula) {
+      publish({
+        formula: formulaPrimaryName(selectedFormula, locale),
+        draft: true,
+        herbs: selectedFormula.items.map((item) => ({
+          key: prescriptionKey(item.herb?.pinyin_name, herbPrimaryName(item.herb, locale)),
+          name: herbPrimaryName(item.herb, locale),
+          quantity: round2(Number(item.dosage) * multiplier),
+        })),
+      });
+      return;
+    }
+    if (mode === 'formula' && formulaChoice?.label.trim()) {
+      publish({ formula: formulaChoice.label.trim(), draft: true, herbs: [] });
+      return;
+    }
+    if (mode === 'herb' && herbLines.length > 0) {
+      publish({
+        formula: null,
+        draft: true,
+        herbs: herbLines.map((line) => {
+          const herb = herbs.find((entry) => entry.id === line.choice.id);
+          return {
+            key: prescriptionKey(herb?.pinyin_name, line.choice.label),
+            name: line.choice.label,
+            quantity: line.quantity,
+          };
+        }),
+      });
+      return;
+    }
+    const latest = records[0] ?? null;
+    if (latest) {
+      publish({
+        formula: latest.formula ? formulaPrimaryName(latest.formula, locale) : null,
+        draft: false,
+        herbs: latest.items.map((item) => {
+          const name = item.herb ? herbPrimaryName(item.herb, locale) : (item.custom_name ?? '—');
+          return {
+            key: prescriptionKey(item.herb?.pinyin_name, name),
+            name,
+            quantity: Number(item.quantity),
+          };
+        }),
+      });
+      return;
+    }
+    publish(null);
+    // `herbLines` is rebuilt every render; the publisher itself compares what it
+    // is given against what it has, so the extra calls cost nothing.
+  }, [publish, mode, selectedFormula, formulaChoice, herbLines, records, herbs, locale, multiplier]);
 
   function reset() {
     setFormulaChoice(null);
@@ -465,7 +549,6 @@ export function DispensePanel({
                           split is visible as it is typed rather than only in a
                           summary underneath. */}
                       <span
-                        dir="ltr"
                         className="w-24 shrink-0 pb-2 text-xs tabular-nums text-ink-700"
                       >
                         {line ? `${format.number(line.quantity)} ${tUnit(unit)}` : '—'}
@@ -496,7 +579,7 @@ export function DispensePanel({
                   {herbLines.length > 0 ? (
                     <span className="text-sm font-medium text-ink-800">
                       {tc('total')}{' '}
-                      <span dir="ltr" className="tabular-nums">
+                      <span className="tabular-nums">
                         {format.number(herbLinesTotal)} {tUnit(unit)}
                       </span>
                     </span>
@@ -633,7 +716,7 @@ export function DispensePanel({
                       <span className="min-w-0 truncate text-ink-800">
                         {herbPrimaryName(item.herb, locale)}
                       </span>
-                      <span className="shrink-0 tabular-nums text-ink-700" dir="ltr">
+                      <span className="shrink-0 tabular-nums text-ink-700">
                         {format.number(round2(Number(item.dosage) * multiplier))} {tUnit(unit)}
                       </span>
                     </li>
@@ -641,7 +724,7 @@ export function DispensePanel({
                 </ul>
                 <p className="mt-2 flex justify-between border-t border-ink-200 pt-1.5 text-sm font-medium">
                   <span>{tc('total')}</span>
-                  <span dir="ltr" className="tabular-nums">
+                  <span className="tabular-nums">
                     {format.number(round2(hasTotal ? requestedTotal : formulaBookDose))}{' '}
                     {tUnit(unit)}
                   </span>
@@ -662,92 +745,433 @@ export function DispensePanel({
       <Card>
         <CardHeader>
           <CardTitle>{t('history')}</CardTitle>
+          {/* Comparing is a mode, entered on purpose: tick two or more, then
+              press. Outside it the list has no checkboxes to catch the eye. */}
+          {records.length > 1 ? (
+            <div className="flex items-center gap-1.5">
+              {comparing ? (
+                <>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      setComparing(false);
+                      setSelectedIds([]);
+                    }}
+                  >
+                    {tc('cancel')}
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={selectedIds.length < 2}
+                    onClick={() => setCompareOpen(true)}
+                  >
+                    <Columns2 className="h-4 w-4" aria-hidden />
+                    {t('compareSelected', { count: selectedIds.length })}
+                  </Button>
+                </>
+              ) : (
+                <Button type="button" size="sm" variant="ghost" onClick={() => setComparing(true)}>
+                  <Columns2 className="h-4 w-4" aria-hidden />
+                  {t('compare')}
+                </Button>
+              )}
+            </div>
+          ) : null}
         </CardHeader>
         <CardBody className="p-0">
           {records.length === 0 ? (
             <p className="px-4 py-6 text-center text-sm text-ink-500">{t('empty')}</p>
           ) : (
-            <div className="space-y-4 p-4">
-              {records.map((record) => (
-                <div key={record.id}>
-                  <div className="mb-1.5 flex flex-wrap items-baseline justify-between gap-2">
-                    <span className="text-sm font-medium text-ink-900">
-                      {record.formula ? formulaPrimaryName(record.formula, locale) : t('herb')}
-                      {record.preparation ? ` · ${tPrep(record.preparation)}` : ''}
-                    </span>
-                    <span className="flex items-center gap-2">
-                      <span className="text-xs text-ink-500" dir="ltr">
-                        {formatDateTime(new Date(record.dispensed_at))}
-                      </span>
-                      {/* The whole reason the dosing fields exist. A new tab,
-                          because printing is the point and losing the treatment
-                          behind it is a needless step back. */}
-                      <a
-                        href={`/print/prescription/${record.id}`}
-                        target="_blank"
-                        rel="noopener"
-                        className="inline-flex items-center gap-1 rounded-md text-xs font-medium text-jade-700 underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-jade-700"
-                      >
-                        <Printer className="h-3.5 w-3.5" aria-hidden />
-                        {t('printPrescription')}
-                      </a>
-                    </span>
-                  </div>
-                  <TableWrapper className="rounded-lg">
-                    <SortableTable>
-                      <thead>
-                        <tr>
-                          <SortTh sortKey="name">{tc('name')}</SortTh>
-                          <SortTh sortKey="quantity">{tc('quantity')}</SortTh>
-                        </tr>
-                      </thead>
-                      <SortBody locale={locale}>
-                        {record.items.map((item) => {
-                          // A line with no catalogue herb carries its own name.
-                          const label = item.herb
-                            ? herbPrimaryName(item.herb, locale)
-                            : (item.custom_name ?? '—');
-                          return (
-                            <Tr
-                              key={item.id}
-                              sort={{ name: label, quantity: Number(item.quantity) }}
-                            >
-                              <Td>{label}</Td>
-                              <Td>
-                                <span dir="ltr" className="tabular-nums">
-                                  {format.number(Number(item.quantity))} {tUnit(item.unit)}
-                                </span>
-                              </Td>
-                            </Tr>
-                          );
-                        })}
-                      </SortBody>
-                    </SortableTable>
-                  </TableWrapper>
-                  {record.dose_amount || record.doses_per_day || record.dose_timing ? (
-                    <p className="mt-1 text-xs text-ink-700">
-                      {[
-                        record.dose_amount
-                          ? `${format.number(Number(record.dose_amount))} ${tUnit(record.dose_unit ?? 'gram')}`
-                          : null,
-                        record.doses_per_day
-                          ? t('perDay', { count: Number(record.doses_per_day) })
-                          : null,
-                        record.dose_timing ? t(`timing.${record.dose_timing}`) : null,
-                      ]
-                        .filter(Boolean)
-                        .join(' · ')}
-                    </p>
-                  ) : null}
-                  {record.notes ? (
-                    <p className="mt-1 text-xs whitespace-pre-wrap text-ink-600">{record.notes}</p>
-                  ) : null}
-                </div>
-              ))}
-            </div>
+            <>
+              {comparing ? (
+                <p className="px-4 pt-3 text-xs text-ink-600">{t('selectToCompare')}</p>
+              ) : null}
+              {/* One line per prescription: when, what, how much in total, and
+                  the day's dose — which is the figure asked about on the phone
+                  a week later, so it is the large one. The herbs are one click
+                  in, not spread down the page. */}
+              <ul className="divide-y divide-ink-100">
+                {records.map((record) => {
+                  const daily = dailyDose(record);
+                  const name = recordTitle(record, locale, t('herbs'));
+                  const checked = selectedIds.includes(record.id);
+                  return (
+                    <li
+                      key={record.id}
+                      className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3"
+                    >
+                      {comparing ? (
+                        <Checkbox
+                          checked={checked}
+                          onChange={() => toggleSelected(record.id)}
+                          aria-label={name}
+                        />
+                      ) : null}
+                      <div className="min-w-0 flex-1">
+                        <button
+                          type="button"
+                          onClick={() => setDetail(record)}
+                          title={t('details')}
+                          dir="auto"
+                          className="max-w-full truncate text-start text-sm font-medium text-jade-800 underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+                        >
+                          {name}
+                        </button>
+                        <p className="text-xs text-ink-500">
+                          <span dir="ltr">{formatDateTime(new Date(record.dispensed_at))}</span>
+                          {record.preparation ? ` · ${tPrep(record.preparation)}` : ''}
+                        </p>
+                      </div>
+                      <div className="text-end">
+                        <p className="text-base font-semibold text-ink-900">
+                          {daily ? (
+                            <>
+                              <span className="tabular-nums">
+                                {format.number(daily.amount)} {tUnit(daily.unit)}
+                              </span>{' '}
+                              <span className="text-xs font-normal text-ink-500">
+                                {t('perDaySuffix')}
+                              </span>
+                            </>
+                          ) : (
+                            <span className="text-sm font-normal text-ink-500">{t('noDosing')}</span>
+                          )}
+                        </p>
+                        <p className="text-xs text-ink-500">
+                          {t('totalShort')}{' '}
+                          <span className="tabular-nums">
+                            {format.number(recordTotal(record))}{' '}
+                            {tUnit(record.items[0]?.unit ?? unit)}
+                          </span>
+                        </p>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </>
           )}
         </CardBody>
       </Card>
+
+      <DispensingDetailDialog record={detail} onClose={() => setDetail(null)} locale={locale} />
+      <DispensingCompareDialog
+        open={compareOpen}
+        records={records.filter((record) => selectedIds.includes(record.id))}
+        onClose={() => setCompareOpen(false)}
+        locale={locale}
+      />
     </div>
   );
+}
+
+/** Amount per dose times doses per day. Null when either half is missing. */
+function dailyDose(record: DispensingRecordWithItems): { amount: number; unit: HerbUnit } | null {
+  if (!record.dose_amount || !record.doses_per_day) return null;
+  return {
+    amount: round2(Number(record.dose_amount) * Number(record.doses_per_day)),
+    unit: record.dose_unit ?? 'gram',
+  };
+}
+
+function recordTotal(record: DispensingRecordWithItems): number {
+  return round2(record.items.reduce((sum, item) => sum + Number(item.quantity), 0));
+}
+
+/** The same herb in two prescriptions must match: catalogue id, or the typed name. */
+function itemKey(item: DispensingRecordWithItems['items'][number]): string {
+  return item.herb ? `herb:${item.herb.id}` : `custom:${(item.custom_name ?? '').trim().toLowerCase()}`;
+}
+
+function itemLabel(item: DispensingRecordWithItems['items'][number], locale: Locale): string {
+  return item.herb ? herbPrimaryName(item.herb, locale) : (item.custom_name ?? '—');
+}
+
+/**
+ * One prescription, opened from the list: the dose large, the herbs and their
+ * weights, the notes, and the way to the printed sheet.
+ */
+function DispensingDetailDialog({
+  record,
+  onClose,
+  locale,
+}: {
+  record: DispensingRecordWithItems | null;
+  onClose: () => void;
+  locale: Locale;
+}) {
+  const t = useTranslations('inventory.dispensing');
+  const tc = useTranslations('common');
+  const tUnit = useTranslations('inventory.unit');
+  const tPrep = useTranslations('inventory.preparation');
+  const format = useFormatter();
+
+  const daily = record ? dailyDose(record) : null;
+
+  return (
+    <Dialog open={record !== null} onOpenChange={(isOpen) => !isOpen && onClose()}>
+      {record ? (
+        <DialogContent
+          title={recordTitle(record, locale, t('herbs'))}
+          closeLabel={tc('close')}
+        >
+          <div className="space-y-4">
+            <p className="text-xs text-ink-500">
+              <span dir="ltr">{formatDateTime(new Date(record.dispensed_at))}</span>
+              {record.preparation ? ` · ${tPrep(record.preparation)}` : ''}
+            </p>
+
+            <div className="rounded-lg border border-ink-200 bg-ink-50 p-3">
+              <p className="text-xs font-medium text-ink-600">{t('dailyDose')}</p>
+              <p className="mt-0.5 text-2xl font-semibold text-ink-900">
+                {daily ? (
+                  <span className="tabular-nums">
+                    {format.number(daily.amount)} {tUnit(daily.unit)}
+                  </span>
+                ) : (
+                  <span className="text-base font-normal text-ink-500">{t('noDosing')}</span>
+                )}
+              </p>
+              {record.dose_amount || record.doses_per_day || record.dose_timing ? (
+                <p className="mt-1 text-sm text-ink-700">
+                  {[
+                    record.dose_amount
+                      ? `${format.number(Number(record.dose_amount))} ${tUnit(record.dose_unit ?? 'gram')} ${t('perDose')}`
+                      : null,
+                    record.doses_per_day
+                      ? t('perDay', { count: Number(record.doses_per_day) })
+                      : null,
+                    record.dose_timing ? t(`timing.${record.dose_timing}`) : null,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
+                </p>
+              ) : null}
+              {record.days_supply ? (
+                <p className="mt-0.5 text-xs text-ink-600">{record.days_supply}</p>
+              ) : null}
+            </div>
+
+            {record.items.length > 0 ? (
+              <TableWrapper className="rounded-lg">
+                <Table>
+                  <thead>
+                    <tr>
+                      <Th>{tc('name')}</Th>
+                      <Th className="text-end">{tc('quantity')}</Th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {record.items.map((item) => (
+                      <tr key={item.id}>
+                        <Td dir="auto">{itemLabel(item, locale)}</Td>
+                        <Td className="text-end">
+                          <span className="tabular-nums">
+                            {format.number(Number(item.quantity))} {tUnit(item.unit)}
+                          </span>
+                        </Td>
+                      </tr>
+                    ))}
+                    <tr className="font-medium">
+                      <Td>{tc('total')}</Td>
+                      <Td className="text-end">
+                        <span className="tabular-nums">
+                          {format.number(recordTotal(record))}{' '}
+                          {tUnit(record.items[0]?.unit ?? 'gram')}
+                        </span>
+                      </Td>
+                    </tr>
+                  </tbody>
+                </Table>
+              </TableWrapper>
+            ) : null}
+
+            {record.notes ? (
+              <p className="text-sm whitespace-pre-wrap text-ink-700" dir="auto">
+                {record.notes}
+              </p>
+            ) : null}
+
+            <div className="flex justify-end">
+              {/* A new tab, because printing is the point and losing the
+                  treatment behind it is a needless step back. */}
+              <Button asChild variant="secondary" size="sm">
+                <a href={`/print/prescription/${record.id}`} target="_blank" rel="noopener">
+                  <Printer className="h-4 w-4" aria-hidden />
+                  {t('printPrescription')}
+                </a>
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      ) : null}
+    </Dialog>
+  );
+}
+
+/**
+ * Two or more prescriptions side by side, one row per herb.
+ *
+ * The rows that matter are the ones a herb appears in more than once — that is
+ * the continuity of a course of treatment — so they are tinted and ticked, and
+ * a herb whose dose moved between prescriptions says so beside its name. The
+ * count at the top answers the question before the table is read. Colour is
+ * never alone: the tick, the badge and the legend all say it in words.
+ */
+function DispensingCompareDialog({
+  open,
+  records,
+  onClose,
+  locale,
+}: {
+  open: boolean;
+  records: DispensingRecordWithItems[];
+  onClose: () => void;
+  locale: Locale;
+}) {
+  const t = useTranslations('inventory.dispensing');
+  const tc = useTranslations('common');
+  const tUnit = useTranslations('inventory.unit');
+  const format = useFormatter();
+
+  const rows = useMemo(() => {
+    const byKey = new Map<
+      string,
+      { key: string; label: string; unit: HerbUnit; quantities: Map<string, number> }
+    >();
+    for (const record of records) {
+      for (const item of record.items) {
+        const key = itemKey(item);
+        const row = byKey.get(key) ?? {
+          key,
+          label: itemLabel(item, locale),
+          unit: item.unit,
+          quantities: new Map<string, number>(),
+        };
+        row.quantities.set(record.id, Number(item.quantity));
+        byKey.set(key, row);
+      }
+    }
+    // Shared first, most shared at the top; then by name.
+    return [...byKey.values()].sort(
+      (a, b) => b.quantities.size - a.quantities.size || a.label.localeCompare(b.label),
+    );
+  }, [records, locale]);
+
+  const shared = rows.filter((row) => row.quantities.size > 1);
+  const inAll = rows.filter((row) => row.quantities.size === records.length).length;
+
+  return (
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+      {open && records.length > 0 ? (
+        <DialogContent title={t('compareTitle')} closeLabel={tc('close')} className="max-w-4xl">
+          <div className="space-y-3">
+            <p className="text-sm text-ink-800">
+              {t('sharedHerbs', { shared: shared.length, total: rows.length })}
+              {records.length > 2 ? ` · ${t('inAll')}: ${inAll}` : ''}
+            </p>
+
+            <TableWrapper className="rounded-lg">
+              <Table>
+                <thead>
+                  <tr>
+                    <Th>{tc('name')}</Th>
+                    {/* The name first, because that is what the columns are
+                        being compared as; the date under it is which time. */}
+                    {records.map((record) => (
+                      <Th key={record.id} className="text-end">
+                        <span className="block truncate" dir="auto">
+                          {recordTitle(record, locale, t('herbs'))}
+                        </span>
+                        <span className="block font-normal text-ink-500" dir="ltr">
+                          {formatDate(record.dispensed_at)}
+                        </span>
+                      </Th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((row) => {
+                    const values = [...row.quantities.values()];
+                    const isShared = row.quantities.size > 1;
+                    const differs =
+                      isShared && Math.max(...values) - Math.min(...values) > 0.001;
+                    return (
+                      <tr key={row.key} className={cn(isShared && 'bg-jade-50')}>
+                        <Td dir="auto">
+                          <span className="inline-flex flex-wrap items-center gap-1.5">
+                            {isShared ? (
+                              <Check className="h-3.5 w-3.5 shrink-0 text-jade-700" aria-hidden />
+                            ) : null}
+                            {row.label}
+                            {differs ? <Badge tone="warning">{t('doseDiffers')}</Badge> : null}
+                          </span>
+                        </Td>
+                        {records.map((record) => {
+                          const quantity = row.quantities.get(record.id);
+                          return (
+                            <Td key={record.id} className="text-end">
+                              <span className="tabular-nums">
+                                {quantity === undefined
+                                  ? '—'
+                                  : `${format.number(quantity)} ${tUnit(row.unit)}`}
+                              </span>
+                            </Td>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })}
+                  <tr className="font-medium">
+                    <Td>{tc('total')}</Td>
+                    {records.map((record) => (
+                      <Td key={record.id} className="text-end">
+                        <span className="tabular-nums">
+                          {format.number(recordTotal(record))}{' '}
+                          {tUnit(record.items[0]?.unit ?? 'gram')}
+                        </span>
+                      </Td>
+                    ))}
+                  </tr>
+                  <tr>
+                    <Td>{t('dailyDose')}</Td>
+                    {records.map((record) => {
+                      const daily = dailyDose(record);
+                      return (
+                        <Td key={record.id} className="text-end">
+                          <span className="tabular-nums">
+                            {daily ? `${format.number(daily.amount)} ${tUnit(daily.unit)}` : '—'}
+                          </span>
+                        </Td>
+                      );
+                    })}
+                  </tr>
+                </tbody>
+              </Table>
+            </TableWrapper>
+
+            <p className="text-xs text-ink-600">{t('compareLegend')}</p>
+          </div>
+        </DialogContent>
+      ) : null}
+    </Dialog>
+  );
+}
+
+/**
+ * What a prescription is called.
+ *
+ * The formula's name when there is one. A bespoke mix has no name of its own,
+ * and "herbs" as a heading says nothing about which — so the herbs themselves
+ * are the name, the first three and a count of the rest.
+ */
+function recordTitle(record: DispensingRecordWithItems, locale: Locale, fallback: string): string {
+  if (record.formula) return formulaPrimaryName(record.formula, locale);
+  const names = record.items.map((item) => itemLabel(item, locale)).filter((name) => name && name !== '—');
+  if (names.length === 0) return fallback;
+  if (names.length <= 3) return names.join(' · ');
+  return `${names.slice(0, 3).join(' · ')} +${names.length - 3}`;
 }

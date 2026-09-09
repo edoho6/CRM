@@ -13,39 +13,54 @@ export function StartEncounterButton({
   variant = 'primary',
   size = 'md',
   label,
+  onStarted,
 }: {
   patientId: string;
   appointmentId?: string | null;
   variant?: 'primary' | 'secondary' | 'ghost';
   size?: 'sm' | 'md';
   label?: string;
+  /**
+   * Called once the record exists, just before leaving for it. A dialog that
+   * hosts this button closes itself here rather than being torn down mid-
+   * navigation with its focus trap and scroll lock still in place.
+   */
+  onStarted?: () => void;
 }) {
   const t = useTranslations('encounters');
-  const tc = useTranslations('common');
+  const tAll = useTranslations();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [error, setError] = useState(false);
+  const [errorKey, setErrorKey] = useState<string | null>(null);
 
   function handleClick() {
-    setError(false);
+    setErrorKey(null);
     startTransition(async () => {
       const result = await startEncounter(patientId, appointmentId ?? null);
       if (!result.ok) {
-        setError(true);
+        setErrorKey(result.error.key);
         return;
       }
-      router.push(`/encounters/${(result.data as { id: string }).id}`);
-      router.refresh();
+      onStarted?.();
+      router.push(`/encounters/${result.data.id}`);
     });
   }
 
   return (
     <span className="inline-flex flex-col items-start gap-1">
-      <Button variant={variant} size={size} onClick={handleClick} disabled={isPending}>
+      <Button type="button" variant={variant} size={size} onClick={handleClick} disabled={isPending}>
         {isPending ? <Spinner /> : <Stethoscope className="h-4 w-4" />}
         {label ?? t('start')}
       </Button>
-      {error ? <span className="text-xs text-red-600">{tc('errorGeneric')}</span> : null}
+      {/* The reason, not "something went wrong": the key is one of the
+          catalogue's error messages, and the difference between "the record
+          is locked" and "the server is down" is the difference between
+          knowing what to do next and not. */}
+      {errorKey ? (
+        <span role="alert" className="text-xs text-red-600">
+          {tAll.has(errorKey) ? tAll(errorKey) : tAll('common.errorGeneric')}
+        </span>
+      ) : null}
     </span>
   );
 }

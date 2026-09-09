@@ -25,13 +25,26 @@ export function Badge({
   );
 }
 
+export type AlertTone = 'info' | 'success' | 'warning' | 'danger';
+
+/**
+ * One palette for every message, inline or floating. A "saved" toast is the
+ * same green as a "saved" banner because it is the same news.
+ */
+export const ALERT_TONE_CLASSES: Record<AlertTone, string> = {
+  info: 'border-sky-200 bg-sky-50 text-sky-900',
+  success: 'border-jade-200 bg-jade-50 text-jade-900',
+  warning: 'border-amber-200 bg-amber-50 text-amber-900',
+  danger: 'border-red-200 bg-red-50 text-red-900',
+};
+
 export function Alert({
   tone = 'info',
   title,
   children,
   className,
 }: {
-  tone?: 'info' | 'success' | 'warning' | 'danger';
+  tone?: AlertTone;
   title?: React.ReactNode;
   children?: React.ReactNode;
   className?: string;
@@ -42,14 +55,7 @@ export function Alert({
       // reader next pauses. Both are announced — colour alone is not a message.
       role={tone === 'danger' ? 'alert' : 'status'}
       aria-live={tone === 'danger' ? 'assertive' : 'polite'}
-      className={cn(
-        'rounded-lg border px-3 py-2 text-sm',
-        tone === 'info' && 'border-sky-200 bg-sky-50 text-sky-900',
-        tone === 'success' && 'border-jade-200 bg-jade-50 text-jade-900',
-        tone === 'warning' && 'border-amber-200 bg-amber-50 text-amber-900',
-        tone === 'danger' && 'border-red-200 bg-red-50 text-red-900',
-        className,
-      )}
+      className={cn('rounded-lg border px-3 py-2 text-sm', ALERT_TONE_CLASSES[tone], className)}
     >
       {title ? <p className="font-medium">{title}</p> : null}
       {children ? <div className={cn(title && 'mt-0.5')}>{children}</div> : null}

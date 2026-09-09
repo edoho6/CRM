@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { REMIND_CHANNELS, TAG_COLORS } from '../enums';
 import { optionalText, requiredText, uuidField } from './common';
 
 /**
@@ -154,6 +155,56 @@ export const clinicTaskSchema = z.object({
   patient_id: z
     .union([uuidField, z.literal(''), z.null()])
     .transform((value) => (value ? value : null)),
+  /**
+   * The moment the reminder fires, as an ISO instant. Optional on top of
+   * nullable so the one-line add on the dashboard need not know it exists.
+   */
+  due_at: z
+    .union([
+      z.string().refine((value) => value === '' || !Number.isNaN(Date.parse(value)), {
+        error: 'invalid_datetime',
+      }),
+      z.null(),
+      z.undefined(),
+    ])
+    .transform((value) => (value ? new Date(value).toISOString() : null)),
+  remind_via: z.enum(REMIND_CHANNELS).default('app'),
 });
 
 export type ClinicTaskValues = z.input<typeof clinicTaskSchema>;
+
+/* ---------------------------------------------------------------------------
+ * Rooms, patient tags, reminder wording
+ * ------------------------------------------------------------------------ */
+
+
+export const roomSchema = z.object({
+  name: requiredText(80),
+  color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
+  is_active: z.boolean().default(true),
+});
+
+export type RoomValues = z.input<typeof roomSchema>;
+
+export const patientTagSchema = z.object({
+  name: requiredText(60),
+  color: z.enum(TAG_COLORS).default('ink'),
+});
+
+export type PatientTagValues = z.input<typeof patientTagSchema>;
+
+/** Which tags a file carries — the whole set, replaced at once. */
+export const patientTagLinksSchema = z.object({
+  patient_id: uuidField,
+  tag_ids: z.array(uuidField).max(50),
+});
+
+/**
+ * The clinic's own reminder wording. Empty means the built-in text. The
+ * placeholders are documented beside the field; unknown ones are left as typed
+ * rather than rejected, because a practitioner writing "{שם}" by mistake should
+ * see it in the preview, not be refused.
+ */
+export const reminderTemplateSchema = z.object({
+  reminder_template: optionalText(1000),
+});

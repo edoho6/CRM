@@ -238,7 +238,7 @@ function PointCombobox({
             setOpen(false);
           }
         }}
-        className="h-8 w-full rounded-md border border-ink-200 bg-white ps-7 pe-2 text-sm text-ink-900 shadow-xs outline-none placeholder:text-ink-500 focus:border-jade-500 disabled:bg-ink-50"
+        className="h-8 w-full rounded-md border border-ink-200 bg-white ps-7 pe-2 text-sm text-ink-900 shadow-xs placeholder:text-ink-500 focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-focus focus-visible:border-focus disabled:bg-ink-50"
       />
 
       {open && matches.length > 0 ? (

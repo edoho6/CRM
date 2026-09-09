@@ -13,6 +13,8 @@ import {
   Field,
   Input,
   Spinner,
+  useConfirm,
+  useToast,
 } from '@clinic/ui';
 import { useRouter } from '@clinic/i18n/navigation';
 import { removeHerbImage, uploadHerbImage } from './image-actions';
@@ -40,7 +42,9 @@ export function HerbImageCard({
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const [isPending, startTransition] = useTransition();
-  const [status, setStatus] = useState<'idle' | 'saved' | 'error'>('idle');
+  const [status, setStatus] = useState<'idle' | 'error'>('idle');
+  const confirm = useConfirm();
+  const { toast } = useToast();
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -53,18 +57,28 @@ export function HerbImageCard({
         return;
       }
       formRef.current?.reset();
-      setStatus('saved');
+      toast({ tone: 'success', title: t('uploaded') });
       router.refresh();
     });
   }
 
-  function handleRemove() {
-    if (!window.confirm(tc('deleteConfirmBody'))) return;
+  async function handleRemove() {
+    const confirmed = await confirm({
+      title: tc('deleteConfirmTitle'),
+      body: tc('deleteConfirmBody'),
+      confirmLabel: tc('delete'),
+      destructive: true,
+    });
+    if (!confirmed) return;
     setStatus('idle');
     startTransition(async () => {
       const result = await removeHerbImage(herbId);
-      setStatus(result.ok ? 'idle' : 'error');
-      if (result.ok) router.refresh();
+      if (!result.ok) {
+        setStatus('error');
+        return;
+      }
+      toast({ tone: 'success', title: tc('deleted') });
+      router.refresh();
     });
   }
 
@@ -107,7 +121,6 @@ export function HerbImageCard({
           </div>
         )}
 
-        {status === 'saved' ? <Alert tone="success">{t('uploaded')}</Alert> : null}
         {status === 'error' ? <Alert tone="danger">{tc('errorGeneric')}</Alert> : null}
 
         <form ref={formRef} onSubmit={handleSubmit} className="space-y-2">

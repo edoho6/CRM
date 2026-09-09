@@ -68,6 +68,8 @@ botanical_migration_to_run.sql
 12_signatures_packages_confirmations_to_run.sql
 14_tasks_to_run.sql
 15_preparations_and_units_to_run.sql
+16_tongue_photos_to_run.sql
+17_rooms_reminders_feeds_tags_to_run.sql
 
 # Same reasoning: a one-off read-only diagnostic, not a schema change. It was
 # sent directly to the user rather than kept in the tree.

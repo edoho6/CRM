@@ -144,7 +144,7 @@ export default async function AccountPage({ params }: { params: Promise<{ locale
         >
           <Link
             href="/account/protocols"
-            className="inline-flex items-center gap-1.5 rounded-md text-sm font-medium text-jade-700 underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-jade-700"
+            className="inline-flex items-center gap-1.5 rounded-md text-sm font-medium text-jade-700 underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
           >
             {tProtocols('manage')}
           </Link>
@@ -159,7 +159,7 @@ export default async function AccountPage({ params }: { params: Promise<{ locale
         >
           <Link
             href="/settings"
-            className="inline-flex items-center gap-1.5 rounded-md text-sm font-medium text-jade-700 underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-jade-700"
+            className="inline-flex items-center gap-1.5 rounded-md text-sm font-medium text-jade-700 underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
           >
             {t('toSettings')}
           </Link>

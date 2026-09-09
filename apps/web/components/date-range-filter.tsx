@@ -109,7 +109,7 @@ export function DateRangeFilter({ className }: { className?: string }) {
             value={from}
             max={to || undefined}
             onChange={(event) => apply({ from: event.target.value || null, range: null })}
-            className="h-8 rounded-lg border border-ink-200 bg-white px-2 text-xs text-ink-900 tabular-nums shadow-xs outline-none focus:border-jade-600"
+            className="h-8 rounded-lg border border-ink-200 bg-white px-2 text-xs text-ink-900 tabular-nums shadow-xs focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-focus focus-visible:border-focus"
           />
           <span className="text-xs text-ink-600">–</span>
           <input
@@ -120,7 +120,7 @@ export function DateRangeFilter({ className }: { className?: string }) {
             value={to}
             min={from || undefined}
             onChange={(event) => apply({ to: event.target.value || null, range: null })}
-            className="h-8 rounded-lg border border-ink-200 bg-white px-2 text-xs text-ink-900 tabular-nums shadow-xs outline-none focus:border-jade-600"
+            className="h-8 rounded-lg border border-ink-200 bg-white px-2 text-xs text-ink-900 tabular-nums shadow-xs focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-focus focus-visible:border-focus"
           />
           {hasCustom ? (
             <button

@@ -116,7 +116,7 @@ export function CatalogueSearch({
             className={cn(
               'h-11 w-full rounded-xl border border-ink-200 bg-white px-3 pe-8 text-sm text-start text-ink-900',
               'shadow-xs transition-colors placeholder:text-ink-500',
-              'focus:border-jade-500 focus:outline-2 focus:outline-offset-0 focus:outline-jade-600/30',
+              'focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-focus focus-visible:border-focus',
             )}
           />
           {value ? (

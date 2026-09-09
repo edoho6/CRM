@@ -229,7 +229,7 @@ export function StockEditor({
                 {batches.map((batch) => (
                   <li key={batch.id} className="flex items-baseline justify-between gap-2">
                     <span className="text-ink-700">{tPrep(batch.preparation)}</span>
-                    <span dir="ltr" className="tabular-nums text-ink-800">
+                    <span className="tabular-nums text-ink-800">
                       {format.number(Number(batch.quantity_remaining))}{' '}
                       {tUnit(preparationUnit(batch.preparation))}
                     </span>

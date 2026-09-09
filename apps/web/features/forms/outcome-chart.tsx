@@ -228,7 +228,7 @@ export function OutcomeChart({ series }: { series: OutcomeSeries[] }) {
           type="button"
           onClick={() => setShowTable((current) => !current)}
           aria-expanded={showTable}
-          className="rounded-md text-xs font-medium text-jade-700 underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-jade-700"
+          className="rounded-md text-xs font-medium text-jade-700 underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
         >
           {showTable ? t('hideTable') : t('showTable')}
         </button>

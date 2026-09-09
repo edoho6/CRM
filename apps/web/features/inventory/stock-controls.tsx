@@ -71,7 +71,7 @@ export function ThresholdCell({
         onKeyDown={(event) => {
           if (event.key === 'Enter') event.currentTarget.blur();
         }}
-        className="h-7 w-20 rounded-md border border-ink-200 bg-white px-1.5 text-sm tabular-nums text-ink-900 shadow-xs outline-none focus:border-jade-500"
+        className="h-7 w-20 rounded-md border border-ink-200 bg-white px-1.5 text-sm tabular-nums text-ink-900 shadow-xs focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-focus focus-visible:border-focus"
       />
       <span className="text-xs text-ink-600">{suffix}</span>
       {isPending ? <Spinner className="h-3 w-3 text-ink-500" /> : null}

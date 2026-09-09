@@ -105,6 +105,108 @@
 }
 
 /* ==========================================================================
+   Motion, focus and layering
+   ==========================================================================
+   `@theme static`, so every variable here is emitted whether or not a utility
+   happens to reference it. The durations are reached through
+   `duration-(--duration-fast)` and the keyframes through `animate-*`, and a
+   token that only exists when Tailwind notices a use is a token that is
+   missing on the one page that needed it.
+
+   This block is identical in the portal's globals.css — `check:tokens` fails
+   the build if the two drift apart.
+   ========================================================================== */
+
+@theme static {
+  --duration-fast: 120ms;
+  --duration-base: 180ms;
+  --duration-slow: 260ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-emphasized: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+
+  /* Entrances take longer than exits: a thing arriving should be seen to
+     arrive; a thing dismissed should be gone. Radix only removes an overlay
+     once its `animationend` fires, so exits are keyframes, not transitions. */
+  --animate-fade-in: fade-in var(--duration-base) var(--ease-standard) both;
+  --animate-fade-out: fade-out var(--duration-fast) var(--ease-exit) both;
+  --animate-dialog-in: dialog-in var(--duration-base) var(--ease-emphasized) both;
+  --animate-dialog-out: dialog-out var(--duration-fast) var(--ease-exit) both;
+  --animate-menu-in: menu-in var(--duration-fast) var(--ease-standard) both;
+  --animate-menu-out: fade-out var(--duration-fast) var(--ease-exit) both;
+  --animate-sheet-in: sheet-in var(--duration-slow) var(--ease-emphasized) both;
+  --animate-sheet-out: sheet-out var(--duration-base) var(--ease-exit) both;
+  --animate-toast-in: toast-in var(--duration-base) var(--ease-emphasized) both;
+  --animate-toast-out: fade-out var(--duration-fast) var(--ease-exit) both;
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes fade-out {
+    to {
+      opacity: 0;
+    }
+  }
+  @keyframes dialog-in {
+    from {
+      opacity: 0;
+      scale: 0.97;
+      translate: 0 6px;
+    }
+  }
+  @keyframes dialog-out {
+    to {
+      opacity: 0;
+      scale: 0.98;
+    }
+  }
+  @keyframes menu-in {
+    from {
+      opacity: 0;
+      scale: 0.96;
+    }
+  }
+  /* The sheet slides in from its own edge. `--sheet-offset` is set by the
+     component from the side it hangs on and the writing direction, so one
+     keyframe serves both languages and both edges. */
+  @keyframes sheet-in {
+    from {
+      translate: var(--sheet-offset, -100%) 0;
+    }
+  }
+  @keyframes sheet-out {
+    to {
+      translate: var(--sheet-offset, -100%) 0;
+    }
+  }
+  @keyframes toast-in {
+    from {
+      opacity: 0;
+      translate: 0 8px;
+    }
+  }
+
+  /* One focus colour. jade-600, which the components used to share, measures
+     2.89:1 on ink-100 — below the 3:1 a focus indicator needs. This is the
+     accent green, which clears 3:1 on every light surface (measured in
+     `check:contrast`, four pairs). Dark mode overrides it below. `-ring` is the
+     same value, kept separate for the few places that must use a box-shadow
+     ring rather than an outline. */
+  --color-focus: #15803c;
+  --color-focus-ring: #15803c;
+
+  /* Named layers, so the order is a decision and not five numbers that happen
+     to sort. popover sits above overlay because a Combobox opens inside the
+     appointment dialog. */
+  --z-index-sticky: 30;
+  --z-index-overlay: 40;
+  --z-index-popover: 50;
+  --z-index-toast: 60;
+}
+
+/* ==========================================================================
    Dark theme
    ==========================================================================
    Defined once, on an explicit `data-theme="dark"` attribute, rather than twice
@@ -199,6 +301,11 @@
 
   /* Light, not dark: on a dark surface a hovered row has to come forward. */
   --color-row-hover: rgb(255 255 255 / 0.05);
+
+  /* Focus, measured against the dark surfaces: 6.8–8.6:1 on all of them. The
+     light value is 2.8:1 on dark ink-100 — a ring you would lose. */
+  --color-focus: #4ec98d;
+  --color-focus-ring: #4ec98d;
 }
 
 /* ==========================================================================
@@ -233,9 +340,15 @@
     text-align: start;
   }
 
-  :where(input, textarea, select, button):focus-visible {
-    outline: 2px solid var(--color-jade-600);
-    outline-offset: 1px;
+  /* One focus ring, on everything that can take focus. Links used to get only
+     the browser's default; the shared components carry the same colour through
+     `focusRing` / `focusField`, and this rule catches whatever they do not.
+     Anything with an `outline-none` of its own still wins — `:where()` has no
+     specificity — which is what the skip target and the rich-text editor rely
+     on. */
+  :where(a, button, input, textarea, select, summary, [role='button'], [tabindex]):focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
   }
 
   ::placeholder {

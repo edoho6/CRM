@@ -38,7 +38,14 @@ export const BLOCKING_APPOINTMENT_STATUSES = APPOINTMENT_STATUSES.filter(
 export const ENCOUNTER_STATUSES = ['draft', 'signed'] as const;
 export type EncounterStatus = (typeof ENCOUNTER_STATUSES)[number];
 
-export const DOCUMENT_CATEGORIES = ['intake_form', 'lab_result', 'id_scan', 'other'] as const;
+/** Mirrored by the CHECK constraint on `patient_documents.category`. */
+export const DOCUMENT_CATEGORIES = [
+  'intake_form',
+  'lab_result',
+  'id_scan',
+  'tongue',
+  'other',
+] as const;
 export type DocumentCategory = (typeof DOCUMENT_CATEGORIES)[number];
 
 /** Treatment modalities used in a TCM session. */
@@ -522,3 +529,23 @@ export type ConsentKind = (typeof CONSENT_KINDS)[number];
 /** How a decision reached the clinic. A signature and a click are not the same evidence. */
 export const CONSENT_METHODS = ['in_person', 'portal', 'paper_form', 'phone', 'email'] as const;
 export type ConsentMethod = (typeof CONSENT_METHODS)[number];
+
+/** What a patient can answer from the reminder link. Mirrored by the CHECK on `appointments.confirmation_response`. */
+export const CONFIRMATION_RESPONSES = ['confirmed', 'declined'] as const;
+export type ConfirmationResponse = (typeof CONFIRMATION_RESPONSES)[number];
+
+/**
+ * The tones a patient tag can wear. Names rather than hex codes, so each app
+ * paints them from its own palette and they survive dark mode. Mirrored by the
+ * CHECK on `patient_tags.color`.
+ */
+export const TAG_COLORS = ['ink', 'jade', 'sky', 'amber', 'red'] as const;
+export type TagColor = (typeof TAG_COLORS)[number];
+
+/**
+ * How a task tells its owner that its moment has come. Only `app` can fire
+ * today — the bell in the header and a browser notification. The other two
+ * are kept as a choice for when a sending provider is connected.
+ */
+export const REMIND_CHANNELS = ['app', 'email', 'sms'] as const;
+export type RemindChannel = (typeof REMIND_CHANNELS)[number];

@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { useTranslations } from 'next-intl';
-import { Alert, Button, Field, FieldGrid, Input, LtrInput, Spinner } from '@clinic/ui';
+import { Alert, Button, Field, FieldGrid, Input, LtrInput, Spinner, useToast } from '@clinic/ui';
 import { useRouter } from '@clinic/i18n/navigation';
 import type { Profile } from '@clinic/db/types';
 import { savePractitionerProfile } from './actions';
@@ -32,8 +32,9 @@ export function PractitionerForm({ profile }: { profile: Profile | null }) {
   const [email, setEmail] = useState(profile?.email ?? '');
   const [address, setAddress] = useState(profile?.address ?? '');
 
-  const [status, setStatus] = useState<'idle' | 'saved' | 'error'>('idle');
+  const [status, setStatus] = useState<'idle' | 'error'>('idle');
   const [isPending, startTransition] = useTransition();
+  const { toast } = useToast();
 
   function save() {
     setStatus('idle');
@@ -49,15 +50,13 @@ export function PractitionerForm({ profile }: { profile: Profile | null }) {
         setStatus('error');
         return;
       }
-      setStatus('saved');
-      window.setTimeout(() => setStatus('idle'), 2500);
+      toast({ tone: 'success', title: tc('saved') });
       router.refresh();
     });
   }
 
   return (
     <div className="space-y-3">
-      {status === 'saved' ? <Alert tone="success">{tc('saved')}</Alert> : null}
       {status === 'error' ? <Alert tone="danger">{t('saveFailed')}</Alert> : null}
 
       <FieldGrid>

@@ -15,6 +15,7 @@ import {
   Select,
   Spinner,
   SignaturePad,
+  useToast,
   type SignatureValue,
 } from '@clinic/ui';
 import {
@@ -62,6 +63,7 @@ export function ConsentPanel({
   const t = useTranslations('consent');
   const tc = useTranslations('common');
   const router = useRouter();
+  const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [method, setMethod] = useState<ConsentMethod>('in_person');
@@ -104,6 +106,9 @@ export function ConsentPanel({
         return;
       }
       setSignature(null);
+      // A consent decision is evidence, and evidence recorded silently is
+      // evidence someone will record twice to be sure.
+      toast({ tone: 'success', title: t('decisionRecorded') });
       router.refresh();
     });
   }

@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { cn } from './cn';
+import { focusRing } from './focus';
 
 /**
  * An on/off switch.
@@ -38,7 +39,7 @@ export function Toggle({
       onClick={() => onChange(!checked)}
       className={cn(
         'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors',
-        'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
+        focusRing,
         'disabled:cursor-not-allowed disabled:opacity-50',
         checked ? 'bg-accent' : 'bg-ink-300',
         className,

@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server';
 import { getDirection, isLocale, locales } from '@clinic/i18n';
-import { UiDirectionProvider } from '@clinic/ui';
+import { ConfirmProvider, ToastProvider, UiDirectionProvider } from '@clinic/ui';
 import '../globals.css';
 
 /* The same font as the staff app, declared separately because these are two
@@ -45,12 +45,25 @@ export default async function PortalLocaleLayout({
   setRequestLocale(locale);
   const messages = await getMessages();
   const dir = getDirection(locale);
+  const t = await getTranslations({ locale, namespace: 'common' });
 
   return (
     <html lang={locale} dir={dir} className={assistant.variable} suppressHydrationWarning>
       <body className="min-h-dvh antialiased" suppressHydrationWarning>
         <NextIntlClientProvider messages={messages}>
-          <UiDirectionProvider dir={dir}>{children}</UiDirectionProvider>
+          <UiDirectionProvider dir={dir}>
+            {/* Same providers as the staff app, for parity: a portal screen that
+                wants to confirm something should not have to invent its own. */}
+            <ToastProvider closeLabel={t('close')}>
+              <ConfirmProvider
+                confirmLabel={t('confirm')}
+                cancelLabel={t('cancel')}
+                closeLabel={t('close')}
+              >
+                {children}
+              </ConfirmProvider>
+            </ToastProvider>
+          </UiDirectionProvider>
         </NextIntlClientProvider>
       </body>
     </html>

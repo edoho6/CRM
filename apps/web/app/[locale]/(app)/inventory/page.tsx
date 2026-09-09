@@ -387,7 +387,7 @@ export default async function StockRoomPage({
                             {level.reorder_threshold === null ? (
                               <span className="text-ink-500">—</span>
                             ) : (
-                              <span dir="ltr" className="tabular-nums text-ink-800">
+                              <span className="tabular-nums text-ink-800">
                                 {format.number(Number(level.reorder_threshold))}{' '}
                                 {tUnit(level.default_unit)}
                               </span>

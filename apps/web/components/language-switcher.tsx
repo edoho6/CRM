@@ -87,7 +87,10 @@ export function LanguageSwitcher({
           role="menu"
           aria-label={t('language')}
           className={cn(
-            'absolute z-30 min-w-32 rounded-lg border border-ink-200 bg-white py-1 shadow-lg',
+            'absolute z-popover min-w-32 rounded-lg border border-ink-200 bg-white py-1 shadow-lg',
+            // Fades in only — it may open in either direction, so a slide would
+            // be right for one placement and wrong for the other.
+            'transition-opacity duration-(--duration-fast) ease-standard starting:opacity-0',
             placement === 'up' ? 'bottom-full mb-1' : 'top-full mt-1',
           )}
         >

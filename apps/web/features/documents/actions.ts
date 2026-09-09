@@ -49,6 +49,10 @@ export async function uploadDocument(
   const categoryRaw = formData.get('category');
   const category: DocumentCategory = isDocumentCategory(categoryRaw) ? categoryRaw : 'other';
   const sharedWithPatient = formData.get('shared_with_patient') === 'on';
+  // A photograph taken at a treatment says which one. Row-level security on
+  // the insert checks the clinic; the foreign key checks the treatment exists.
+  const encounterRaw = formData.get('encounter_id');
+  const encounterId = typeof encounterRaw === 'string' && encounterRaw.trim() ? encounterRaw : null;
 
   const path = `${scope.context.clinic.id}/${patientId}/${randomUUID()}-${sanitiseFileName(file.name)}`;
 
@@ -72,6 +76,7 @@ export async function uploadDocument(
       size_bytes: file.size,
       category,
       shared_with_patient: sharedWithPatient,
+      encounter_id: encounterId,
     })
     .select('id')
     .single<{ id: string }>();

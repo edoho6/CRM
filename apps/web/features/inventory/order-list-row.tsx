@@ -81,7 +81,7 @@ export function OrderListRowControls({
             onKeyDown={(event) => {
               if (event.key === 'Enter') event.currentTarget.blur();
             }}
-            className="h-7 w-24 rounded-md border border-ink-200 bg-white px-1.5 text-sm tabular-nums shadow-xs outline-none focus:border-jade-500"
+            className="h-7 w-24 rounded-md border border-ink-200 bg-white px-1.5 text-sm tabular-nums shadow-xs focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-focus focus-visible:border-focus"
           />
           <span className="text-xs text-ink-500">
             {entry.unit === 'dose' ? t('doses') : tUnit(entry.unit as never)}
@@ -96,7 +96,7 @@ export function OrderListRowControls({
           placeholder={t('notesPlaceholder')}
           onChange={(event) => setNotes(event.target.value)}
           onBlur={() => save({})}
-          className="h-7 w-full min-w-32 rounded-md border border-ink-200 bg-white px-1.5 text-sm shadow-xs outline-none focus:border-jade-500"
+          className="h-7 w-full min-w-32 rounded-md border border-ink-200 bg-white px-1.5 text-sm shadow-xs focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-focus focus-visible:border-focus"
         />
       </Td>
       <Td>

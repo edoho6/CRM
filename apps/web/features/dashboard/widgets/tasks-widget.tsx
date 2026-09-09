@@ -6,7 +6,7 @@ import { AlertTriangle, Plus, Trash2 } from 'lucide-react';
 import { Button, Input, Spinner } from '@clinic/ui';
 import { cn } from '@clinic/ui/cn';
 import { defineWidget } from '@clinic/domain/widgets';
-import { formatDate } from '@clinic/i18n';
+import { formatDate, formatDateTime } from '@clinic/i18n';
 import { Link } from '@clinic/i18n/navigation';
 import type { ClinicTaskWithPatient } from '@clinic/db/types';
 import { useAsyncData } from '@/lib/use-supabase';
@@ -104,7 +104,9 @@ function TasksWidget() {
       ) : (
         <ul className="divide-y divide-ink-100">
           {rows.map((task) => {
-            const overdue = task.due_on !== null && task.due_on < today;
+            const overdue = task.due_at
+              ? new Date(task.due_at).getTime() < Date.now()
+              : task.due_on !== null && task.due_on < today;
             return (
               <li key={task.id} className="flex items-start gap-2 py-1.5">
                 <input
@@ -135,7 +137,7 @@ function TasksWidget() {
                   </span>
 
                   <span className="flex flex-wrap items-center gap-2 text-xs">
-                    {task.due_on ? (
+                    {task.due_on || task.due_at ? (
                       /* Overdue is said in words as well as in colour — an amber
                          date and a grey date are the same date to anyone not
                          comparing them side by side. */
@@ -146,7 +148,11 @@ function TasksWidget() {
                           overdue ? 'font-medium text-amber-800' : 'text-ink-600',
                         )}
                       >
-                        {formatDate(task.due_on)}
+                        {task.due_at
+                          ? formatDateTime(new Date(task.due_at))
+                          : task.due_on
+                            ? formatDate(task.due_on)
+                            : ''}
                         {overdue ? ` · ${t('overdue')}` : ''}
                       </span>
                     ) : null}

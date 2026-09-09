@@ -21,6 +21,8 @@ import {
   Td,
   Th,
   Tr,
+  useConfirm,
+  useToast,
 } from '@clinic/ui';
 import { useRouter } from '@clinic/i18n/navigation';
 import type { InvoiceWithDetails, PaymentMethod } from '@clinic/db/types';
@@ -46,10 +48,11 @@ export function InvoiceEditor({ invoice }: { invoice: InvoiceWithDetails }) {
   const tc = useTranslations('common');
   const format = useFormatter();
   const router = useRouter();
+  const confirm = useConfirm();
+  const { toast } = useToast();
 
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
 
   const [newDescription, setNewDescription] = useState('');
   const [newQuantity, setNewQuantity] = useState('1');
@@ -61,15 +64,20 @@ export function InvoiceEditor({ invoice }: { invoice: InvoiceWithDetails }) {
   const locked = invoice.status === 'cancelled';
   const outstanding = Number(invoice.total) - Number(invoice.amount_paid);
 
-  function run(action: () => Promise<{ ok: boolean; error?: { key: string } }>) {
+  // `done` is what the toast says when the action lands. "Saved" fits a line
+  // or a payment; cancelling the invoice says so in its own words.
+  function run(
+    action: () => Promise<{ ok: boolean; error?: { key: string } }>,
+    done: string = tc('saved'),
+  ) {
     setError(null);
-    setNotice(null);
     startTransition(async () => {
       const result = await action();
       if (!result.ok) {
         setError(tc('errorGeneric'));
         return;
       }
+      toast({ tone: 'success', title: done });
       router.refresh();
     });
   }
@@ -110,7 +118,6 @@ export function InvoiceEditor({ invoice }: { invoice: InvoiceWithDetails }) {
 
   function handlePaymentLink() {
     setError(null);
-    setNotice(null);
     startTransition(async () => {
       const result = await createGrowPaymentLink(invoice.id);
       if (!result.ok) {
@@ -140,7 +147,6 @@ export function InvoiceEditor({ invoice }: { invoice: InvoiceWithDetails }) {
     <div className="grid gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
       <div className="space-y-4">
         {error ? <Alert tone="danger">{error}</Alert> : null}
-        {notice ? <Alert tone="success">{notice}</Alert> : null}
 
         <Card>
           <CardHeader>
@@ -401,9 +407,15 @@ export function InvoiceEditor({ invoice }: { invoice: InvoiceWithDetails }) {
             variant="ghost"
             className="w-full text-red-600 hover:bg-red-50"
             disabled={isPending}
-            onClick={() => {
-              if (!window.confirm(t('cancelConfirm'))) return;
-              run(() => cancelInvoice(invoice.id));
+            onClick={async () => {
+              const confirmed = await confirm({
+                title: t('cancel'),
+                body: t('cancelConfirm'),
+                confirmLabel: t('cancel'),
+                destructive: true,
+              });
+              if (!confirmed) return;
+              run(() => cancelInvoice(invoice.id), t('status.cancelled'));
             }}
           >
             {t('cancel')}

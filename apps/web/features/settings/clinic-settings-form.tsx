@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useTranslations } from 'next-intl';
 import { Boxes, Check } from 'lucide-react';
-import { Alert, Button, Card, CardBody, Field, Input, Section, Spinner } from '@clinic/ui';
+import { Alert, Button, Card, CardBody, Field, Input, Section, Spinner, useToast } from '@clinic/ui';
 import { cn } from '@clinic/ui/cn';
 import { useRouter } from '@clinic/i18n/navigation';
 import { saveClinicSettings } from '@/features/inventory/actions';
@@ -26,10 +26,12 @@ export function ClinicSettingsForm({
   const t = useTranslations('settings');
   const tc = useTranslations('common');
   const router = useRouter();
+  const { toast } = useToast();
   const [name, setName] = useState(initialName);
   const [tracksInventory, setTracksInventory] = useState(initialTracks);
   const [isPending, startTransition] = useTransition();
-  const [status, setStatus] = useState<'idle' | 'saved' | 'error'>('idle');
+  // Only the failure lives on the page. Success is news, and news is a toast.
+  const [status, setStatus] = useState<'idle' | 'error'>('idle');
 
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -40,7 +42,7 @@ export function ClinicSettingsForm({
         setStatus('error');
         return;
       }
-      setStatus('saved');
+      toast({ tone: 'success', title: tc('saved') });
       router.refresh();
     });
   }
@@ -53,7 +55,6 @@ export function ClinicSettingsForm({
   return (
     <form onSubmit={handleSubmit} className="max-w-3xl space-y-5">
       {status === 'error' ? <Alert tone="danger">{tc('errorGeneric')}</Alert> : null}
-      {status === 'saved' ? <Alert tone="success">{tc('saved')}</Alert> : null}
 
       <Card>
         <CardBody className="space-y-6">

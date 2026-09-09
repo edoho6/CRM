@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Badge, Card, CardBody, CardHeader, CardTitle } from '@clinic/ui';
 import { Link } from '@clinic/i18n/navigation';
+import type { Locale } from '@clinic/domain';
 import type {
   EncounterPaymentStatus,
   AcupuncturePoint,
@@ -21,6 +22,9 @@ import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
 import { logRecordAccess } from '@/lib/access-log';
 import { EncounterForm } from '@/features/encounters/encounter-form';
+import type { TonguePhoto } from '@/features/encounters/tongue-photos';
+import { prescriptionKey } from '@/features/encounters/current-prescription-context';
+import { formulaPrimaryName, herbPrimaryName } from '@/lib/display';
 import { DispensePanel } from '@/features/inventory/dispense-panel';
 import { EncounterFormsPanel } from '@/features/forms/encounter-forms-panel';
 import type { PreviousEncounter } from '@/features/encounters/encounter-compare';
@@ -69,16 +73,24 @@ interface PreviousRow {
   id: string;
   encounter_date: string;
   note: {
-    tcm_pattern_diagnosis: string | null;
-    treatment_principle: string | null;
     points_used: RecordedPoint[];
-    treatment_notes: string | null;
-    chief_complaint: string | null;
   }[];
   dispensing: {
-    formula: Pick<HerbFormula, 'name_pinyin' | 'name_english' | 'name_hebrew'> | null;
-    items: { custom_name: string | null; quantity: number; herb: { pinyin_name: string } | null }[];
+    formula: Pick<HerbFormula, 'id' | 'name_pinyin' | 'name_english' | 'name_hebrew'> | null;
+    items: {
+      custom_name: string | null;
+      quantity: number;
+      herb: Pick<Herb, 'id' | 'pinyin_name' | 'chinese_name' | 'english_name' | 'hebrew_name'> | null;
+    }[];
   }[];
+}
+
+/** A tongue photograph on the file, with the date of the treatment it was taken at. */
+interface TonguePhotoRow {
+  id: string;
+  encounter_id: string | null;
+  created_at: string;
+  encounter: { encounter_date: string } | null;
 }
 
 export default async function EncounterPage({
@@ -114,6 +126,7 @@ export default async function EncounterPage({
     formSubmissionsResult,
     previousResult,
     stepsResult,
+    tonguePhotosResult,
   ] = await Promise.all([
       scope.supabase.from('tcm_notes').select('*').eq('encounter_id', id).maybeSingle<TcmNote>(),
       scope.supabase
@@ -186,11 +199,10 @@ export default async function EncounterPage({
       scope.supabase
         .from('encounters')
         .select(
-          'id, encounter_date, note:tcm_notes(tcm_pattern_diagnosis, treatment_principle,' +
-            ' points_used, treatment_notes, chief_complaint),' +
-            ' dispensing:dispensing_records(formula:herb_formulas(name_pinyin, name_english,' +
+          'id, encounter_date, note:tcm_notes(points_used),' +
+            ' dispensing:dispensing_records(formula:herb_formulas(id, name_pinyin, name_english,' +
             ' name_hebrew), items:dispensing_items(custom_name, quantity,' +
-            ' herb:herbs(pinyin_name)))',
+            ' herb:herbs(id, pinyin_name, chinese_name, english_name, hebrew_name)))',
         )
         .eq('patient_id', encounter.patient_id)
         .neq('id', id)
@@ -213,6 +225,23 @@ export default async function EncounterPage({
         .order('created_at', { ascending: true })
         .limit(1000)
         .returns<{ id: string; encounter_date: string }[]>(),
+      /*
+       * Every tongue photograph on this patient's file, newest first, with the
+       * date of the treatment each belongs to. Two dozen is years of visits;
+       * the comparison is against the last few, not the archive.
+       *
+       * Until migration 16 has been run this column does not exist, the query
+       * fails, and the panel shows no photographs — which is the right thing
+       * to show, rather than the page failing.
+       */
+      scope.supabase
+        .from('patient_documents')
+        .select('id, encounter_id, created_at, encounter:encounters(encounter_date)')
+        .eq('patient_id', encounter.patient_id)
+        .eq('category', 'tongue')
+        .order('created_at', { ascending: false })
+        .limit(24)
+        .returns<TonguePhotoRow[]>(),
     ]);
 
   // Opening a treatment record is reading a patient's clinical notes, and is
@@ -268,42 +297,46 @@ export default async function EncounterPage({
   const tracksInventory = scope.context.clinic.tracks_inventory !== false;
 
   /*
-   * The earlier treatments, flattened for the comparison panel.
+   * The earlier treatments, shaped for the head-to-head comparison.
    *
-   * The prescription is rendered to one line here rather than in the browser:
-   * the panel compares, it does not re-derive, and a formula name plus a handful
-   * of herb names is all the comparison needs of it. A visit with more than one
-   * prescription shows the last, which is the correction.
+   * Herbs stay structured — a name, a dose and a language-independent key —
+   * because the panel diffs them line by line against what is being prescribed
+   * now. The display name is the same function the dispensing panel uses, so
+   * the two columns read the same in either language, and the key is the
+   * pinyin so they match regardless. A visit with more than one prescription
+   * shows the last, which is the correction.
    */
+  // The route param is a string; the layout has already refused anything that
+  // is not a real locale, so this narrowing states a fact rather than hoping.
+  const uiLocale = locale as Locale;
   const previousEncounters: PreviousEncounter[] = (previousResult.data ?? []).map((row) => {
     const note = row.note[0] ?? null;
     const dispensing = row.dispensing[row.dispensing.length - 1] ?? null;
 
-    const formulaName = dispensing?.formula
-      ? (locale === 'he'
-          ? dispensing.formula.name_hebrew
-          : dispensing.formula.name_english) ?? dispensing.formula.name_pinyin
-      : null;
-
-    const herbLine = (dispensing?.items ?? [])
-      .map((item) => {
-        const name = item.custom_name ?? item.herb?.pinyin_name ?? null;
-        return name ? `${name} ${item.quantity}` : null;
-      })
-      .filter(Boolean)
-      .join(' · ');
-
     return {
       id: row.id,
       date: row.encounter_date,
-      patternDiagnosis: note?.tcm_pattern_diagnosis ?? null,
-      treatmentPrinciple: note?.treatment_principle ?? null,
       points: note?.points_used ?? [],
-      prescription: formulaName ?? (herbLine || null),
-      chiefComplaint: note?.chief_complaint ?? null,
-      treatmentNotes: note?.treatment_notes ?? null,
+      formula: dispensing?.formula ? formulaPrimaryName(dispensing.formula, uiLocale) : null,
+      herbs: (dispensing?.items ?? []).flatMap((item) => {
+        const name = item.herb ? herbPrimaryName(item.herb, uiLocale) : item.custom_name;
+        if (!name) return [];
+        return [
+          {
+            key: prescriptionKey(item.herb?.pinyin_name, name),
+            name,
+            quantity: Number(item.quantity),
+          },
+        ];
+      }),
     };
   });
+
+  const tonguePhotos: TonguePhoto[] = (tonguePhotosResult.data ?? []).map((row) => ({
+    id: row.id,
+    encounterId: row.encounter_id,
+    date: row.encounter?.encounter_date ?? row.created_at.slice(0, 10),
+  }));
 
   /** Oldest first, so a session's number never changes when a later one is added. */
   const steps: EncounterStep[] = (stepsResult.data ?? []).map((row) => ({
@@ -366,12 +399,14 @@ export default async function EncounterPage({
           belong to the same side column, so it places them together. */}
       <EncounterForm
         encounterId={encounter.id}
+        patientId={encounter.patient_id}
         note={noteResult.data ?? null}
         isSigned={isSigned}
         pointCatalogue={pointCatalogue}
         pointPositions={pointPositions}
         protocols={protocolsResult.data ?? []}
         previousEncounters={previousEncounters}
+        tonguePhotos={tonguePhotos}
         dispensePanel={
           <DispensePanel
             encounterId={encounter.id}

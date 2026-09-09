@@ -3,6 +3,8 @@ import type { PractitionerSchedule, ScheduleException } from '@clinic/db/types';
 import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
 import { ScheduleForm } from '@/features/settings/schedule-form';
+import { CalendarFeedCard } from '@/features/settings/calendar-feed-card';
+import type { CalendarFeed } from '@clinic/db/types';
 
 /**
  * When this practitioner works.
@@ -32,7 +34,7 @@ export default async function SchedulePage({
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const [schedulesResult, exceptionsResult] = await Promise.all([
+  const [schedulesResult, exceptionsResult, feedResult] = await Promise.all([
     scope.supabase
       .from('practitioner_schedules')
       .select('*')
@@ -48,15 +50,26 @@ export default async function SchedulePage({
       .order('date', { ascending: true })
       .limit(200)
       .returns<ScheduleException[]>(),
+    // Only the owner's row comes back — the policy sees to that — so this is
+    // either their feed or nothing.
+    scope.supabase
+      .from('calendar_feeds')
+      .select('*')
+      .eq('practitioner_id', practitionerId)
+      .maybeSingle<CalendarFeed>(),
   ]);
 
   return (
     <>
       <PageHeader title={t('title')} description={t('subtitle')} />
-      <div className="max-w-3xl">
+      <div className="max-w-3xl space-y-6">
         <ScheduleForm
           schedules={schedulesResult.data ?? []}
           exceptions={exceptionsResult.data ?? []}
+        />
+        <CalendarFeedCard
+          token={feedResult.data?.token ?? null}
+          lastFetchedAt={feedResult.data?.last_fetched_at ?? null}
         />
       </div>
     </>

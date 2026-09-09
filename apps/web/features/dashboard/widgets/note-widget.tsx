@@ -60,7 +60,7 @@ function NoteWidget({ config, onConfigChange }: WidgetProps<NoteConfig>) {
     // like an error state), so without this the widget is the one place in the
     // app a keyboard user lands with nothing to see. `focus-within` puts the
     // ring back on the frame, where a text area's focus belongs.
-    <div className="relative h-full rounded-md ring-offset-2 ring-offset-white focus-within:ring-2 focus-within:ring-jade-600">
+    <div className="relative h-full rounded-md ring-offset-2 ring-offset-white focus-within:ring-2 focus-within:ring-focus-ring">
       {editor.isEmpty ? (
         <p className="pointer-events-none absolute inset-x-0 top-0 text-sm text-ink-500">
           {t('placeholder')}

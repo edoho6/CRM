@@ -1,7 +1,12 @@
 'use server';
 
 import { z } from 'zod';
-import { TREATMENT_STATUSES, patientFormSchema, patientMedicalHistorySchema } from '@clinic/domain';
+import {
+  TREATMENT_STATUSES,
+  patientFormSchema,
+  patientMedicalHistorySchema,
+  patientTagLinksSchema,
+} from '@clinic/domain';
 import { getClinicScope } from '@/lib/session';
 import { actionError, actionOk, type ActionResult } from '@/lib/errors';
 
@@ -98,4 +103,77 @@ export async function setPatientStatus(id: string, status: unknown): Promise<Act
 
   if (error) return actionError(error);
   return actionOk();
+}
+
+/**
+ * Sets the whole set of tags on one file.
+ *
+ * Replace rather than toggle: the picker shows every tag with a tick, and
+ * "save what is ticked" cannot drift out of step with the screen the way a
+ * sequence of add/remove calls can when one of them fails halfway.
+ *
+ * Removals first, then additions, each as one statement. The unique
+ * constraint on (patient, tag) makes a repeat harmless.
+ */
+export async function setPatientTags(input: unknown): Promise<ActionResult> {
+  const scope = await getClinicScope();
+  if (!scope) return actionError(new Error('unauthorized'));
+
+  const parsed = patientTagLinksSchema.safeParse(input);
+  if (!parsed.success) return actionError(new Error('validation'));
+
+  const { patient_id, tag_ids } = parsed.data;
+  const wanted = new Set(tag_ids);
+
+  const { data: current, error: readError } = await scope.supabase
+    .from('patient_tag_links')
+    .select('tag_id')
+    .eq('patient_id', patient_id)
+    .returns<{ tag_id: string }[]>();
+  if (readError) return actionError(readError);
+
+  const have = new Set((current ?? []).map((row) => row.tag_id));
+  const toRemove = [...have].filter((id) => !wanted.has(id));
+  const toAdd = [...wanted].filter((id) => !have.has(id));
+
+  if (toRemove.length > 0) {
+    const { error } = await scope.supabase
+      .from('patient_tag_links')
+      .delete()
+      .eq('patient_id', patient_id)
+      .in('tag_id', toRemove);
+    if (error) return actionError(error);
+  }
+
+  if (toAdd.length > 0) {
+    const { error } = await scope.supabase.from('patient_tag_links').insert(
+      toAdd.map((tag_id) => ({
+        patient_id,
+        tag_id,
+        clinic_id: scope.context.clinic.id,
+        created_by: scope.context.membership.user_id,
+      })),
+    );
+    if (error) return actionError(error);
+  }
+
+  return actionOk();
+}
+
+/** A tag typed into the picker that does not exist yet: made, and returned so it can be ticked. */
+export async function createPatientTagInline(name: string): Promise<ActionResult<{ id: string }>> {
+  const scope = await getClinicScope();
+  if (!scope) return actionError(new Error('unauthorized'));
+
+  const trimmed = name.trim();
+  if (trimmed.length === 0 || trimmed.length > 60) return actionError(new Error('validation'));
+
+  const { data, error } = await scope.supabase
+    .from('patient_tags')
+    .insert({ name: trimmed, clinic_id: scope.context.clinic.id })
+    .select('id')
+    .single<{ id: string }>();
+
+  if (error) return actionError(error);
+  return actionOk({ id: data.id });
 }

@@ -13,6 +13,10 @@ export const appointmentFormSchema = z
     start_at: z.string().min(1),
     end_at: z.string().min(1),
     status: z.enum(APPOINTMENT_STATUSES).default('scheduled'),
+    /** The room, when the clinic has any. Empty from a <select> means none. */
+    room_id: z
+      .union([uuidField, z.literal(""), z.null(), z.undefined()])
+      .transform((v) => (v ? v : null)),
     location: optionalText(160),
     notes: optionalText(2000),
   })

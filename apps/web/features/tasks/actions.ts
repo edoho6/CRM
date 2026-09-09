@@ -73,3 +73,58 @@ export async function deleteTask(id: string): Promise<ActionResult> {
   if (error) return actionError(error);
   return actionOk();
 }
+
+/** A task whose moment is here or near, for the bell. */
+export interface DueTask {
+  id: string;
+  title: string;
+  due_at: string;
+  is_urgent: boolean;
+  remind_via: string;
+  reminded_at: string | null;
+  patient: { id: string; full_name: string } | null;
+}
+
+/**
+ * What the bell shows: open tasks due within the hour, overdue ones first.
+ *
+ * Polled from the shell every minute while the app is open. A task is "due"
+ * by its instant, not its day — the day list is the dashboard's, this is
+ * the alarm's.
+ */
+export async function dueTasks(): Promise<ActionResult<DueTask[]>> {
+  const scope = await getClinicScope();
+  if (!scope) return actionError(new Error('unauthorized'));
+
+  const horizon = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+  const { data, error } = await scope.supabase
+    .from('clinic_tasks')
+    .select('id, title, due_at, is_urgent, remind_via, reminded_at, patient:patients(id, full_name)')
+    .is('done_at', null)
+    .not('due_at', 'is', null)
+    .lte('due_at', horizon)
+    .order('due_at', { ascending: true })
+    .limit(20)
+    .returns<DueTask[]>();
+
+  if (error) return actionError(error);
+  return actionOk(data ?? []);
+}
+
+/**
+ * Records that the alert went off, so it goes off once — not on every poll,
+ * and not again in a second open tab.
+ */
+export async function markTaskReminded(id: string): Promise<ActionResult> {
+  const scope = await getClinicScope();
+  if (!scope) return actionError(new Error('unauthorized'));
+
+  const { error } = await scope.supabase
+    .from('clinic_tasks')
+    .update({ reminded_at: new Date().toISOString() })
+    .eq('id', id)
+    .is('reminded_at', null);
+
+  if (error) return actionError(error);
+  return actionOk();
+}

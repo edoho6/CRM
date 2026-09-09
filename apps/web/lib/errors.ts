@@ -39,7 +39,11 @@ export function mapDatabaseError(error: PostgrestError | Error | null | undefine
   const details = 'details' in error ? ((error as PostgrestError).details ?? null) : null;
   const code = 'code' in error ? ((error as PostgrestError).code ?? '') : '';
 
-  // 23P01 is the exclusion-constraint violation raised by appointments_no_overlap.
+  // 23P01 is an exclusion-constraint violation. Two of them guard the diary:
+  // the room being taken is a different message from the practitioner being.
+  if (message.includes('appointments_room_no_overlap')) {
+    return { key: 'errors.roomOverlap' };
+  }
   if (code === '23P01' || message.includes('appointments_no_overlap')) {
     return { key: 'errors.appointmentOverlap' };
   }

@@ -198,3 +198,52 @@ export async function deleteAppointment(id: string): Promise<ActionResult> {
   if (error) return actionError(error);
   return actionOk();
 }
+
+/**
+ * Stamps the moment a reminder went out.
+ *
+ * The sending itself happens elsewhere — today by opening WhatsApp with the
+ * text ready — so this is the only part the database can know about. Called
+ * from the click that opens the message, not from any confirmation that it
+ * arrived: a practitioner who opened the chat and then thought better of it
+ * can clear the mark from the same place.
+ */
+export async function markReminderSent(id: string, sent: boolean): Promise<ActionResult> {
+  const scope = await getClinicScope();
+  if (!scope) return actionError(new Error('unauthorized'));
+
+  const { error } = await scope.supabase
+    .from('appointments')
+    .update({ reminder_sent_at: sent ? new Date().toISOString() : null })
+    .eq('id', id);
+
+  if (error) return actionError(error);
+  return actionOk();
+}
+
+/**
+ * The desk answering on the patient's behalf — they rang, they said yes.
+ *
+ * Writes the same two fields the patient's own tap writes, so the calendar
+ * cannot tell the difference and does not need to. `null` takes the answer
+ * back to "not heard", for the message that turned out to be about a
+ * different week.
+ */
+export async function setConfirmationResponse(
+  id: string,
+  response: 'confirmed' | 'declined' | null,
+): Promise<ActionResult> {
+  const scope = await getClinicScope();
+  if (!scope) return actionError(new Error('unauthorized'));
+
+  const { error } = await scope.supabase
+    .from('appointments')
+    .update({
+      confirmation_response: response,
+      responded_at: response ? new Date().toISOString() : null,
+    })
+    .eq('id', id);
+
+  if (error) return actionError(error);
+  return actionOk();
+}

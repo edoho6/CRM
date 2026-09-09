@@ -67,8 +67,8 @@ export function PatientStatusCell({
         aria-invalid={failed || undefined}
         onChange={(event) => change(event.target.value as TreatmentStatus)}
         className={cn(
-          'h-8 max-w-44 rounded-md border bg-white px-2 text-sm text-ink-900 shadow-xs outline-none',
-          'focus:border-jade-600 focus:ring-2 focus:ring-jade-600/25 disabled:bg-ink-50',
+          'h-8 max-w-44 rounded-md border bg-white px-2 text-sm text-ink-900 shadow-xs',
+          'focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-focus focus-visible:border-focus disabled:bg-ink-50',
           failed ? 'border-red-600' : 'border-ink-200',
         )}
       >

@@ -36,6 +36,14 @@ declare
   v_package_a uuid;
   v_package_b uuid;
   v_consent_a uuid;
+  v_room_a    uuid;
+  v_room_b    uuid;
+  v_tag_a     uuid;
+  v_tag_b     uuid;
+  v_feed_a    uuid;
+  v_feed_b    uuid;
+  v_confirm_a uuid;
+  v_confirm_b uuid;
   v_count      integer;
 begin
   -- ==========================================================================
@@ -158,6 +166,40 @@ begin
   -- The portal patient: an auth user with no membership, linked to A's patient.
   insert into public.patient_portal_access (clinic_id, patient_id, user_id, email, activated_at)
   values (v_clinic_a, v_patient_a, v_user_p, 'iso-p-' || v_user_p || '@example.test', now());
+
+  -- Rooms, tags and calendar feeds: one of each per clinic. A room name or a
+  -- tag says something about the practice; a feed token opens the whole diary.
+  insert into public.rooms (clinic_id, name)
+  values (v_clinic_a, 'Iso Room A') returning id into v_room_a;
+
+  insert into public.rooms (clinic_id, name)
+  values (v_clinic_b, 'Iso Room B') returning id into v_room_b;
+
+  insert into public.patient_tags (clinic_id, name)
+  values (v_clinic_a, 'Iso Tag A') returning id into v_tag_a;
+
+  insert into public.patient_tags (clinic_id, name)
+  values (v_clinic_b, 'Iso Tag B') returning id into v_tag_b;
+
+  insert into public.patient_tag_links (clinic_id, patient_id, tag_id)
+  values (v_clinic_a, v_patient_a, v_tag_a),
+         (v_clinic_b, v_patient_b, v_tag_b);
+
+  insert into public.calendar_feeds (clinic_id, practitioner_id)
+  values (v_clinic_a, v_user_a) returning token into v_feed_a;
+
+  insert into public.calendar_feeds (clinic_id, practitioner_id)
+  values (v_clinic_b, v_user_b) returning token into v_feed_b;
+
+  -- A booking in each room, so the feeds and the confirmation link have
+  -- something to leak if they were going to.
+  insert into public.appointments (clinic_id, patient_id, practitioner_id, room_id, start_at, end_at)
+  values (v_clinic_a, v_patient_a, v_user_a, v_room_a, now() + interval '2 days', now() + interval '2 days 1 hour')
+  returning confirmation_token into v_confirm_a;
+
+  insert into public.appointments (clinic_id, patient_id, practitioner_id, room_id, start_at, end_at)
+  values (v_clinic_b, v_patient_b, v_user_b, v_room_b, now() + interval '2 days', now() + interval '2 days 1 hour')
+  returning confirmation_token into v_confirm_b;
 
   raise notice 'clinic A = %', v_clinic_a;
   raise notice 'clinic B = %', v_clinic_b;
@@ -293,6 +335,36 @@ begin
   if v_count <> 0 then raise exception 'FAIL: schedule exceptions leaked across clinics'; end if;
   raise notice 'ok   working hours and closures isolated';
 
+  -- Rooms, tags and feeds follow the same rule as everything else.
+  select count(*) into v_count from public.rooms where clinic_id = v_clinic_b;
+  if v_count <> 0 then raise exception 'FAIL: rooms leaked across clinics'; end if;
+
+  select count(*) into v_count from public.patient_tags where clinic_id = v_clinic_b;
+  if v_count <> 0 then raise exception 'FAIL: patient tags leaked across clinics'; end if;
+
+  select count(*) into v_count from public.patient_tag_links where clinic_id = v_clinic_b;
+  if v_count <> 0 then raise exception 'FAIL: patient tag links leaked across clinics'; end if;
+
+  select count(*) into v_count from public.appointments where clinic_id = v_clinic_b;
+  if v_count <> 0 then raise exception 'FAIL: appointments leaked across clinics'; end if;
+  raise notice 'ok   rooms, tags and appointments isolated';
+
+  -- A feed token is a secret: not even a colleague in the same clinic sees it,
+  -- and clinic B's is invisible twice over.
+  select count(*) into v_count from public.calendar_feeds;
+  if v_count <> 1 then raise exception 'FAIL: clinic A sees % calendar feed(s), expected only its own', v_count; end if;
+  raise notice 'ok   calendar feed tokens are private to their owner';
+
+  -- Two people in one room at one hour is refused by the database itself.
+  begin
+    insert into public.appointments (clinic_id, patient_id, practitioner_id, room_id, start_at, end_at)
+    values (v_clinic_a, v_patient_a, v_user_a, v_room_a, now() + interval '2 days', now() + interval '2 days 30 minutes');
+    raise exception 'FAIL: a room was double-booked';
+  exception
+    when exclusion_violation then
+      raise notice 'ok   the database refuses to double-book a room';
+  end;
+
   -- Views are declared security_invoker, so they must inherit the caller's policies
   -- rather than running with the rights of whoever created them.
   select count(*) into v_count from public.herb_stock_levels where clinic_id = v_clinic_b;
@@ -301,6 +373,14 @@ begin
   select count(*) into v_count from public.access_activity where clinic_id = v_clinic_b;
   if v_count <> 0 then raise exception 'FAIL: access_activity bypassed RLS'; end if;
   raise notice 'ok   views inherit the caller''s policies';
+
+  -- The diary view reads as the caller: clinic B's patients do not appear
+  -- through it any more than through the table.
+  select count(*) into v_count from public.patients_with_diary where clinic_id = v_clinic_b;
+  if v_count <> 0 then raise exception 'FAIL: patients_with_diary showed % row(s) of clinic B', v_count; end if;
+  select count(*) into v_count from public.patients_with_diary where id = v_patient_a;
+  if v_count <> 1 then raise exception 'FAIL: patients_with_diary hid clinic A''s own patient'; end if;
+  raise notice 'ok   patients_with_diary reads as the caller';
 
   -- Writing into another clinic must be refused outright, not silently redirected
   -- into the caller's own clinic.
@@ -468,6 +548,39 @@ begin
   select count(*) into v_count from public.clinics;
   if v_count <> 0 then raise exception 'FAIL: anonymous read returned % clinic row(s)', v_count; end if;
   raise notice 'ok   anonymous callers see nothing';
+
+  -- The token functions are the only doors without a session. A guessed
+  -- token opens nothing; a real one opens exactly its own appointment or diary.
+  select count(*) into v_count from public.appointment_by_token(gen_random_uuid());
+  if v_count <> 0 then raise exception 'FAIL: a random confirmation token returned % row(s)', v_count; end if;
+
+  select count(*) into v_count from public.appointment_by_token(v_confirm_a);
+  if v_count <> 1 then raise exception 'FAIL: the real confirmation token returned % row(s), expected 1', v_count; end if;
+
+  -- A random feed token is refused outright — the function raises rather
+  -- than answering with an empty diary — so a regenerated address fails
+  -- loudly at the subscriber instead of quietly showing nothing.
+  begin
+    perform * from public.calendar_feed_events(gen_random_uuid());
+    raise exception 'FAIL: a random feed token was accepted';
+  exception
+    when no_data_found then null;
+  end;
+
+  select count(*) into v_count from public.calendar_feed_events(v_feed_a)
+   where patient_name like '%ClinicB%';
+  if v_count <> 0 then raise exception 'FAIL: clinic A''s feed listed clinic B''s patient'; end if;
+
+  select count(*) into v_count from public.calendar_feed_events(v_feed_a);
+  if v_count <> 1 then raise exception 'FAIL: clinic A''s feed returned % event(s), expected 1', v_count; end if;
+
+  if not public.respond_to_appointment(v_confirm_b, 'confirmed') then
+    raise exception 'FAIL: a valid confirmation token was refused';
+  end if;
+  if public.respond_to_appointment(gen_random_uuid(), 'confirmed') then
+    raise exception 'FAIL: a random token confirmed an appointment';
+  end if;
+  raise notice 'ok   confirmation and feed tokens open only their own door';
 
   perform set_config('role', 'postgres', true);
   raise notice ' ';

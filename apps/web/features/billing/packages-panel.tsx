@@ -17,6 +17,8 @@ import {
   LtrInput,
   Spinner,
   TIME_INPUT_LANG,
+  useConfirm,
+  useToast,
 } from '@clinic/ui';
 import { cn } from '@clinic/ui/cn';
 import { useRouter } from '@clinic/i18n/navigation';
@@ -54,6 +56,8 @@ export function PackagesPanel({
   const tc = useTranslations('common');
   const format = useFormatter();
   const router = useRouter();
+  const confirm = useConfirm();
+  const { toast } = useToast();
 
   const [isPending, startTransition] = useTransition();
   const [errorKey, setErrorKey] = useState<string | null>(null);
@@ -112,6 +116,7 @@ export function PackagesPanel({
         setErrorKey(result.error.key);
         return;
       }
+      toast({ tone: 'success', title: t('redeemed') });
       router.refresh();
     });
   }
@@ -191,10 +196,22 @@ export function PackagesPanel({
                         type="button"
                         aria-label={tc('delete')}
                         disabled={isPending}
-                        onClick={() => {
-                          if (!window.confirm(tc('deleteConfirmBody'))) return;
+                        onClick={async () => {
+                          const confirmed = await confirm({
+                            title: tc('deleteConfirmTitle'),
+                            body: tc('deleteConfirmBody'),
+                            confirmLabel: tc('delete'),
+                            destructive: true,
+                          });
+                          if (!confirmed) return;
+                          setErrorKey(null);
                           startTransition(async () => {
-                            await deletePackage(balance.package_id);
+                            const result = await deletePackage(balance.package_id);
+                            if (!result.ok) {
+                              setErrorKey(result.error.key);
+                              return;
+                            }
+                            toast({ tone: 'success', title: t('deleted') });
                             router.refresh();
                           });
                         }}
@@ -221,7 +238,12 @@ export function PackagesPanel({
                               disabled={isPending}
                               onClick={() =>
                                 startTransition(async () => {
-                                  await undoRedemption(entry.id);
+                                  const result = await undoRedemption(entry.id);
+                                  if (!result.ok) {
+                                    setErrorKey(result.error.key);
+                                    return;
+                                  }
+                                  toast({ tone: 'success', title: t('undone') });
                                   router.refresh();
                                 })
                               }

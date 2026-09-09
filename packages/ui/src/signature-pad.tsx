@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { cn } from './cn';
+import { focusField, focusRing } from './focus';
 
 /**
  * A signature, drawn or typed.
@@ -173,6 +174,7 @@ export function SignaturePad({
             onClick={() => chooseMode(option)}
             className={cn(
               'rounded-md px-3 py-1 text-sm font-medium transition-colors',
+              focusRing,
               mode === option ? 'bg-accent text-accent-fg' : 'text-ink-600 hover:bg-ink-50',
             )}
           >
@@ -228,7 +230,10 @@ export function SignaturePad({
               setTyped(next);
               onChange(next.trim().length >= 2 ? { method: 'typed', content: next.trim() } : null);
             }}
-            className="w-full rounded-lg border border-ink-300 bg-white px-3 py-2 font-[cursive] text-lg text-ink-900 focus:border-accent focus:outline-2 focus:outline-offset-2 focus:outline-accent"
+            className={cn(
+              'w-full rounded-lg border border-ink-300 bg-white px-3 py-2 font-[cursive] text-lg text-ink-900',
+              focusField,
+            )}
           />
           <p className="text-xs text-ink-600">{labels.typeHint}</p>
         </div>
@@ -237,7 +242,7 @@ export function SignaturePad({
       <button
         type="button"
         onClick={clear}
-        className="mt-2 rounded-md text-xs font-medium text-ink-600 underline-offset-4 hover:text-ink-900 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        className="mt-2 rounded-md text-xs font-medium text-ink-600 underline-offset-4 hover:text-ink-900 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
       >
         {labels.clear}
       </button>

@@ -66,7 +66,7 @@ export function UserMenu({
       triggerTitle={collapsed ? userName : undefined}
       triggerClassName={cn(
         'flex w-full items-center gap-2 rounded-lg py-1.5 text-sm transition-colors hover:bg-ink-100',
-        'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
+        'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus',
         collapsed ? 'justify-center px-0' : 'px-2',
       )}
       panelLabel={t('userMenu', { name: userName })}

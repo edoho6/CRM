@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { ChevronDown } from 'lucide-react';
 import { cn } from './cn';
+import { focusRing } from './focus';
 
 /**
  * A titled section that opens and closes.
@@ -47,8 +48,8 @@ export function Collapsible({
     >
       <summary
         className={cn(
-          'flex cursor-pointer list-none items-center gap-3 px-4 py-3',
-          'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
+          'flex cursor-pointer list-none items-center gap-3 px-4 py-3 transition-colors hover:bg-ink-50',
+          focusRing,
           // Safari still paints its own triangle without this.
           '[&::-webkit-details-marker]:hidden',
         )}

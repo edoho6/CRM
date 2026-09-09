@@ -16,6 +16,8 @@ import {
   Input,
   Spinner,
   Textarea,
+  useConfirm,
+  useToast,
 } from '@clinic/ui';
 import { useRouter } from '@clinic/i18n/navigation';
 import type { TreatmentProtocol } from '@clinic/db/types';
@@ -42,6 +44,8 @@ export function ProtocolsManager({ protocols }: { protocols: TreatmentProtocol[]
   const t = useTranslations('protocols');
   const tc = useTranslations('common');
   const router = useRouter();
+  const confirm = useConfirm();
+  const { toast } = useToast();
 
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState(false);
@@ -110,6 +114,7 @@ export function ProtocolsManager({ protocols }: { protocols: TreatmentProtocol[]
         return;
       }
       close();
+      toast({ tone: 'success', title: tc('saved') });
       router.refresh();
     });
   }
@@ -121,14 +126,21 @@ export function ProtocolsManager({ protocols }: { protocols: TreatmentProtocol[]
     });
   }
 
-  function remove(protocol: TreatmentProtocol) {
-    if (!window.confirm(tc('deleteConfirmBody'))) return;
+  async function remove(protocol: TreatmentProtocol) {
+    const confirmed = await confirm({
+      title: tc('deleteConfirmTitle'),
+      body: tc('deleteConfirmBody'),
+      confirmLabel: tc('delete'),
+      destructive: true,
+    });
+    if (!confirmed) return;
     startTransition(async () => {
       const result = await deleteProtocol(protocol.id);
       if (!result.ok) {
         setError(true);
         return;
       }
+      toast({ tone: 'success', title: tc('deleted') });
       router.refresh();
     });
   }

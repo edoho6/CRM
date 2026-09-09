@@ -71,7 +71,7 @@ function LowStockWidget() {
               {isOut ? (
                 <Badge tone="danger">{t('outOfStock')}</Badge>
               ) : (
-                <span className="shrink-0 text-xs text-ink-600 tabular-nums" dir="ltr">
+                <span className="shrink-0 text-xs text-ink-600 tabular-nums">
                   {format.number(Number(row.total_remaining))} {tUnit(row.default_unit)}
                 </span>
               )}

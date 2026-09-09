@@ -27,8 +27,9 @@ export async function startEncounter(
       .from('encounters')
       .select('id')
       .eq('appointment_id', appointmentId)
-      .maybeSingle<{ id: string }>();
-    if (existing) return actionOk({ id: existing.id });
+      .limit(1)
+      .returns<{ id: string }[]>();
+    if (existing?.[0]) return actionOk({ id: existing[0].id });
   }
 
   /*
@@ -79,14 +80,31 @@ export async function startEncounter(
     .select('id')
     .single<{ id: string }>();
 
-  if (error) return actionError(error);
+  if (error) {
+    // Two clicks in quick succession, or two tabs: the second insert loses on
+    // the one-record-per-appointment rule, and the right answer is the record
+    // the first one made — not an error for a thing that has just succeeded.
+    if (error.code === '23505' && resolvedAppointmentId) {
+      const { data: winner } = await scope.supabase
+        .from('encounters')
+        .select('id')
+        .eq('appointment_id', resolvedAppointmentId)
+        .limit(1)
+        .returns<{ id: string }[]>();
+      if (winner?.[0]) return actionOk({ id: winner[0].id });
+    }
+    return actionError(error);
+  }
 
+  // The note row is created by hand and is the record's body; an encounter
+  // without one is a header with no page. Losing that race to a concurrent
+  // click is fine — the row exists either way.
   const { error: noteError } = await scope.supabase.from('tcm_notes').insert({
     clinic_id: scope.context.clinic.id,
     encounter_id: data.id,
   });
 
-  if (noteError) return actionError(noteError);
+  if (noteError && noteError.code !== '23505') return actionError(noteError);
 
   return actionOk({ id: data.id });
 }

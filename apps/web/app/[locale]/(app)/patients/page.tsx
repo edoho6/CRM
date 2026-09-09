@@ -1,5 +1,5 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { UserPlus, Users } from 'lucide-react';
+import { CalendarX2, UserPlus, Users, X } from 'lucide-react';
 import {
   Button,
   EmptyState,
@@ -9,10 +9,12 @@ import {
   TableWrapper,
   Td,
   Tr,
+  cn,
 } from '@clinic/ui';
 import { Link } from '@clinic/i18n/navigation';
+import { formatDateTime } from '@clinic/i18n';
 import { TREATMENT_STATUSES, type TreatmentStatus } from '@clinic/domain';
-import type { Patient } from '@clinic/db/types';
+import type { PatientTag, PatientWithDiary } from '@clinic/db/types';
 import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
 import { ageFromDateOfBirth } from '@/lib/display';
@@ -20,16 +22,29 @@ import { PatientSearch } from '@/features/patients/patient-search';
 import { TreatmentStatusFilter } from '@/features/patients/treatment-status-filter';
 import { PatientStatusCell } from '@/features/patients/status-cell';
 import { PatientStatusSummary, type StatusCounts } from '@/features/patients/status-summary';
+import { TagChipLink, type TagChip } from '@/features/patients/patient-tags';
+import { TAG_CLASSES } from '@/features/patients/tag-colors';
+
+type TagLinkRow = { patient_id: string; tag: TagChip | null };
+
+/** A uuid no row has, so an empty "in" list matches nothing rather than everything. */
+const NO_ROWS = '00000000-0000-0000-0000-000000000000';
 
 export default async function PatientsPage({
   params,
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ q?: string; inactive?: string; status?: string }>;
+  searchParams: Promise<{
+    q?: string;
+    inactive?: string;
+    status?: string;
+    tag?: string;
+    noUpcoming?: string;
+  }>;
 }) {
   const { locale } = await params;
-  const { q = '', inactive, status } = await searchParams;
+  const { q = '', inactive, status, tag, noUpcoming } = await searchParams;
   setRequestLocale(locale);
 
   const t = await getTranslations('patients');
@@ -38,8 +53,12 @@ export default async function PatientsPage({
   const scope = await getClinicScope();
   if (!scope) return null;
 
+  // The view is the table plus what the diary knows: the next and the last
+  // kept appointment. It reads under the same row rules, and it is what makes
+  // "everyone with nothing booked" one filter rather than a fetch of every
+  // appointment in the practice.
   let query = scope.supabase
-    .from('patients')
+    .from('patients_with_diary')
     .select('*')
     .order('last_name', { ascending: true })
     .limit(200);
@@ -48,11 +67,38 @@ export default async function PatientsPage({
     query = query.eq('is_active', true);
   }
 
+  if (noUpcoming === '1') {
+    query = query.is('next_appointment_at', null);
+  }
+
   // The outcome filter is separate from the active flag on purpose: "show me
   // everyone who stopped partway" is a question about people who are, by
   // definition, no longer active.
   if (status && (TREATMENT_STATUSES as readonly string[]).includes(status)) {
     query = query.eq('treatment_status', status);
+  }
+
+  // Everyone carrying one tag. The link rows are fetched first because a view
+  // cannot be joined through PostgREST; a tag is on dozens of files, not
+  // thousands, so the list of ids is short.
+  let activeTag: TagChip | null = null;
+  if (tag) {
+    const [{ data: tagRow }, { data: links }] = await Promise.all([
+      scope.supabase
+        .from('patient_tags')
+        .select('id, name, color')
+        .eq('id', tag)
+        .maybeSingle<TagChip>(),
+      scope.supabase
+        .from('patient_tag_links')
+        .select('patient_id')
+        .eq('tag_id', tag)
+        .limit(5000)
+        .returns<{ patient_id: string }[]>(),
+    ]);
+    activeTag = tagRow ?? null;
+    const ids = (links ?? []).map((link) => link.patient_id);
+    query = query.in('id', ids.length > 0 ? ids : [NO_ROWS]);
   }
 
   const term = q.trim();
@@ -64,7 +110,7 @@ export default async function PatientsPage({
     );
   }
 
-  const { data } = await query.returns<Patient[]>();
+  const { data } = await query.returns<PatientWithDiary[]>();
   const patients = data ?? [];
 
   /*
@@ -76,11 +122,37 @@ export default async function PatientsPage({
    * problem deserves — and a count over the loaded page would be wrong in a way
    * nobody would notice until they filtered.
    */
-  const { data: statusRows } = await scope.supabase
-    .from('patients')
-    .select('treatment_status')
-    .limit(20_000)
-    .returns<{ treatment_status: TreatmentStatus | null }[]>();
+  const [{ data: statusRows }, { count: noUpcomingCount }, { data: tagLinks }] = await Promise.all([
+    scope.supabase
+      .from('patients')
+      .select('treatment_status')
+      .limit(20_000)
+      .returns<{ treatment_status: TreatmentStatus | null }[]>(),
+    scope.supabase
+      .from('patients_with_diary')
+      .select('id', { count: 'exact', head: true })
+      .eq('is_active', true)
+      .is('next_appointment_at', null),
+    // The tags of the people on screen, in one query rather than one per row.
+    patients.length > 0
+      ? scope.supabase
+          .from('patient_tag_links')
+          .select('patient_id, tag:patient_tags(id, name, color)')
+          .in(
+            'patient_id',
+            patients.map((patient) => patient.id),
+          )
+          .returns<TagLinkRow[]>()
+      : Promise.resolve({ data: [] as TagLinkRow[] }),
+  ]);
+
+  const tagsByPatient = new Map<string, TagChip[]>();
+  for (const link of tagLinks ?? []) {
+    if (!link.tag) continue;
+    const list = tagsByPatient.get(link.patient_id) ?? [];
+    list.push(link.tag);
+    tagsByPatient.set(link.patient_id, list);
+  }
 
   const byStatus = Object.fromEntries(TREATMENT_STATUSES.map((value) => [value, 0])) as Record<
     TreatmentStatus,
@@ -102,6 +174,18 @@ export default async function PatientsPage({
     active: activeCount,
     inactive: total - activeCount,
     total,
+    noUpcoming: noUpcomingCount ?? 0,
+  };
+
+  // The URL without one filter, for the chip that clears it.
+  const without = (key: 'tag' | 'noUpcoming') => {
+    const next: Record<string, string> = {};
+    if (q) next.q = q;
+    if (inactive === '1' && key !== 'tag') next.inactive = '1';
+    if (status) next.status = status;
+    if (tag && key !== 'tag') next.tag = tag;
+    if (noUpcoming === '1' && key !== 'noUpcoming') next.noUpcoming = '1';
+    return { pathname: '/patients' as const, query: next };
   };
 
   return (
@@ -122,16 +206,59 @@ export default async function PatientsPage({
       <div className="mb-4 space-y-3">
         <PatientStatusSummary counts={counts} />
         <PatientSearch initialQuery={q} showInactive={inactive === '1'} />
-        <TreatmentStatusFilter />
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <TreatmentStatusFilter />
+          {/* Its own chip rather than a status: "nothing booked" is a fact
+              about the diary, and it combines with any outcome. */}
+          <Link
+            href={
+              noUpcoming === '1'
+                ? without('noUpcoming')
+                : { pathname: '/patients', query: { ...without('noUpcoming').query, noUpcoming: '1' } }
+            }
+            aria-current={noUpcoming === '1' ? 'true' : undefined}
+            className={cn(
+              'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-colors',
+              noUpcoming === '1'
+                ? 'bg-accent text-accent-fg'
+                : 'border border-ink-200 bg-white text-ink-700 hover:bg-ink-50',
+            )}
+          >
+            <CalendarX2 className="h-3.5 w-3.5" aria-hidden />
+            {t('noUpcomingFilter')}
+          </Link>
+        </div>
+
+        {activeTag ? (
+          <p className="flex flex-wrap items-center gap-2 text-sm text-ink-700">
+            {t('tags.filterBy')}
+            <span
+              className={cn(
+                'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium',
+                TAG_CLASSES[activeTag.color],
+              )}
+              dir="auto"
+            >
+              {activeTag.name}
+            </span>
+            <Link
+              href={without('tag')}
+              className="inline-flex items-center gap-1 text-xs text-ink-600 underline-offset-2 hover:underline"
+            >
+              <X className="h-3 w-3" aria-hidden />
+              {t('tags.clearFilter')}
+            </Link>
+          </p>
+        ) : null}
       </div>
 
       {patients.length === 0 ? (
         <EmptyState
           icon={<Users className="h-8 w-8" />}
           title={term ? tc('noResults') : t('empty')}
-          description={term ? undefined : t('emptyBody')}
+          description={term || tag || noUpcoming ? undefined : t('emptyBody')}
           action={
-            term ? null : (
+            term || tag || noUpcoming ? null : (
               <Button asChild size="sm">
                 <Link href="/patients/new">{t('new')}</Link>
               </Button>
@@ -146,13 +273,15 @@ export default async function PatientsPage({
                 <SortTh sortKey="name">{t('fields.fullName')}</SortTh>
                 <SortTh sortKey="phone">{t('fields.phone')}</SortTh>
                 <SortTh sortKey="age">{t('age')}</SortTh>
-                <SortTh sortKey="city">{t('fields.city')}</SortTh>
+                <SortTh sortKey="tags">{t('tags.column')}</SortTh>
+                <SortTh sortKey="next">{t('nextAppointment')}</SortTh>
                 <SortTh sortKey="status">{t('treatmentStatus')}</SortTh>
               </tr>
             </thead>
             <SortBody locale={locale}>
               {patients.map((patient) => {
                 const age = ageFromDateOfBirth(patient.date_of_birth);
+                const patientTags = tagsByPatient.get(patient.id) ?? [];
                 return (
                   <Tr
                     key={patient.id}
@@ -160,7 +289,10 @@ export default async function PatientsPage({
                       name: patient.full_name,
                       phone: patient.phone,
                       age,
-                      city: patient.city,
+                      tags: patientTags.map((entry) => entry.name).join(' ') || null,
+                      next: patient.next_appointment_at
+                        ? new Date(patient.next_appointment_at).getTime()
+                        : null,
                       // Sorted by label rather than by the enum's order, so the
                       // column sorts the way it reads.
                       status: t(`status.${patient.treatment_status ?? 'active'}`),
@@ -184,7 +316,34 @@ export default async function PatientsPage({
                       )}
                     </Td>
                     <Td>{age === null ? <span className="text-ink-500">—</span> : age}</Td>
-                    <Td>{patient.city ?? <span className="text-ink-500">—</span>}</Td>
+                    <Td>
+                      {patientTags.length > 0 ? (
+                        <span className="flex flex-wrap gap-1">
+                          {patientTags.map((entry) => (
+                            <TagChipLink key={entry.id} tag={entry} />
+                          ))}
+                        </span>
+                      ) : (
+                        <span className="text-ink-500">—</span>
+                      )}
+                    </Td>
+                    <Td>
+                      {patient.next_appointment_at ? (
+                        <span dir="ltr" className="tabular-nums">
+                          {formatDateTime(new Date(patient.next_appointment_at))}
+                        </span>
+                      ) : (
+                        <span
+                          className={cn(
+                            'text-ink-500',
+                            patient.is_active && 'text-amber-800',
+                          )}
+                          title={patient.is_active ? t('noUpcomingHint') : undefined}
+                        >
+                          —
+                        </span>
+                      )}
+                    </Td>
                     <Td>
                       {/* Editable in place: marking a course finished is a
                           five-second thought, and making it cost a page load,

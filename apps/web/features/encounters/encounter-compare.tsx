@@ -3,81 +3,162 @@
 import { useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { History } from 'lucide-react';
-import { Card, CardBody, CardHeader, CardTitle, Select } from '@clinic/ui';
+import { Badge, Card, CardBody, CardHeader, CardTitle, Select } from '@clinic/ui';
 import { cn } from '@clinic/ui/cn';
+import { toPointPlacement } from '@clinic/domain';
 import type { RecordedPoint } from '@clinic/db/types';
 import { formatDate } from '@clinic/i18n';
+import type { CurrentPrescription, PrescriptionLine } from './current-prescription-context';
 
 /**
- * The last time you treated this patient, beside what you are writing now.
+ * Last time, beside now — head to head, and live.
  *
- * The question a practitioner actually asks mid-treatment is not "what happened
- * on the fourteenth of March" but "what did I do last time, and is it working" —
- * and answering it today means leaving the record, opening a previous one, and
- * remembering what you saw. This puts the answer next to the field.
+ * Two columns: the treatment being compared against, and the one being written.
+ * Points on top, herbs underneath, and every entry coloured by what happened to
+ * it: amber on the earlier side for a point or herb that is gone, green on the
+ * current side for one that is new, amber on the current side for a herb whose
+ * dose changed, with the old dose beside it. The current column follows the
+ * form as it is typed — and follows the dispensing panel as a formula is picked
+ * or a herb line filled in, before anything is saved.
  *
- * What is compared is what changes between visits: the pattern, the principle,
- * the points, and the prescription. Not the complaint, which is the same
- * complaint, and not the whole note — a wall of prose beside the note being
- * written is a second thing to read rather than an answer.
+ * The prose that used to sit under the diff — pattern, principle, complaint,
+ * notes — is gone. Beside a note being written it was a second thing to read,
+ * and the question this answers is "what did I give last time, and what am I
+ * giving now", which two lists answer and five paragraphs do not.
  *
- * Points are diffed because that is the comparison that is genuinely hard to do
- * by eye: eight codes against eight codes, and the two that changed are the
- * entire clinical content of the difference.
+ * Colour is never the only signal: the legend at the foot says in words what
+ * each colour means, and the changed dose prints the old figure.
  */
 
 export interface PreviousEncounter {
   id: string;
   date: string;
-  patternDiagnosis: string | null;
-  treatmentPrinciple: string | null;
   points: RecordedPoint[];
-  /** The formula or the herb list, already rendered to a line of text. */
-  prescription: string | null;
-  /** What the patient said they came with. */
-  chiefComplaint: string | null;
-  treatmentNotes: string | null;
+  formula: string | null;
+  herbs: PrescriptionLine[];
+}
+
+export interface CurrentPoint {
+  point: string;
+  region: string;
+}
+
+type Placement = 'right' | 'left' | 'center' | 'ear';
+
+/** Older notes carry a `side` and no region; the same rule the form applies. */
+function placementOf(point: RecordedPoint): Placement {
+  if (point.region) return toPointPlacement(point.region);
+  if (point.side === 'left') return 'left';
+  if (point.side === 'midline') return 'center';
+  return 'right';
+}
+
+function pointKey(code: string, placement: string): string {
+  return `${code.trim().toLowerCase()}|${placement}`;
+}
+
+type Status = 'kept' | 'dropped' | 'added' | 'changed';
+
+interface PointCell {
+  key: string;
+  code: string;
+  placement: Placement;
+  status: Status;
+}
+
+interface HerbCell {
+  key: string;
+  name: string;
+  quantity: number | null;
+  status: Status;
+  /** The earlier dose, for a changed line. */
+  was?: number | null;
 }
 
 export function EncounterCompare({
   previous,
   currentPoints,
+  currentPrescription,
 }: {
   /** Earlier treatments of the same patient, newest first. */
   previous: PreviousEncounter[];
   /** The points in the record being written, so the diff is live. */
-  currentPoints: string[];
+  currentPoints: CurrentPoint[];
+  /** What the dispensing panel is composing or has recorded, if anything. */
+  currentPrescription: CurrentPrescription | null;
 }) {
   const t = useTranslations('encounters.compare');
+  const tRegion = useTranslations('encounters.region');
   const [selectedId, setSelectedId] = useState('');
 
   const selected = previous.find((entry) => entry.id === selectedId) ?? previous[0] ?? null;
 
-  const diff = useMemo(() => {
+  const points = useMemo(() => {
     if (!selected) return null;
 
-    // Compared case-insensitively on the trimmed code: "LI4" and "li4 " are the
-    // same point, and a diff that says otherwise is noise.
-    const normalise = (value: string) => value.trim().toLowerCase();
-    const before = new Map(selected.points.map((point) => [normalise(point.point), point.point]));
-    const now = new Map(currentPoints.map((point) => [normalise(point), point]));
-
-    const kept: string[] = [];
-    const dropped: string[] = [];
-    const added: string[] = [];
-
-    for (const [key, label] of before) {
-      if (now.has(key)) kept.push(label);
-      else dropped.push(label);
+    const before = new Map<string, PointCell>();
+    for (const point of selected.points) {
+      const placement = placementOf(point);
+      const key = pointKey(point.point, placement);
+      before.set(key, { key, code: point.point, placement, status: 'dropped' });
     }
-    for (const [key, label] of now) {
-      if (!before.has(key)) added.push(label);
+    const now = new Map<string, PointCell>();
+    for (const point of currentPoints) {
+      const placement = toPointPlacement(point.region);
+      const key = pointKey(point.point, placement);
+      if (!now.has(key)) now.set(key, { key, code: point.point, placement, status: 'added' });
     }
-
-    return { kept, dropped, added };
+    for (const [key, cell] of before) {
+      if (now.has(key)) {
+        cell.status = 'kept';
+        now.get(key)!.status = 'kept';
+      }
+    }
+    return { before: [...before.values()], now: [...now.values()] };
   }, [selected, currentPoints]);
 
-  if (previous.length === 0) return null;
+  const herbs = useMemo(() => {
+    if (!selected) return null;
+
+    const before = new Map<string, HerbCell>();
+    for (const line of selected.herbs) {
+      before.set(line.key, { ...line, status: 'dropped' });
+    }
+    const now = new Map<string, HerbCell>();
+    for (const line of currentPrescription?.herbs ?? []) {
+      if (!now.has(line.key)) now.set(line.key, { ...line, status: 'added' });
+    }
+    for (const [key, cell] of before) {
+      const current = now.get(key);
+      if (!current) continue;
+      cell.status = 'kept';
+      if (
+        cell.quantity !== null &&
+        current.quantity !== null &&
+        Math.abs(cell.quantity - current.quantity) > 0.001
+      ) {
+        current.status = 'changed';
+        current.was = cell.quantity;
+      } else {
+        current.status = 'kept';
+      }
+    }
+    return { before: [...before.values()], now: [...now.values()] };
+  }, [selected, currentPrescription]);
+
+  if (previous.length === 0) {
+    // A first visit is a fact worth a line, not a panel that silently is not there.
+    return (
+      <Card>
+        <CardBody>
+          <p className="text-sm text-ink-600">{t('firstVisit')}</p>
+        </CardBody>
+      </Card>
+    );
+  }
+
+  const formulaChanged =
+    (selected?.formula ?? null) !== (currentPrescription?.formula ?? null);
 
   return (
     <Card>
@@ -95,6 +176,7 @@ export function EncounterCompare({
             aria-label={t('chooseTreatment')}
             value={selected?.id ?? ''}
             onChange={(event) => setSelectedId(event.target.value)}
+            className="h-8 text-xs"
           >
             {previous.map((entry, index) => (
               <option key={entry.id} value={entry.id}>
@@ -105,146 +187,156 @@ export function EncounterCompare({
           </Select>
         ) : null}
 
-        {selected ? (
-          <>
-            <p className="text-xs text-ink-600" dir="ltr">
-              {formatDate(new Date(selected.date))}
-            </p>
+        {selected && points && herbs ? (
+          <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
+            {/* Column heads. Reading order is earlier → now, which is the
+                start column → end column in either script. */}
+            <ColumnHead label={t('previous')} detail={formatDate(selected.date)} />
+            <ColumnHead
+              label={t('current')}
+              detail={
+                currentPrescription?.draft ? <Badge tone="muted">{t('draft')}</Badge> : null
+              }
+            />
 
-            {/* Every point of that treatment, before the comparison.
-                The diff below answers "what did I change"; this answers "what
-                did I do", and the second question is the one asked first. */}
-            {selected.points.length > 0 ? (
-              <div className="flex flex-wrap items-baseline gap-1.5">
-                <span className="text-xs font-medium text-ink-700">{t('pointsUsed')}</span>
-                {selected.points.map((point, index) => (
-                  <span
-                    key={`${point.point}:${index}`}
-                    dir="ltr"
-                    className="rounded border border-ink-200 bg-white px-1.5 py-0.5 text-xs tabular-nums text-ink-800"
-                  >
-                    {point.point}
-                  </span>
-                ))}
-              </div>
-            ) : null}
+            <RowLabel>{t('points')}</RowLabel>
+            <PointList cells={points.before} regionLabel={(p) => tRegion(p)} empty={t('none')} />
+            <PointList cells={points.now} regionLabel={(p) => tRegion(p)} empty={t('none')} />
 
-            {/* The point diff. Each group is labelled in words as well as
-                coloured — a red chip and a green chip are the same chip to a
-                colourblind reader. */}
-            {diff && (diff.kept.length > 0 || diff.dropped.length > 0 || diff.added.length > 0) ? (
-              <div className="space-y-2">
-                <PointGroup
-                  label={t('pointsKept')}
-                  points={diff.kept}
-                  className="border-ink-200 bg-ink-50 text-ink-800"
-                />
-                <PointGroup
-                  label={t('pointsDropped')}
-                  points={diff.dropped}
-                  className="border-amber-200 bg-amber-50 text-amber-900"
-                />
-                <PointGroup
-                  label={t('pointsAdded')}
-                  points={diff.added}
-                  className="border-jade-200 bg-jade-50 text-jade-900"
-                />
-              </div>
-            ) : null}
-
-            <dl className="space-y-2 border-t border-ink-100 pt-3 text-sm">
-              <CompareRow label={t('pattern')} value={selected.patternDiagnosis} />
-              <CompareRow label={t('principle')} value={selected.treatmentPrinciple} />
-              <CompareRow label={t('prescription')} value={selected.prescription} />
-              <CompareRow label={t('complaint')} value={selected.chiefComplaint} summarise />
-              <CompareRow label={t('notes')} value={selected.treatmentNotes} summarise />
-            </dl>
-          </>
+            <RowLabel>{t('herbs')}</RowLabel>
+            <div className="min-w-0 space-y-1">
+              <FormulaLine name={selected.formula} changed={false} empty={t('none')} />
+              <HerbList cells={herbs.before} />
+            </div>
+            <div className="min-w-0 space-y-1">
+              <FormulaLine
+                name={currentPrescription?.formula ?? null}
+                changed={formulaChanged}
+                empty={t('none')}
+              />
+              <HerbList cells={herbs.now} renderWas={(quantity) => t('was', { quantity })} />
+            </div>
+          </div>
         ) : null}
+
+        <p className="border-t border-ink-100 pt-2 text-xs text-ink-600">{t('legend')}</p>
       </CardBody>
     </Card>
   );
 }
 
-function PointGroup({
-  label,
-  points,
-  className,
-}: {
-  label: string;
-  points: string[];
-  className: string;
-}) {
-  // An empty group is not shown at all: "nothing was dropped" is said better by
-  // the absence of a "dropped" row than by an empty one.
-  if (points.length === 0) return null;
-
+function ColumnHead({ label, detail }: { label: string; detail?: React.ReactNode }) {
   return (
-    <div className="flex flex-wrap items-baseline gap-1.5">
-      <span className="text-xs font-medium text-ink-700">{label}</span>
-      {points.map((point) => (
-        <span
-          key={point}
-          dir="ltr"
-          className={cn('rounded border px-1.5 py-0.5 text-xs tabular-nums', className)}
-        >
-          {point}
+    <div className="flex min-w-0 flex-wrap items-center gap-1.5 border-b border-ink-100 pb-1">
+      <span className="text-xs font-semibold text-ink-800">{label}</span>
+      {typeof detail === 'string' ? (
+        <span className="text-xs text-ink-500" dir="ltr">
+          {detail}
         </span>
-      ))}
+      ) : (
+        detail
+      )}
     </div>
   );
 }
 
-/**
- * One line of the comparison.
- *
- * `summarise` clamps the prose to three lines with a control to open it. The
- * narrative fields run to paragraphs, and this panel sits in a narrow side
- * column beside the note being written — printed in full, one previous treatment
- * pushed the rest of the comparison off the screen, which is the opposite of
- * what it is for. Clamped, the shape of the visit is readable at a glance and
- * the whole of it is one click away.
- */
-function CompareRow({
-  label,
-  value,
-  summarise = false,
+function RowLabel({ children }: { children: React.ReactNode }) {
+  return <p className="col-span-2 pt-1 text-xs font-medium text-ink-600">{children}</p>;
+}
+
+const STATUS_CLASSES: Record<Status, string> = {
+  kept: 'border-ink-200 bg-white text-ink-800',
+  dropped: 'border-amber-200 bg-amber-50 text-amber-900',
+  added: 'border-jade-200 bg-jade-50 text-jade-900',
+  changed: 'border-amber-200 bg-amber-50 text-amber-900',
+};
+
+function PointList({
+  cells,
+  regionLabel,
+  empty,
 }: {
-  label: string;
-  value: string | null;
-  summarise?: boolean;
+  cells: PointCell[];
+  regionLabel: (placement: Placement) => string;
+  empty: string;
 }) {
-  const t = useTranslations('encounters.compare');
-  const [expanded, setExpanded] = useState(false);
-
-  const text = value?.trim() ?? '';
-  // Roughly what fits in three clamped lines here. Below it there is nothing to
-  // expand and the control would be a button that does nothing visible.
-  const isLong = summarise && text.length > 180;
-
+  if (cells.length === 0) return <p className="text-xs text-ink-500">{empty}</p>;
   return (
-    <div>
-      <dt className="text-xs font-medium text-ink-600">{label}</dt>
-      {/* A dash, not an empty line: nothing recorded is a fact worth seeing. */}
-      <dd
-        className={cn(
-          'whitespace-pre-line text-ink-800',
-          isLong && !expanded && 'line-clamp-3',
-        )}
-        dir="auto"
-      >
-        {text || '—'}
-      </dd>
-      {isLong ? (
-        <button
-          type="button"
-          onClick={() => setExpanded((current) => !current)}
-          aria-expanded={expanded}
-          className="mt-0.5 rounded text-xs font-medium text-jade-700 underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-jade-700"
+    <ul className="flex min-w-0 flex-wrap gap-1">
+      {cells.map((cell) => (
+        <li
+          key={cell.key}
+          className={cn(
+            'inline-flex items-baseline gap-1 rounded border px-1.5 py-0.5 text-xs',
+            STATUS_CLASSES[cell.status],
+          )}
         >
-          {expanded ? t('showLess') : t('showMore')}
-        </button>
-      ) : null}
-    </div>
+          <span dir="ltr" className="tabular-nums">
+            {cell.code}
+          </span>
+          <span className="text-[11px] opacity-70">{regionLabel(cell.placement)}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function FormulaLine({
+  name,
+  changed,
+  empty,
+}: {
+  name: string | null;
+  changed: boolean;
+  empty: string;
+}) {
+  if (!name) return <p className="text-xs text-ink-500">{empty}</p>;
+  return (
+    <p
+      className={cn(
+        'truncate rounded border px-1.5 py-0.5 text-xs font-medium',
+        changed ? STATUS_CLASSES.added : STATUS_CLASSES.kept,
+      )}
+      dir="auto"
+      title={name}
+    >
+      {name}
+    </p>
+  );
+}
+
+function HerbList({
+  cells,
+  renderWas,
+}: {
+  cells: HerbCell[];
+  /** Only the current column prints the earlier dose beside a changed one. */
+  renderWas?: (quantity: number) => string;
+}) {
+  if (cells.length === 0) return null;
+  return (
+    <ul className="space-y-0.5">
+      {cells.map((cell) => (
+        <li
+          key={cell.key}
+          className={cn(
+            'flex items-baseline justify-between gap-2 rounded border px-1.5 py-0.5 text-xs',
+            STATUS_CLASSES[cell.status],
+          )}
+        >
+          <span className="min-w-0 truncate" dir="auto" title={cell.name}>
+            {cell.name}
+          </span>
+          {cell.quantity !== null ? (
+            <span className="shrink-0 tabular-nums" dir="ltr">
+              {cell.quantity}
+              {cell.status === 'changed' && cell.was != null && renderWas ? (
+                <span className="ms-1 text-[11px] opacity-70">{renderWas(cell.was)}</span>
+              ) : null}
+            </span>
+          ) : null}
+        </li>
+      ))}
+    </ul>
   );
 }

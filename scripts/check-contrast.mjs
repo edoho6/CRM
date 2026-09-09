@@ -200,6 +200,14 @@ function measure(pairs, title, palette, seen, threshold = AA_SMALL) {
 const graphicPairs = [
   { bg: 'white', fg: 'series-1', where: 'chart bar on a card' },
   { bg: 'white', fg: 'series-2', where: 'second chart series on a card' },
+  /* The focus ring, on every surface it can land on. A ring is a UI-component
+     boundary and needs 3:1 — the old jade-600 measured 2.89:1 on ink-100, which
+     is the hovered-row and sidebar-rail surface, so keyboard focus on a table
+     row was a ring you could not see. */
+  { bg: 'white', fg: 'focus', where: 'focus ring on a card' },
+  { bg: 'ink-50', fg: 'focus', where: 'focus ring on the page' },
+  { bg: 'ink-100', fg: 'focus', where: 'focus ring on a hovered row or the rail' },
+  { bg: 'ink-200', fg: 'focus', where: 'focus ring on a border' },
 ];
 
 const lightSeen = new Set();

@@ -1,5 +1,5 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import type { AppointmentType, AppointmentWithRelations, Patient } from '@clinic/db/types';
+import type { AppointmentType, AppointmentWithRelations, Patient, Room } from '@clinic/db/types';
 import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
 import { CalendarView, type CalendarViewMode } from '@/features/appointments/calendar-view';
@@ -14,6 +14,8 @@ import type { DayException, WorkingBlock } from '@/features/appointments/availab
 
 const APPOINTMENT_SELECT =
   'id, clinic_id, patient_id, practitioner_id, appointment_type_id, start_at, end_at, status, location, notes, cancelled_reason, cancelled_at, created_by, created_at, updated_at, ' +
+  'room_id, reminder_sent_at, confirmation_token, confirmation_response, responded_at, ' +
+  'room:rooms(id, name, color), ' +
   'patient:patients(id, first_name, last_name, full_name, phone), ' +
   'appointment_type:appointment_types(id, name_he, name_en, color)';
 
@@ -87,7 +89,7 @@ export default async function CalendarPage({
   const rangeStart = windowStart;
   const rangeEnd = windowEnd;
 
-  const [appointmentsResult, typesResult, patientsResult, blocksResult, exceptionsResult] =
+  const [appointmentsResult, typesResult, patientsResult, blocksResult, exceptionsResult, roomsResult] =
     await Promise.all([
     scope.supabase
       .from('appointments')
@@ -123,6 +125,12 @@ export default async function CalendarPage({
       .gte('date', toDateKey(windowStart))
       .lte('date', toDateKey(windowEnd))
       .returns<DayException[]>(),
+    scope.supabase
+      .from('rooms')
+      .select('*')
+      .order('sort_order', { ascending: true })
+      .order('created_at', { ascending: true })
+      .returns<Room[]>(),
   ]);
 
   return (
@@ -143,6 +151,9 @@ export default async function CalendarPage({
         }}
         defaultPatientId={patientParam}
         openNewOnLoad={newParam === '1'}
+        rooms={roomsResult.data ?? []}
+        reminderTemplate={scope.context.clinic.reminder_template ?? null}
+        clinicName={scope.context.clinic.name}
       />
     </>
   );

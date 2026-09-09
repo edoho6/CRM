@@ -3,6 +3,10 @@
 import { useMemo, useState } from 'react';
 import { useFormatter, useLocale, useTranslations } from 'next-intl';
 import { CalendarPlus, ChevronLeft, ChevronRight } from 'lucide-react';
+import type { Room } from '@clinic/db/types';
+import { ConfirmationDot } from './confirmation-status';
+import { BlockDayDialog } from './block-day-dialog';
+import { DayAddMenu } from './day-add-menu';
 import { Button, cn, TIME_INPUT_LANG } from '@clinic/ui';
 import type { Locale } from '@clinic/domain';
 import { usePathname, useRouter } from '@clinic/i18n/navigation';
@@ -134,6 +138,9 @@ export function CalendarView({
   availability,
   defaultPatientId,
   openNewOnLoad,
+  rooms,
+  reminderTemplate,
+  clinicName,
 }: {
   appointments: AppointmentWithRelations[];
   patients: Pick<Patient, 'id' | 'full_name' | 'phone'>[];
@@ -148,6 +155,10 @@ export function CalendarView({
   availability: Availability;
   defaultPatientId?: string;
   openNewOnLoad?: boolean;
+  /** The rooms bookings go into; empty means the diary has no rooms. */
+  rooms: Room[];
+  reminderTemplate: string | null;
+  clinicName: string;
 }) {
   const t = useTranslations('appointments');
   const tc = useTranslations('common');
@@ -197,6 +208,7 @@ export function CalendarView({
   const defaultDuration = appointmentTypes[0]?.default_duration_minutes ?? 60;
 
   const [dialogOpen, setDialogOpen] = useState(Boolean(openNewOnLoad));
+  const [blockDay, setBlockDay] = useState<Date | null>(null);
   const [draft, setDraft] = useState<AppointmentDraft | null>(
     openNewOnLoad
       ? {
@@ -282,7 +294,13 @@ export function CalendarView({
       start: new Date(appointment.start_at),
       end: new Date(appointment.end_at),
       status: appointment.status,
+      roomId: appointment.room_id,
       location: appointment.location,
+      reminderSentAt: appointment.reminder_sent_at,
+      confirmationToken: appointment.confirmation_token,
+      confirmationResponse: appointment.confirmation_response,
+      respondedAt: appointment.responded_at,
+      patientPhone: appointment.patient?.phone ?? null,
       notes: appointment.notes,
     });
     setDialogOpen(true);
@@ -338,7 +356,7 @@ export function CalendarView({
                 value={rangeFrom ?? ''}
                 max={rangeTo ?? undefined}
                 onChange={(event) => setRangeBound('from', event.target.value)}
-                className="h-9 rounded-lg border border-ink-200 bg-white px-2 text-sm text-ink-900 tabular-nums shadow-xs outline-none focus:border-jade-600"
+                className="h-9 rounded-lg border border-ink-200 bg-white px-2 text-sm text-ink-900 tabular-nums shadow-xs focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-focus focus-visible:border-focus"
               />
               <span className="text-sm text-ink-600">–</span>
               <input
@@ -349,7 +367,7 @@ export function CalendarView({
                 value={rangeTo ?? ''}
                 min={rangeFrom ?? undefined}
                 onChange={(event) => setRangeBound('to', event.target.value)}
-                className="h-9 rounded-lg border border-ink-200 bg-white px-2 text-sm text-ink-900 tabular-nums shadow-xs outline-none focus:border-jade-600"
+                className="h-9 rounded-lg border border-ink-200 bg-white px-2 text-sm text-ink-900 tabular-nums shadow-xs focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-focus focus-visible:border-focus"
               />
               <span className="ms-1 text-sm text-ink-600">
                 {t('countInView', { count: totalInView })}
@@ -408,6 +426,7 @@ export function CalendarView({
           locale={locale}
           onOpen={openAppointment}
           onAddOn={(day) => openSlot(day, 4)}
+          onBlockOn={(day) => setBlockDay(day)}
         />
       ) : (
         <div className="overflow-x-auto rounded-card border border-ink-200 bg-white">
@@ -436,13 +455,21 @@ export function CalendarView({
                     >
                       {format.dateTime(day, { weekday: 'short' })}
                     </div>
-                    <div
-                      className={cn(
-                        'text-sm',
-                        today ? 'font-semibold text-jade-900' : 'text-ink-800',
-                      )}
-                    >
-                      {format.dateTime(day, { day: 'numeric', month: 'numeric' })}
+                    <div className="flex items-center justify-center gap-1">
+                      <span
+                        className={cn(
+                          'text-base leading-tight tabular-nums',
+                          today ? 'font-semibold text-jade-900' : 'font-medium text-ink-800',
+                        )}
+                      >
+                        {format.dateTime(day, { day: 'numeric', month: 'numeric' })}
+                      </span>
+                      {/* Book someone on this day, or close it. */}
+                      <DayAddMenu
+                        onNew={() => openSlot(day, 4)}
+                        onBlock={() => setBlockDay(day)}
+                        blocked={Boolean(closureFor(day, availability))}
+                      />
                     </div>
                   </div>
                 );
@@ -466,7 +493,7 @@ export function CalendarView({
                     >
                       {isHour ? (
                         <span
-                          className="absolute -top-2 end-1.5 text-[11px] text-ink-500 tabular-nums"
+                          className="absolute -top-2 end-1.5 text-xs font-medium text-ink-600 tabular-nums"
                           dir="ltr"
                         >
                           {String(Math.floor(minutes / 60)).padStart(2, '0')}:00
@@ -545,17 +572,34 @@ export function CalendarView({
                             isCancelled ? 'bg-ink-100 text-ink-500 line-through' : 'text-ink-900',
                           )}
                         >
-                          <span
-                            className="block truncate text-[11px] font-medium tabular-nums"
-                            dir="ltr"
-                          >
-                            {format.dateTime(new Date(appointment.start_at), 'time')}
+                          <span className="flex items-center gap-1">
+                            {/* Whether the patient said they are coming, as a
+                                dot beside the hour: grey, amber, green, red. */}
+                            {!isCancelled ? <ConfirmationDot appointment={appointment} /> : null}
+                            <span
+                              className="block truncate text-xs font-semibold tabular-nums"
+                              dir="ltr"
+                            >
+                              {format.dateTime(new Date(appointment.start_at), 'time')}
+                            </span>
+                            {appointment.room ? (
+                              <span
+                                className="ms-auto max-w-[45%] truncate rounded px-1 text-[10px] font-medium leading-4"
+                                style={{
+                                  backgroundColor: `${appointment.room.color}33`,
+                                  color: 'inherit',
+                                }}
+                                title={appointment.room.name}
+                              >
+                                {appointment.room.name}
+                              </span>
+                            ) : null}
                           </span>
-                          <span className="block truncate text-xs">
+                          <span className="block truncate text-[13px] leading-tight">
                             {patientFullName(appointment.patient)}
                           </span>
                           {height > 44 ? (
-                            <span className="block truncate text-[11px] text-ink-500">
+                            <span className="block truncate text-xs text-ink-500">
                               {appointmentTypeName(appointment.appointment_type, locale)}
                             </span>
                           ) : null}
@@ -576,8 +620,16 @@ export function CalendarView({
         draft={draft}
         patients={patients}
         appointmentTypes={appointmentTypes}
+        rooms={rooms}
+        reminderTemplate={reminderTemplate}
+        clinicName={clinicName}
         practitionerId={practitionerId}
         onOpenChange={setDialogOpen}
+      />
+      <BlockDayDialog
+        day={blockDay}
+        existing={blockDay ? (availability.exceptions.find((entry) => entry.date === toDateKey(blockDay)) ?? null) : null}
+        onOpenChange={(open) => !open && setBlockDay(null)}
       />
     </div>
   );
@@ -605,6 +657,7 @@ function MonthOrRangeView({
   locale,
   onOpen,
   onAddOn,
+  onBlockOn,
 }: {
   days: Date[];
   view: CalendarViewMode;
@@ -614,6 +667,7 @@ function MonthOrRangeView({
   locale: Locale;
   onOpen: (appointment: AppointmentWithRelations) => void;
   onAddOn: (day: Date) => void;
+  onBlockOn: (day: Date) => void;
 }) {
   const t = useTranslations('appointments');
   const format = useFormatter();
@@ -644,12 +698,21 @@ function MonthOrRangeView({
                     onClick={() => onOpen(appointment)}
                     className="flex w-full items-baseline gap-3 px-3 py-2 text-start text-sm hover:bg-ink-50"
                   >
-                    <span dir="ltr" className="shrink-0 tabular-nums text-ink-600">
+                    <ConfirmationDot appointment={appointment} className="self-center" />
+                    <span dir="ltr" className="shrink-0 font-semibold tabular-nums text-ink-800">
                       {format.dateTime(new Date(appointment.start_at), 'time')}
                     </span>
                     <span className="min-w-0 flex-1 truncate font-medium text-ink-900">
                       {patientFullName(appointment.patient)}
                     </span>
+                    {appointment.room ? (
+                      <span
+                        className="shrink-0 rounded px-1.5 text-xs leading-5"
+                        style={{ backgroundColor: `${appointment.room.color}33` }}
+                      >
+                        {appointment.room.name}
+                      </span>
+                    ) : null}
                     <span className="shrink-0 truncate text-xs text-ink-600">
                       {appointmentTypeName(appointment.appointment_type, locale)}
                     </span>
@@ -707,7 +770,7 @@ function MonthOrRangeView({
                 <div className="flex items-baseline justify-between gap-1">
                   <span
                     className={cn(
-                      'text-xs tabular-nums',
+                      'text-sm font-medium tabular-nums',
                       today
                         ? 'font-semibold text-jade-800'
                         : outside
@@ -717,17 +780,15 @@ function MonthOrRangeView({
                   >
                     {format.dateTime(day, { day: 'numeric' })}
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => onAddOn(day)}
-                    aria-label={t('new')}
-                    // Revealed on hover and on focus within the cell, and shown
-                    // outright on a touch screen, where there is no hover to
-                    // reveal it with.
-                    className="rounded px-1 text-xs text-ink-500 opacity-0 transition-opacity hover:bg-ink-100 hover:text-ink-900 focus-visible:opacity-100 group-hover:opacity-100 group-focus-within:opacity-100 pointer-coarse:opacity-100"
-                  >
-                    +
-                  </button>
+                  {/* Revealed on hover and on focus within the cell, and shown
+                      outright on a touch screen, where there is no hover to
+                      reveal it with. */}
+                  <DayAddMenu
+                    onNew={() => onAddOn(day)}
+                    onBlock={() => onBlockOn(day)}
+                    blocked={Boolean(closure)}
+                    className="opacity-0 transition-opacity focus-visible:opacity-100 group-hover:opacity-100 group-focus-within:opacity-100 pointer-coarse:opacity-100"
+                  />
                 </div>
 
                 {closed ? (
@@ -742,9 +803,10 @@ function MonthOrRangeView({
                       <button
                         type="button"
                         onClick={() => onOpen(appointment)}
-                        className="flex w-full items-baseline gap-1 rounded px-1 py-0.5 text-start text-[11px] hover:bg-ink-100"
+                        className="flex w-full items-baseline gap-1 rounded px-1 py-0.5 text-start text-xs hover:bg-ink-100"
                       >
-                        <span dir="ltr" className="shrink-0 tabular-nums text-ink-600">
+                        <ConfirmationDot appointment={appointment} className="h-2 w-2 self-center" />
+                        <span dir="ltr" className="shrink-0 font-medium tabular-nums text-ink-700">
                           {format.dateTime(new Date(appointment.start_at), 'time')}
                         </span>
                         <span className="min-w-0 truncate text-ink-900">

@@ -19,10 +19,15 @@ import { resolveRange, toDateKey } from '@/lib/date-range';
 import { PaymentAction } from '@/features/billing/payment-status';
 import { toPaymentSummary } from '@/features/billing/payment-summary';
 import { formatDate } from '@clinic/i18n';
+import { ConfirmationBadge } from '@/features/appointments/confirmation-status';
+import { confirmationState } from '@/features/appointments/confirmation';
 
 type EncounterRow = Encounter & {
   patient: Pick<Patient, 'id' | 'full_name'> | null;
-  appointment: Pick<Appointment, 'id' | 'start_at'> | null;
+  appointment: Pick<
+    Appointment,
+    'id' | 'start_at' | 'status' | 'reminder_sent_at' | 'confirmation_response'
+  > | null;
 };
 
 /**
@@ -61,6 +66,7 @@ export default async function EncountersPage({
   const tPatients = await getTranslations('patients');
   const tFilters = await getTranslations('filters');
   const tBilling = await getTranslations('billing');
+  const tApp = await getTranslations('appointments');
   const format = await getFormatter();
 
   const scope = await getClinicScope();
@@ -73,7 +79,9 @@ export default async function EncountersPage({
 
   let query = scope.supabase
     .from('encounters')
-    .select('*, patient:patients(id, full_name), appointment:appointments(id, start_at)')
+    .select(
+      '*, patient:patients(id, full_name), appointment:appointments(id, start_at, status, reminder_sent_at, confirmation_response)',
+    )
     .order('encounter_date', { ascending: false })
     .order('started_at', { ascending: false })
     .limit(500);
@@ -172,6 +180,7 @@ export default async function EncountersPage({
                 <SortTh sortKey="time" className="w-20 px-1">{tc('time')}</SortTh>
                 <SortTh sortKey="patient">{tPatients('singular')}</SortTh>
                 <SortTh sortKey="status">{tc('status')}</SortTh>
+                <SortTh sortKey="arrival">{tApp('confirmation.title')}</SortTh>
                 <SortTh sortKey="payment">{tBilling('title')}</SortTh>
               </tr>
             </thead>
@@ -190,6 +199,9 @@ export default async function EncountersPage({
                     ).getTime(),
                     patient: encounter.patient?.full_name ?? null,
                     status: t(`status.${encounter.status}`),
+                    arrival: encounter.appointment
+                      ? tApp(`confirmation.${confirmationState(encounter.appointment)}`)
+                      : null,
                     payment: payments.get(encounter.id)?.payment_state ?? 'unbilled',
                   }}
                 >
@@ -230,6 +242,16 @@ export default async function EncountersPage({
                     <Badge tone={encounter.status === 'signed' ? 'success' : 'warning'}>
                       {t(`status.${encounter.status}`)}
                     </Badge>
+                  </Td>
+                  <Td>
+                    {/* Whether the patient said they were coming. Here as well as
+                        in the diary, because this list is the one open at the
+                        desk when the question is asked. */}
+                    {encounter.appointment ? (
+                      <ConfirmationBadge appointment={encounter.appointment} />
+                    ) : (
+                      <span className="text-ink-500">—</span>
+                    )}
                   </Td>
                   <Td>
                     <PaymentAction

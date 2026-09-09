@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useCallback, useMemo, useState, useTransition } from 'react';
 import { useFormatter, useTranslations } from 'next-intl';
 import { BookmarkPlus, Lock, Save } from 'lucide-react';
 import {
@@ -17,6 +17,8 @@ import {
   Section,
   Spinner,
   Textarea,
+  useConfirm,
+  useToast,
 } from '@clinic/ui';
 import { toPointPlacement, type BodyView, type TreatmentModality } from '@clinic/domain';
 import { useRouter } from '@clinic/i18n/navigation';
@@ -25,6 +27,12 @@ import { useAutosave } from '@/lib/use-autosave';
 import { BodyMap, type MappedPoint } from '@/features/reference/body-map';
 import { PointsEditor, type PointOption, type PointRow } from './points-editor';
 import { EncounterCompare, type PreviousEncounter } from './encounter-compare';
+import {
+  CurrentPrescriptionProvider,
+  type CurrentPrescription,
+} from './current-prescription-context';
+import { TonguePhotos, type TonguePhoto } from './tongue-photos';
+import { SidePanels } from './side-panels';
 import { ProtocolPicker } from './protocol-picker';
 import { saveProtocolFromEncounter } from './protocol-actions';
 import { saveEncounterNote, signEncounter } from './actions';
@@ -115,16 +123,19 @@ function toState(note: TcmNote | null): NoteState {
  */
 export function EncounterForm({
   encounterId,
+  patientId,
   note,
   isSigned,
   pointCatalogue,
   pointPositions,
   protocols,
   previousEncounters,
+  tonguePhotos,
   dispensePanel,
   formsPanel,
 }: {
   encounterId: string;
+  patientId: string;
   note: TcmNote | null;
   isSigned: boolean;
   /** The whole point catalogue, for instant autocomplete with no round trip. */
@@ -135,6 +146,8 @@ export function EncounterForm({
   protocols: TreatmentProtocol[];
   /** This patient's earlier treatments, newest first, for the comparison. */
   previousEncounters: PreviousEncounter[];
+  /** Every tongue photograph on this patient's file, newest first. */
+  tonguePhotos: TonguePhoto[];
   dispensePanel?: React.ReactNode;
   formsPanel?: React.ReactNode;
 }) {
@@ -143,19 +156,44 @@ export function EncounterForm({
   const tc = useTranslations('common');
   const tErrors = useTranslations('errors');
   const tProtocols = useTranslations('protocols');
+  const tPanels = useTranslations('encounters.panels');
   const format = useFormatter();
   const router = useRouter();
+  const confirm = useConfirm();
+  const { toast } = useToast();
 
   const [state, setState] = useState<NoteState>(() => toState(note));
   const [isPending, startTransition] = useTransition();
-  const [status, setStatus] = useState<'idle' | 'saved' | 'error'>('idle');
+  // Only a failure stays on the page. "Saved" is a toast, and the autosave line
+  // under the form already says when the record was last written.
+  const [status, setStatus] = useState<'idle' | 'error'>('idle');
   const [errorKey, setErrorKey] = useState<string | null>(null);
 
   // Saving this treatment as a protocol.
   const [protocolOpen, setProtocolOpen] = useState(false);
   const [protocolName, setProtocolName] = useState('');
   const [protocolDescription, setProtocolDescription] = useState('');
-  const [protocolSaved, setProtocolSaved] = useState(false);
+
+  /*
+   * What the dispensing panel is composing, for the live comparison.
+   *
+   * The panel publishes on every change; only a real change is kept. Returning
+   * the previous value from the updater when the two are equal makes React
+   * skip the render, which is what keeps a panel that republishes on every
+   * keystroke from re-rendering the whole form on every keystroke.
+   */
+  const [currentPrescription, setCurrentPrescription] = useState<CurrentPrescription | null>(
+    null,
+  );
+  const publishPrescription = useCallback((next: CurrentPrescription | null) => {
+    setCurrentPrescription((previous) =>
+      JSON.stringify(previous) === JSON.stringify(next) ? previous : next,
+    );
+  }, []);
+  const prescriptionContext = useMemo(
+    () => ({ publish: publishPrescription }),
+    [publishPrescription],
+  );
 
   const disabled = isSigned || isPending;
 
@@ -242,7 +280,7 @@ export function EncounterForm({
         setStatus('error');
         return;
       }
-      setStatus('saved');
+      toast({ tone: 'success', title: t('saved') });
       // Tell the autosave this value is on disk, so it does not immediately
       // write the same thing again.
       autosave.markSaved();
@@ -309,14 +347,20 @@ export function EncounterForm({
       setProtocolOpen(false);
       setProtocolName('');
       setProtocolDescription('');
-      setProtocolSaved(true);
-      window.setTimeout(() => setProtocolSaved(false), 3000);
+      toast({ tone: 'success', title: tProtocols('savedFromTreatment') });
       router.refresh();
     });
   }
 
-  function handleSign() {
-    if (!window.confirm(t('signConfirmBody'))) return;
+  async function handleSign() {
+    // Not destructive — signing is the point — but irreversible, so it is
+    // asked in the product's own dialog rather than the browser's.
+    const confirmed = await confirm({
+      title: t('sign'),
+      body: t('signConfirmBody'),
+      confirmLabel: t('sign'),
+    });
+    if (!confirmed) return;
     setErrorKey(null);
     startTransition(async () => {
       // Save first: signing locks the record, so anything unsaved would be lost.
@@ -352,7 +396,15 @@ export function EncounterForm({
           <div className="space-y-4">
             <div>
               <h3 className="mb-1.5 text-sm font-semibold text-ink-900">{tf('tongue')}</h3>
-              <div className="grid grid-cols-3 gap-1.5">
+              {/* The photograph first, open on the page, then the words. The
+                  words describe what the photograph shows. */}
+              <TonguePhotos
+                patientId={patientId}
+                encounterId={encounterId}
+                photos={tonguePhotos}
+                disabled={isSigned}
+              />
+              <div className="mt-2 grid grid-cols-3 gap-1.5">
                 <Field label={tf('tongueColorShort')} htmlFor="tongue_body_color" density="compact">
                   <Textarea
                     id="tongue_body_color"
@@ -442,13 +494,10 @@ export function EncounterForm({
   );
 
   return (
+    <CurrentPrescriptionProvider value={prescriptionContext}>
     <div className="grid gap-5 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
       <div className="space-y-4">
         {isSigned ? <Alert tone="info" title={t('lockedNotice')} /> : null}
-        {status === 'saved' ? <Alert tone="success">{tc('saved')}</Alert> : null}
-        {protocolSaved ? (
-          <Alert tone="success">{tProtocols('savedFromTreatment')}</Alert>
-        ) : null}
         {status === 'error' ? (
           <Alert tone="danger">
             {errorKey === 'errors.encounterLocked'
@@ -678,28 +727,35 @@ export function EncounterForm({
       </Dialog>
 
       {/* Side column: what you observe at the couch, and what you hand over
-          because of it. */}
-      <div className="space-y-4">
-        {examinationCard}
-
-        {/* Inside the form rather than passed in as a prop, because the diff is
-            against the points being typed right now — an element built by the
-            page could only ever compare against what is already saved. */}
-        <EncounterCompare
-          previous={previousEncounters}
-          currentPoints={state.points_used.map((row) => row.point).filter(Boolean)}
-        />
-        {/* The wrapper is not decoration. `dispensePanel` is an element built by
-            the page and handed in as a prop, so putting it straight into this
-            list makes React validate a child it did not create and ask for a key
-            it cannot have. Giving it a parent of its own makes it a single child
-            rather than an entry in an array, which is the condition the warning
-            is actually about. */}
-        <div>{dispensePanel}</div>
-        {/* Same reason as the dispensing panel above: an element built by the
-            page is a single child of its own wrapper, not an array entry. */}
-        <div>{formsPanel}</div>
-      </div>
+          because of it — in whatever order this practitioner keeps them. */}
+      <SidePanels
+        panels={[
+          { id: 'examination', title: tPanels('examination'), node: examinationCard },
+          {
+            id: 'compare',
+            title: tPanels('compare'),
+            // Inside the form rather than passed in as a prop, because the diff
+            // is against the points being typed right now — an element built by
+            // the page could only ever compare against what is already saved.
+            node: (
+              <EncounterCompare
+                previous={previousEncounters}
+                currentPoints={state.points_used
+                  .filter((row) => row.point.trim())
+                  .map((row) => ({ point: row.point, region: row.region }))}
+                currentPrescription={currentPrescription}
+              />
+            ),
+          },
+          // The wrappers are not decoration: `dispensePanel` and `formsPanel`
+          // are elements built by the page and handed in as props, and each
+          // needs a parent of its own so it is a single child rather than an
+          // entry React asks a key for.
+          { id: 'dispensing', title: tPanels('dispensing'), node: <div>{dispensePanel}</div> },
+          { id: 'forms', title: tPanels('forms'), node: <div>{formsPanel}</div> },
+        ]}
+      />
     </div>
+    </CurrentPrescriptionProvider>
   );
 }

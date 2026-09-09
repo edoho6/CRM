@@ -167,7 +167,13 @@ export function Popover({
               // Hidden until measured, so it never appears in the corner first.
               visibility: position ? 'visible' : 'hidden',
             }}
-            className="z-50 overflow-y-auto overscroll-contain rounded-lg border border-ink-200 bg-white p-3 shadow-lg"
+            // Fades and settles on arrival. `starting:` is the entrance for an
+            // element that is conditionally rendered — there is no "closed"
+            // state to animate from, and a panel should simply be gone when
+            // dismissed. It works with the measure-then-show trick above
+            // because the position is set in a layout effect, before the first
+            // paint; the transition begins on that same first frame.
+            className="z-popover overflow-y-auto overscroll-contain rounded-lg border border-ink-200 bg-white p-3 shadow-lg transition-[opacity,translate] duration-(--duration-fast) ease-standard starting:translate-y-1 starting:opacity-0"
           >
             {typeof children === 'function' ? children({ close }) : children}
           </div>,
@@ -318,7 +324,8 @@ export const FloatingList = React.forwardRef<
       ref={ref}
       style={style}
       className={cn(
-        'z-50 overflow-y-auto overscroll-contain rounded-lg border border-ink-200 bg-white py-1 shadow-lg',
+        'z-popover overflow-y-auto overscroll-contain rounded-lg border border-ink-200 bg-white py-1 shadow-lg',
+        'transition-[opacity,translate] duration-(--duration-fast) ease-standard starting:translate-y-1 starting:opacity-0',
         props.className,
       )}
     >

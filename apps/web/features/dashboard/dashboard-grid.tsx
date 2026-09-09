@@ -19,8 +19,8 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useTranslations } from 'next-intl';
-import { Check, LayoutGrid, RotateCcw } from 'lucide-react';
-import { Alert, Button, EmptyState, cn } from '@clinic/ui';
+import { Check, LayoutGrid, Pencil, RotateCcw } from 'lucide-react';
+import { Alert, Button, EmptyState, cn, useConfirm } from '@clinic/ui';
 import type { DashboardLayout, DashboardWidgetInstance, WidgetSize } from '@clinic/domain/widgets';
 import { AddWidgetDialog } from './add-widget-dialog';
 import { DashboardProvider } from './dashboard-context';
@@ -60,6 +60,7 @@ export function DashboardGrid({
   tracksInventory: boolean;
 }) {
   const t = useTranslations('dashboard');
+  const confirm = useConfirm();
 
   const [layout, setLayout] = useState<DashboardLayout>(initialLayout);
   const [isEditing, setIsEditing] = useState(false);
@@ -156,22 +157,28 @@ export function DashboardGrid({
     [layout, update],
   );
 
-  const handleReset = useCallback(() => {
-    if (!window.confirm(t('resetConfirm'))) return;
+  const handleReset = useCallback(async () => {
+    if (!(await confirm({ title: t('resetLayout'), body: t('resetConfirm') }))) return;
     update(defaultDashboardLayout(tracksInventory));
-  }, [t, update, tracksInventory]);
+  }, [confirm, t, update, tracksInventory]);
 
   const toolbar = (
     <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
       <div className="flex flex-wrap items-center gap-2">
         <AddWidgetDialog layout={layout} onAdd={handleAdd} />
+        {/* A pencil, not a labelled button: the one control that changes how
+            the whole grid behaves should look like a switch beside it, and
+            "edit" is the icon everyone already reads. The name is still there
+            for a screen reader and on hover. */}
         <Button
           variant={isEditing ? 'primary' : 'secondary'}
-          size="sm"
+          size="icon"
+          aria-pressed={isEditing}
+          aria-label={isEditing ? t('doneEditing') : t('editLayout')}
+          title={isEditing ? t('doneEditing') : t('editLayout')}
           onClick={() => setIsEditing((value) => !value)}
         >
-          {isEditing ? <Check className="h-4 w-4" /> : <LayoutGrid className="h-4 w-4" />}
-          {isEditing ? t('doneEditing') : t('editLayout')}
+          {isEditing ? <Check className="h-4 w-4" /> : <Pencil className="h-4 w-4" />}
         </Button>
         {isEditing ? (
           <Button variant="ghost" size="sm" onClick={handleReset}>

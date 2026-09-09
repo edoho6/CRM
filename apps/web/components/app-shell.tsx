@@ -1,32 +1,54 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import {
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  arrayMove,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import {
   Accessibility,
+  ArrowUpDown,
   BookOpen,
   Boxes,
   CalendarDays,
   ChartColumn,
+  Check,
   ChevronsRight,
   ClipboardList,
   FileText,
   FlaskConical,
+  GripVertical,
   LayoutDashboard,
+  ListTodo,
   Leaf,
   LogOut,
   Menu,
   Receipt,
   Settings,
   Sparkles,
+  UserCog,
   Users,
-  X,
 } from 'lucide-react';
 import { Link, usePathname } from '@clinic/i18n/navigation';
-import { Button, cn } from '@clinic/ui';
+import { Button, Sheet, SheetContent, cn } from '@clinic/ui';
 import { LanguageSwitcher } from './language-switcher';
 import { ThemeToggle } from './theme-toggle';
 import { UserMenu } from './user-menu';
+import { TaskBell } from './task-bell';
 import { GlobalSearch } from '@/features/quick-bar/global-search';
 import { QuickCreateMenu } from '@/features/quick-bar/quick-create-menu';
 import { BackButton } from './back-button';
@@ -39,11 +61,58 @@ import { clearOpenFiles } from '@/features/workspace/open-files';
  * A clinic that holds no stock never sees the second one.
  */
 const SIDEBAR_STORAGE_KEY = 'herbalist-sidebar-collapsed';
+/** The order of the menu, as this browser's user last arranged it. */
+const NAV_ORDER_STORAGE_KEY = 'herbalist-nav-order';
+
+type NavHref = (typeof NAV_ITEMS)[number]['href'];
+
+/** Stored order first, then anything newer that the stored order has never met. */
+function mergeNavOrder(stored: string[], known: readonly NavHref[]): NavHref[] {
+  const kept = stored.filter((href): href is NavHref => (known as readonly string[]).includes(href));
+  return [...kept, ...known.filter((href) => !kept.includes(href))];
+}
+
+/**
+ * One menu row while the order is being changed: the same shape as the link,
+ * but not a link — a click in this mode must not navigate away from the thing
+ * being arranged. The grip says it moves; the keyboard sensor lets it.
+ */
+function SortableNavItem({
+  href,
+  label,
+  icon: Icon,
+}: {
+  href: NavHref;
+  label: string;
+  icon: (typeof NAV_ITEMS)[number]['icon'];
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: href,
+  });
+  return (
+    <div
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition }}
+      {...attributes}
+      {...listeners}
+      className={cn(
+        'widget-drag-handle flex items-center gap-2.5 rounded-lg border border-dashed border-ink-200 bg-white px-3 py-2 text-sm font-medium text-ink-700',
+        'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus',
+        isDragging && 'z-10 opacity-90 shadow-md',
+      )}
+    >
+      <Icon className="h-4 w-4 shrink-0" aria-hidden />
+      <span className="min-w-0 flex-1 truncate">{label}</span>
+      <GripVertical className="h-4 w-4 shrink-0 text-ink-400" aria-hidden />
+    </div>
+  );
+}
 
 const NAV_ITEMS = [
   { href: '/', labelKey: 'dashboard', icon: LayoutDashboard, exact: true, stockOnly: false },
   { href: '/patients', labelKey: 'patients', icon: Users, exact: false, stockOnly: false },
   { href: '/calendar', labelKey: 'calendar', icon: CalendarDays, exact: false, stockOnly: false },
+  { href: '/tasks', labelKey: 'tasks', icon: ListTodo, exact: false, stockOnly: false },
   {
     href: '/encounters',
     labelKey: 'encounters',
@@ -76,6 +145,7 @@ export function AppShell({
   onSignOut: () => Promise<void>;
 }) {
   const t = useTranslations('nav');
+  const tc = useTranslations('common');
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -102,12 +172,104 @@ export function AppShell({
     }
   }, [collapsed]);
 
+  /*
+   * The menu in the order this person keeps it.
+   *
+   * Arranged only from the expanded desktop sidebar, behind a button, so a
+   * row cannot be dragged by someone reaching for it. The order is a property
+   * of this browser, like the collapsed state, and the phone drawer simply
+   * shows the same order. Items the clinic does not use (the stock room, when
+   * inventory is off) are hidden after ordering, so turning the setting on
+   * later puts them where they were rather than at the end.
+   */
+  const [navOrder, setNavOrder] = useState<NavHref[]>(() => NAV_ITEMS.map((item) => item.href));
+  const [navEditing, setNavEditing] = useState(false);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(NAV_ORDER_STORAGE_KEY);
+      if (!raw) return;
+      const stored: unknown = JSON.parse(raw);
+      if (Array.isArray(stored)) {
+        setNavOrder(
+          mergeNavOrder(
+            stored.filter((value): value is string => typeof value === 'string'),
+            NAV_ITEMS.map((item) => item.href),
+          ),
+        );
+      }
+    } catch {
+      // Site data blocked. The default order every time is the whole cost.
+    }
+  }, []);
+
+  const orderedNavItems = useMemo(
+    () =>
+      navOrder
+        .map((href) => NAV_ITEMS.find((item) => item.href === href))
+        .filter((item): item is (typeof NAV_ITEMS)[number] => Boolean(item))
+        .filter((item) => tracksInventory || !item.stockOnly),
+    [navOrder, tracksInventory],
+  );
+
+  const navSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  const handleNavDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event;
+      if (!over || active.id === over.id) return;
+      const from = navOrder.indexOf(active.id as NavHref);
+      const to = navOrder.indexOf(over.id as NavHref);
+      if (from === -1 || to === -1) return;
+      const next = arrayMove(navOrder, from, to);
+      setNavOrder(next);
+      try {
+        localStorage.setItem(NAV_ORDER_STORAGE_KEY, JSON.stringify(next));
+      } catch {
+        // As above.
+      }
+    },
+    [navOrder],
+  );
+
   // `iconOnly` is the collapsed desktop rail. The mobile menu always shows
-  // labels, because it is not the thing being collapsed.
-  function navList(iconOnly: boolean) {
+  // labels, because it is not the thing being collapsed. Only the desktop
+  // sidebar can be rearranged (`editable`): the phone drawer has no button to
+  // leave the mode, so it never enters it.
+  function navList(iconOnly: boolean, editable = false) {
+    if (editable && navEditing && !iconOnly) {
+      return (
+        <nav id="sidebar-nav" className="flex flex-col gap-1" aria-label={t('mainMenu')}>
+          <DndContext
+            sensors={navSensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleNavDragEnd}
+          >
+            <SortableContext
+              items={orderedNavItems.map((item) => item.href)}
+              strategy={verticalListSortingStrategy}
+            >
+              {orderedNavItems.map((item) => (
+                <SortableNavItem
+                  key={item.href}
+                  href={item.href}
+                  label={t(item.labelKey)}
+                  icon={item.icon}
+                />
+              ))}
+            </SortableContext>
+          </DndContext>
+          <p className="mt-2 px-1 text-[11px] text-ink-500">{t('arrangeHint')}</p>
+        </nav>
+      );
+    }
+
     return (
       <nav id="sidebar-nav" className="flex flex-col gap-0.5" aria-label={t('mainMenu')}>
-        {NAV_ITEMS.filter((item) => tracksInventory || !item.stockOnly).map((item) => {
+        {orderedNavItems.map((item) => {
           const isActive = item.exact ? pathname === item.href : pathname.startsWith(item.href);
           const label = t(item.labelKey);
           return (
@@ -144,7 +306,7 @@ export function AppShell({
           navigation to reach the content. */}
       <a
         href="#main-content"
-        className="sr-only rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-fg focus:not-sr-only focus:absolute focus:top-2 focus:start-2 focus:z-50"
+        className="sr-only rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-fg focus:not-sr-only focus:absolute focus:top-2 focus:start-2 focus:z-popover"
       >
         {t('skipToContent')}
       </a>
@@ -184,9 +346,25 @@ export function AppShell({
               property of the window; who you are is a property of you, and
               putting the name in both places said it twice. */}
           {!collapsed ? (
-            <span className="min-w-0 truncate text-sm font-semibold text-ink-900">
-              {clinicName}
-            </span>
+            <>
+              <span className="min-w-0 truncate text-sm font-semibold text-ink-900">
+                {clinicName}
+              </span>
+              {/* Beside the menu it arranges. A switch, not a mode buried in
+                  settings: press it, drag, press it again. */}
+              <Button
+                type="button"
+                variant={navEditing ? 'primary' : 'ghost'}
+                size="icon"
+                className="ms-auto h-7 w-7 shrink-0"
+                aria-pressed={navEditing}
+                aria-label={navEditing ? t('doneArranging') : t('arrangeMenu')}
+                title={navEditing ? t('doneArranging') : t('arrangeMenu')}
+                onClick={() => setNavEditing((value) => !value)}
+              >
+                {navEditing ? <Check className="h-3.5 w-3.5" /> : <ArrowUpDown className="h-3.5 w-3.5" />}
+              </Button>
+            </>
           ) : null}
         </div>
 
@@ -194,7 +372,7 @@ export function AppShell({
             child refuses to shrink below its content, so the list pushes the
             footer off the bottom instead of scrolling. */}
         <div className={cn('min-h-0 flex-1 overflow-y-auto', collapsed ? 'p-2' : 'p-3')}>
-          {navList(collapsed)}
+          {navList(collapsed, true)}
         </div>
 
         {/* Two links and a menu, where there were six controls.
@@ -286,7 +464,7 @@ export function AppShell({
 
         {/* Top bar, on every screen and every size: the quick-create "+" and the
             global search live here so they are never more than one click away. */}
-        <header className="sticky top-0 z-30 flex h-15 items-center justify-between gap-2 border-b border-ink-200 bg-white px-4">
+        <header className="sticky top-0 z-sticky flex h-15 items-center justify-between gap-2 border-b border-ink-200 bg-white px-4">
           <div className="flex min-w-0 items-center gap-2">
             <Button
               variant="ghost"
@@ -294,7 +472,6 @@ export function AppShell({
               className="lg:hidden"
               onClick={() => setMobileOpen((open) => !open)}
               aria-expanded={mobileOpen}
-              aria-controls="mobile-menu"
               aria-label={t('mainMenu')}
             >
               <Menu className="h-5 w-5" />
@@ -308,6 +485,7 @@ export function AppShell({
           </div>
           <div className="flex shrink-0 items-center gap-1.5">
             <GlobalSearch />
+            <TaskBell />
             <QuickCreateMenu />
             <LanguageSwitcher className="hidden sm:inline-flex lg:hidden" placement="down" />
           </div>
@@ -327,32 +505,53 @@ export function AppShell({
           <OpenFilesBar />
         </div>
 
-        {mobileOpen ? (
-          <div id="mobile-menu" className="border-b border-ink-200 bg-white p-3 lg:hidden">
-            <div className="mb-2 flex items-center justify-between">
-              <span className="text-xs text-ink-500">{userName}</span>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setMobileOpen(false)}
-                aria-label={t('mainMenu')}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
+        {/* The phone's navigation, as a drawer.
+
+            It was an inline block that pushed the page down when opened — no
+            backdrop, no focus trap, no animation — and it left out the three
+            destinations that live in the sidebar's foot on a desktop:
+            personal area, settings and the accessibility statement. On a phone
+            there was no way to reach any of them. The Sheet is a dialog, so it
+            traps focus, closes on Escape and on the backdrop, and returns
+            focus to the button that opened it. */}
+        <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+          <SheetContent title={t('mainMenu')} closeLabel={tc('close')} className="lg:hidden">
+            <p className="mb-2 truncate px-3 text-xs text-ink-500" dir="auto">
+              {userName}
+            </p>
             {nav}
-            <div className="mt-2 flex items-center gap-2">
+            <nav
+              aria-label={t('account')}
+              className="mt-3 flex flex-col gap-0.5 border-t border-ink-100 pt-3"
+            >
+              {[
+                { href: '/account' as const, label: t('account'), icon: UserCog },
+                { href: '/settings' as const, label: t('settings'), icon: Settings },
+                { href: '/accessibility' as const, label: t('accessibility'), icon: Accessibility },
+              ].map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setMobileOpen(false)}
+                  className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-ink-700 transition-colors hover:bg-ink-100"
+                >
+                  <item.icon className="h-4 w-4 shrink-0" aria-hidden />
+                  <span className="truncate">{item.label}</span>
+                </Link>
+              ))}
+            </nav>
+            <div className="mt-3 flex items-center gap-2 border-t border-ink-100 pt-3">
               <ThemeToggle />
               <LanguageSwitcher />
             </div>
-            <form action={onSignOut} onSubmit={() => clearOpenFiles()} className="mt-2">
+            <form action={onSignOut} onSubmit={() => clearOpenFiles()} className="mt-3">
               <Button type="submit" variant="ghost" size="sm" className="w-full justify-start">
                 <LogOut className="h-4 w-4" />
                 {t('signOut')}
               </Button>
             </form>
-          </div>
-        ) : null}
+          </SheetContent>
+        </Sheet>
 
         {/* `tabIndex={-1}` so the skip link can move focus here, not merely
             scroll to it — otherwise the next Tab would resume from the top. */}
