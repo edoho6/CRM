@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { useFormatter, useLocale, useTranslations } from 'next-intl';
 import { CalendarPlus, ChevronLeft, ChevronRight } from 'lucide-react';
-import type { Room } from '@clinic/db/types';
+import type { Location, Room } from '@clinic/db/types';
 import { ConfirmationDot } from './confirmation-status';
 import { BlockDayDialog } from './block-day-dialog';
 import { DayAddMenu } from './day-add-menu';
@@ -141,6 +141,7 @@ export function CalendarView({
   defaultPatientId,
   openNewOnLoad,
   rooms,
+  locations,
   reminderTemplate,
   clinicName,
 }: {
@@ -159,6 +160,8 @@ export function CalendarView({
   openNewOnLoad?: boolean;
   /** The rooms bookings go into; empty means the diary has no rooms. */
   rooms: Room[];
+  /** The addresses the practice works from; empty means it has one and never says. */
+  locations: Location[];
   reminderTemplate: string | null;
   clinicName: string;
 }) {
@@ -298,6 +301,7 @@ export function CalendarView({
       status: appointment.status,
       roomId: appointment.room_id,
       location: appointment.location,
+      locationId: appointment.location_id,
       reminderSentAt: appointment.reminder_sent_at,
       confirmationToken: appointment.confirmation_token,
       confirmationResponse: appointment.confirmation_response,
@@ -661,6 +665,7 @@ export function CalendarView({
         patients={patients}
         appointmentTypes={appointmentTypes}
         rooms={rooms}
+        locations={locations}
         reminderTemplate={reminderTemplate}
         clinicName={clinicName}
         practitionerId={practitionerId}

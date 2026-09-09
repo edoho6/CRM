@@ -10,56 +10,50 @@ import {
   CardBody,
   Field,
   Input,
-  Select,
   Toggle,
   useConfirm,
   useToast,
 } from '@clinic/ui';
 import { useRouter } from '@clinic/i18n/navigation';
-import type { Location, Room } from '@clinic/db/types';
-import { deleteRoom, saveRoom } from './actions';
+import type { Location } from '@clinic/db/types';
+import { deleteLocation, saveLocation } from './actions';
 
 /**
- * The rooms a clinic treats in.
+ * The clinics a practitioner works from.
  *
- * Defining them is what turns on side-by-side booking: with two rooms, the
- * same practitioner can hold two people at ten o'clock, one in each, and the
- * calendar shows both with the room's colour. With none, the diary behaves as
- * it always did — one person, one hour.
- *
- * When the practice has more than one address, each room says which one it
- * is in, and the booking dialog offers only the rooms of the chosen address.
+ * One account, several addresses — Tuesdays here, Thursdays there. With more
+ * than one defined, every booking names one, and the rooms are sorted under
+ * them. With none, nothing in the diary asks.
  */
 
 interface Draft {
   id: string | null;
   name: string;
+  address: string;
   color: string;
   is_active: boolean;
-  location_id: string;
 }
 
-function toDraft(room?: Room): Draft {
+function toDraft(location?: Location): Draft {
   return {
-    id: room?.id ?? null,
-    name: room?.name ?? '',
-    color: room?.color ?? '#0e7490',
-    is_active: room?.is_active ?? true,
-    location_id: room?.location_id ?? '',
+    id: location?.id ?? null,
+    name: location?.name ?? '',
+    address: location?.address ?? '',
+    color: location?.color ?? '#0e7490',
+    is_active: location?.is_active ?? true,
   };
 }
 
-export function RoomsManager({ rooms, locations }: { rooms: Room[]; locations: Location[] }) {
-  const t = useTranslations('settings.rooms');
+export function LocationsManager({ locations }: { locations: Location[] }) {
+  const t = useTranslations('settings.locations');
   const tc = useTranslations('common');
   const router = useRouter();
   const confirm = useConfirm();
   const { toast } = useToast();
 
-  const [drafts, setDrafts] = useState<Draft[]>(() => rooms.map((room) => toDraft(room)));
+  const [drafts, setDrafts] = useState<Draft[]>(() => locations.map((entry) => toDraft(entry)));
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
-  const activeLocations = locations.filter((entry) => entry.is_active);
 
   function update(index: number, patch: Partial<Draft>) {
     setDrafts((current) =>
@@ -71,11 +65,11 @@ export function RoomsManager({ rooms, locations }: { rooms: Room[]; locations: L
     const draft = drafts[index]!;
     setError(null);
     startTransition(async () => {
-      const result = await saveRoom(draft.id, {
+      const result = await saveLocation(draft.id, {
         name: draft.name,
+        address: draft.address,
         color: draft.color,
         is_active: draft.is_active,
-        location_id: draft.location_id || null,
       });
       if (!result.ok) {
         setError(tc('errorGeneric'));
@@ -101,9 +95,8 @@ export function RoomsManager({ rooms, locations }: { rooms: Room[]; locations: L
     if (!confirmed) return;
 
     startTransition(async () => {
-      const result = await deleteRoom(draft.id!);
+      const result = await deleteLocation(draft.id!);
       if (!result.ok) {
-        // Bookings already refer to it, so it was retired rather than removed.
         setError(t('inUse'));
         router.refresh();
         return;
@@ -124,16 +117,16 @@ export function RoomsManager({ rooms, locations }: { rooms: Room[]; locations: L
         <Card key={draft.id ?? `new-${index}`}>
           <CardBody className="space-y-3">
             <div className="flex flex-wrap items-end gap-3">
-              <Field label={t('name')} htmlFor={`room-${index}`} required className="min-w-40 flex-1">
+              <Field label={t('name')} htmlFor={`location-${index}`} required className="min-w-40 flex-1">
                 <Input
-                  id={`room-${index}`}
+                  id={`location-${index}`}
                   value={draft.name}
                   onChange={(event) => update(index, { name: event.target.value })}
                 />
               </Field>
-              <Field label={t('colour')} htmlFor={`room-color-${index}`}>
+              <Field label={t('colour')} htmlFor={`location-color-${index}`}>
                 <input
-                  id={`room-color-${index}`}
+                  id={`location-color-${index}`}
                   type="color"
                   value={draft.color}
                   onChange={(event) => update(index, { color: event.target.value })}
@@ -141,24 +134,13 @@ export function RoomsManager({ rooms, locations }: { rooms: Room[]; locations: L
                 />
               </Field>
             </div>
-
-            {activeLocations.length > 0 ? (
-              <Field label={t('location')} htmlFor={`room-location-${index}`}>
-                <Select
-                  id={`room-location-${index}`}
-                  value={draft.location_id}
-                  onChange={(event) => update(index, { location_id: event.target.value })}
-                >
-                  <option value="">{t('anyLocation')}</option>
-                  {activeLocations.map((entry) => (
-                    <option key={entry.id} value={entry.id}>
-                      {entry.name}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
-            ) : null}
-
+            <Field label={t('address')} htmlFor={`location-address-${index}`}>
+              <Input
+                id={`location-address-${index}`}
+                value={draft.address}
+                onChange={(event) => update(index, { address: event.target.value })}
+              />
+            </Field>
             <div className="flex flex-wrap items-center gap-3">
               <Toggle
                 checked={draft.is_active}

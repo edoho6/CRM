@@ -1,5 +1,5 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import type { AppointmentType, AppointmentWithRelations, Patient, Room } from '@clinic/db/types';
+import type { AppointmentType, AppointmentWithRelations, Location, Patient, Room } from '@clinic/db/types';
 import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
 import { CalendarView, type CalendarViewMode } from '@/features/appointments/calendar-view';
@@ -14,8 +14,8 @@ import type { BlockedWindow, DayException, WorkingBlock } from '@/features/appoi
 
 const APPOINTMENT_SELECT =
   'id, clinic_id, patient_id, practitioner_id, appointment_type_id, start_at, end_at, status, location, notes, cancelled_reason, cancelled_at, created_by, created_at, updated_at, ' +
-  'room_id, reminder_sent_at, confirmation_token, confirmation_response, responded_at, ' +
-  'room:rooms(id, name, color), ' +
+  'room_id, location_id, reminder_sent_at, confirmation_token, confirmation_response, responded_at, ' +
+  'room:rooms(id, name, color), place:locations(id, name, color), ' +
   'patient:patients(id, first_name, last_name, full_name, phone), ' +
   'appointment_type:appointment_types(id, name_he, name_en, color)';
 
@@ -97,6 +97,7 @@ export default async function CalendarPage({
     exceptionsResult,
     roomsResult,
     blockedResult,
+    locationsResult,
   ] =
     await Promise.all([
     scope.supabase
@@ -149,6 +150,12 @@ export default async function CalendarPage({
       .gt('end_at', windowStart.toISOString())
       .order('start_at', { ascending: true })
       .returns<BlockedWindow[]>(),
+    scope.supabase
+      .from('locations')
+      .select('*')
+      .order('sort_order', { ascending: true })
+      .order('created_at', { ascending: true })
+      .returns<Location[]>(),
   ]);
 
   return (
@@ -171,6 +178,7 @@ export default async function CalendarPage({
         defaultPatientId={patientParam}
         openNewOnLoad={newParam === '1'}
         rooms={roomsResult.data ?? []}
+        locations={locationsResult.data ?? []}
         reminderTemplate={scope.context.clinic.reminder_template ?? null}
         clinicName={scope.context.clinic.name}
       />

@@ -1,0 +1,439 @@
+'use client';
+
+import { useEffect, useMemo, useState, useTransition } from 'react';
+import { useFormatter, useLocale, useTranslations } from 'next-intl';
+import { ArrowLeft, ArrowRight, Check } from 'lucide-react';
+import { Alert, Button, Card, CardBody, Field, Input, LtrInput, Spinner, Textarea, cn } from '@clinic/ui';
+import type { Locale } from '@clinic/domain';
+import { useRouter } from '@clinic/i18n/navigation';
+import { formatTime } from '@clinic/i18n';
+import { addDays, toDateKey } from '@/features/appointments/date-utils';
+import { fetchSlots, sendBookingCode, submitBooking, type BookingError } from '../actions';
+
+export interface BookingClinic {
+  id: string;
+  name: string;
+  intro: string | null;
+  address: string | null;
+  phone: string | null;
+  locale: Locale;
+  timezone: string;
+  lead_hours: number;
+  horizon_days: number;
+  verify_sms: boolean;
+}
+
+export interface BookingType {
+  id: string;
+  name_he: string;
+  name_en: string;
+  minutes: number;
+  price: number | null;
+}
+
+export interface BookingPractitioner {
+  id: string;
+  name: string | null;
+}
+
+export interface BookingLocation {
+  id: string;
+  name: string;
+  address: string | null;
+}
+
+/**
+ * Three screens on a phone: what, when, who.
+ *
+ * Each choice is a big tap target and the next screen follows at once; there
+ * is no "next" button between what and when because choosing the treatment
+ * *is* the next. The days are a row of chips, the hours a grid; a day with
+ * nothing free says so rather than showing an empty grid. The details form
+ * is the last thing, because a person will give their number once they can
+ * see the hour is theirs.
+ */
+export function BookingFlow({
+  slug,
+  clinic,
+  types,
+  practitioners,
+  locations,
+}: {
+  slug: string;
+  clinic: BookingClinic;
+  types: BookingType[];
+  practitioners: BookingPractitioner[];
+  locations: BookingLocation[];
+}) {
+  const t = useTranslations('booking');
+  const locale = useLocale() as Locale;
+  const format = useFormatter();
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+
+  const [typeId, setTypeId] = useState<string | null>(types.length === 1 ? types[0]!.id : null);
+  const [practitionerId, setPractitionerId] = useState<string | null>(
+    practitioners.length === 1 ? practitioners[0]!.id : null,
+  );
+  const [locationId, setLocationId] = useState<string | null>(
+    locations.length === 1 ? locations[0]!.id : null,
+  );
+  const [day, setDay] = useState<string>(toDateKey(new Date()));
+  const [slots, setSlots] = useState<string[] | null>(null);
+  const [startAt, setStartAt] = useState<string | null>(null);
+
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const [note, setNote] = useState('');
+  const [code, setCode] = useState('');
+  const [codeSent, setCodeSent] = useState(false);
+  const [error, setError] = useState<BookingError | null>(null);
+
+  const typeName = (type: BookingType) =>
+    (locale === 'he' ? type.name_he : type.name_en).trim() || type.name_en || type.name_he;
+
+  const step: 'what' | 'when' | 'who' =
+    !typeId || !practitionerId || (locations.length > 1 && !locationId)
+      ? 'what'
+      : !startAt
+        ? 'when'
+        : 'who';
+
+  const days = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return Array.from({ length: Math.min(clinic.horizon_days, 21) }, (_, index) =>
+      addDays(today, index),
+    );
+  }, [clinic.horizon_days]);
+
+  // The free hours of the chosen day, fetched when the day or the treatment
+  // changes. Cleared first so a stale grid never sits under a new day's name.
+  useEffect(() => {
+    if (step === 'what' || !typeId || !practitionerId) return;
+    let cancelled = false;
+    setSlots(null);
+    void fetchSlots(slug, typeId, practitionerId, day).then((result) => {
+      if (!cancelled) setSlots(result);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [slug, typeId, practitionerId, day, step]);
+
+  function requestCode() {
+    setError(null);
+    startTransition(async () => {
+      const result = await sendBookingCode(slug, phone);
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+      setCodeSent(true);
+    });
+  }
+
+  function submit(event: React.FormEvent) {
+    event.preventDefault();
+    if (!typeId || !practitionerId || !startAt) return;
+    setError(null);
+    startTransition(async () => {
+      const result = await submitBooking({
+        slug,
+        typeId,
+        practitionerId,
+        locationId,
+        startAt,
+        firstName,
+        lastName,
+        phone,
+        email,
+        note,
+        code,
+      });
+      if (!result.ok) {
+        setError(result.error);
+        // The hour went to someone else: back to the grid, freshly loaded.
+        if (result.error === 'slot_taken') {
+          setStartAt(null);
+          setSlots(null);
+          void fetchSlots(slug, typeId, practitionerId, day).then(setSlots);
+        }
+        return;
+      }
+      router.push(`/confirm/${result.token}?booked=1`);
+    });
+  }
+
+  const Back = locale === 'he' ? ArrowRight : ArrowLeft;
+
+  return (
+    <div className="space-y-4">
+      {error ? <Alert tone="danger">{t(`errors.${error}`)}</Alert> : null}
+
+      {step === 'what' ? (
+        <div className="space-y-4">
+          {!typeId ? (
+            <section aria-labelledby="book-what">
+              <h2 id="book-what" className="mb-2 text-sm font-semibold text-ink-900">
+                {t('chooseTreatment')}
+              </h2>
+              {types.length === 0 ? (
+                <p className="text-sm text-ink-600">{t('noTreatments')}</p>
+              ) : (
+                <ul className="space-y-2">
+                  {types.map((type) => (
+                    <li key={type.id}>
+                      <button
+                        type="button"
+                        onClick={() => setTypeId(type.id)}
+                        className="flex w-full items-center justify-between gap-3 rounded-lg border border-ink-200 bg-white px-4 py-3 text-start hover:border-jade-500 hover:bg-jade-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+                      >
+                        <span className="text-base font-medium text-ink-900">{typeName(type)}</span>
+                        <span className="shrink-0 text-sm text-ink-600">
+                          {t('minutes', { count: type.minutes })}
+                          {type.price !== null ? ` · ${format.number(type.price, 'currency')}` : ''}
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          ) : null}
+
+          {typeId && !practitionerId ? (
+            <section aria-labelledby="book-who">
+              <h2 id="book-who" className="mb-2 text-sm font-semibold text-ink-900">
+                {t('choosePractitioner')}
+              </h2>
+              <ul className="space-y-2">
+                {practitioners.map((person) => (
+                  <li key={person.id}>
+                    <button
+                      type="button"
+                      onClick={() => setPractitionerId(person.id)}
+                      className="w-full rounded-lg border border-ink-200 bg-white px-4 py-3 text-start text-base font-medium text-ink-900 hover:border-jade-500 hover:bg-jade-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+                    >
+                      {person.name ?? t('practitioner')}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+
+          {typeId && practitionerId && locations.length > 1 && !locationId ? (
+            <section aria-labelledby="book-where">
+              <h2 id="book-where" className="mb-2 text-sm font-semibold text-ink-900">
+                {t('chooseLocation')}
+              </h2>
+              <ul className="space-y-2">
+                {locations.map((place) => (
+                  <li key={place.id}>
+                    <button
+                      type="button"
+                      onClick={() => setLocationId(place.id)}
+                      className="w-full rounded-lg border border-ink-200 bg-white px-4 py-3 text-start hover:border-jade-500 hover:bg-jade-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+                    >
+                      <span className="block text-base font-medium text-ink-900">{place.name}</span>
+                      {place.address ? (
+                        <span className="block text-sm text-ink-600" dir="auto">
+                          {place.address}
+                        </span>
+                      ) : null}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+        </div>
+      ) : null}
+
+      {step === 'when' ? (
+        <section aria-labelledby="book-when" className="space-y-3">
+          <div className="flex items-center justify-between gap-2">
+            <h2 id="book-when" className="text-sm font-semibold text-ink-900">
+              {t('chooseTime')}
+            </h2>
+            <button
+              type="button"
+              onClick={() => {
+                setTypeId(types.length === 1 ? typeId : null);
+                setPractitionerId(practitioners.length === 1 ? practitionerId : null);
+                setLocationId(locations.length === 1 ? locationId : null);
+                if (types.length === 1 && practitioners.length === 1 && locations.length <= 1) return;
+              }}
+              className="inline-flex items-center gap-1 text-xs text-ink-600 underline-offset-2 hover:underline"
+            >
+              <Back className="h-3.5 w-3.5" aria-hidden />
+              {t('back')}
+            </button>
+          </div>
+
+          <div className="flex gap-1.5 overflow-x-auto pb-1" role="tablist" aria-label={t('day')}>
+            {days.map((candidate) => {
+              const key = toDateKey(candidate);
+              const selected = key === day;
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  role="tab"
+                  aria-selected={selected}
+                  onClick={() => setDay(key)}
+                  className={cn(
+                    'flex shrink-0 flex-col items-center rounded-lg border px-3 py-2 text-sm',
+                    selected
+                      ? 'border-jade-600 bg-jade-600 text-accent-fg'
+                      : 'border-ink-200 bg-white text-ink-800 hover:bg-ink-50',
+                  )}
+                >
+                  <span className="text-xs">{format.dateTime(candidate, { weekday: 'short' })}</span>
+                  <span className="font-semibold tabular-nums">
+                    {format.dateTime(candidate, { day: 'numeric', month: 'numeric' })}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {slots === null ? (
+            <p className="flex items-center gap-2 py-6 text-sm text-ink-600">
+              <Spinner /> {t('loadingSlots')}
+            </p>
+          ) : slots.length === 0 ? (
+            <p className="py-6 text-center text-sm text-ink-600">{t('noSlots')}</p>
+          ) : (
+            <ul className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+              {slots.map((slot) => (
+                <li key={slot}>
+                  <button
+                    type="button"
+                    onClick={() => setStartAt(slot)}
+                    className="w-full rounded-lg border border-ink-200 bg-white py-3 text-base font-medium tabular-nums text-ink-900 hover:border-jade-500 hover:bg-jade-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+                    dir="ltr"
+                  >
+                    {formatTime(new Date(slot))}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      ) : null}
+
+      {step === 'who' && startAt ? (
+        <form onSubmit={submit} className="space-y-4">
+          <Card>
+            <CardBody className="flex items-center justify-between gap-3 text-sm">
+              <span className="text-ink-800">
+                <span className="block font-medium">
+                  {typeName(types.find((type) => type.id === typeId)!)}
+                </span>
+                <span dir="ltr" className="tabular-nums">
+                  {format.dateTime(new Date(startAt), 'weekday')} · {formatTime(new Date(startAt))}
+                </span>
+              </span>
+              <button
+                type="button"
+                onClick={() => setStartAt(null)}
+                className="inline-flex shrink-0 items-center gap-1 text-xs text-ink-600 underline-offset-2 hover:underline"
+              >
+                <Back className="h-3.5 w-3.5" aria-hidden />
+                {t('changeTime')}
+              </button>
+            </CardBody>
+          </Card>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label={t('firstName')} htmlFor="first_name" required>
+              <Input
+                id="first_name"
+                value={firstName}
+                autoComplete="given-name"
+                required
+                onChange={(event) => setFirstName(event.target.value)}
+              />
+            </Field>
+            <Field label={t('lastName')} htmlFor="last_name">
+              <Input
+                id="last_name"
+                value={lastName}
+                autoComplete="family-name"
+                onChange={(event) => setLastName(event.target.value)}
+              />
+            </Field>
+          </div>
+          <Field label={t('phone')} htmlFor="phone" required hint={t('phoneHint')}>
+            <LtrInput
+              id="phone"
+              type="tel"
+              value={phone}
+              autoComplete="tel"
+              required
+              onChange={(event) => setPhone(event.target.value)}
+            />
+          </Field>
+          <Field label={t('email')} htmlFor="email">
+            <LtrInput
+              id="email"
+              type="email"
+              value={email}
+              autoComplete="email"
+              onChange={(event) => setEmail(event.target.value)}
+            />
+          </Field>
+          <Field label={t('note')} htmlFor="note">
+            <Textarea id="note" rows={2} value={note} onChange={(event) => setNote(event.target.value)} />
+          </Field>
+
+          {clinic.verify_sms ? (
+            <div className="space-y-2 rounded-lg border border-ink-200 p-3">
+              <p className="text-sm text-ink-700">{t('verifyIntro')}</p>
+              <div className="flex flex-wrap items-end gap-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  disabled={isPending || phone.replace(/\D/g, '').length < 8}
+                  onClick={requestCode}
+                >
+                  {codeSent ? t('resendCode') : t('sendCode')}
+                </Button>
+                {codeSent ? (
+                  <Field label={t('code')} htmlFor="code" required density="compact">
+                    <LtrInput
+                      id="code"
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      maxLength={6}
+                      className="w-32 tracking-widest"
+                      value={code}
+                      required
+                      onChange={(event) => setCode(event.target.value.replace(/\D/g, ''))}
+                    />
+                  </Field>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
+
+          <Button
+            type="submit"
+            size="lg"
+            className="w-full"
+            disabled={isPending || (clinic.verify_sms && code.length < 6)}
+          >
+            {isPending ? <Spinner /> : <Check className="h-5 w-5" aria-hidden />}
+            {t('book')}
+          </Button>
+          <p className="text-center text-xs text-ink-500">{t('privacy')}</p>
+        </form>
+      ) : null}
+    </div>
+  );
+}

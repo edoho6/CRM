@@ -17,6 +17,9 @@ export const appointmentFormSchema = z
     room_id: z
       .union([uuidField, z.literal(""), z.null(), z.undefined()])
       .transform((v) => (v ? v : null)),
+    location_id: z
+      .union([uuidField, z.literal(''), z.null(), z.undefined()])
+      .transform((value) => (value ? value : null)),
     location: optionalText(160),
     notes: optionalText(2000),
   })

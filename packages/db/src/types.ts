@@ -70,6 +70,13 @@ export interface Clinic {
   /** How long before the appointment the reminder is queued. */
   reminder_hours_before: number;
   reminder_channel: MessageChannel;
+  /** The public booking page: whether it is on, and under which handle. */
+  booking_enabled: boolean;
+  booking_slug: string | null;
+  booking_intro: string | null;
+  booking_lead_hours: number;
+  booking_horizon_days: number;
+  booking_verify_sms: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -79,6 +86,7 @@ export interface Profile {
   full_name: string | null;
   phone: string | null;
   preferred_locale: Locale;
+  created_via: 'staff' | 'online' | 'portal';
   avatar_url: string | null;
   title: string | null;
   license_number: string | null;
@@ -185,6 +193,8 @@ export interface AppointmentType {
   practitioner_id: string | null;
   sort_order: number;
   is_active: boolean;
+  /** Offered on the public booking page. */
+  online_bookable: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -204,6 +214,9 @@ export interface Appointment {
   cancelled_at: string | null;
   /** Which room, when the clinic has any. The room, not the practitioner, is what cannot be double-booked. */
   room_id: string | null;
+  /** Made from the public booking page rather than the diary. */
+  booked_online: boolean;
+  location_id: string | null;
   /** When the reminder went out, by whatever channel. Null: not yet. */
   reminder_sent_at: string | null;
   /** The secret in the reminder link. Never rendered to anyone but the patient. */
@@ -223,6 +236,7 @@ export interface AppointmentWithRelations extends Appointment {
   practitioner: Pick<Profile, 'id' | 'full_name'> | null;
   encounter_id?: string | null;
   room?: Pick<Room, 'id' | 'name' | 'color'> | null;
+  place?: Pick<Location, 'id' | 'name' | 'color'> | null;
 }
 
 export interface PractitionerSchedule {
@@ -1114,12 +1128,26 @@ export interface PatientWithDiary extends Patient {
   last_appointment_at: string | null;
 }
 
-/** A treatment room or branch. Bookings in it cannot overlap. */
+/** An address the practice works from. A room sits inside one; a booking names one. */
+export interface Location {
+  id: string;
+  clinic_id: string;
+  name: string;
+  address: string | null;
+  color: string;
+  sort_order: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+/** A treatment room inside a location. Bookings in it cannot overlap. */
 export interface Room {
   id: string;
   clinic_id: string;
   name: string;
   color: string;
+  location_id: string | null;
   sort_order: number;
   is_active: boolean;
   created_at: string;

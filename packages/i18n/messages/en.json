@@ -1,4 +1,41 @@
 {
+  "booking": {
+    "notAvailable": "This page is not open at the moment. Call the clinic to book.",
+    "defaultIntro": "Pick a treatment, an hour that suits you, and leave a name and a number. That's it.",
+    "chooseTreatment": "Which treatment?",
+    "noTreatments": "No treatments are open for online booking yet. Call the clinic.",
+    "minutes": "{count} min",
+    "choosePractitioner": "With whom?",
+    "practitioner": "Practitioner",
+    "chooseLocation": "Where?",
+    "chooseTime": "When?",
+    "day": "Day",
+    "back": "Back",
+    "loadingSlots": "Checking free hours…",
+    "noSlots": "Nothing free on this day. Try another.",
+    "changeTime": "Another time",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "phone": "Mobile phone",
+    "phoneHint": "If you have visited before, the number connects you to your file.",
+    "email": "Email (optional)",
+    "note": "Anything we should know? (optional)",
+    "verifyIntro": "We'll send a short code by SMS to this number.",
+    "sendCode": "Send the code",
+    "resendCode": "Send again",
+    "code": "The code",
+    "book": "Book it",
+    "privacy": "Your details are used for this booking and to contact you, nothing else.",
+    "errors": {
+      "not_available": "This page is not open at the moment.",
+      "slot_taken": "That hour was just taken. Pick another.",
+      "missing": "Something is missing — a first name and a valid phone number.",
+      "bad_code": "That code is not right. Try again.",
+      "code_expired": "The code has expired. Send a new one.",
+      "too_many": "Too many attempts. Try again in a few minutes.",
+      "generic": "Something went wrong. Please try again in a moment."
+    }
+  },
   "messages": {
     "title": "Messages",
     "subtitle": "Reminders waiting to be sent, and what already went.",
@@ -33,6 +70,7 @@
     "synthetic": "Sandbox"
   },
   "confirm": {
+    "booked": "Booked! The details are below, and you can confirm arrival right away.",
     "greeting": "Hello {name},",
     "youHave": "You have an appointment",
     "yes": "I'll be there",
@@ -462,6 +500,8 @@
     "singular": "Patient"
   },
   "appointments": {
+    "place": "Clinic",
+    "selectPlace": "Choose a clinic",
     "room": "Room",
     "selectRoom": "Choose a room",
     "addOn": "Add on this day",
@@ -474,6 +514,8 @@
       "declined": "Not coming"
     },
     "reminder": {
+      "confirmedAt": "Confirmed arrival on",
+      "declinedAt": "Said they are not coming on",
       "title": "Reminder and arrival confirmation",
       "intro": "The message opens in WhatsApp ready to send. After sending, mark it here as sent; the patient confirms through the link in the message.",
       "sendWhatsApp": "Send on WhatsApp",
@@ -1328,6 +1370,7 @@
     }
   },
   "errors": {
+    "slugTaken": "That address is already taken.",
     "notFound": "Page not found",
     "notFoundBody": "The address may be wrong, or the item was deleted.",
     "unauthorized": "You don't have access to this page",
@@ -1342,7 +1385,44 @@
     "roomOverlap": "That room is already booked at this hour"
   },
   "settings": {
+    "booking": {
+      "subtitle": "The page where patients book for themselves — from the link you send.",
+      "title": "Online booking",
+      "intro": "One link to send patients. They pick a treatment and a free hour, leave a name and a number, and the booking lands in the diary. The text at the top of the page is yours to write.",
+      "enabled": "Page is on",
+      "slug": "Page address",
+      "slugHint": "Letters, digits and dashes. For example: clinic-dana",
+      "slugTaken": "That address is taken. Try another.",
+      "invalid": "Something is not right. The address needs at least 3 characters.",
+      "copied": "Link copied",
+      "copyFailed": "Copy failed",
+      "copy": "Copy the link",
+      "open": "Open",
+      "pageText": "Text at the top of the page",
+      "pageTextHint": "Empty means the built-in wording. Write anything: what to bring, where to park, how to cancel.",
+      "leadHours": "Minimum notice, in hours",
+      "leadHoursHint": "0 lets someone book for a quarter of an hour from now.",
+      "horizonDays": "How many days ahead",
+      "horizonDaysHint": "How far ahead a booking may be made.",
+      "verifySms": "Verify with an SMS code",
+      "verifySmsHint": "Needs an SMS sending service. Until one is connected, leave this off — otherwise nobody can book.",
+      "noTypes": "No treatment is open for booking. In the personal area → treatment types, tick \"open for online booking\" on the ones you want."
+    },
+    "locations": {
+      "intro": "The addresses you see patients at. With more than one, every booking names one, and rooms are sorted under them.",
+      "name": "Clinic name",
+      "address": "Address",
+      "colour": "Colour",
+      "active": "Active",
+      "add": "Add a clinic",
+      "deleteConfirm": "Delete this clinic? Bookings and rooms in it stay, without one.",
+      "inUse": "There are bookings or rooms in this clinic, so it was retired rather than deleted.",
+      "empty": "One clinic only — nothing to set up. Add one only when you work from several addresses."
+    },
     "rooms": {
+      "location": "Clinic",
+      "anyLocation": "Any clinic",
+      "empty": "No rooms yet. Without rooms the diary behaves as before — one booking per hour.",
       "subtitle": "Treatment rooms. With rooms, several patients can be booked for the same hour — each in their own.",
       "intro": "Every booking goes into a room. A room cannot be taken twice at the same hour, but one practitioner can work several rooms at once. With no rooms the diary behaves as before — one booking per hour.",
       "name": "Room name",
@@ -1403,6 +1483,7 @@
     },
     "inventoryReversible": "Change it whenever you like. Turning it off hides your stock data rather than deleting it, so turning it back on restores exactly what was there.",
     "nav": {
+      "booking": "Online booking",
       "rooms": "Rooms",
       "tags": "Tags",
       "general": "General",
@@ -1454,6 +1535,7 @@
       }
     },
     "appointmentTypes": {
+      "onlineBookable": "Open for online booking",
       "title": "Treatment types",
       "subtitle": "Every treatment you offer — its length, its price and its colour in the diary. These are the fields the calendar and the invoice are built from.",
       "nameHe": "Name in Hebrew",
@@ -1699,6 +1781,12 @@
     "noneInRange": "Nothing in this range"
   },
   "account": {
+    "places": {
+      "title": "Clinics and rooms",
+      "subtitle": "Where you see patients, and in which rooms. Neither is required — set them up only when there is more than one.",
+      "locations": "Clinics",
+      "rooms": "Rooms"
+    },
     "title": "My area",
     "subtitle": "The settings each practitioner chooses for themself — how the interface looks, and the treatments they offer.",
     "appearance": "Appearance",

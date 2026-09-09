@@ -5,12 +5,15 @@ import {
   ClipboardList,
   Clock,
   CreditCard,
+  MapPin,
   Palette,
 } from 'lucide-react';
 import { Collapsible } from '@clinic/ui';
 import { Link } from '@clinic/i18n/navigation';
 import type {
   AppointmentType,
+  Location,
+  Room,
   PractitionerSchedule,
   Profile,
   ScheduleException,
@@ -21,6 +24,8 @@ import { AppointmentTypesManager } from '@/features/settings/appointment-types-m
 import { AppearanceSettings } from '@/features/settings/appearance-settings';
 import { PractitionerForm } from '@/features/settings/practitioner-form';
 import { ScheduleForm } from '@/features/settings/schedule-form';
+import { LocationsManager } from '@/features/settings/locations-manager';
+import { RoomsManager } from '@/features/settings/rooms-manager';
 
 /**
  * The personal area.
@@ -45,13 +50,21 @@ export default async function AccountPage({ params }: { params: Promise<{ locale
   const tProtocols = await getTranslations('protocols');
   const tPractitioner = await getTranslations('account.practitioner');
   const tSections = await getTranslations('account.sections');
+  const tPlaces = await getTranslations('account.places');
 
   const scope = await getClinicScope();
   if (!scope) return null;
 
   const today = new Date().toISOString().slice(0, 10);
 
-  const [{ data: types }, { data: profile }, schedulesResult, exceptionsResult] =
+  const [
+    { data: types },
+    { data: profile },
+    schedulesResult,
+    exceptionsResult,
+    locationsResult,
+    roomsResult,
+  ] =
     await Promise.all([
     scope.supabase
       .from('appointment_types')
@@ -82,6 +95,18 @@ export default async function AccountPage({ params }: { params: Promise<{ locale
       .order('date', { ascending: true })
       .limit(400)
       .returns<ScheduleException[]>(),
+    scope.supabase
+      .from('locations')
+      .select('*')
+      .order('sort_order', { ascending: true })
+      .order('created_at', { ascending: true })
+      .returns<Location[]>(),
+    scope.supabase
+      .from('rooms')
+      .select('*')
+      .order('sort_order', { ascending: true })
+      .order('created_at', { ascending: true })
+      .returns<Room[]>(),
   ]);
 
   return (
@@ -135,6 +160,29 @@ export default async function AccountPage({ params }: { params: Promise<{ locale
             schedules={schedulesResult.data ?? []}
             exceptions={exceptionsResult.data ?? []}
           />
+        </Collapsible>
+
+        {/* Where, and in which bed. Side by side because they are one
+            question asked twice: a room is a place inside a place. */}
+        <Collapsible
+          title={tPlaces('title')}
+          description={tPlaces('subtitle')}
+          icon={<MapPin className="h-4 w-4" aria-hidden />}
+        >
+          <div className="grid gap-6 lg:grid-cols-2">
+            <section aria-labelledby="places-locations" className="space-y-2">
+              <h3 id="places-locations" className="text-sm font-semibold text-ink-900">
+                {tPlaces('locations')}
+              </h3>
+              <LocationsManager locations={locationsResult.data ?? []} />
+            </section>
+            <section aria-labelledby="places-rooms" className="space-y-2">
+              <h3 id="places-rooms" className="text-sm font-semibold text-ink-900">
+                {tPlaces('rooms')}
+              </h3>
+              <RoomsManager rooms={roomsResult.data ?? []} locations={locationsResult.data ?? []} />
+            </section>
+          </div>
         </Collapsible>
 
         <Collapsible

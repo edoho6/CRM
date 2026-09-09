@@ -42,6 +42,7 @@ interface Draft {
   color: string;
   notes: string;
   is_active: boolean;
+  online_bookable: boolean;
 }
 
 function toDraft(type?: AppointmentType): Draft {
@@ -54,6 +55,7 @@ function toDraft(type?: AppointmentType): Draft {
     color: type?.color ?? '#0e7490',
     notes: type?.notes ?? '',
     is_active: type?.is_active ?? true,
+    online_bookable: type?.online_bookable ?? false,
   };
 }
 
@@ -88,6 +90,7 @@ export function AppointmentTypesManager({ types }: { types: AppointmentType[] })
         color: draft.color,
         notes: draft.notes,
         is_active: draft.is_active,
+        online_bookable: draft.online_bookable,
       });
 
       if (!result.ok) {
@@ -217,6 +220,18 @@ export function AppointmentTypesManager({ types }: { types: AppointmentType[] })
                   className="h-4 w-4 rounded border-ink-300"
                 />
                 {t('active')}
+              </label>
+
+              {/* Offered on the public booking page. Off by default: a new
+                  type is the practitioner's until they say otherwise. */}
+              <label className="flex items-center gap-2 text-sm text-ink-700">
+                <input
+                  type="checkbox"
+                  checked={draft.online_bookable}
+                  onChange={(event) => update(index, { online_bookable: event.target.checked })}
+                  className="h-4 w-4 rounded border-ink-300"
+                />
+                {t('onlineBookable')}
               </label>
 
               <span className="flex items-center gap-2">

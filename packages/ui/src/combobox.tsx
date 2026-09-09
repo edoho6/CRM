@@ -112,8 +112,10 @@ export function Combobox({
   const reactId = React.useId();
   const listId = `${id ?? reactId}-options`;
 
-  // The field shows the chosen label until the user starts typing again.
-  const display = term !== '' || open ? term : (value?.label ?? '');
+  // The field shows the chosen label until the user starts typing again. On
+  // focus the label is selected whole, so typing replaces it and the name
+  // does not vanish the moment the field is clicked.
+  const display = term !== '' ? term : (value?.label ?? '');
 
   const matches = React.useMemo(() => {
     const needle = normalise(term);
@@ -188,9 +190,21 @@ export function Combobox({
           setHighlight(0);
           setOpen(true);
         }}
-        onFocus={() => setOpen(true)}
+        onFocus={(event) => {
+          setOpen(true);
+          event.currentTarget.select();
+        }}
         // The delay lets a click on an option land before the list unmounts.
-        onBlur={() => window.setTimeout(() => setOpen(false), 140)}
+        // Text typed but never chosen is dropped when the field is left, so
+        // what the field shows is always what the value is — a half-typed
+        // name over a different, still-selected patient was a wrong booking
+        // waiting to happen.
+        onBlur={() =>
+          window.setTimeout(() => {
+            setOpen(false);
+            if (!allowCustom) setTerm('');
+          }, 140)
+        }
         onKeyDown={(event) => {
           if (event.key === 'ArrowDown') {
             event.preventDefault();

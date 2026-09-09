@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, useTransition } from 'react';
 import { useFormatter, useLocale, useTranslations } from 'next-intl';
-import { Check, Copy, Link2, MessageCircle, Trash2, X } from 'lucide-react';
+import { Check, MessageCircle, Trash2, X } from 'lucide-react';
 import {
   Alert,
   Button,
@@ -12,7 +12,6 @@ import {
   DialogFooter,
   Field,
   FieldGrid,
-  Input,
   LtrInput,
   Select,
   Spinner,
@@ -25,7 +24,13 @@ import {
 } from '@clinic/ui';
 import { APPOINTMENT_STATUSES, type AppointmentStatus, type Locale } from '@clinic/domain';
 import { useRouter } from '@clinic/i18n/navigation';
-import type { AppointmentType, AppointmentWithRelations, Patient, Room } from '@clinic/db/types';
+import type {
+  AppointmentType,
+  AppointmentWithRelations,
+  Location,
+  Patient,
+  Room,
+} from '@clinic/db/types';
 import { appointmentTypeName } from '@/lib/display';
 import { whatsappNumber } from '@/components/phone-actions';
 import { StartEncounterButton } from '@/features/encounters/start-encounter-button';
@@ -38,7 +43,12 @@ import {
   updateAppointment,
   type SeriesResult,
 } from './actions';
-import { blockedWindowFor, closureFor, isWithinWorkingHours, type Availability } from './availability';
+import {
+  blockedWindowFor,
+  closureFor,
+  isWithinWorkingHours,
+  type Availability,
+} from './availability';
 import { addMinutes, differenceInMinutes, toDateTimeLocalValue } from './date-utils';
 import { confirmationPath, fillReminderTemplate } from './confirmation';
 import { ConfirmationBadge } from './confirmation-status';
@@ -52,6 +62,7 @@ export interface AppointmentDraft {
   typeId?: string | null;
   status?: AppointmentStatus;
   roomId?: string | null;
+  locationId?: string | null;
   location?: string | null;
   notes?: string | null;
   /** The reminder trail, for an existing booking. */
@@ -69,8 +80,14 @@ export interface AppointmentDraft {
  * ISO instants only on submit. Binding a UTC string straight to the input would
  * show the practitioner a time that is not the one they booked.
  *
- * With rooms defined, the room replaces the free-text location: it is what
- * decides whether two bookings at one hour are a clash or two beds.
+ * Where a booking happens is asked only when there is a choice: the address,
+ * when the practice has more than one; the room, when it has defined any. A
+ * dialog that asks "which room" of a practice with one bed is a dialog
+ * asking to be ignored.
+ *
+ * On an existing booking the first thing is "open the treatment": that is
+ * what the dialog is opened for on the day, and it belongs above the fields
+ * rather than under them.
  */
 export function AppointmentDialog({
   open,
@@ -78,6 +95,7 @@ export function AppointmentDialog({
   patients,
   appointmentTypes,
   rooms,
+  locations,
   practitionerId,
   availability,
   reminderTemplate,
@@ -89,6 +107,7 @@ export function AppointmentDialog({
   patients: Pick<Patient, 'id' | 'full_name' | 'phone'>[];
   appointmentTypes: AppointmentType[];
   rooms: Room[];
+  locations: Location[];
   practitionerId: string;
   /** Working hours, for the out-of-hours notice. Nothing here blocks a save. */
   availability: Availability;
@@ -126,8 +145,8 @@ export function AppointmentDialog({
   const [start, setStart] = useState('');
   const [end, setEnd] = useState('');
   const [status, setStatus] = useState<AppointmentStatus>('scheduled');
+  const [locationId, setLocationId] = useState('');
   const [roomId, setRoomId] = useState('');
-  const [location, setLocation] = useState('');
   const [notes, setNotes] = useState('');
 
   // A course of treatment. Only offered on a new booking: turning an existing
@@ -145,12 +164,29 @@ export function AppointmentDialog({
   const [respondedAt, setRespondedAt] = useState<string | null>(null);
 
   const isEditing = Boolean(draft?.id);
+
+  const activeLocations = useMemo(
+    () => locations.filter((entry) => entry.is_active || entry.id === locationId),
+    [locations, locationId],
+  );
+  const hasLocations = locations.some((entry) => entry.is_active);
+
+  // The rooms of the chosen address, or all of them when rooms carry no
+  // address; a room already on this booking stays offered even if retired.
   const activeRooms = useMemo(
-    () => rooms.filter((room) => room.is_active || room.id === roomId),
-    [rooms, roomId],
+    () =>
+      rooms.filter(
+        (room) =>
+          (room.is_active || room.id === roomId) &&
+          (!locationId || !room.location_id || room.location_id === locationId),
+      ),
+    [rooms, roomId, locationId],
   );
   const hasRooms = rooms.some((room) => room.is_active);
 
+  // Reset from the draft, and only from the draft. The lists of patients and
+  // rooms change identity on every server refresh — marking a reminder sent
+  // triggers one — and resetting on them wiped half-typed edits mid-dialog.
   useEffect(() => {
     if (!draft) return;
     setPatientChoice(
@@ -165,10 +201,21 @@ export function AppointmentDialog({
     setStart(toDateTimeLocalValue(draft.start));
     setEnd(toDateTimeLocalValue(draft.end));
     setStatus(draft.status ?? 'scheduled');
-    // A new booking in a clinic with rooms goes into the first one: with
-    // rooms, every booking has one, or the clash rule has nothing to hold.
-    setRoomId(draft.roomId ?? (draft.id ? '' : (rooms.find((room) => room.is_active)?.id ?? '')));
-    setLocation(draft.location ?? '');
+    // A new booking goes into the first address and the first room: with
+    // either defined, every booking has one, or the clash rule has nothing to
+    // hold.
+    const firstLocation = locations.find((entry) => entry.is_active)?.id ?? '';
+    const nextLocation = draft.locationId ?? (draft.id ? '' : firstLocation);
+    setLocationId(nextLocation);
+    setRoomId(
+      draft.roomId ??
+        (draft.id
+          ? ''
+          : (rooms.find(
+              (room) =>
+                room.is_active && (!nextLocation || !room.location_id || room.location_id === nextLocation),
+            )?.id ?? '')),
+    );
     setNotes(draft.notes ?? '');
     setReminderSentAt(draft.reminderSentAt ?? null);
     setResponse(draft.confirmationResponse ?? null);
@@ -176,7 +223,15 @@ export function AppointmentDialog({
     setErrorKey(null);
     setRepeats(false);
     setSeriesResult(null);
-  }, [draft, patients, rooms]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draft]);
+
+  // Changing the address drops a room that is not in it.
+  useEffect(() => {
+    if (!roomId) return;
+    const room = rooms.find((entry) => entry.id === roomId);
+    if (room?.location_id && locationId && room.location_id !== locationId) setRoomId('');
+  }, [locationId, roomId, rooms]);
 
   const activeTypes = useMemo(
     () => appointmentTypes.filter((type) => type.is_active || type.id === typeId),
@@ -242,7 +297,7 @@ export function AppointmentDialog({
       setErrorKey('errors.endMustBeAfterStart');
       return;
     }
-    if (hasRooms && !roomId) {
+    if ((hasRooms && !roomId) || (hasLocations && !locationId)) {
       setErrorKey('common.somethingMissing');
       return;
     }
@@ -255,7 +310,8 @@ export function AppointmentDialog({
       end_at: endDate.toISOString(),
       status,
       room_id: roomId || null,
-      location,
+      location_id: locationId || null,
+      location: draft?.location ?? '',
       notes,
     };
 
@@ -338,24 +394,18 @@ export function AppointmentDialog({
   const wa = draft?.patientPhone ? whatsappNumber(draft.patientPhone) : null;
   const whatsappHref = wa ? `https://wa.me/${wa}?text=${encodeURIComponent(reminderText)}` : null;
 
-  async function copyText(text: string) {
-    try {
-      await navigator.clipboard.writeText(text);
-      toast({ tone: 'success', title: t('reminder.copied') });
-    } catch {
-      toast({ tone: 'danger', title: t('reminder.copyFailed') });
-    }
-  }
-
-  function sent(next: boolean) {
-    if (!draft?.id) return;
-    const previous = reminderSentAt;
-    setReminderSentAt(next ? new Date().toISOString() : null);
+  /**
+   * Opening WhatsApp is the sending. The mark is made as the link opens —
+   * there is no separate "yes, I sent it" to forget.
+   */
+  function sentViaWhatsApp() {
+    if (!draft?.id || reminderSentAt) return;
+    const stamp = new Date().toISOString();
+    setReminderSentAt(stamp);
     startTransition(async () => {
-      const result = await markReminderSent(draft.id!, next);
+      const result = await markReminderSent(draft.id!, true);
       if (!result.ok) {
-        setReminderSentAt(previous);
-        toast({ tone: 'danger', title: tc('errorGeneric') });
+        setReminderSentAt(null);
         return;
       }
       router.refresh();
@@ -398,6 +448,19 @@ export function AppointmentDialog({
       >
         <form onSubmit={handleSubmit} className="space-y-4">
           {errorKey ? <Alert tone="danger">{renderError()}</Alert> : null}
+
+          {/* First, because on the day it is the only reason the dialog is
+              opened. The booking's details are underneath for when they are. */}
+          {isEditing && patientId ? (
+            <div className="rounded-lg border border-jade-200 bg-jade-50 p-3">
+              <StartEncounterButton
+                patientId={patientId}
+                appointmentId={draft?.id}
+                size="md"
+                onStarted={() => onOpenChange(false)}
+              />
+            </div>
+          ) : null}
 
           {/* Typed, not scrolled. A practice of any age has hundreds of files
               and a dropdown of them cannot be searched — you know the name, and
@@ -465,6 +528,24 @@ export function AppointmentDialog({
               />
             </Field>
 
+            {hasLocations ? (
+              <Field label={t('place')} htmlFor="location_id" required>
+                <Select
+                  id="location_id"
+                  value={locationId}
+                  onChange={(event) => setLocationId(event.target.value)}
+                  required
+                >
+                  <option value="">{t('selectPlace')}</option>
+                  {activeLocations.map((entry) => (
+                    <option key={entry.id} value={entry.id}>
+                      {entry.name}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+            ) : null}
+
             {hasRooms ? (
               <Field label={t('room')} htmlFor="room_id" required>
                 <Select
@@ -481,15 +562,7 @@ export function AppointmentDialog({
                   ))}
                 </Select>
               </Field>
-            ) : (
-              <Field label={t('location')} htmlFor="location">
-                <Input
-                  id="location"
-                  value={location}
-                  onChange={(event) => setLocation(event.target.value)}
-                />
-              </Field>
-            )}
+            ) : null}
           </FieldGrid>
 
           {outsideHours ? (
@@ -577,11 +650,11 @@ export function AppointmentDialog({
 
           {/* The reminder, and the answer to it.
 
-              Sending is by hand, through WhatsApp with the message already
-              written, because no sending service is connected yet; the mark
-              "sent" is what turns the calendar's dot amber. The answer comes
-              back through the link on its own, and can be set here as well
-              for a patient who rang instead. */}
+              Sending is through WhatsApp with the message already written,
+              and opening it is the sending — the mark is made as the link
+              opens. The answer comes back through the link on its own, and
+              can be set here for a patient who rang instead: the button that
+              is true turns its colour and says when. */}
           {isEditing && draft?.confirmationToken ? (
             <section
               aria-labelledby="reminder-heading"
@@ -600,70 +673,43 @@ export function AppointmentDialog({
                 />
               </div>
 
-              <p className="text-xs text-ink-600">{t('reminder.intro')}</p>
-
-              <div className="flex flex-wrap items-center gap-1.5">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
                 {whatsappHref ? (
-                  <Button asChild size="sm" variant="secondary">
-                    <a href={whatsappHref} target="_blank" rel="noopener noreferrer">
+                  <Button asChild size="sm" variant={reminderSentAt ? 'secondary' : 'primary'}>
+                    <a
+                      href={whatsappHref}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={sentViaWhatsApp}
+                    >
                       <MessageCircle className="h-4 w-4" aria-hidden />
                       {t('reminder.sendWhatsApp')}
                     </a>
                   </Button>
-                ) : null}
-                <Button type="button" size="sm" variant="ghost" onClick={() => copyText(reminderText)}>
-                  <Copy className="h-4 w-4" aria-hidden />
-                  {t('reminder.copyMessage')}
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  disabled={!confirmLink}
-                  onClick={() => copyText(confirmLink)}
-                >
-                  <Link2 className="h-4 w-4" aria-hidden />
-                  {t('reminder.copyLink')}
-                </Button>
-              </div>
-              {!whatsappHref ? <p className="text-xs text-ink-500">{t('reminder.noPhone')}</p> : null}
-
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-ink-600">
-                <label className="inline-flex items-center gap-1.5">
-                  <input
-                    type="checkbox"
-                    checked={reminderSentAt !== null}
-                    disabled={isPending}
-                    onChange={(event) => sent(event.target.checked)}
-                    className="h-4 w-4 rounded border-ink-300"
-                  />
-                  {t('reminder.markSent')}
-                </label>
+                ) : (
+                  <p className="text-xs text-ink-500">{t('reminder.noPhone')}</p>
+                )}
                 {reminderSentAt ? (
-                  <span>
+                  <span className="text-xs text-ink-600">
                     {t('reminder.sentAt')}{' '}
                     <span dir="ltr" className="tabular-nums">
                       {formatDateTime(new Date(reminderSentAt))}
                     </span>
                   </span>
                 ) : null}
-                {respondedAt ? (
-                  <span>
-                    {t('reminder.answeredAt')}{' '}
-                    <span dir="ltr" className="tabular-nums">
-                      {formatDateTime(new Date(respondedAt))}
-                    </span>
-                  </span>
-                ) : null}
               </div>
 
               <div className="flex flex-wrap items-center gap-1.5">
                 <Button
                   type="button"
                   size="sm"
-                  variant={response === 'confirmed' ? 'primary' : 'secondary'}
+                  variant="secondary"
                   aria-pressed={response === 'confirmed'}
                   disabled={isPending}
+                  className={cn(
+                    response === 'confirmed' &&
+                      'border-jade-600 bg-jade-600 text-accent-fg hover:bg-jade-700',
+                  )}
                   onClick={() => answer(response === 'confirmed' ? null : 'confirmed')}
                 >
                   <Check className="h-4 w-4" aria-hidden />
@@ -675,26 +721,31 @@ export function AppointmentDialog({
                   variant="secondary"
                   aria-pressed={response === 'declined'}
                   disabled={isPending}
-                  className={cn(response === 'declined' && 'border-red-600 bg-red-50 text-red-700')}
+                  className={cn(
+                    response === 'declined' &&
+                      'border-red-600 bg-red-600 text-accent-fg hover:bg-red-700',
+                  )}
                   onClick={() => answer(response === 'declined' ? null : 'declined')}
                 >
                   <X className="h-4 w-4" aria-hidden />
                   {t('reminder.setDeclined')}
                 </Button>
               </div>
-            </section>
-          ) : null}
 
-          {isEditing && patientId ? (
-            <div className="rounded-lg border border-ink-200 bg-ink-50 p-3">
-              <StartEncounterButton
-                patientId={patientId}
-                appointmentId={draft?.id}
-                variant="secondary"
-                size="sm"
-                onStarted={() => onOpenChange(false)}
-              />
-            </div>
+              {response && respondedAt ? (
+                <p
+                  className={cn(
+                    'text-xs',
+                    response === 'confirmed' ? 'text-jade-800' : 'text-red-700',
+                  )}
+                >
+                  {t(response === 'confirmed' ? 'reminder.confirmedAt' : 'reminder.declinedAt')}{' '}
+                  <span dir="ltr" className="tabular-nums">
+                    {formatDateTime(new Date(respondedAt))}
+                  </span>
+                </p>
+              ) : null}
+            </section>
           ) : null}
 
           <DialogFooter>

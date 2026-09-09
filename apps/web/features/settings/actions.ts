@@ -6,6 +6,8 @@ import {
   patientTagSchema,
   reminderSettingsSchema,
   roomSchema,
+  locationSchema,
+  bookingSettingsSchema,
   scheduleBlocksSchema,
   closurePeriodSchema,
   practitionerProfileSchema,
@@ -573,6 +575,94 @@ export async function deleteScheduleBlock(id: string): Promise<ActionResult> {
     .delete()
     .eq('id', id)
     .eq('practitioner_id', scope.context.membership.user_id);
+  if (error) return actionError(error);
+  return actionOk();
+}
+
+/* ---------------------------------------------------------------------------
+ * Locations
+ * ------------------------------------------------------------------------ */
+
+export async function saveLocation(id: string | null, input: unknown): Promise<ActionResult<{ id: string }>> {
+  const scope = await getClinicScope();
+  if (!scope) return actionError(new Error('unauthorized'));
+
+  const parsed = locationSchema.safeParse(input);
+  if (!parsed.success) return actionError(new Error('validation'));
+
+  const row = {
+    clinic_id: scope.context.clinic.id,
+    name: parsed.data.name,
+    address: parsed.data.address,
+    color: parsed.data.color,
+    is_active: parsed.data.is_active,
+  };
+
+  const query = id
+    ? scope.supabase.from('locations').update(row).eq('id', id).select('id').single<{ id: string }>()
+    : scope.supabase.from('locations').insert(row).select('id').single<{ id: string }>();
+
+  const { data, error } = await query;
+  if (error) return actionError(error);
+  return actionOk({ id: data.id });
+}
+
+/**
+ * A location with bookings or rooms in it is retired rather than removed, so
+ * the diary keeps saying where those bookings were.
+ */
+export async function deleteLocation(id: string): Promise<ActionResult> {
+  const scope = await getClinicScope();
+  if (!scope) return actionError(new Error('unauthorized'));
+
+  const [{ count: bookings }, { count: rooms }] = await Promise.all([
+    scope.supabase
+      .from('appointments')
+      .select('id', { count: 'exact', head: true })
+      .eq('location_id', id),
+    scope.supabase.from('rooms').select('id', { count: 'exact', head: true }).eq('location_id', id),
+  ]);
+
+  if ((bookings ?? 0) > 0 || (rooms ?? 0) > 0) {
+    const { error } = await scope.supabase
+      .from('locations')
+      .update({ is_active: false })
+      .eq('id', id);
+    if (error) return actionError(error);
+    return actionError(new Error('location_in_use_deactivated'));
+  }
+
+  const { error } = await scope.supabase.from('locations').delete().eq('id', id);
+  if (error) return actionError(error);
+  return actionOk();
+}
+
+/* ---------------------------------------------------------------------------
+ * Online booking
+ * ------------------------------------------------------------------------ */
+
+export async function saveBookingSettings(input: unknown): Promise<ActionResult> {
+  const scope = await getClinicScope();
+  if (!scope) return actionError(new Error('unauthorized'));
+
+  const parsed = bookingSettingsSchema.safeParse(input);
+  if (!parsed.success) return actionError(new Error('validation'));
+
+  const { error } = await scope.supabase
+    .from('clinics')
+    .update({
+      booking_enabled: parsed.data.booking_enabled,
+      booking_slug: parsed.data.booking_slug,
+      booking_intro: parsed.data.booking_intro,
+      booking_lead_hours: parsed.data.booking_lead_hours,
+      booking_horizon_days: parsed.data.booking_horizon_days,
+      booking_verify_sms: parsed.data.booking_verify_sms,
+    })
+    .eq('id', scope.context.clinic.id);
+
+  // The handle is a URL shared by the whole service; a taken one is the one
+  // thing this form can be wrong about.
+  if (error?.code === '23505') return actionError(new Error('slug_taken'));
   if (error) return actionError(error);
   return actionOk();
 }

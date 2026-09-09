@@ -1,6 +1,6 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Leaf } from 'lucide-react';
-import { Card, CardBody } from '@clinic/ui';
+import { Alert, Card, CardBody } from '@clinic/ui';
 import { tryCreateServerSupabase } from '@clinic/db/server';
 import type { Locale } from '@clinic/domain';
 import { formatDate, formatTime } from '@clinic/i18n';
@@ -33,10 +33,13 @@ interface TokenRow {
  */
 export default async function ConfirmPage({
   params,
+  searchParams,
 }: {
+  searchParams: Promise<{ booked?: string }>;
   params: Promise<{ locale: string; token: string }>;
 }) {
   const { locale, token } = await params;
+  const { booked } = await searchParams;
   setRequestLocale(locale);
   const t = await getTranslations('confirm');
   const tc = await getTranslations('common');
@@ -78,6 +81,7 @@ export default async function ConfirmPage({
       {brand}
       <Card>
         <CardBody className="space-y-4">
+          {booked === '1' ? <Alert tone="success">{t('booked')}</Alert> : null}
           <p className="text-base text-ink-800">{t('greeting', { name: row.patient_first_name })}</p>
 
           <div className="rounded-lg border border-ink-200 bg-ink-50 p-4 text-center">

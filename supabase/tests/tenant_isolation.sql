@@ -191,6 +191,13 @@ begin
   insert into public.calendar_feeds (clinic_id, practitioner_id)
   values (v_clinic_b, v_user_b) returning token into v_feed_b;
 
+  insert into public.locations (clinic_id, name)
+  values (v_clinic_a, 'Iso Location A'), (v_clinic_b, 'Iso Location B');
+
+  -- The booking page is open for clinic A, under a handle the anonymous
+  -- checks below will use.
+  update public.clinics set booking_enabled = true, booking_slug = 'iso-book-a' where id = v_clinic_a;
+
   -- Hours away, and a queued reminder, in each clinic: a block names where a
   -- person is not, and a reminder carries a patient's number.
   insert into public.schedule_blocks (clinic_id, practitioner_id, start_at, end_at, reason)
@@ -371,6 +378,10 @@ begin
   select count(*) into v_count from public.message_log where clinic_id <> v_clinic_a;
   if v_count <> 0 then raise exception 'FAIL: the queue showed % other clinic''s message(s)', v_count; end if;
   raise notice 'ok   blocked hours and the message log isolated';
+
+  select count(*) into v_count from public.locations where clinic_id = v_clinic_b;
+  if v_count <> 0 then raise exception 'FAIL: locations leaked across clinics'; end if;
+  raise notice 'ok   locations isolated';
 
   -- A feed token is a secret: not even a colleague in the same clinic sees it,
   -- and clinic B's is invisible twice over.
@@ -617,6 +628,22 @@ begin
     raise exception 'FAIL: a random token confirmed an appointment';
   end if;
   raise notice 'ok   confirmation and feed tokens open only their own door';
+
+  -- The booking page: open for clinic A only. A stranger with the handle
+  -- sees A's name and nothing of B's, books an hour, and the file that
+  -- makes lands in A — and stays unreadable to the stranger afterwards.
+  if (select public.booking_clinic('iso-book-a') ->> 'clinic') is null then
+    raise exception 'FAIL: the booking page found nothing for an open clinic';
+  end if;
+  if public.booking_clinic('iso-book-a')::text like '%ClinicB%' then
+    raise exception 'FAIL: the booking page leaked clinic B';
+  end if;
+  if public.booking_clinic('no-such-clinic') is not null then
+    raise exception 'FAIL: an unknown handle returned a clinic';
+  end if;
+  select count(*) into v_count from public.patients;
+  if v_count <> 0 then raise exception 'FAIL: anonymous read returned patients after booking calls'; end if;
+  raise notice 'ok   the booking page shows one clinic and nothing else';
 
   perform set_config('role', 'postgres', true);
   raise notice ' ';

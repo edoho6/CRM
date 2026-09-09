@@ -246,6 +246,8 @@ export const appointmentTypeSchema = z.object({
     .default('#0e7490'),
   notes: optionalText(500),
   is_active: z.boolean().default(true),
+  /** Offered on the public booking page. Off until the practitioner says so. */
+  online_bookable: z.boolean().default(false),
 });
 
 export type AppointmentTypeValues = z.input<typeof appointmentTypeSchema>;

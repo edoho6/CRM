@@ -180,11 +180,23 @@ export type ClinicTaskValues = z.input<typeof clinicTaskSchema>;
 
 export const roomSchema = z.object({
   name: requiredText(80),
+  location_id: z
+    .union([uuidField, z.literal(''), z.null(), z.undefined()])
+    .transform((value) => (value ? value : null)),
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
   is_active: z.boolean().default(true),
 });
 
 export type RoomValues = z.input<typeof roomSchema>;
+
+export const locationSchema = z.object({
+  name: requiredText(80),
+  address: optionalText(200),
+  color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
+  is_active: z.boolean().default(true),
+});
+
+export type LocationValues = z.input<typeof locationSchema>;
 
 export const patientTagSchema = z.object({
   name: requiredText(60),
@@ -213,6 +225,21 @@ export const reminderSettingsSchema = z.object({
 });
 
 export type ReminderSettingsValues = z.input<typeof reminderSettingsSchema>;
+
+export const bookingSettingsSchema = z.object({
+  booking_enabled: z.boolean().default(false),
+  booking_slug: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .regex(/^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$/, { error: 'invalid_slug' }),
+  booking_intro: optionalText(2000),
+  booking_lead_hours: z.coerce.number().int().min(0).max(720).default(24),
+  booking_horizon_days: z.coerce.number().int().min(1).max(365).default(60),
+  booking_verify_sms: z.boolean().default(false),
+});
+
+export type BookingSettingsValues = z.input<typeof bookingSettingsSchema>;
 
 /**
  * Hours away on one day. The date and two clock times, as the dialog

@@ -39,6 +39,11 @@ export function mapDatabaseError(error: PostgrestError | Error | null | undefine
   const details = 'details' in error ? ((error as PostgrestError).details ?? null) : null;
   const code = 'code' in error ? ((error as PostgrestError).code ?? '') : '';
 
+  // The booking page's handle is a URL shared by the whole service.
+  if (message.includes('slug_taken')) {
+    return { key: 'errors.slugTaken' };
+  }
+
   // 23P01 is an exclusion-constraint violation. Two of them guard the diary:
   // the room being taken is a different message from the practitioner being.
   if (message.includes('appointments_room_no_overlap')) {
