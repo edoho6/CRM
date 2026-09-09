@@ -1,4 +1,25 @@
 {
+  "messages": {
+    "title": "Messages",
+    "subtitle": "Reminders waiting to be sent, and what already went.",
+    "queueIntro": "Reminders arrive here by themselves, as set. Each row opens WhatsApp with the text ready — tick it once it went.",
+    "refresh": "Refresh the list",
+    "refreshed": "{count, plural, =0 {No new reminders} one {One reminder added} other {# reminders added}}",
+    "queueEmpty": "Nothing waiting",
+    "queueEmptyBody": "An appointment reminder arrives here the set number of hours before the appointment.",
+    "toMe": "To me",
+    "forAppointment": "for the appointment at",
+    "openWhatsApp": "Open in WhatsApp",
+    "openEmail": "Open in email",
+    "copy": "Copy",
+    "copied": "Copied",
+    "copyFailed": "Copy failed",
+    "markSent": "Sent",
+    "skip": "Do not send",
+    "history": "Sent",
+    "channels": { "sms": "SMS", "whatsapp": "WhatsApp", "email": "Email" },
+    "status": { "queued": "Waiting", "sent": "Sent", "failed": "Failed", "skipped": "Not sent" }
+  },
   "platform": {
     "title": "All clinics",
     "subtitle": "{count, plural, =0 {No clinics} one {One clinic} other {# clinics}} on the service",
@@ -132,6 +153,7 @@
     "duplicate": "Duplicate"
   },
   "nav": {
+    "messages": "Messages",
     "platform": "All clinics",
     "tasks": "Tasks",
     "dashboard": "Dashboard",
@@ -468,6 +490,12 @@
       "defaultTemplate": "Hi '{name}', a reminder of your appointment at '{clinic}' on '{date}' at '{time}'. Please confirm here: '{link}'"
     },
     "block": {
+      "hoursHint": "Block several windows in one day, each with its own reason. The other hours stay open.",
+      "from": "From",
+      "to": "Until",
+      "addWindow": "Another window",
+      "removeWindow": "Remove this window",
+      "endAfterStart": "The end has to be after the start.",
       "title": "Block the day",
       "wholeDay": "All day",
       "openOnlyBetween": "Open only between",
@@ -1343,6 +1371,11 @@
       "empty": "No tags yet. Add one here, or from a patient file."
     },
     "reminders": {
+      "enabled": "Send reminders",
+      "hoursBefore": "Hours before the appointment",
+      "channel": "Channel",
+      "channels": { "sms": "SMS", "whatsapp": "WhatsApp", "email": "Email" },
+      "queueHint": "Reminders arrive on the Messages screen and go out from there with a click. Once a sending service is connected, they go on their own.",
       "title": "Reminder wording",
       "intro": "The message sent to a patient before their appointment. Empty means the built-in wording in the app's language.",
       "template": "Wording",

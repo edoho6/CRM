@@ -191,6 +191,16 @@ begin
   insert into public.calendar_feeds (clinic_id, practitioner_id)
   values (v_clinic_b, v_user_b) returning token into v_feed_b;
 
+  -- Hours away, and a queued reminder, in each clinic: a block names where a
+  -- person is not, and a reminder carries a patient's number.
+  insert into public.schedule_blocks (clinic_id, practitioner_id, start_at, end_at, reason)
+  values (v_clinic_a, v_user_a, now() + interval '3 days', now() + interval '3 days 1 hour', 'Iso block A'),
+         (v_clinic_b, v_user_b, now() + interval '3 days', now() + interval '3 days 1 hour', 'Iso block B');
+
+  insert into public.message_log (clinic_id, channel, template_key, recipient, body, patient_id)
+  values (v_clinic_a, 'whatsapp', 'iso_test', '0500000000', 'Iso message A', v_patient_a),
+         (v_clinic_b, 'whatsapp', 'iso_test', '0500000001', 'Iso message B', v_patient_b);
+
   -- A booking in each room, so the feeds and the confirmation link have
   -- something to leak if they were going to.
   insert into public.appointments (clinic_id, patient_id, practitioner_id, room_id, start_at, end_at)
@@ -348,6 +358,19 @@ begin
   select count(*) into v_count from public.appointments where clinic_id = v_clinic_b;
   if v_count <> 0 then raise exception 'FAIL: appointments leaked across clinics'; end if;
   raise notice 'ok   rooms, tags and appointments isolated';
+
+  select count(*) into v_count from public.schedule_blocks where clinic_id = v_clinic_b;
+  if v_count <> 0 then raise exception 'FAIL: blocked hours leaked across clinics'; end if;
+
+  select count(*) into v_count from public.message_log where clinic_id = v_clinic_b;
+  if v_count <> 0 then raise exception 'FAIL: the message log leaked across clinics'; end if;
+
+  -- Queueing runs for every clinic at once, as the database owner; what the
+  -- caller can then read is still only their own.
+  perform public.enqueue_due_reminders('https://iso.test');
+  select count(*) into v_count from public.message_log where clinic_id <> v_clinic_a;
+  if v_count <> 0 then raise exception 'FAIL: the queue showed % other clinic''s message(s)', v_count; end if;
+  raise notice 'ok   blocked hours and the message log isolated';
 
   -- A feed token is a secret: not even a colleague in the same clinic sees it,
   -- and clinic B's is invisible twice over.

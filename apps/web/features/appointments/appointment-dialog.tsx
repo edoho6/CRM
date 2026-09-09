@@ -38,7 +38,7 @@ import {
   updateAppointment,
   type SeriesResult,
 } from './actions';
-import { closureFor, isWithinWorkingHours, type Availability } from './availability';
+import { blockedWindowFor, closureFor, isWithinWorkingHours, type Availability } from './availability';
 import { addMinutes, differenceInMinutes, toDateTimeLocalValue } from './date-utils';
 import { confirmationPath, fillReminderTemplate } from './confirmation';
 import { ConfirmationBadge } from './confirmation-status';
@@ -196,7 +196,8 @@ export function AppointmentDialog({
     const endDate = new Date(end);
     if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) return null;
     if (isWithinWorkingHours(startDate, endDate, availability)) return null;
-    return { reason: closureFor(startDate, availability)?.reason ?? null };
+    const window = blockedWindowFor(startDate, endDate, availability);
+    return { reason: window?.reason ?? closureFor(startDate, availability)?.reason ?? null };
   }, [start, end, availability]);
 
   /** Picking a type re-ends the appointment at its default duration. */

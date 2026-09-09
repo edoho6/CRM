@@ -15,6 +15,7 @@ import type { AppointmentType, AppointmentWithRelations, Patient } from '@clinic
 import { appointmentTypeName, patientFullName } from '@/lib/display';
 import { AppointmentDialog, type AppointmentDraft } from './appointment-dialog';
 import {
+  blockedWindowsFor,
   closureFor,
   isClosedDay,
   openIntervalsFor,
@@ -444,7 +445,7 @@ export function CalendarView({
                   <div
                     key={day.toISOString()}
                     className={cn(
-                      'border-e border-ink-100 px-2 py-1.5 text-center last:border-e-0',
+                      'relative border-e border-ink-100 px-2 py-1.5 text-center last:border-e-0',
                       today && 'bg-jade-50',
                     )}
                   >
@@ -456,22 +457,25 @@ export function CalendarView({
                     >
                       {format.dateTime(day, { weekday: 'short' })}
                     </div>
-                    <div className="flex items-center justify-center gap-1">
-                      <span
-                        className={cn(
-                          'text-base leading-tight tabular-nums',
-                          today ? 'font-semibold text-jade-900' : 'font-medium text-ink-800',
-                        )}
-                      >
-                        {format.dateTime(day, { day: 'numeric', month: 'numeric' })}
-                      </span>
-                      {/* Book someone on this day, or close it. */}
-                      <DayAddMenu
-                        onNew={() => openSlot(day, 4)}
-                        onBlock={() => setBlockDay(day)}
-                        blocked={Boolean(closureFor(day, availability))}
-                      />
+                    <div
+                      className={cn(
+                        'text-base leading-tight tabular-nums',
+                        today ? 'font-semibold text-jade-900' : 'font-medium text-ink-800',
+                      )}
+                    >
+                      {format.dateTime(day, { day: 'numeric', month: 'numeric' })}
                     </div>
+                    {/* Book someone on this day, or close it — in the corner,
+                        out of the way of the date. */}
+                    <DayAddMenu
+                      onNew={() => openSlot(day, 4)}
+                      onBlock={() => setBlockDay(day)}
+                      blocked={
+                        Boolean(closureFor(day, availability)) ||
+                        blockedWindowsFor(day, availability).length > 0
+                      }
+                      className="absolute top-1 end-1"
+                    />
                   </div>
                 );
               })}
@@ -547,6 +551,32 @@ export function CalendarView({
                           )}
                           aria-label={`${formatDate(day)} ${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}${working ? '' : ' · ' + t('outsideHours')}`}
                         />
+                      );
+                    })}
+
+                    {/* Hours away, drawn over the slots with their reason. The
+                        slots stay clickable underneath: a block is a warning,
+                        not a wall. */}
+                    {blockedWindowsFor(day, availability).map((window) => {
+                      const start = Math.max(0, window.start - DAY_START_HOUR * 60);
+                      const end = Math.min(TOTAL_MINUTES, window.end - DAY_START_HOUR * 60);
+                      if (end <= start) return null;
+                      return (
+                        <div
+                          key={window.id}
+                          aria-hidden
+                          className="pointer-events-none absolute inset-x-0 z-[1] overflow-hidden border-y border-ink-300/60 px-1.5 py-0.5 text-[11px] leading-tight text-ink-600"
+                          style={{
+                            top: (start / SLOT_MINUTES) * SLOT_HEIGHT,
+                            height: ((end - start) / SLOT_MINUTES) * SLOT_HEIGHT,
+                            backgroundImage:
+                              'repeating-linear-gradient(135deg, rgb(0 0 0 / 0.04) 0 6px, rgb(0 0 0 / 0.09) 6px 8px)',
+                          }}
+                        >
+                          <span className="truncate" dir="auto">
+                            {window.reason ?? t('blockDay')}
+                          </span>
+                        </div>
                       );
                     })}
 
@@ -639,6 +669,7 @@ export function CalendarView({
       <BlockDayDialog
         day={blockDay}
         existing={blockDay ? (availability.exceptions.find((entry) => entry.date === toDateKey(blockDay)) ?? null) : null}
+        availability={availability}
         onOpenChange={(open) => !open && setBlockDay(null)}
       />
     </div>
@@ -759,6 +790,7 @@ function MonthOrRangeView({
             // grey among several here; the word is what actually reads.
             const closure = closureFor(day, availability);
             const closed = isClosedDay(day, availability);
+            const dayWindows = blockedWindowsFor(day, availability);
             // Leading and trailing days belong to the neighbouring months. They
             // are shown, because a week that stops halfway is worse, but muted
             // so the month being looked at is still obvious.
@@ -771,35 +803,47 @@ function MonthOrRangeView({
                   // `group` is what the "+" below keys its reveal on. It was
                   // missing, so the button was permanently invisible except
                   // under keyboard focus.
-                  'group min-h-24 border-b border-e border-ink-100 p-1 last:border-e-0',
+                  'group relative min-h-24 border-b border-e border-ink-100 p-1 last:border-e-0',
                   outside && 'bg-ink-50/60',
                   closed && !today && 'bg-ink-100/70',
                   today && 'bg-jade-50',
                 )}
               >
-                <div className="flex items-baseline justify-between gap-1">
-                  <span
-                    className={cn(
-                      'text-sm font-medium tabular-nums',
-                      today
-                        ? 'font-semibold text-jade-800'
-                        : outside
-                          ? 'text-ink-500'
-                          : 'text-ink-700',
-                    )}
-                  >
-                    {format.dateTime(day, { day: 'numeric' })}
-                  </span>
-                  {/* Revealed on hover and on focus within the cell, and shown
-                      outright on a touch screen, where there is no hover to
-                      reveal it with. */}
-                  <DayAddMenu
-                    onNew={() => onAddOn(day)}
-                    onBlock={() => onBlockOn(day)}
-                    blocked={Boolean(closure)}
-                    className="opacity-0 transition-opacity focus-visible:opacity-100 group-hover:opacity-100 group-focus-within:opacity-100 pointer-coarse:opacity-100"
-                  />
-                </div>
+                <span
+                  className={cn(
+                    'block px-1 text-sm font-medium tabular-nums',
+                    today
+                      ? 'font-semibold text-jade-800'
+                      : outside
+                        ? 'text-ink-500'
+                        : 'text-ink-700',
+                  )}
+                >
+                  {format.dateTime(day, { day: 'numeric' })}
+                </span>
+                {/* In the corner. Revealed on hover and on focus within the
+                    cell, and shown outright on a touch screen, where there is
+                    no hover to reveal it with. */}
+                <DayAddMenu
+                  onNew={() => onAddOn(day)}
+                  onBlock={() => onBlockOn(day)}
+                  blocked={Boolean(closure) || dayWindows.length > 0}
+                  className="absolute top-1 end-1 opacity-0 transition-opacity focus-visible:opacity-100 group-hover:opacity-100 group-focus-within:opacity-100 pointer-coarse:opacity-100"
+                />
+
+                {dayWindows.length > 0 && !closed ? (
+                  <ul className="px-1">
+                    {dayWindows.slice(0, 2).map((window) => (
+                      <li key={window.id} className="truncate text-[11px] text-ink-600" dir="auto">
+                        <span dir="ltr" className="tabular-nums">
+                          {String(Math.floor(window.start / 60)).padStart(2, '0')}:
+                          {String(window.start % 60).padStart(2, '0')}
+                        </span>{' '}
+                        {window.reason ?? t('blockDay')}
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
 
                 {closed ? (
                   <p className="truncate px-1 text-[11px] text-ink-600">

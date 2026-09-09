@@ -24,6 +24,9 @@ export default async function SettingsPage({ params }: { params: Promise<{ local
       <div className="mt-6 max-w-3xl">
         <ReminderTemplateForm
           template={scope.context.clinic.reminder_template ?? null}
+          enabled={scope.context.clinic.reminders_enabled !== false}
+          hoursBefore={scope.context.clinic.reminder_hours_before ?? 24}
+          channel={scope.context.clinic.reminder_channel ?? 'whatsapp'}
           clinicName={scope.context.clinic.name}
         />
       </div>

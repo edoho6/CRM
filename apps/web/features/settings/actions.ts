@@ -4,8 +4,9 @@ import { z } from 'zod';
 import {
   appointmentTypeSchema,
   patientTagSchema,
-  reminderTemplateSchema,
+  reminderSettingsSchema,
   roomSchema,
+  scheduleBlocksSchema,
   closurePeriodSchema,
   practitionerProfileSchema,
   scheduleExceptionSchema,
@@ -460,16 +461,21 @@ export async function deletePatientTag(id: string): Promise<ActionResult> {
  * Reminder wording
  * ------------------------------------------------------------------------ */
 
-export async function saveReminderTemplate(input: unknown): Promise<ActionResult> {
+export async function saveReminderSettings(input: unknown): Promise<ActionResult> {
   const scope = await getClinicScope();
   if (!scope) return actionError(new Error('unauthorized'));
 
-  const parsed = reminderTemplateSchema.safeParse(input);
+  const parsed = reminderSettingsSchema.safeParse(input);
   if (!parsed.success) return actionError(new Error('validation'));
 
   const { error } = await scope.supabase
     .from('clinics')
-    .update({ reminder_template: parsed.data.reminder_template })
+    .update({
+      reminder_template: parsed.data.reminder_template,
+      reminders_enabled: parsed.data.reminders_enabled,
+      reminder_hours_before: parsed.data.reminder_hours_before,
+      reminder_channel: parsed.data.reminder_channel,
+    })
     .eq('id', scope.context.clinic.id);
 
   if (error) return actionError(error);
@@ -528,4 +534,45 @@ export async function regenerateCalendarFeed(): Promise<ActionResult<{ token: st
 
   if (error) return actionError(error);
   return actionOk({ token: data.token });
+}
+
+/* ---------------------------------------------------------------------------
+ * Blocked hours
+ * ------------------------------------------------------------------------ */
+
+/**
+ * Several windows on one day, in one go: the dialog collects them and sends
+ * them together, so "14:00–15:00 dentist, 16:00–17:00 school run" is one save.
+ */
+export async function addScheduleBlocks(input: unknown): Promise<ActionResult<{ count: number }>> {
+  const scope = await getClinicScope();
+  if (!scope) return actionError(new Error('unauthorized'));
+
+  const parsed = scheduleBlocksSchema.safeParse(input);
+  if (!parsed.success) return actionError(new Error('validation'));
+
+  const rows = parsed.data.map((window) => ({
+    clinic_id: scope.context.clinic.id,
+    practitioner_id: scope.context.membership.user_id,
+    start_at: new Date(window.start_at).toISOString(),
+    end_at: new Date(window.end_at).toISOString(),
+    reason: window.reason,
+  }));
+
+  const { error } = await scope.supabase.from('schedule_blocks').insert(rows);
+  if (error) return actionError(error);
+  return actionOk({ count: rows.length });
+}
+
+export async function deleteScheduleBlock(id: string): Promise<ActionResult> {
+  const scope = await getClinicScope();
+  if (!scope) return actionError(new Error('unauthorized'));
+
+  const { error } = await scope.supabase
+    .from('schedule_blocks')
+    .delete()
+    .eq('id', id)
+    .eq('practitioner_id', scope.context.membership.user_id);
+  if (error) return actionError(error);
+  return actionOk();
 }

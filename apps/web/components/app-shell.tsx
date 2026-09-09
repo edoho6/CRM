@@ -34,6 +34,7 @@ import {
   GripVertical,
   LayoutDashboard,
   ListTodo,
+  MessageSquare,
   Building2,
   Leaf,
   LogOut,
@@ -115,6 +116,7 @@ const NAV_ITEMS = [
   { href: '/patients', labelKey: 'patients', icon: Users, exact: false, stockOnly: false },
   { href: '/calendar', labelKey: 'calendar', icon: CalendarDays, exact: false, stockOnly: false },
   { href: '/tasks', labelKey: 'tasks', icon: ListTodo, exact: false, stockOnly: false },
+  { href: '/messages', labelKey: 'messages', icon: MessageSquare, exact: false, stockOnly: false },
   {
     href: '/encounters',
     labelKey: 'encounters',

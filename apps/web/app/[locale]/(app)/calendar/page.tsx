@@ -10,7 +10,7 @@ import {
   startOfWeek,
   toDateKey,
 } from '@/features/appointments/date-utils';
-import type { DayException, WorkingBlock } from '@/features/appointments/availability';
+import type { BlockedWindow, DayException, WorkingBlock } from '@/features/appointments/availability';
 
 const APPOINTMENT_SELECT =
   'id, clinic_id, patient_id, practitioner_id, appointment_type_id, start_at, end_at, status, location, notes, cancelled_reason, cancelled_at, created_by, created_at, updated_at, ' +
@@ -89,7 +89,15 @@ export default async function CalendarPage({
   const rangeStart = windowStart;
   const rangeEnd = windowEnd;
 
-  const [appointmentsResult, typesResult, patientsResult, blocksResult, exceptionsResult, roomsResult] =
+  const [
+    appointmentsResult,
+    typesResult,
+    patientsResult,
+    blocksResult,
+    exceptionsResult,
+    roomsResult,
+    blockedResult,
+  ] =
     await Promise.all([
     scope.supabase
       .from('appointments')
@@ -131,6 +139,16 @@ export default async function CalendarPage({
       .order('sort_order', { ascending: true })
       .order('created_at', { ascending: true })
       .returns<Room[]>(),
+    // Hours away inside the window, each with its reason, for the grid to
+    // shade and the dialog to name.
+    scope.supabase
+      .from('schedule_blocks')
+      .select('id, start_at, end_at, reason')
+      .eq('practitioner_id', scope.context.membership.user_id)
+      .lt('start_at', windowEnd.toISOString())
+      .gt('end_at', windowStart.toISOString())
+      .order('start_at', { ascending: true })
+      .returns<BlockedWindow[]>(),
   ]);
 
   return (
@@ -148,6 +166,7 @@ export default async function CalendarPage({
         availability={{
           blocks: blocksResult.data ?? [],
           exceptions: exceptionsResult.data ?? [],
+          blocked: blockedResult.data ?? [],
         }}
         defaultPatientId={patientParam}
         openNewOnLoad={newParam === '1'}

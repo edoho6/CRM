@@ -66,6 +66,10 @@ export interface Clinic {
   is_synthetic: boolean;
   /** The reminder wording, with {name} {date} {time} {clinic} {link}. Null uses the built-in text. */
   reminder_template: string | null;
+  reminders_enabled: boolean;
+  /** How long before the appointment the reminder is queued. */
+  reminder_hours_before: number;
+  reminder_channel: MessageChannel;
   created_at: string;
   updated_at: string;
 }
@@ -242,6 +246,40 @@ export interface ScheduleException {
   end_time: string | null;
   reason: string | null;
   created_at: string;
+}
+
+/** Hours a practitioner is away on one day, with a reason. Several may sit on one day. */
+export interface ScheduleBlock {
+  id: string;
+  clinic_id: string;
+  practitioner_id: string;
+  start_at: string;
+  end_at: string;
+  reason: string | null;
+  created_at: string;
+}
+
+export type MessageChannel = 'sms' | 'whatsapp' | 'email';
+export type MessageStatus = 'queued' | 'sent' | 'failed' | 'skipped';
+
+/** One message to a patient or practitioner: queued by the hourly job, sent by a provider or by hand. */
+export interface MessageLogEntry {
+  id: string;
+  clinic_id: string;
+  channel: MessageChannel;
+  template_key: string;
+  recipient: string | null;
+  body: string;
+  subject: string | null;
+  patient_id: string | null;
+  appointment_id: string | null;
+  task_id: string | null;
+  status: MessageStatus;
+  provider: string | null;
+  provider_message_id: string | null;
+  error_code: string | null;
+  created_at: string;
+  sent_at: string | null;
 }
 
 export interface Encounter {

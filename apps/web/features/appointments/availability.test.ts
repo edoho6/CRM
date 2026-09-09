@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
+  blockedWindowFor,
+  blockedWindowsFor,
   closureFor,
   isClosedDay,
   isWithinWorkingHours,
@@ -128,5 +130,63 @@ describe('closed days', () => {
 
   it('treats nothing as closed when no hours have been set', () => {
     expect(isClosedDay(FRIDAY, { blocks: [], exceptions: [] })).toBe(false);
+  });
+});
+
+/* ---------------------------------------------------------------------------
+ * Blocked hours: windows cut out of a day, each with a reason
+ * ------------------------------------------------------------------------ */
+
+// A Monday. Local time, as the diary works in local time.
+const BLOCK_DAY = new Date(2026, 8, 14, 0, 0, 0, 0);
+const at = (hours: number, minutes = 0) => new Date(2026, 8, 14, hours, minutes, 0, 0);
+
+const withBlocks: Availability = {
+  blocks: [{ weekday: 1, start_time: '09:00', end_time: '17:00' }],
+  exceptions: [],
+  blocked: [
+    { id: 'a', start_at: at(12).toISOString(), end_at: at(13).toISOString(), reason: 'lunch' },
+    { id: 'b', start_at: at(15).toISOString(), end_at: at(16).toISOString(), reason: 'dentist' },
+  ],
+};
+
+describe('blocked hours', () => {
+  it('cuts each window out of the working day', () => {
+    expect(openIntervalsFor(BLOCK_DAY, withBlocks)).toEqual([
+      { start: 9 * 60, end: 12 * 60 },
+      { start: 13 * 60, end: 15 * 60 },
+      { start: 16 * 60, end: 17 * 60 },
+    ]);
+  });
+
+  it('lists the windows of the day in order, with their reasons', () => {
+    expect(blockedWindowsFor(BLOCK_DAY, withBlocks).map((window) => window.reason)).toEqual([
+      'lunch',
+      'dentist',
+    ]);
+  });
+
+  it('warns for a booking that runs into a window, and names it', () => {
+    expect(isWithinWorkingHours(at(11, 30), at(12, 30), withBlocks)).toBe(false);
+    expect(blockedWindowFor(at(11, 30), at(12, 30), withBlocks)?.reason).toBe('lunch');
+    expect(isWithinWorkingHours(at(13), at(14), withBlocks)).toBe(true);
+    expect(blockedWindowFor(at(13), at(14), withBlocks)).toBeNull();
+  });
+
+  it('still warns about a block when no weekly hours are set', () => {
+    const blocksOnly: Availability = { blocks: [], exceptions: [], blocked: withBlocks.blocked };
+    expect(isWithinWorkingHours(at(12, 15), at(12, 45), blocksOnly)).toBe(false);
+    expect(isWithinWorkingHours(at(20), at(21), blocksOnly)).toBe(true);
+    expect(isClosedDay(BLOCK_DAY, blocksOnly)).toBe(false);
+  });
+
+  it('a day blocked end to end reads as closed', () => {
+    const whole: Availability = {
+      blocks: withBlocks.blocks,
+      exceptions: [],
+      blocked: [{ id: 'c', start_at: at(9).toISOString(), end_at: at(17).toISOString(), reason: null }],
+    };
+    expect(openIntervalsFor(BLOCK_DAY, whole)).toEqual([]);
+    expect(isClosedDay(BLOCK_DAY, whole)).toBe(true);
   });
 });

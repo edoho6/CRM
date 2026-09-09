@@ -205,6 +205,31 @@ export const patientTagLinksSchema = z.object({
  * rather than rejected, because a practitioner writing "{שם}" by mistake should
  * see it in the preview, not be refused.
  */
-export const reminderTemplateSchema = z.object({
+export const reminderSettingsSchema = z.object({
   reminder_template: optionalText(1000),
+  reminders_enabled: z.boolean().default(true),
+  reminder_hours_before: z.coerce.number().int().min(1).max(168).default(24),
+  reminder_channel: z.enum(['sms', 'whatsapp', 'email']).default('whatsapp'),
 });
+
+export type ReminderSettingsValues = z.input<typeof reminderSettingsSchema>;
+
+/**
+ * Hours away on one day. The date and two clock times, as the dialog
+ * speaks them; the action turns them into instants in the browser's zone,
+ * which is the clinic's.
+ */
+export const scheduleBlockSchema = z
+  .object({
+    start_at: z.string().refine((value) => !Number.isNaN(Date.parse(value)), { error: 'invalid_datetime' }),
+    end_at: z.string().refine((value) => !Number.isNaN(Date.parse(value)), { error: 'invalid_datetime' }),
+    reason: optionalText(160),
+  })
+  .refine((value) => Date.parse(value.end_at) > Date.parse(value.start_at), {
+    error: 'end_before_start',
+    path: ['end_at'],
+  });
+
+export const scheduleBlocksSchema = z.array(scheduleBlockSchema).min(1).max(12);
+
+export type ScheduleBlockValues = z.input<typeof scheduleBlockSchema>;

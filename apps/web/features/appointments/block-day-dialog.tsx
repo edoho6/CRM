@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition } from 'react';
 import { useFormatter, useTranslations } from 'next-intl';
-import { CalendarOff, DoorOpen } from 'lucide-react';
+import { CalendarOff, DoorOpen, Plus, Trash2 } from 'lucide-react';
 import {
   Alert,
   Button,
@@ -10,37 +10,59 @@ import {
   Dialog,
   DialogContent,
   DialogFooter,
-  Field,
   Input,
   Spinner,
   TimeSelect,
   useToast,
 } from '@clinic/ui';
 import { useRouter } from '@clinic/i18n/navigation';
-import { reopenDiaryPeriod, saveScheduleException } from '@/features/settings/actions';
-import type { DayException } from './availability';
-import { toDateKey } from './date-utils';
+import {
+  addScheduleBlocks,
+  deleteScheduleBlock,
+  reopenDiaryPeriod,
+  saveScheduleException,
+} from '@/features/settings/actions';
+import { blockedWindowsFor, type Availability, type DayException } from './availability';
+import { combineDateAndTime, toDateKey } from './date-utils';
 
 /**
- * Closing one day, from the day itself.
+ * Closing a day, or hours of it, from the day itself.
  *
  * The working-hours screen closes holidays — a fortnight in August, a course
  * next spring. This is for the Tuesday you have just decided to take off,
- * while looking at it: the same row in the same table, written from where
- * the decision is made rather than from a settings page two clicks away.
+ * while looking at it, or for the two hours of it you cannot work.
  *
- * A closure is the whole day unless hours are given, in which case the day
- * is open at those hours and no others — the meaning the diary already gives
- * that pair, and the one the schedule screen calls "open only between".
+ * Two shapes. The whole day is one row in the exceptions table, as the
+ * schedule screen writes it. Hours are windows — as many as the day needs,
+ * each with its own reason — and they are cut out of the day's hours rather
+ * than replacing them: "not 14:00–16:00" and "not 11:00–11:30", not "open
+ * only between".
  */
+
+interface Draft {
+  from: string;
+  to: string;
+  reason: string;
+}
+
+const minutes = (time: string) => {
+  const [h, m] = time.split(':').map(Number);
+  return (h ?? 0) * 60 + (m ?? 0);
+};
+
+const clock = (value: number) =>
+  `${String(Math.floor(value / 60)).padStart(2, '0')}:${String(value % 60).padStart(2, '0')}`;
+
 export function BlockDayDialog({
   day,
   existing,
+  availability,
   onOpenChange,
 }: {
   day: Date | null;
-  /** What is already written for that day, if anything. */
+  /** The whole-day closure already written for that day, if any. */
   existing: DayException | null;
+  availability: Availability;
   onOpenChange: (open: boolean) => void;
 }) {
   const t = useTranslations('appointments.block');
@@ -51,37 +73,79 @@ export function BlockDayDialog({
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const [wholeDay, setWholeDay] = useState(true);
-  const [from, setFrom] = useState('09:00');
-  const [to, setTo] = useState('13:00');
+  const [wholeDay, setWholeDay] = useState(false);
   const [reason, setReason] = useState('');
+  const [drafts, setDrafts] = useState<Draft[]>([]);
+
+  const key = day ? toDateKey(day) : '';
+  const windows = day ? blockedWindowsFor(day, availability) : [];
 
   useEffect(() => {
     if (!day) return;
-    const partial = Boolean(existing && !existing.is_closed && existing.start_time && existing.end_time);
-    setWholeDay(!partial);
-    setFrom(existing?.start_time?.slice(0, 5) ?? '09:00');
-    setTo(existing?.end_time?.slice(0, 5) ?? '13:00');
+    setWholeDay(Boolean(existing?.is_closed));
     setReason(existing?.reason ?? '');
+    // One empty window to start from when nothing is blocked yet; otherwise
+    // the existing ones are the list and a new one is asked for.
+    setDrafts(
+      existing?.is_closed || blockedWindowsFor(day, availability).length > 0
+        ? []
+        : [{ from: '12:00', to: '13:00', reason: '' }],
+    );
     setError(null);
+    // The windows of the day are derived from `availability`, which changes
+    // only through a refresh — no need to re-run on it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [day, existing]);
 
   if (!day) return null;
-  const key = toDateKey(day);
+
+  const invalidDraft = drafts.some((draft) => minutes(draft.to) <= minutes(draft.from));
+
+  function updateDraft(index: number, patch: Partial<Draft>) {
+    setDrafts((current) =>
+      current.map((draft, position) => (position === index ? { ...draft, ...patch } : draft)),
+    );
+  }
+
+  /** A new window starts where the last one ended, an hour long. */
+  function addDraft() {
+    setDrafts((current) => {
+      const lastDraft = current[current.length - 1];
+      const lastWindow = windows[windows.length - 1];
+      const from = lastDraft ? lastDraft.to : lastWindow ? clock(lastWindow.end) : '12:00';
+      const [h] = from.split(':').map(Number);
+      const to = `${String(Math.min(23, (h ?? 12) + 1)).padStart(2, '0')}:${from.slice(3)}`;
+      return [...current, { from, to, reason: '' }];
+    });
+  }
 
   function save() {
     setError(null);
     startTransition(async () => {
-      const result = await saveScheduleException({
-        date: key,
-        is_closed: wholeDay,
-        start_time: wholeDay ? '' : from,
-        end_time: wholeDay ? '' : to,
-        reason,
-      });
-      if (!result.ok) {
-        setError(t('failed'));
-        return;
+      if (wholeDay) {
+        const result = await saveScheduleException({
+          date: key,
+          is_closed: true,
+          start_time: '',
+          end_time: '',
+          reason,
+        });
+        if (!result.ok) {
+          setError(t('failed'));
+          return;
+        }
+      } else if (drafts.length > 0) {
+        const result = await addScheduleBlocks(
+          drafts.map((draft) => ({
+            start_at: combineDateAndTime(key, draft.from).toISOString(),
+            end_at: combineDateAndTime(key, draft.to).toISOString(),
+            reason: draft.reason,
+          })),
+        );
+        if (!result.ok) {
+          setError(t('failed'));
+          return;
+        }
       }
       toast({ tone: 'success', title: t('saved') });
       onOpenChange(false);
@@ -103,57 +167,132 @@ export function BlockDayDialog({
     });
   }
 
+  function removeWindow(id: string) {
+    setError(null);
+    startTransition(async () => {
+      const result = await deleteScheduleBlock(id);
+      if (!result.ok) {
+        setError(t('failed'));
+        return;
+      }
+      router.refresh();
+    });
+  }
+
   return (
     <Dialog open={day !== null} onOpenChange={onOpenChange}>
-      <DialogContent title={t('title')} closeLabel={tc('close')} className="max-w-md">
+      <DialogContent title={t('title')} closeLabel={tc('close')} className="max-w-lg">
         <div className="space-y-4">
           <p className="text-sm font-medium text-ink-900">{format.dateTime(day, 'weekday')}</p>
 
           {error ? <Alert tone="danger">{error}</Alert> : null}
-          {existing ? <Alert tone="info">{t('alreadyBlocked')}</Alert> : null}
+          {existing?.is_closed ? <Alert tone="info">{t('alreadyBlocked')}</Alert> : null}
 
           <label className="flex items-center gap-2 text-sm text-ink-800">
             <Checkbox checked={wholeDay} onChange={(event) => setWholeDay(event.target.checked)} />
             {t('wholeDay')}
           </label>
 
-          {!wholeDay ? (
-            <div className="space-y-1">
-              <p className="text-xs font-medium text-ink-600">{t('openOnlyBetween')}</p>
-              <div className="flex flex-wrap items-center gap-3">
-                <TimeSelect
-                  value={from}
-                  onChange={setFrom}
-                  label={t('openOnlyBetween')}
-                  hourLabel={tSchedule('hour')}
-                  minuteLabel={tSchedule('minute')}
-                />
-                <span className="text-ink-500" aria-hidden>
-                  –
-                </span>
-                <TimeSelect
-                  value={to}
-                  onChange={setTo}
-                  label={t('openOnlyBetween')}
-                  hourLabel={tSchedule('hour')}
-                  minuteLabel={tSchedule('minute')}
-                />
-              </div>
-            </div>
-          ) : null}
-
-          <Field label={t('reason')} htmlFor="block_reason">
+          {wholeDay ? (
             <Input
-              id="block_reason"
               value={reason}
               maxLength={160}
               placeholder={t('reasonPlaceholder')}
+              aria-label={t('reason')}
               onChange={(event) => setReason(event.target.value)}
             />
-          </Field>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-xs text-ink-600">{t('hoursHint')}</p>
+
+              {windows.length > 0 ? (
+                <ul className="divide-y divide-ink-100 rounded-lg border border-ink-200">
+                  {windows.map((window) => (
+                    <li key={window.id} className="flex items-center gap-2 px-3 py-2 text-sm">
+                      <span dir="ltr" className="tabular-nums text-ink-800">
+                        {clock(window.start)}–{clock(window.end)}
+                      </span>
+                      <span className="min-w-0 flex-1 truncate text-ink-600" dir="auto">
+                        {window.reason ?? ''}
+                      </span>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8 text-ink-500 hover:bg-red-50 hover:text-red-600"
+                        aria-label={t('removeWindow')}
+                        title={t('removeWindow')}
+                        disabled={isPending}
+                        onClick={() => removeWindow(window.id)}
+                      >
+                        <Trash2 className="h-4 w-4" aria-hidden />
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+
+              {drafts.map((draft, index) => (
+                <div
+                  key={index}
+                  className="space-y-2 rounded-lg border border-dashed border-ink-300 p-3"
+                >
+                  <div className="flex flex-wrap items-center gap-2">
+                    <TimeSelect
+                      value={draft.from}
+                      onChange={(value) => updateDraft(index, { from: value })}
+                      label={t('from')}
+                      hourLabel={tSchedule('hour')}
+                      minuteLabel={tSchedule('minute')}
+                    />
+                    <span className="text-ink-500" aria-hidden>
+                      –
+                    </span>
+                    <TimeSelect
+                      value={draft.to}
+                      onChange={(value) => updateDraft(index, { to: value })}
+                      label={t('to')}
+                      hourLabel={tSchedule('hour')}
+                      minuteLabel={tSchedule('minute')}
+                    />
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      className="ms-auto h-8 w-8 text-ink-500"
+                      aria-label={t('removeWindow')}
+                      title={t('removeWindow')}
+                      onClick={() =>
+                        setDrafts((current) => current.filter((_, position) => position !== index))
+                      }
+                    >
+                      <Trash2 className="h-4 w-4" aria-hidden />
+                    </Button>
+                  </div>
+                  {minutes(draft.to) <= minutes(draft.from) ? (
+                    <p className="text-xs text-red-700" role="alert">
+                      {t('endAfterStart')}
+                    </p>
+                  ) : null}
+                  <Input
+                    value={draft.reason}
+                    maxLength={160}
+                    placeholder={t('reasonPlaceholder')}
+                    aria-label={t('reason')}
+                    onChange={(event) => updateDraft(index, { reason: event.target.value })}
+                  />
+                </div>
+              ))}
+
+              <Button type="button" variant="secondary" size="sm" onClick={addDraft}>
+                <Plus className="h-4 w-4" aria-hidden />
+                {t('addWindow')}
+              </Button>
+            </div>
+          )}
 
           <DialogFooter>
-            {existing ? (
+            {existing?.is_closed ? (
               <Button
                 type="button"
                 variant="ghost"
@@ -173,7 +312,11 @@ export function BlockDayDialog({
             >
               {tc('cancel')}
             </Button>
-            <Button type="button" disabled={isPending || (!wholeDay && to <= from)} onClick={save}>
+            <Button
+              type="button"
+              disabled={isPending || (!wholeDay && (drafts.length === 0 || invalidDraft))}
+              onClick={save}
+            >
               {isPending ? <Spinner /> : <CalendarOff className="h-4 w-4" aria-hidden />}
               {t('save')}
             </Button>
