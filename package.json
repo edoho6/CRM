@@ -22,7 +22,8 @@
     "db:reset": "supabase db reset",
     "check:contrast": "node scripts/check-contrast.mjs",
     "check:a11y": "node scripts/check-a11y.mjs",
-    "check:tokens": "node scripts/check-tokens.mjs"
+    "check:tokens": "node scripts/check-tokens.mjs",
+    "check:i18n": "node scripts/check-i18n-keys.mjs"
   },
   "devDependencies": {
     "axe-core": "^4.13.0",

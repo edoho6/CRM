@@ -33,6 +33,16 @@ export default function AppError({
       <Alert tone="danger" title={t('errorTitle')}>
         {t('errorGeneric')}
       </Alert>
+      {/* In development only: the message itself, so the person testing can
+          say what broke rather than "something". Never in production. */}
+      {process.env.NODE_ENV === 'development' ? (
+        <pre
+          dir="ltr"
+          className="mt-3 max-h-48 overflow-auto rounded-md bg-ink-100 p-2 text-xs whitespace-pre-wrap text-ink-700"
+        >
+          {error.message}
+        </pre>
+      ) : null}
       <Button className="mt-4" onClick={retry}>
         {t('retry')}
       </Button>

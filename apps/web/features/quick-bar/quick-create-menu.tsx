@@ -36,7 +36,7 @@ interface QuickAction {
 const QUICK_ACTIONS: QuickAction[] = [
   { key: 'newPatient', href: '/patients/new', icon: UserPlus },
   { key: 'newAppointment', href: '/calendar?new=1', icon: CalendarPlus },
-  { key: 'newEncounter', href: '/patients', icon: Stethoscope },
+  { key: 'newEncounter', href: '/encounters/new', icon: Stethoscope },
   { key: 'newInvoice', href: '/billing', icon: Receipt },
   { key: 'receiveStock', href: '/inventory/batches/receive', icon: PackagePlus, startsGroup: true },
   { key: 'newHerb', href: '/reference/herbs/new', icon: Sprout },

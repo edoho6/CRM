@@ -7,7 +7,8 @@ import { QUERY_BY_NAME, QueryFailedError, type QueryResult } from '@/features/as
 import { BarChart } from '@/features/reports/bar-chart';
 import { RankedBars } from '@/features/reports/ranked-bars';
 import { ReportCard } from '@/features/reports/report-card';
-import { DEFAULT_PERIOD, parsePeriod, PeriodFilter } from '@/features/reports/period-filter';
+import { PeriodFilter } from '@/features/reports/period-filter';
+import { DEFAULT_PERIOD, parsePeriod } from '@/features/reports/period';
 import { formatDate } from '@clinic/i18n';
 
 /**

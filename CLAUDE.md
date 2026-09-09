@@ -183,8 +183,15 @@
 ## לפני commit
 
 ```
-pnpm typecheck && pnpm test && pnpm build && pnpm check:contrast && pnpm check:tokens
+pnpm typecheck && pnpm test && pnpm build && pnpm check:contrast && pnpm check:tokens && pnpm check:i18n
 ```
+
+`check:i18n` עובר על כל `t('…')` בקוד ומוודא שהמפתח קיים ב-`he.json` — מפתח
+חסר לא נכשל בבנייה, הוא מופיע על המסך כטקסט לועזי באמצע העברית.
+
+**PostgREST ומקשר אחד-לאחד:** טבלה עם FK ייחודי (`tcm_notes.encounter_id`,
+`encounters.appointment_id`) מוטמעת כ-**אובייקט או null**, לא כרשימה.
+`row.note[0]` על null הפיל את דף הטיפול. תמיד `Array.isArray` או בדיקת null.
 
 ואם השרת רץ, גם `pnpm check:a11y` (axe מול העמודים הציבוריים).
 

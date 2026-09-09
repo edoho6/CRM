@@ -52,7 +52,6 @@ export function useCurrentPrescriptionPublisher(): CurrentPrescriptionContextVal
   return useContext(CurrentPrescriptionContext)?.publish ?? noop;
 }
 
-/** The key for a line, from whichever name the catalogue has. */
-export function prescriptionKey(pinyin: string | null | undefined, fallback: string): string {
-  return (pinyin?.trim() || fallback).trim().toLowerCase();
-}
+// `prescriptionKey` lives in ./prescription-key so the server page can call
+// it too; it is re-exported here for the panels that already import it.
+export { prescriptionKey } from './prescription-key';

@@ -17,16 +17,12 @@ import { useSearchParams } from 'next/navigation';
  * you send to your accountant, and a link that reopens the same one is the
  * cheapest way to do that.
  */
-export const PERIODS = [3, 6, 12, 24] as const;
-export type Period = (typeof PERIODS)[number];
+// The values live in ./period, a plain module the server can read too; they
+// are re-exported here for whoever already imports them from the filter.
+import { DEFAULT_PERIOD, PERIODS, parsePeriod, type Period } from './period';
 
-export const DEFAULT_PERIOD: Period = 12;
-
+export { DEFAULT_PERIOD, PERIODS, parsePeriod, type Period };
 /** Anything else in the URL — a typo, a hand-edit — falls back rather than errors. */
-export function parsePeriod(value: string | undefined): Period {
-  const parsed = Number(value);
-  return (PERIODS as readonly number[]).includes(parsed) ? (parsed as Period) : DEFAULT_PERIOD;
-}
 
 export function PeriodFilter({ current }: { current: Period }) {
   const t = useTranslations('reports');

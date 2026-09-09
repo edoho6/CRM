@@ -35,6 +35,16 @@ export default function LocaleError({
         <Alert tone="danger" title={t('errorTitle')}>
           {t('errorGeneric')}
         </Alert>
+        {/* In development only: the message itself, so the person testing can
+            say what broke rather than "something". Never in production. */}
+        {process.env.NODE_ENV === 'development' ? (
+          <pre
+            dir="ltr"
+            className="max-h-48 overflow-auto rounded-md bg-ink-100 p-2 text-xs whitespace-pre-wrap text-ink-700"
+          >
+            {error.message}
+          </pre>
+        ) : null}
         <div className="flex flex-wrap gap-2">
           <Button onClick={retry}>{t('retry')}</Button>
           <Button asChild variant="secondary">

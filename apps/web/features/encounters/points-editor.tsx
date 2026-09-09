@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo, useRef, useState } from 'react';
+import { useId, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useLocale, useTranslations } from 'next-intl';
 import {
   ArrowLeft,
@@ -10,10 +11,9 @@ import {
   Search,
   X,
 } from 'lucide-react';
-import { FloatingList, Select, useAnchoredPosition } from '@clinic/ui';
+import { FloatingList, useAnchoredPosition } from '@clinic/ui';
 import { cn } from '@clinic/ui/cn';
 import {
-  NEEDLE_TECHNIQUES,
   POINT_PLACEMENTS,
   toPointPlacement,
   type NeedleTechnique,
@@ -108,6 +108,10 @@ export interface PointOption {
   english: string | null;
   chinese: string | null;
   region: PointRegion;
+  /** The catalogue's prose, shown on hover so a point is checked without leaving the note. */
+  location?: string | null;
+  actions?: string | null;
+  indications?: string | null;
 }
 
 export interface PointRow {
@@ -298,8 +302,9 @@ export function PointsEditor({
 }) {
   const t = useTranslations('encounters.points');
   const tRegion = useTranslations('encounters.region');
-  const tTechnique = useTranslations('encounters.technique');
   const isRtl = useLocale() === 'he';
+
+  const byId = useMemo(() => new Map(catalogue.map((option) => [option.id, option])), [catalogue]);
 
   const byRegion = useMemo(() => {
     const groups = Object.fromEntries(
@@ -312,10 +317,6 @@ export function PointsEditor({
     });
     return groups;
   }, [value]);
-
-  function update(index: number, patch: Partial<PointRow>) {
-    onChange(value.map((row, position) => (position === index ? { ...row, ...patch } : row)));
-  }
 
   function remove(index: number) {
     onChange(value.filter((_, position) => position !== index));
@@ -397,33 +398,11 @@ export function PointsEditor({
               key={index}
               className="flex flex-wrap items-center gap-1.5 rounded-md border border-ink-200 bg-white px-1.5 py-1"
             >
-              <span
-                dir="ltr"
-                className={cn(
-                  'text-sm font-semibold',
-                  // A point that came from the catalogue is the one that can
-                  // appear on the map; free text reads plainly so the difference
-                  // is visible without explanation.
-                  row.point_id ? 'text-jade-800' : 'text-ink-700',
-                )}
-              >
-                {row.point}
-              </span>
-              <Select
-                aria-label={t('technique')}
-                value={row.technique}
-                disabled={disabled}
-                onChange={(event) =>
-                  update(index, { technique: event.target.value as NeedleTechnique })
-                }
-                className="h-7 w-auto min-w-20 border-0 bg-transparent px-1 text-xs shadow-none"
-              >
-                {NEEDLE_TECHNIQUES.map((technique) => (
-                  <option key={technique} value={technique}>
-                    {tTechnique(technique)}
-                  </option>
-                ))}
-              </Select>
+              {/* The name, and on hover or focus the catalogue's own words
+                  about it. Nothing else on the row: the technique and the
+                  retention time were fields nobody filled, standing between
+                  the practitioner and the next point. */}
+              <PointName row={row} option={row.point_id ? byId.get(row.point_id) : undefined} />
               {!disabled ? (
                 <button
                   type="button"
@@ -467,5 +446,110 @@ export function PointsEditor({
           make the grid say something untrue. */}
       {panel('ear', true)}
     </div>
+  );
+}
+
+/**
+ * A point's name, with the catalogue behind it.
+ *
+ * Hovering, focusing or tapping the name opens a card with where the point
+ * is, what it does and what it is for — the three things checked mid-
+ * treatment, read in place rather than in another tab. Free text has no
+ * card: there is nothing in the catalogue to show.
+ */
+function PointName({ row, option }: { row: PointRow; option: PointOption | undefined }) {
+  const t = useTranslations('encounters.points.details');
+  const [open, setOpen] = useState(false);
+  const anchorRef = useRef<HTMLButtonElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const id = useId();
+  const hasDetails = Boolean(option && (option.location || option.actions || option.indications));
+  const style = useAnchoredPosition(anchorRef, open && hasDetails, {
+    matchWidth: false,
+    maxHeight: 320,
+    contentRef: cardRef,
+  });
+
+  const name = (
+    <span
+      dir="ltr"
+      className={cn(
+        'text-sm font-semibold',
+        // A point that came from the catalogue is the one that can appear on
+        // the map; free text reads plainly so the difference is visible.
+        row.point_id ? 'text-jade-800' : 'text-ink-700',
+      )}
+    >
+      {row.point}
+    </span>
+  );
+
+  if (!hasDetails) return name;
+
+  return (
+    <>
+      <button
+        ref={anchorRef}
+        type="button"
+        aria-describedby={open ? id : undefined}
+        aria-expanded={open}
+        onMouseEnter={() => setOpen(true)}
+        onMouseLeave={() => setOpen(false)}
+        onFocus={() => setOpen(true)}
+        onBlur={() => setOpen(false)}
+        // A tap on a touch screen, where there is no hover.
+        onClick={() => setOpen((current) => !current)}
+        className="rounded px-0.5 underline decoration-dotted decoration-jade-400 underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+      >
+        {name}
+      </button>
+      {open && style && typeof document !== 'undefined'
+        ? createPortal(
+            <div
+              ref={cardRef}
+              id={id}
+              role="tooltip"
+              style={{ ...style, width: 320, maxWidth: 'calc(100vw - 16px)' }}
+              className="z-popover overflow-y-auto rounded-lg border border-ink-200 bg-white p-3 text-xs shadow-lg"
+            >
+              <p className="flex flex-wrap items-baseline gap-x-2">
+                <span dir="ltr" className="text-sm font-semibold text-jade-800">
+                  {option!.code}
+                </span>
+                {option!.pinyin ? (
+                  <span dir="ltr" className="text-ink-800">
+                    {option!.pinyin}
+                  </span>
+                ) : null}
+                {option!.chinese ? <span className="text-ink-500">{option!.chinese}</span> : null}
+                {option!.english ? (
+                  <span dir="ltr" className="text-ink-500">
+                    {option!.english}
+                  </span>
+                ) : null}
+              </p>
+              {option!.location ? (
+                <p className="mt-2" dir="auto">
+                  <span className="font-medium text-ink-600">{t('location')}: </span>
+                  <span className="text-ink-800">{option!.location}</span>
+                </p>
+              ) : null}
+              {option!.actions ? (
+                <p className="mt-1.5" dir="auto">
+                  <span className="font-medium text-ink-600">{t('actions')}: </span>
+                  <span className="text-ink-800">{option!.actions}</span>
+                </p>
+              ) : null}
+              {option!.indications ? (
+                <p className="mt-1.5" dir="auto">
+                  <span className="font-medium text-ink-600">{t('indications')}: </span>
+                  <span className="text-ink-800">{option!.indications}</span>
+                </p>
+              ) : null}
+            </div>,
+            document.body,
+          )
+        : null}
+    </>
   );
 }

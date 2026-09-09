@@ -60,6 +60,11 @@ jobs:
       - name: Shared classes compile in both apps
         run: pnpm check:tokens
 
+      # A missing message key does not fail the build; it shows up on screen
+      # as an English key in the middle of Hebrew.
+      - name: Every message key the code asks for exists
+        run: pnpm check:i18n
+
       - name: Start the built app
         run: |
           nohup pnpm --filter @clinic/web start > /tmp/web.log 2>&1 &

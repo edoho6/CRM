@@ -617,6 +617,15 @@
     }
   },
   "encounters": {
+    "newPicker": {
+      "title": "New treatment",
+      "subtitle": "For whom? Pick a patient and the treatment opens.",
+      "today": "Today's bookings",
+      "anyPatient": "Any patient",
+      "searchLabel": "Find a patient",
+      "searchPlaceholder": "Name or phone",
+      "hint": "Someone not on file yet needs a file first — Patients → New patient."
+    },
     "title": "Treatments",
     "new": "New treatment",
     "start": "Start treatment",
@@ -673,6 +682,11 @@
       "pulseLeftShort": "Left"
     },
     "points": {
+      "details": {
+        "location": "Location",
+        "actions": "Actions",
+        "indications": "Indications"
+      },
       "add": "Add point",
       "point": "Point",
       "side": "Side",
@@ -737,6 +751,8 @@
       "legend": "Amber on the left: given then, not now. Green on the right: new now. Amber on the right: the dose changed."
     },
     "tonguePhotos": {
+      "showEarlier": "{count, plural, one {One earlier tongue photo} other {# earlier tongue photos}}",
+      "pickMore": "Click a photo to put it beside the open one — up to three together. Click again to remove.",
       "zoomIn": "Zoom in",
       "zoomOut": "Zoom out",
       "zoomHint": "Wheel to zoom, drag to move, double-click to reset. Keyboard: + − and the arrows.",

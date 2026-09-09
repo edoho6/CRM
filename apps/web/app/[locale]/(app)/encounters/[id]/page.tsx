@@ -23,7 +23,7 @@ import { getClinicScope } from '@/lib/session';
 import { logRecordAccess } from '@/lib/access-log';
 import { EncounterForm } from '@/features/encounters/encounter-form';
 import type { TonguePhoto } from '@/features/encounters/tongue-photos';
-import { prescriptionKey } from '@/features/encounters/current-prescription-context';
+import { prescriptionKey } from '@/features/encounters/prescription-key';
 import { formulaPrimaryName, herbPrimaryName } from '@/lib/display';
 import { DispensePanel } from '@/features/inventory/dispense-panel';
 import { EncounterFormsPanel } from '@/features/forms/encounter-forms-panel';
@@ -42,7 +42,7 @@ const DISPENSING_SELECT =
 
 /** Only what the picker and the chart need — not the clinical prose. */
 const POINT_SELECT =
-  'id, code, pinyin_name, chinese_name, english_name, default_region, body_view, x, y, bilateral';
+  'id, code, pinyin_name, chinese_name, english_name, default_region, body_view, x, y, bilateral, location, actions, indications';
 
 /** Only what the questionnaire picker needs. */
 type FormTemplateOption = Pick<FormTemplate, 'id' | 'title' | 'description' | 'fields'>;
@@ -59,22 +59,29 @@ type PointRow = Pick<
   | 'x'
   | 'y'
   | 'bilateral'
+  | 'location'
+  | 'actions'
+  | 'indications'
 >;
 
 /**
  * An earlier treatment, as the comparison panel needs it.
  *
- * `note` and `dispensing` come back as arrays from PostgREST even where the
- * relationship is one-to-one, because the client cannot tell a unique constraint
- * from a foreign key. Flattened below rather than typed as optional-single, so
- * the shape here matches what actually arrives.
+ * `note` is one-to-one with the encounter (the note's encounter_id is
+ * unique), and PostgREST embeds such a relation as an object — or null for a
+ * visit that never got its note. `dispensing` is one-to-many and always a
+ * list. Both are read defensively below, because a wrong guess here is not a
+ * wrong column, it is the whole page failing to open.
  */
+interface PreviousNote {
+  points_used: RecordedPoint[] | null;
+}
+
 interface PreviousRow {
   id: string;
   encounter_date: string;
-  note: {
-    points_used: RecordedPoint[];
-  }[];
+  /** One-to-one, so an object or null in practice; typed loosely on purpose. */
+  note: PreviousNote[] | PreviousNote | null;
   dispensing: {
     formula: Pick<HerbFormula, 'id' | 'name_pinyin' | 'name_english' | 'name_hebrew'> | null;
     items: {
@@ -274,6 +281,9 @@ export default async function EncounterPage({
     english: point.english_name,
     chinese: point.chinese_name,
     region: point.default_region,
+    location: point.location,
+    actions: point.actions,
+    indications: point.indications,
   }));
 
   const pointPositions = Object.fromEntries(
@@ -310,8 +320,14 @@ export default async function EncounterPage({
   // is not a real locale, so this narrowing states a fact rather than hoping.
   const uiLocale = locale as Locale;
   const previousEncounters: PreviousEncounter[] = (previousResult.data ?? []).map((row) => {
-    const note = row.note[0] ?? null;
-    const dispensing = row.dispensing[row.dispensing.length - 1] ?? null;
+    // The note is one-to-one with its encounter, and PostgREST embeds such a
+    // relation as an object — or null, for an encounter that never got its
+    // note. Indexing null as a list is what used to take this page down the
+    // moment a patient had one such visit in their history.
+    const noteEmbed = row.note as PreviousRow['note'] | PreviousNote | null | undefined;
+    const note = Array.isArray(noteEmbed) ? (noteEmbed[0] ?? null) : (noteEmbed ?? null);
+    const dispensingList = Array.isArray(row.dispensing) ? row.dispensing : [];
+    const dispensing = dispensingList[dispensingList.length - 1] ?? null;
 
     return {
       id: row.id,
