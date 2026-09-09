@@ -70,8 +70,8 @@ export default async function BillingPage({ params }: { params: Promise<{ locale
                 <SortTh sortKey="number">{t('invoice')}</SortTh>
                 <SortTh sortKey="patient">{tPatients('title')}</SortTh>
                 <SortTh sortKey="date">{tc('date')}</SortTh>
-                <SortTh sortKey="total">{t('total')}</SortTh>
-                <SortTh sortKey="paid">{t('paid')}</SortTh>
+                <SortTh sortKey="total" numeric>{t('total')}</SortTh>
+                <SortTh sortKey="paid" numeric>{t('paid')}</SortTh>
                 <SortTh sortKey="status">{tc('status')}</SortTh>
               </tr>
             </thead>
@@ -114,12 +114,12 @@ export default async function BillingPage({ params }: { params: Promise<{ locale
                       {formatDate(new Date(invoice.created_at))}
                     </span>
                   </Td>
-                  <Td>
+                  <Td numeric>
                     <span dir="ltr" className="tabular-nums">
                       {format.number(Number(invoice.total), 'currency')}
                     </span>
                   </Td>
-                  <Td>
+                  <Td numeric>
                     <span dir="ltr" className="tabular-nums text-ink-600">
                       {format.number(Number(invoice.amount_paid), 'currency')}
                     </span>

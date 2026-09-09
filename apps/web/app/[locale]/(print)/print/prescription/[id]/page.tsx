@@ -130,7 +130,7 @@ export default async function PrescriptionPrintPage({
           read again and again after the day it was handed over. */}
       {dosing || dailyTotal || record.days_supply ? (
         <section className="rounded-lg border border-ink-300 p-4">
-          <h3 className="text-sm font-semibold text-ink-700">{t('howToTake')}</h3>
+          <h3 className="text-sm font-semibold text-ink-900">{t('howToTake')}</h3>
           <p className="mt-1 text-2xl font-semibold" dir="auto">
             {dosing || '—'}
           </p>
@@ -149,7 +149,7 @@ export default async function PrescriptionPrintPage({
 
       {record.items.length > 0 ? (
         <section>
-          <h3 className="mb-2 text-sm font-semibold">{t('contents')}</h3>
+          <h3 className="mb-2 text-sm font-semibold text-ink-900">{t('contents')}</h3>
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr>
@@ -188,7 +188,7 @@ export default async function PrescriptionPrintPage({
 
       {record.notes ? (
         <section>
-          <h3 className="text-sm font-semibold">{t('notes')}</h3>
+          <h3 className="text-sm font-semibold text-ink-900">{t('notes')}</h3>
           <p className="mt-1 text-sm whitespace-pre-wrap text-ink-700" dir="auto">
             {record.notes}
           </p>

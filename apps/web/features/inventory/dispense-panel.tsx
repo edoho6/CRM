@@ -19,6 +19,7 @@ import {
   Field,
   LtrInput,
   Select,
+  SegmentedControl,
   Spinner,
   Table,
   TableWrapper,
@@ -425,20 +426,15 @@ export function DispensePanel({
             />
 
             <div className="flex flex-wrap items-center gap-1">
-              <Button
-                variant={mode === 'formula' ? 'primary' : 'secondary'}
-                size="sm"
-                onClick={() => setMode('formula')}
-              >
-                {t('formula')}
-              </Button>
-              <Button
-                variant={mode === 'herb' ? 'primary' : 'secondary'}
-                size="sm"
-                onClick={() => setMode('herb')}
-              >
-                {t('herb')}
-              </Button>
+              <SegmentedControl
+                label={t('modeLabel')}
+                value={mode}
+                onChange={setMode}
+                options={[
+                  { value: 'formula', label: t('formula') },
+                  { value: 'herb', label: t('herb') },
+                ]}
+              />
               <GranuleCalculator className="ms-auto" />
             </div>
 
@@ -499,7 +495,7 @@ export function DispensePanel({
             ) : (
               <div className="space-y-2">
                 <div className="flex items-baseline justify-between gap-2">
-                  <h3 className="text-sm font-medium text-ink-800">{t('herbs')}</h3>
+                  <h3 className="text-sm font-semibold text-ink-900">{t('herbs')}</h3>
                   <span className="text-xs text-ink-600">
                     {hasTotal ? t('doseAsParts') : t('doseAsGrams', { unit: tUnit(unit) })}
                   </span>

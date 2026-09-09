@@ -20,12 +20,22 @@ export function Table({ className, ...props }: React.TableHTMLAttributes<HTMLTab
   return <table className={cn('w-full border-collapse text-sm', className)} {...props} />;
 }
 
-export function Th({ className, ...props }: React.ThHTMLAttributes<HTMLTableCellElement>) {
+/**
+ * `numeric` aligns a column of money or quantities to the end and sets
+ * tabular figures, so the digits line up under one another and 1,200 is
+ * visibly more than 980. Text stays at the start.
+ */
+export function Th({
+  className,
+  numeric = false,
+  ...props
+}: React.ThHTMLAttributes<HTMLTableCellElement> & { numeric?: boolean }) {
   return (
     <th
       scope="col"
       className={cn(
-        'border-b border-ink-200 bg-ink-50 px-3 py-2 text-start text-xs font-semibold whitespace-nowrap text-ink-600',
+        'border-b border-ink-200 bg-ink-50 px-3 py-2 text-xs font-semibold whitespace-nowrap text-ink-600',
+        numeric ? 'text-end' : 'text-start',
         className,
       )}
       {...props}
@@ -33,10 +43,18 @@ export function Th({ className, ...props }: React.ThHTMLAttributes<HTMLTableCell
   );
 }
 
-export function Td({ className, ...props }: React.TdHTMLAttributes<HTMLTableCellElement>) {
+export function Td({
+  className,
+  numeric = false,
+  ...props
+}: React.TdHTMLAttributes<HTMLTableCellElement> & { numeric?: boolean }) {
   return (
     <td
-      className={cn('border-b border-ink-100 px-3 py-2 text-start align-middle', className)}
+      className={cn(
+        'border-b border-ink-100 px-3 py-2 align-middle',
+        numeric ? 'text-end tabular-nums' : 'text-start',
+        className,
+      )}
       {...props}
     />
   );

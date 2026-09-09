@@ -88,7 +88,7 @@ export function SortTh({
   children,
   className,
   ...props
-}: React.ThHTMLAttributes<HTMLTableCellElement> & { sortKey: string }) {
+}: React.ThHTMLAttributes<HTMLTableCellElement> & { sortKey: string; numeric?: boolean }) {
   const context = React.useContext(SortContext);
   if (!context) {
     return (

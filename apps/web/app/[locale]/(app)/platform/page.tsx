@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Building2 } from 'lucide-react';
-import { Badge, EmptyState, SortBody, SortTh, SortableTable, TableWrapper, Td, Tr } from '@clinic/ui';
+import { Badge, EmptyState, SortBody, SortTh, SortableTable, TableWrapper, Td, Tr, Dash } from '@clinic/ui';
 import { formatDate, formatDateTime } from '@clinic/i18n';
 import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
@@ -86,7 +86,7 @@ export default async function PlatformPage({ params }: { params: Promise<{ local
                     {row.owner_email ? (
                       <span dir="ltr">{row.owner_email}</span>
                     ) : (
-                      <span className="text-ink-500">—</span>
+                      <Dash />
                     )}
                   </Td>
                   <Td>
@@ -99,7 +99,7 @@ export default async function PlatformPage({ params }: { params: Promise<{ local
                     {row.last_booking_at ? (
                       <span dir="ltr">{formatDateTime(row.last_booking_at)}</span>
                     ) : (
-                      <span className="text-ink-500">—</span>
+                      <Dash />
                     )}
                   </Td>
                 </Tr>

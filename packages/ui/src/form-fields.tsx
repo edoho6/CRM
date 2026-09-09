@@ -152,7 +152,7 @@ export function FormFields({
                                   : current.filter((entry) => entry !== option),
                               );
                             }}
-                            className="h-4 w-4 border-ink-300"
+                            className="h-5 w-5 border-ink-300"
                           />
                           {option}
                         </label>
@@ -173,7 +173,7 @@ export function FormFields({
                           disabled={readOnly}
                           checked={value === option}
                           onChange={() => set(field.id, option)}
-                          className="h-4 w-4 border-ink-300"
+                          className="h-5 w-5 border-ink-300"
                         />
                         {option ? labels.yes : labels.no}
                       </label>

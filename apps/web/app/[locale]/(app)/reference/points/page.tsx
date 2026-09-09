@@ -1,6 +1,6 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { MapPin } from 'lucide-react';
-import { EmptyState, SortBody, SortTh, SortableTable, TableWrapper, Td, Tr } from '@clinic/ui';
+import { EmptyState, SortBody, SortTh, SortableTable, TableWrapper, Td, Tr, Dash } from '@clinic/ui';
 import { Link } from '@clinic/i18n/navigation';
 import type { AcupuncturePoint } from '@clinic/db/types';
 import { POINT_BODY_AREAS, POINT_CATEGORIES, POINT_CHANNELS } from '@clinic/domain';
@@ -123,14 +123,14 @@ export default async function PointsPage({
                         {point.pinyin_name}
                       </span>
                     ) : (
-                      <span className="text-ink-500">—</span>
+                      <Dash />
                     )}
                   </Td>
                   <Td>
                     {point.chinese_name ? (
                       <span className="text-base text-ink-800">{point.chinese_name}</span>
                     ) : (
-                      <span className="text-ink-500">—</span>
+                      <Dash />
                     )}
                   </Td>
                   <Td>
@@ -139,7 +139,7 @@ export default async function PointsPage({
                         {point.english_name}
                       </span>
                     ) : (
-                      <span className="text-ink-500">—</span>
+                      <Dash />
                     )}
                   </Td>
                   <Td>{tChannel(point.channel)}</Td>
@@ -152,7 +152,7 @@ export default async function PointsPage({
                         {tArea(point.body_area)}
                       </Link>
                     ) : (
-                      <span className="text-ink-500">—</span>
+                      <Dash />
                     )}
                     {!point.bilateral ? (
                       <span className="block text-xs text-ink-500">{t('midlinePoint')}</span>

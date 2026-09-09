@@ -18,6 +18,7 @@ import {
 } from '@clinic/ui';
 import { useRouter } from '@clinic/i18n/navigation';
 import { removeHerbImage, uploadHerbImage } from './image-actions';
+import { shrinkImage } from '@/lib/shrink-image';
 
 /**
  * The herb's photograph, with upload and replace.
@@ -51,6 +52,8 @@ export function HerbImageCard({
     setStatus('idle');
     const formData = new FormData(event.currentTarget);
     startTransition(async () => {
+      const file = formData.get('file');
+      if (file instanceof File) formData.set('file', await shrinkImage(file));
       const result = await uploadHerbImage(herbId, formData);
       if (!result.ok) {
         setStatus('error');

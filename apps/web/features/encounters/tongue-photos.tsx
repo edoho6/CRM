@@ -8,6 +8,7 @@ import { cn } from '@clinic/ui/cn';
 import { useRouter } from '@clinic/i18n/navigation';
 import { formatDate } from '@clinic/i18n';
 import { deleteDocument, uploadDocument } from '@/features/documents/actions';
+import { shrinkImage } from '@/lib/shrink-image';
 import { DEFAULT_ZOOM_VIEW, ZoomFrame, type ZoomView } from './zoom-frame';
 
 /**
@@ -142,13 +143,16 @@ export function TonguePhotos({
   function handleFile(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
-    const formData = new FormData();
-    formData.set('file', file);
-    formData.set('category', 'tongue');
-    formData.set('encounter_id', encounterId);
+    // Shrunk on the phone before it goes anywhere: a tenth of the bytes,
+    // the same tongue.
     const replacing = current.map((photo) => photo.id);
     setFailed(false);
     startTransition(async () => {
+      const shrunk = await shrinkImage(file);
+      const formData = new FormData();
+      formData.set('file', shrunk);
+      formData.set('category', 'tongue');
+      formData.set('encounter_id', encounterId);
       const result = await uploadDocument(patientId, formData);
       if (inputRef.current) inputRef.current.value = '';
       if (!result.ok) {

@@ -29,6 +29,7 @@ import { DOCUMENT_CATEGORIES, type Locale } from '@clinic/domain';
 import { useRouter } from '@clinic/i18n/navigation';
 import type { PatientDocument } from '@clinic/db/types';
 import { deleteDocument, setDocumentShared, uploadDocument } from './actions';
+import { shrinkImage } from '@/lib/shrink-image';
 import { formatDate } from '@clinic/i18n';
 
 /** Human-readable file size, e.g. "1.4 MB". Locale-formatted so digits read correctly in both languages. */
@@ -63,6 +64,8 @@ function UploadForm({ patientId, onUploaded }: { patientId: string; onUploaded: 
     }
 
     startTransition(async () => {
+      // A photograph is shrunk on the way out; a PDF or a scan goes as it is.
+      formData.set('file', await shrinkImage(file));
       const result = await uploadDocument(patientId, formData);
       if (!result.ok) {
         setError(t('uploadError'));

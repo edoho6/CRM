@@ -10,6 +10,8 @@ import {
   TableWrapper,
   Td,
   Tr,
+
+  Dash,
 } from '@clinic/ui';
 import { Link } from '@clinic/i18n/navigation';
 import type { Herb, HerbStockLevel } from '@clinic/db/types';
@@ -242,7 +244,7 @@ export default async function HerbsPage({
                           {tTcm(herb.tcm_category)}
                         </TcmChip>
                       ) : (
-                        <span className="text-ink-500">—</span>
+                        <Dash />
                       )}
                     </Td>
                     <Td>
@@ -255,7 +257,7 @@ export default async function HerbsPage({
                           {tTemp(herb.temperature)}
                         </TcmChip>
                       ) : (
-                        <span className="text-ink-500">—</span>
+                        <Dash />
                       )}
                     </Td>
                     <Td>
@@ -273,7 +275,7 @@ export default async function HerbsPage({
                           {dose}
                         </span>
                       ) : (
-                        <span className="text-ink-500">—</span>
+                        <Dash />
                       )}
                     </Td>
                     {tracksInventory ? (

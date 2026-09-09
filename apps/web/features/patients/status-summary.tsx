@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { ChartColumn, EyeOff, LayoutGrid, Rows3 } from 'lucide-react';
-import { cn } from '@clinic/ui';
+import { SegmentedControl, cn } from '@clinic/ui';
 import { usePathname, useRouter } from '@clinic/i18n/navigation';
 import { useSearchParams } from 'next/navigation';
 import { TREATMENT_STATUSES, type TreatmentStatus } from '@clinic/domain';
@@ -170,33 +170,21 @@ export function PatientStatusSummary({ counts }: { counts: StatusCounts }) {
   }));
 
   const switcher = (
-    <div
-      role="group"
-      aria-label={t('kpi.view')}
-      className="flex shrink-0 items-center gap-0.5 rounded-lg border border-ink-200 bg-white p-0.5"
-    >
-      {MODES.map((candidate) => {
+    <SegmentedControl
+      iconOnly
+      label={t('kpi.view')}
+      value={mode}
+      onChange={chooseMode}
+      className="shrink-0"
+      options={MODES.map((candidate) => {
         const Icon = MODE_ICONS[candidate];
-        const label = t(`kpi.modes.${candidate}`);
-        const selected = mode === candidate;
-        return (
-          <button
-            key={candidate}
-            type="button"
-            aria-pressed={selected}
-            title={label}
-            onClick={() => chooseMode(candidate)}
-            className={cn(
-              'flex h-7 w-7 items-center justify-center rounded-md transition-colors',
-              selected ? 'bg-accent text-accent-fg' : 'text-ink-600 hover:bg-ink-100',
-            )}
-          >
-            <Icon className="h-4 w-4" aria-hidden />
-            <span className="sr-only">{label}</span>
-          </button>
-        );
+        return {
+          value: candidate,
+          label: t(`kpi.modes.${candidate}`),
+          icon: <Icon className="h-4 w-4" aria-hidden />,
+        };
       })}
-    </div>
+    />
   );
 
   return (

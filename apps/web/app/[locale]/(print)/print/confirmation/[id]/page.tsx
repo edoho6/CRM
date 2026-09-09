@@ -89,7 +89,7 @@ export default async function ConfirmationPrintPage({
       ) : null}
 
       <section>
-        <h3 className="mb-2 text-sm font-semibold">
+        <h3 className="mb-2 text-sm font-semibold text-ink-900">
           {t('datesHeading', { count: confirmation.treatment_dates.length })}
         </h3>
         {/* A plain list in columns rather than a table: it is one column of

@@ -567,6 +567,7 @@
     "overlapError": "This practitioner already has an overlapping appointment",
     "empty": "No appointments in this range",
     "views": {
+      "label": "Diary view",
       "day": "Day",
       "week": "Week",
       "month": "Month",
@@ -1095,6 +1096,7 @@
       "contactName": "Contact person"
     },
     "dispensing": {
+      "modeLabel": "Formula or single herbs",
       "title": "Dispense herbs",
       "dispense": "Dispense",
       "dispensed": "Herbs dispensed and stock updated",

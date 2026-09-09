@@ -104,7 +104,7 @@ export function PortalForm({
       </div>
 
       <div className="flex justify-end">
-        <Button onClick={submit} disabled={isPending}>
+        <Button size="lg" onClick={submit} disabled={isPending}>
           {isPending ? <Spinner /> : <Send className="h-4 w-4" />}
           {t('submit')}
         </Button>

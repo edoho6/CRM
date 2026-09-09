@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { cn } from '@clinic/ui';
+import { SegmentedControl } from '@clinic/ui';
 import { usePathname, useRouter } from '@clinic/i18n/navigation';
 import { useSearchParams } from 'next/navigation';
 
@@ -42,28 +42,16 @@ export function PeriodFilter({ current }: { current: Period }) {
   }
 
   return (
-    <div
-      className="no-print flex flex-wrap items-center gap-1 rounded-lg border border-ink-200 bg-white p-1"
-      role="group"
-      aria-label={t('period')}
-    >
-      {PERIODS.map((months) => {
-        const isActive = months === current;
-        return (
-          <button
-            key={months}
-            type="button"
-            onClick={() => select(months)}
-            aria-pressed={isActive}
-            className={cn(
-              'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
-              isActive ? 'bg-accent text-accent-fg' : 'text-ink-600 hover:bg-ink-50',
-            )}
-          >
-            {t('lastMonths', { count: months })}
-          </button>
-        );
-      })}
-    </div>
+    <SegmentedControl
+      className="no-print"
+      label={t('period')}
+      size="md"
+      value={String(current)}
+      onChange={(next) => select(Number(next) as Period)}
+      options={PERIODS.map((months) => ({
+        value: String(months),
+        label: t('lastMonths', { count: months }),
+      }))}
+    />
   );
 }

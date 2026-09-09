@@ -65,7 +65,7 @@ export default async function PortalHomePage({
       <main className="mx-auto max-w-lg space-y-4 px-6 py-16">
         <Alert tone="info">{t('notLinked')}</Alert>
         <form action={portalSignOut}>
-          <Button type="submit" variant="secondary" size="sm">
+          <Button type="submit" variant="secondary">
             <LogOut className="h-4 w-4" />
             {t('signOut')}
           </Button>
@@ -110,7 +110,7 @@ export default async function PortalHomePage({
       <header className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-xl font-semibold text-ink-900">{t('welcome', { name })}</h1>
         <form action={portalSignOut}>
-          <Button type="submit" variant="ghost" size="sm">
+          <Button type="submit" variant="ghost">
             <LogOut className="h-4 w-4" />
             {t('signOut')}
           </Button>

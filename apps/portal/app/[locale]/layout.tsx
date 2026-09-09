@@ -49,7 +49,7 @@ export default async function PortalLocaleLayout({
 
   return (
     <html lang={locale} dir={dir} className={assistant.variable} suppressHydrationWarning>
-      <body className="min-h-dvh antialiased" suppressHydrationWarning>
+      <body className="min-h-dvh text-base antialiased" suppressHydrationWarning>
         <NextIntlClientProvider messages={messages}>
           <UiDirectionProvider dir={dir}>
             {/* Same providers as the staff app, for parity: a portal screen that

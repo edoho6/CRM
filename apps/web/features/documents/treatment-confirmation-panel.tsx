@@ -149,7 +149,7 @@ export function TreatmentConfirmationPanel({
         ) : null}
 
         <div className="space-y-2">
-          <h3 className="text-sm font-medium text-ink-800">{t('fromRecord')}</h3>
+          <h3 className="text-sm font-semibold text-ink-900">{t('fromRecord')}</h3>
           {treatments.length === 0 ? (
             <p className="text-sm text-ink-600">{t('noTreatments')}</p>
           ) : (
@@ -174,7 +174,7 @@ export function TreatmentConfirmationPanel({
         </div>
 
         <div className="space-y-2 border-t border-ink-100 pt-3">
-          <h3 className="text-sm font-medium text-ink-800">{t('addByHand')}</h3>
+          <h3 className="text-sm font-semibold text-ink-900">{t('addByHand')}</h3>
           <p className="text-xs text-ink-600">{t('addByHandHint')}</p>
           <div className="flex flex-wrap items-end gap-2">
             <Field label={tc('date')} htmlFor="manual_date" density="compact">
@@ -240,7 +240,7 @@ export function TreatmentConfirmationPanel({
 
         {issued.length > 0 ? (
           <div className="space-y-1 border-t border-ink-100 pt-3">
-            <h3 className="text-sm font-medium text-ink-800">{t('issuedBefore')}</h3>
+            <h3 className="text-sm font-semibold text-ink-900">{t('issuedBefore')}</h3>
             <ul className="divide-y divide-ink-100">
               {issued.map((confirmation) => (
                 <li

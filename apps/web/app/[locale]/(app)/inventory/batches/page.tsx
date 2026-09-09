@@ -80,7 +80,7 @@ export default async function BatchesPage({ params }: { params: Promise<{ locale
               <tr>
                 <SortTh sortKey="name">{tc('name')}</SortTh>
                 <SortTh sortKey="batch">{t('batchNumber')}</SortTh>
-                <SortTh sortKey="remaining">{t('quantityRemaining')}</SortTh>
+                <SortTh sortKey="remaining" numeric>{t('quantityRemaining')}</SortTh>
                 <SortTh sortKey="expiry">{t('expiryDate')}</SortTh>
                 <SortTh sortKey="supplier">{t('supplier')}</SortTh>
                 <SortTh sortKey="location">{t('storageLocation')}</SortTh>
@@ -118,7 +118,7 @@ export default async function BatchesPage({ params }: { params: Promise<{ locale
                     <Td>
                       <span dir="ltr">{batch.batch_number ?? '—'}</span>
                     </Td>
-                    <Td>
+                    <Td numeric>
                       <span className="tabular-nums">
                         {format.number(Number(batch.quantity_remaining))} {tUnit(batch.unit)}
                       </span>

@@ -119,7 +119,7 @@ export function ConsentCard({
             </div>
 
             <div className="flex justify-end">
-              <Button onClick={() => decide(true)} disabled={isPending}>
+              <Button size="lg" onClick={() => decide(true)} disabled={isPending}>
                 {isPending ? <Spinner /> : <Check className="h-4 w-4" />}
                 {t('agree')}
               </Button>
@@ -127,7 +127,7 @@ export function ConsentCard({
           </>
         ) : (
           <div className="flex justify-end">
-            <Button variant="secondary" onClick={() => decide(false)} disabled={isPending}>
+            <Button size="lg" variant="secondary" onClick={() => decide(false)} disabled={isPending}>
               {isPending ? <Spinner /> : <X className="h-4 w-4" />}
               {t('withdraw')}
             </Button>

@@ -10,6 +10,8 @@ import {
   Td,
   Tr,
   cn,
+
+  Dash,
 } from '@clinic/ui';
 import { Link } from '@clinic/i18n/navigation';
 import { formatDateTime } from '@clinic/i18n';
@@ -318,10 +320,10 @@ export default async function PatientsPage({
                           {patient.phone}
                         </span>
                       ) : (
-                        <span className="text-ink-500">—</span>
+                        <Dash />
                       )}
                     </Td>
-                    <Td>{age === null ? <span className="text-ink-500">—</span> : age}</Td>
+                    <Td>{age === null ? <Dash /> : age}</Td>
                     <Td>
                       {patientTags.length > 0 ? (
                         <span className="flex flex-wrap gap-1">
@@ -330,7 +332,7 @@ export default async function PatientsPage({
                           ))}
                         </span>
                       ) : (
-                        <span className="text-ink-500">—</span>
+                        <Dash />
                       )}
                     </Td>
                     <Td>

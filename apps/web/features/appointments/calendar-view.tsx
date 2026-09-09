@@ -8,7 +8,7 @@ import { ConfirmationDot } from './confirmation-status';
 import { BlockDayDialog } from './block-day-dialog';
 import { DayAddMenu } from './day-add-menu';
 import { NowLine } from './now-line';
-import { Button, cn, TIME_INPUT_LANG } from '@clinic/ui';
+import { Button, SegmentedControl, cn, TIME_INPUT_LANG } from '@clinic/ui';
 import type { Locale } from '@clinic/domain';
 import { usePathname, useRouter } from '@clinic/i18n/navigation';
 import type { AppointmentType, AppointmentWithRelations, Patient } from '@clinic/db/types';
@@ -383,34 +383,18 @@ export function CalendarView({
         </div>
 
         <div className="flex flex-wrap items-center gap-1">
-          <Button
-            variant={view === 'day' ? 'primary' : 'secondary'}
-            size="sm"
-            onClick={() => switchView('day')}
-          >
-            {t('views.day')}
-          </Button>
-          <Button
-            variant={view === 'week' ? 'primary' : 'secondary'}
-            size="sm"
-            onClick={() => switchView('week')}
-          >
-            {t('views.week')}
-          </Button>
-          <Button
-            variant={view === 'month' ? 'primary' : 'secondary'}
-            size="sm"
-            onClick={() => switchView('month')}
-          >
-            {t('views.month')}
-          </Button>
-          <Button
-            variant={view === 'range' ? 'primary' : 'secondary'}
-            size="sm"
-            onClick={() => switchView('range')}
-          >
-            {t('views.range')}
-          </Button>
+          <SegmentedControl
+            label={t('views.label')}
+            size="md"
+            value={view}
+            onChange={(next) => switchView(next)}
+            options={[
+              { value: 'day', label: t('views.day') },
+              { value: 'week', label: t('views.week') },
+              { value: 'month', label: t('views.month') },
+              { value: 'range', label: t('views.range') },
+            ]}
+          />
           <Button
             size="sm"
             onClick={() => openSlot(view === 'day' ? anchor : days[0]!, 4)}

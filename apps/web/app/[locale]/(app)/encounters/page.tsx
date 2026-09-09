@@ -9,6 +9,8 @@ import {
   TableWrapper,
   Td,
   Tr,
+
+  Dash,
 } from '@clinic/ui';
 import { Link } from '@clinic/i18n/navigation';
 import type { Appointment, Encounter, EncounterPaymentStatus, Patient } from '@clinic/db/types';
@@ -79,8 +81,11 @@ export default async function EncountersPage({
 
   let query = scope.supabase
     .from('encounters')
+    // Counted as well as fetched, so the header can say how many of the
+    // matches are on screen rather than stopping at 500 in silence.
     .select(
       '*, patient:patients(id, full_name), appointment:appointments(id, start_at, status, reminder_sent_at, confirmation_response)',
+      { count: 'exact' },
     )
     .order('encounter_date', { ascending: false })
     .order('started_at', { ascending: false })
@@ -89,7 +94,7 @@ export default async function EncountersPage({
   if (range.from) query = query.gte('encounter_date', range.from);
   if (range.to) query = query.lte('encounter_date', range.to);
 
-  const { data } = await query.returns<EncounterRow[]>();
+  const { data, count: matching } = await query.returns<EncounterRow[]>();
 
   const encounters = data ?? [];
 
@@ -162,7 +167,14 @@ export default async function EncountersPage({
 
   return (
     <>
-      <PageHeader title={t('title')} />
+      <PageHeader
+        title={t('title')}
+        description={
+          matching && matching > encounters.length
+            ? tc('showingOf', { shown: encounters.length, total: matching })
+            : undefined
+        }
+      />
 
       <DateRangeFilter className="mb-4" />
 
@@ -223,7 +235,7 @@ export default async function EncountersPage({
                         {format.dateTime(new Date(treatmentTime(encounter, bookedTimes)!), 'time')}
                       </span>
                     ) : (
-                      <span className="text-ink-500">—</span>
+                      <Dash />
                     )}
                   </Td>
                   <Td>
@@ -250,7 +262,7 @@ export default async function EncountersPage({
                     {encounter.appointment ? (
                       <ConfirmationBadge appointment={encounter.appointment} />
                     ) : (
-                      <span className="text-ink-500">—</span>
+                      <Dash />
                     )}
                   </Td>
                   <Td>

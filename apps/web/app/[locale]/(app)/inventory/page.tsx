@@ -10,6 +10,8 @@ import {
   TableWrapper,
   Td,
   Tr,
+
+  Dash,
 } from '@clinic/ui';
 import { Link, redirect } from '@clinic/i18n/navigation';
 import type {
@@ -357,7 +359,7 @@ export default async function StockRoomPage({
                                 An empty shelf reads as a dash rather than as a
                                 zero: zero is a measurement, and none was taken. */}
                             {prepared.length === 0 ? (
-                              <span className="text-ink-500">—</span>
+                              <Dash />
                             ) : (
                               <span className="flex flex-col gap-0.5">
                                 {prepared.map((row) => (
@@ -385,7 +387,7 @@ export default async function StockRoomPage({
                           </Td>
                           <Td>
                             {level.reorder_threshold === null ? (
-                              <span className="text-ink-500">—</span>
+                              <Dash />
                             ) : (
                               <span className="tabular-nums text-ink-800">
                                 {format.number(Number(level.reorder_threshold))}{' '}
@@ -399,7 +401,7 @@ export default async function StockRoomPage({
                                 {formatDate(new Date(level.nearest_expiry))}
                               </span>
                             ) : (
-                              <span className="text-ink-500">—</span>
+                              <Dash />
                             )}
                           </Td>
                           <Td>

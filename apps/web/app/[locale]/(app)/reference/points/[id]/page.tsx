@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { AlertTriangle, ClipboardList } from 'lucide-react';
-import { Badge, Button, Card, CardBody, CardHeader, CardTitle, DetailRow } from '@clinic/ui';
+import { Badge, Button, Card, CardBody, CardHeader, CardTitle, DetailRow, Dash } from '@clinic/ui';
 import { Link } from '@clinic/i18n/navigation';
 import type { AcupuncturePoint } from '@clinic/db/types';
 import { PageHeader } from '@/components/app-shell';
@@ -19,7 +19,7 @@ import { BodyMap, type MappedPoint } from '@/features/reference/body-map';
  */
 
 function Prose({ text }: { text: string | null }) {
-  if (!text) return <span className="text-ink-500">—</span>;
+  if (!text) return <Dash />;
   return <span className="whitespace-pre-wrap">{text}</span>;
 }
 

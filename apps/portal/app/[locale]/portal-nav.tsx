@@ -37,7 +37,7 @@ export function PortalNav({ current }: { current: 'home' | 'forms' | 'consent' }
             href={item.href}
             aria-current={isActive ? 'page' : undefined}
             className={cn(
-              'inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+              'inline-flex min-h-11 items-center gap-1.5 rounded-md px-4 py-2.5 text-base font-medium transition-colors',
               isActive ? 'bg-accent text-accent-fg' : 'text-ink-600 hover:bg-ink-50',
             )}
           >

@@ -10,6 +10,8 @@ import {
   TableWrapper,
   Td,
   Tr,
+
+  Dash,
 } from '@clinic/ui';
 import { Link } from '@clinic/i18n/navigation';
 import type { HerbFormulaWithItems } from '@clinic/db/types';
@@ -175,7 +177,7 @@ export default async function FormulasPage({
                           {tFormulaTcm(formula.tcm_category)}
                         </TcmChip>
                       ) : (
-                        <span className="text-ink-500">—</span>
+                        <Dash />
                       )}
                     </Td>
                     <Td>

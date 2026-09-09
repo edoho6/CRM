@@ -15,6 +15,8 @@ import {
   TableWrapper,
   Td,
   Tr,
+
+  Dash,
 } from '@clinic/ui';
 import { Link } from '@clinic/i18n/navigation';
 import type {
@@ -64,7 +66,7 @@ type FormulaUse = {
 };
 
 function Prose({ text }: { text: string | null }) {
-  if (!text) return <span className="text-ink-500">—</span>;
+  if (!text) return <Dash />;
   return <span className="whitespace-pre-wrap">{text}</span>;
 }
 
@@ -236,7 +238,7 @@ export default async function HerbDetailPage({
                   {tTemp(herb.temperature)}
                 </TcmChip>
               ) : (
-                <span className="text-ink-500">—</span>
+                <Dash />
               )}
             </div>
             <div>
@@ -268,7 +270,7 @@ export default async function HerbDetailPage({
                   {tTcm(herb.tcm_category)}
                 </TcmChip>
               ) : (
-                <span className="text-ink-500">—</span>
+                <Dash />
               )}
             </div>
 
@@ -284,7 +286,7 @@ export default async function HerbDetailPage({
                   <span className="text-xl font-semibold tabular-nums">{uses.length}</span>
                 </a>
               ) : (
-                <span className="text-ink-500">—</span>
+                <Dash />
               )}
             </div>
           </div>
@@ -433,7 +435,7 @@ export default async function HerbDetailPage({
                                   {tFormulaTcm(formula.tcm_category)}
                                 </TcmChip>
                               ) : (
-                                <span className="text-ink-500">—</span>
+                                <Dash />
                               )}
                             </Td>
                             <Td>

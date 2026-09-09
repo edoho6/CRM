@@ -148,7 +148,7 @@ export function AssistantPanel({ examples }: { examples: string[] }) {
 
             {answer.tables.map((table, index) => (
               <div key={`${table.query}:${index}`} className="space-y-1">
-                <h3 className="text-xs font-medium text-ink-600">{table.query}</h3>
+                <h3 className="text-xs font-semibold text-ink-600">{table.query}</h3>
                 {table.result.rows.length === 0 ? (
                   <p className="text-sm text-ink-600">{t('noRows')}</p>
                 ) : (

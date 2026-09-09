@@ -120,3 +120,19 @@ export function DetailRow({
     </div>
   );
 }
+
+/**
+ * "No value", as one mark everywhere.
+ *
+ * A dash, quiet, and the same dash in every table: it used to be drawn three
+ * ways across the app. Zero is a measurement and gets written as 0; this is
+ * for the absence of one. Hidden from screen readers unless a label is given,
+ * so a column of dashes is not read as a column of "em dash".
+ */
+export function Dash({ label, className }: { label?: string; className?: string }) {
+  return (
+    <span aria-hidden={label ? undefined : true} aria-label={label} className={cn('text-ink-400', className)}>
+      —
+    </span>
+  );
+}

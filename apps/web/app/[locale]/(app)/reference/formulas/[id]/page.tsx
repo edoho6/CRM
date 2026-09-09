@@ -15,6 +15,8 @@ import {
   TableWrapper,
   Td,
   Tr,
+
+  Dash,
 } from '@clinic/ui';
 import { Link } from '@clinic/i18n/navigation';
 import type { FormulaStockLevel, Herb, HerbFormula, HerbFormulaItem } from '@clinic/db/types';
@@ -58,7 +60,7 @@ type ItemRow = HerbFormulaItem & {
 type FormulaRow = HerbFormula & { items: ItemRow[] };
 
 function Prose({ text }: { text: string | null }) {
-  if (!text) return <span className="text-ink-500">—</span>;
+  if (!text) return <Dash />;
   return <span className="whitespace-pre-wrap">{text}</span>;
 }
 
@@ -184,7 +186,7 @@ export default async function FormulaDetailPage({
                   {tFormulaTcm(formula.tcm_category)}
                 </TcmChip>
               ) : (
-                <span className="text-ink-500">—</span>
+                <Dash />
               )}
             </div>
             {/* Stock for a formula is the weight it would take off the shelf,
@@ -285,7 +287,7 @@ export default async function FormulaDetailPage({
                                   ) : null}
                                 </>
                               ) : (
-                                <span className="text-ink-500">—</span>
+                                <Dash />
                               )}
                               {item.notes ? (
                                 <span className="block text-xs text-ink-600">{item.notes}</span>
@@ -305,7 +307,7 @@ export default async function FormulaDetailPage({
                                   {tTcm(herb.tcm_category)}
                                 </TcmChip>
                               ) : (
-                                <span className="text-ink-500">—</span>
+                                <Dash />
                               )}
                             </Td>
                             <Td>

@@ -23,6 +23,7 @@ export {
   EmptyState,
   Spinner,
   DetailRow,
+  Dash,
   ALERT_TONE_CLASSES,
   type AlertTone,
 } from './feedback';
@@ -44,6 +45,7 @@ export {
   TabsContent,
 } from './menu';
 export { Collapsible } from './collapsible';
+export { SegmentedControl, type SegmentedOption } from './segmented-control';
 export { FormFields, type FormFieldsLabels } from './form-fields';
 export { TimeSelect } from './time-select';
 export { Toggle } from './toggle';

@@ -239,7 +239,8 @@ export function GlobalSearch() {
         <button
           type="button"
           aria-label={t('search')}
-          title={t('search')}
+          title={`${t('search')} · Ctrl+K`}
+          aria-keyshortcuts="Control+K"
           onClick={() => (open ? inputRef.current?.focus() : reveal())}
           onFocus={reveal}
           className={cn(
@@ -275,6 +276,16 @@ export function GlobalSearch() {
               'focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-focus focus-visible:border-focus',
             )}
           />
+          {/* The shortcut, where the eye lands when the box opens empty. */}
+          {!query && open ? (
+            <kbd
+              dir="ltr"
+              aria-hidden
+              className="pointer-events-none absolute inset-y-0 end-2 my-auto hidden h-5 items-center gap-0.5 rounded border border-ink-200 bg-ink-50 px-1 font-sans text-[10px] text-ink-500 sm:flex"
+            >
+              Ctrl K
+            </kbd>
+          ) : null}
           {query ? (
             <button
               type="button"
