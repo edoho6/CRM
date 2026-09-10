@@ -113,7 +113,7 @@ export default async function HerbsPage({
     <>
       <PageHeader
         title={t('title')}
-        description={t('count', { count: herbs.length })}
+        description={t('count', { count: count ?? herbs.length })}
         actions={
           <Button asChild>
             <Link href="/reference/herbs/new">
@@ -145,7 +145,7 @@ export default async function HerbsPage({
         />
       ) : (
         <TableWrapper responsive>
-          <SortableTable defaultSortKey="name">
+          <SortableTable defaultSortKey="name" sortDisabled={(count ?? 0) > CATALOGUE_PAGE}>
             <thead>
               <tr>
                 <th scope="col" className="w-10 border-b border-ink-200 bg-ink-50 px-3 py-2">

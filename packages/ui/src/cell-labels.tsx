@@ -18,7 +18,9 @@ import * as React from 'react';
 export function CellLabels() {
   const anchor = React.useRef<HTMLSpanElement>(null);
 
-  React.useEffect(() => {
+  // Layout effect: the labels must exist before the first paint after
+  // hydration, or the phone layout flashes unlabelled values.
+  React.useLayoutEffect(() => {
     const table = anchor.current?.closest('.table-cards')?.querySelector('table');
     if (!table) return;
 
@@ -41,7 +43,7 @@ export function CellLabels() {
     const body = table.querySelector('tbody');
     if (!body) return;
     const observer = new MutationObserver(label);
-    observer.observe(body, { childList: true });
+    observer.observe(body, { childList: true, subtree: true });
     return () => observer.disconnect();
   }, []);
 

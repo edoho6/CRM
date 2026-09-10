@@ -41,12 +41,19 @@ export function SortableTable({
   className,
   defaultSortKey = null,
   defaultSortDirection = 'asc',
+  sortDisabled = false,
 }: {
   children: React.ReactNode;
   className?: string;
   /** Column the data already arrives sorted by, so the arrow starts truthful. */
   defaultSortKey?: string | null;
   defaultSortDirection?: SortDirection;
+  /**
+   * Plain headings, no sorting. For a paged list: sorting reorders only the
+   * rows on this page, and an arrow that promises "by name" over a list it
+   * cannot see is a lie. The headings stay so the columns are still named.
+   */
+  sortDisabled?: boolean;
 }) {
   /**
    * Key and direction are one piece of state, not two.
@@ -71,6 +78,8 @@ export function SortableTable({
     () => ({ activeKey: sort.key, direction: sort.direction, toggle }),
     [sort, toggle],
   );
+
+  if (sortDisabled) return <Table className={className}>{children}</Table>;
 
   return (
     <SortContext.Provider value={value}>

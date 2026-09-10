@@ -18,6 +18,11 @@ export function pageRange(page: number, size = PAGE_SIZE): [number, number] {
   return [(page - 1) * size, page * size - 1];
 }
 
+/** How many pages a count makes; at least one. */
+export function pageCount(total: number | null, size = PAGE_SIZE): number {
+  return total === null ? 1 : Math.max(1, Math.ceil(total / size));
+}
+
 /**
  * Previous / next, under a list, with where you are.
  *
@@ -25,8 +30,11 @@ export function pageRange(page: number, size = PAGE_SIZE): [number, number] {
  * with no way to the other 140: patient number 201 could only be found by
  * guessing their name into the search. The page is a URL parameter, so a
  * filtered page is linkable and the browser's back button steps through it.
- * Rendered only when there is more than one page — a single page needs no
- * furniture.
+ *
+ * Shown when there is more than one page — or when the count is unknown
+ * and this page is full, because then the list has been cut and saying
+ * nothing would hide exactly the thing this exists to show. A page past the
+ * end (a stale bookmark after rows were deleted) offers the way back.
  */
 export async function Pagination({
   page,
@@ -37,7 +45,7 @@ export async function Pagination({
   size = PAGE_SIZE,
 }: {
   page: number;
-  /** How many rows match in all, from a counted query. */
+  /** How many rows match in all, from a counted query; null when unknown. */
   total: number | null;
   /** How many rows are on this page. */
   shown: number;
@@ -47,11 +55,12 @@ export async function Pagination({
   size?: number;
 }) {
   const t = await getTranslations('common.pagination');
-  if (total === null || total <= size) return null;
+  const pages = total === null ? (shown >= size ? page + 1 : page) : pageCount(total, size);
+  const beyond = total !== null && page > pages;
+  if (!beyond && pages <= 1) return null;
 
-  const pages = Math.max(1, Math.ceil(total / size));
   const from = (page - 1) * size + 1;
-  const to = Math.min(total, from + shown - 1);
+  const to = Math.max(from, Math.min(total ?? Number.POSITIVE_INFINITY, from + shown - 1));
 
   const href = (target: number) => {
     const next: Record<string, string | string[]> = {};
@@ -63,28 +72,39 @@ export async function Pagination({
     return { pathname, query: next };
   };
 
+  const hasPrevious = page > 1;
+  const hasNext = !beyond && page < pages;
+
   return (
     <nav
       aria-label={t('label')}
       className="mt-4 flex flex-wrap items-center justify-between gap-2 text-sm text-ink-600"
     >
-      <span>{t('range', { from, to, total })}</span>
+      <span>
+        {beyond || shown === 0
+          ? t('none')
+          : total === null
+            ? t('rangeUnknown', { from, to })
+            : t('range', { from, to, total })}
+      </span>
       <div className="flex items-center gap-1">
-        <Button asChild variant="secondary" size="sm" disabled={page <= 1}>
-          {page > 1 ? (
-            <Link href={href(page - 1)} rel="prev">
+        <Button asChild variant="secondary" size="sm">
+          {hasPrevious ? (
+            <Link href={href(beyond ? pages : page - 1)} rel="prev">
               {/* Chevrons follow reading order: "previous" points to the start edge. */}
               <ChevronRight className="h-4 w-4 rtl:block ltr:hidden" aria-hidden />
               <ChevronLeft className="h-4 w-4 rtl:hidden ltr:block" aria-hidden />
-              {t('previous')}
+              {beyond ? t('backToLast') : t('previous')}
             </Link>
           ) : (
             <span aria-disabled="true">{t('previous')}</span>
           )}
         </Button>
-        <span className="px-2 tabular-nums">{t('pageOf', { page, pages })}</span>
-        <Button asChild variant="secondary" size="sm" disabled={page >= pages}>
-          {page < pages ? (
+        {!beyond ? (
+          <span className="px-2 tabular-nums">{t('pageOf', { page, pages })}</span>
+        ) : null}
+        <Button asChild variant="secondary" size="sm">
+          {hasNext ? (
             <Link href={href(page + 1)} rel="next">
               {t('next')}
               <ChevronLeft className="h-4 w-4 rtl:block ltr:hidden" aria-hidden />

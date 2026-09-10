@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import {
   CalendarPlus,
@@ -13,16 +13,24 @@ import {
   UserPlus,
   type LucideIcon,
 } from 'lucide-react';
-import { cn } from '@clinic/ui';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+  cn,
+} from '@clinic/ui';
 import { useRouter } from '@clinic/i18n/navigation';
 
 /**
  * The "+" available on every screen.
  *
- * It opens on hover rather than on click, so reaching an action costs one
- * movement instead of a click plus a movement. Focus and keyboard still open it,
- * and a short close delay means crossing the small gap to the menu does not
- * dismiss what you were reaching for.
+ * A real menu, on the same primitive as every other menu in the app: it
+ * opens on a click (never on the pointer passing over it), the arrow keys
+ * move through it, Escape and a click outside close it, and focus goes back
+ * to the button. The hand-rolled version announced itself as a menu to a
+ * screen reader and then could not be driven like one.
  *
  * Actions are data, not markup: adding one later is a single entry below.
  */
@@ -47,84 +55,36 @@ export function QuickCreateMenu() {
   const t = useTranslations('quickBar');
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const rootRef = useRef<HTMLDivElement>(null);
-
-  /*
-   * Opens on a click, never on the pointer passing over it: a menu that
-   * unfolds because the mouse crossed it on the way to the bell is a menu
-   * that gets in the way, and on a touch screen a hover is a tap. Closing is
-   * a click anywhere outside, or Escape.
-   */
-  useEffect(() => {
-    if (!open) return;
-    function onPointerDown(event: PointerEvent) {
-      if (rootRef.current && !rootRef.current.contains(event.target as Node)) setOpen(false);
-    }
-    document.addEventListener('pointerdown', onPointerDown);
-    return () => document.removeEventListener('pointerdown', onPointerDown);
-  }, [open]);
-
-  // Escape closes, matching what a keyboard user expects from any open menu.
-  useEffect(() => {
-    if (!open) return;
-    function onKey(event: KeyboardEvent) {
-      if (event.key === 'Escape') setOpen(false);
-    }
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [open]);
 
   return (
-    <div ref={rootRef} className="relative">
-      <button
-        type="button"
-        aria-label={t('create')}
-        aria-expanded={open}
-        aria-haspopup="menu"
-        title={t('create')}
-        onClick={() => setOpen((value) => !value)}
-        className={cn(
-          'flex h-11 w-11 items-center justify-center rounded-xl bg-accent text-accent-fg',
-          'transition-all duration-150 ease-out',
-          'hover:-translate-y-px hover:bg-accent hover:shadow-md',
-          'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus',
-          open && 'bg-accent shadow-md',
-        )}
-      >
-        <Plus className={cn('h-5 w-5 transition-transform duration-200', open && 'rotate-45')} />
-      </button>
-
-      {open ? (
-        <div
-          role="menu"
-          // Hangs from the trailing edge, which is the left in Hebrew and the
-          // right in English — a logical offset gets that for free.
-          className="absolute top-full z-popover mt-1.5 min-w-56 rounded-xl border border-ink-200 bg-white p-1.5 shadow-lg transition-[opacity,translate] duration-(--duration-fast) ease-standard starting:translate-y-1 starting:opacity-0"
-          style={{ insetInlineEnd: 0 }}
+    <DropdownMenu open={open} onOpenChange={setOpen}>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          aria-label={t('create')}
+          title={t('create')}
+          className={cn(
+            'flex h-11 w-11 items-center justify-center rounded-xl bg-accent text-accent-fg',
+            'transition-all duration-150 ease-out',
+            'hover:-translate-y-px hover:bg-accent hover:shadow-md',
+            'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus',
+            open && 'bg-accent shadow-md',
+          )}
         >
-          {QUICK_ACTIONS.map((action) => (
-            <div key={action.key}>
-              {action.startsGroup ? <div className="my-1.5 h-px bg-ink-100" /> : null}
-              <button
-                type="button"
-                role="menuitem"
-                onClick={() => {
-                  setOpen(false);
-                  router.push(action.href);
-                }}
-                className={cn(
-                  'flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-start text-sm text-ink-800',
-                  'transition-colors hover:bg-jade-50 hover:text-jade-900',
-                  'focus-visible:bg-jade-50 focus-visible:outline-none',
-                )}
-              >
-                <action.icon className="h-4 w-4 shrink-0 text-ink-500" aria-hidden />
-                {t(`actions.${action.key}`)}
-              </button>
-            </div>
-          ))}
-        </div>
-      ) : null}
-    </div>
+          <Plus className={cn('h-5 w-5 transition-transform duration-200', open && 'rotate-45')} />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className="min-w-56 rounded-xl p-1.5">
+        {QUICK_ACTIONS.map((action) => (
+          <div key={action.key}>
+            {action.startsGroup ? <DropdownMenuSeparator /> : null}
+            <DropdownMenuItem onSelect={() => router.push(action.href)}>
+              <action.icon className="h-4 w-4 shrink-0 text-ink-500" aria-hidden />
+              {t(`actions.${action.key}`)}
+            </DropdownMenuItem>
+          </div>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

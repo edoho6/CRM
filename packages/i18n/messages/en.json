@@ -54,8 +54,17 @@
     "markSent": "Sent",
     "skip": "Do not send",
     "history": "Sent",
-    "channels": { "sms": "SMS", "whatsapp": "WhatsApp", "email": "Email" },
-    "status": { "queued": "Waiting", "sent": "Sent", "failed": "Failed", "skipped": "Not sent" }
+    "channels": {
+      "sms": "SMS",
+      "whatsapp": "WhatsApp",
+      "email": "Email"
+    },
+    "status": {
+      "queued": "Waiting",
+      "sent": "Sent",
+      "failed": "Failed",
+      "skipped": "Not sent"
+    }
   },
   "platform": {
     "title": "All clinics",
@@ -130,8 +139,23 @@
   },
   "common": {
     "more": "More actions",
-    "pagination": {"label":"Pagination","previous":"Previous","next":"Next","range":"{from}–{to} of {total}","pageOf":"Page {page} of {pages}"},
-    "validation": {"required":"This field is required","tooLong":"The text is too long","invalidFormat":"This value is not valid","invalidDate":"This date is not valid","invalidEmail":"This email address is not valid"},
+    "pagination": {
+      "label": "Pagination",
+      "previous": "Previous",
+      "next": "Next",
+      "range": "{from}–{to} of {total}",
+      "pageOf": "Page {page} of {pages}",
+      "none": "No rows on this page",
+      "rangeUnknown": "{from}–{to}",
+      "backToLast": "Back to the last page"
+    },
+    "validation": {
+      "required": "This field is required",
+      "tooLong": "The text is too long",
+      "invalidFormat": "This value is not valid",
+      "invalidDate": "This date is not valid",
+      "invalidEmail": "This email address is not valid"
+    },
     "showingOf": "Showing {shown} of {total}",
     "appName": "Herbalist",
     "appTagline": "Chinese medicine clinic management",
@@ -827,7 +851,13 @@
     "keepInvoice": "Keep the invoice",
     "removeLineConfirm": "Remove this line from the invoice?",
     "lineRemoved": "The line was removed",
-    "newPicker": {"title":"New invoice","subtitle":"Who is it for? An invoice for a treatment is opened from the treatment itself.","patient":"Patient","searchPlaceholder":"Search by name or phone","create":"Open invoice"},
+    "newPicker": {
+      "title": "New invoice",
+      "subtitle": "Who is it for? An invoice for a treatment is opened from the treatment itself.",
+      "patient": "Patient",
+      "searchPlaceholder": "Search by name or phone",
+      "create": "Open invoice"
+    },
     "title": "Billing",
     "invoice": "Invoice",
     "invoiceNumber": "Invoice #{number}",

@@ -1,10 +1,10 @@
 'use client';
 
+import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
 import { Stethoscope } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@clinic/ui';
-import { usePathname, useRouter } from '@clinic/i18n/navigation';
 
 const TABS = [
   'overview',
@@ -50,20 +50,30 @@ export function PatientTabs({
   consent: React.ReactNode;
 }) {
   const t = useTranslations('patients.tabs');
-  const router = useRouter();
-  const pathname = usePathname();
   const searchParams = useSearchParams();
   const requested = searchParams.get('tab');
-  const value: Tab = (TABS as readonly string[]).includes(requested ?? '')
-    ? (requested as Tab)
-    : 'overview';
+  const [value, setValue] = useState<Tab>(
+    (TABS as readonly string[]).includes(requested ?? '') ? (requested as Tab) : 'overview',
+  );
 
+  /*
+   * The URL is written with `history.replaceState`, not the router. A router
+   * navigation re-renders the page on the server — eighteen queries — and
+   * writes a "file opened" row to the access log, so seven tab clicks used to
+   * count as seven reads of the record. The panels are already here; only the
+   * address needs to change.
+   */
   function choose(next: string) {
-    const params = new URLSearchParams(searchParams.toString());
+    setValue(next as Tab);
+    const params = new URLSearchParams(window.location.search);
     if (next === 'overview') params.delete('tab');
     else params.set('tab', next);
     const query = params.toString();
-    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+    window.history.replaceState(
+      window.history.state,
+      '',
+      `${window.location.pathname}${query ? `?${query}` : ''}`,
+    );
   }
 
   return (

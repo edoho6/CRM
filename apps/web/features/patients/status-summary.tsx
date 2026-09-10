@@ -114,6 +114,8 @@ export function PatientStatusSummary({ counts }: { counts: StatusCounts }) {
     // default or it comes back empty.
     if (next.inactive || (next.status && next.status !== 'active')) params.set('inactive', '1');
     else params.delete('inactive');
+    // A different filter is a different list; page 3 of the old one is nowhere.
+    params.delete('page');
 
     const query = params.toString();
     router.replace(query ? `${pathname}?${query}` : pathname);

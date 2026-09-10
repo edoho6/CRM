@@ -661,7 +661,7 @@ export function EncounterForm({
              app, and the buttons that save and sign it were at the foot of a
              column that ended below a 3D body and a dispensing table — a
              consultation's worth of scrolling away from where the typing is. */
-          <div className="sticky bottom-0 z-sticky -mx-4 flex flex-wrap items-center justify-end gap-2 border-t border-ink-200 bg-white px-4 py-3 sm:-mx-6 sm:px-6">
+          <div className="sticky bottom-0 z-sticky -mx-4 flex flex-wrap items-center justify-end gap-2 border-t border-ink-200 bg-white px-4 py-3 sm:-mx-6 sm:px-6 xl:mx-0 xl:rounded-t-lg xl:border-x xl:px-4">
             {/* What the autosave is doing, stated rather than assumed. A form that
               saves itself silently is indistinguishable from one that does not,
               and the whole reassurance is in being able to see the last time. */}
@@ -693,7 +693,14 @@ export function EncounterForm({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent>
-                <DropdownMenuItem onSelect={() => setProtocolOpen(true)}>
+                {/* preventDefault keeps the menu from closing in the same tick the
+                    dialog opens — the Radix race that leaves the page unclickable. */}
+                <DropdownMenuItem
+                  onSelect={(event) => {
+                    event.preventDefault();
+                    setProtocolOpen(true);
+                  }}
+                >
                   <BookmarkPlus className="h-4 w-4" />
                   {tProtocols('saveFromTreatment')}
                 </DropdownMenuItem>

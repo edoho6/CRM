@@ -15,7 +15,7 @@ import {
 import { Link } from '@clinic/i18n/navigation';
 import type { Appointment, Encounter, EncounterPaymentStatus, Patient } from '@clinic/db/types';
 import { PageHeader } from '@/components/app-shell';
-import { Pagination, pageFrom, pageRange } from '@/components/pagination';
+import { PAGE_SIZE, Pagination, pageFrom, pageRange } from '@/components/pagination';
 import { DateRangeFilter } from '@/components/date-range-filter';
 import { getClinicScope } from '@/lib/session';
 import { resolveRange, toDateKey } from '@/lib/date-range';
@@ -196,7 +196,11 @@ export default async function EncountersPage({
         />
       ) : (
         <TableWrapper responsive>
-          <SortableTable defaultSortKey="date" defaultSortDirection="desc">
+          <SortableTable
+            defaultSortKey="date"
+            defaultSortDirection="desc"
+            sortDisabled={(matching ?? 0) > PAGE_SIZE}
+          >
             <thead>
               <tr>
                 <SortTh sortKey="date" className="w-28 pe-1">{tc('date')}</SortTh>

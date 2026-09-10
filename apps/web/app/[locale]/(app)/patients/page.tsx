@@ -18,7 +18,7 @@ import { TREATMENT_STATUSES, type TreatmentStatus } from '@clinic/domain';
 import type { PatientTag, PatientWithDiary } from '@clinic/db/types';
 import { PageHeader } from '@/components/app-shell';
 import { SegmentedLinks } from '@/components/segmented-links';
-import { Pagination, pageFrom, pageRange } from '@/components/pagination';
+import { PAGE_SIZE, Pagination, pageFrom, pageRange } from '@/components/pagination';
 import { getClinicScope } from '@/lib/session';
 import { ageFromDateOfBirth } from '@/lib/display';
 import { PatientSearch } from '@/features/patients/patient-search';
@@ -277,7 +277,7 @@ export default async function PatientsPage({
         />
       ) : (
         <TableWrapper responsive>
-          <SortableTable defaultSortKey="name">
+          <SortableTable defaultSortKey="name" sortDisabled={(matching ?? 0) > PAGE_SIZE}>
             <thead>
               <tr>
                 <SortTh sortKey="name">{t('fields.fullName')}</SortTh>

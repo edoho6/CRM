@@ -111,7 +111,6 @@ export default async function PatientDetailPage({
     confirmationsResult,
     practitionerResult,
     packagesResult,
-    redemptionsResult,
     tagLinksResult,
     allTagsResult,
   ] = await Promise.all([
@@ -199,12 +198,6 @@ export default async function PatientDetailPage({
       .order('purchased_on', { ascending: false })
       .returns<PackageBalance[]>(),
     scope.supabase
-      .from('package_redemptions')
-      .select('*')
-      .order('redeemed_on', { ascending: false })
-      .limit(500)
-      .returns<PackageRedemption[]>(),
-    scope.supabase
       .from('patient_tag_links')
       .select('tag:patient_tags(id, name, color)')
       .eq('patient_id', id)
@@ -216,6 +209,20 @@ export default async function PatientDetailPage({
       .limit(500)
       .returns<Pick<PatientTag, 'id' | 'name' | 'color'>[]>(),
   ]);
+
+  // Only this patient's cards. The table has no patient column, and a
+  // clinic-wide fetch capped at 500 rows was silently the wrong 500 once the
+  // practice had redeemed enough sessions for other people.
+  const packageIds = (packagesResult.data ?? []).map((balance) => balance.package_id);
+  const redemptionsResult =
+    packageIds.length > 0
+      ? await scope.supabase
+          .from('package_redemptions')
+          .select('*')
+          .in('package_id', packageIds)
+          .order('redeemed_on', { ascending: false })
+          .returns<PackageRedemption[]>()
+      : { data: [] as PackageRedemption[] };
 
   /*
    * Whether each booking has been paid for.

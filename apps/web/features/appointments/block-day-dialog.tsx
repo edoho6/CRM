@@ -99,7 +99,6 @@ export function BlockDayDialog({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [day, existing]);
 
-  if (!day) return null;
 
   const invalidDraft = drafts.some((draft) => minutes(draft.to) <= minutes(draft.from));
 
@@ -195,7 +194,9 @@ export function BlockDayDialog({
     <Dialog open={day !== null} onOpenChange={onOpenChange}>
       <DialogContent title={t('title')} closeLabel={tc('close')} className="max-w-lg">
         <div className="space-y-4">
-          <p className="text-sm font-medium text-ink-900">{format.dateTime(day, 'weekday')}</p>
+          {day ? (
+            <p className="text-sm font-medium text-ink-900">{format.dateTime(day, 'weekday')}</p>
+          ) : null}
 
           {error ? <Alert tone="danger">{error}</Alert> : null}
           {existing?.is_closed ? <Alert tone="info">{t('alreadyBlocked')}</Alert> : null}

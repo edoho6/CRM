@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import { useSearchParams } from 'next/navigation';
 import { usePathname } from '@clinic/i18n/navigation';
 import { SegmentedLinks } from '@/components/segmented-links';
 
@@ -16,9 +17,20 @@ const SECTIONS = [
   { href: '/reference/points', labelKey: 'points' },
 ] as const;
 
+/** On the compare page the catalogue is in the query, not the path. */
+const KIND_TO_SECTION: Record<string, string> = {
+  herb: '/reference/herbs',
+  formula: '/reference/formulas',
+  point: '/reference/points',
+};
+
 export function ReferenceNav() {
   const t = useTranslations('nav');
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const comparing = pathname.startsWith('/reference/compare')
+    ? KIND_TO_SECTION[searchParams.get('kind') ?? '']
+    : undefined;
 
   return (
     <SegmentedLinks
@@ -28,7 +40,7 @@ export function ReferenceNav() {
       items={SECTIONS.map((section) => ({
         href: section.href,
         label: t(section.labelKey),
-        active: pathname.startsWith(section.href),
+        active: pathname.startsWith(section.href) || comparing === section.href,
       }))}
     />
   );

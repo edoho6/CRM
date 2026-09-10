@@ -43,7 +43,6 @@ export default async function CalendarPage({
   } = await searchParams;
   setRequestLocale(locale);
 
-  const t = await getTranslations('appointments');
   const scope = await getClinicScope();
   if (!scope) return null;
 

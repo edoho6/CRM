@@ -17,7 +17,6 @@ import { formatDate } from '@clinic/i18n';
  * placeholders below are visible on purpose: a statement with an unfilled
  * contact is not a statement, and it should look unfinished until it is.
  */
-export const dynamic = 'force-static';
 
 export default async function AccessibilityPage({
   params,

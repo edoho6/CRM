@@ -65,6 +65,8 @@ export function CatalogueSearch({
       const next = new URLSearchParams(currentParams);
       if (value.trim()) next.set('q', value.trim());
       else next.delete('q');
+      // A new search starts from the first page; a stale page is an empty page.
+      next.delete('page');
       startTransition(() => {
         router.replace({ pathname, query: Object.fromEntries(next) });
       });

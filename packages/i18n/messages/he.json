@@ -54,8 +54,17 @@
     "markSent": "נשלח",
     "skip": "לא לשלוח",
     "history": "נשלחו",
-    "channels": { "sms": "SMS", "whatsapp": "WhatsApp", "email": "אימייל" },
-    "status": { "queued": "ממתין", "sent": "נשלח", "failed": "נכשל", "skipped": "לא נשלח" }
+    "channels": {
+      "sms": "SMS",
+      "whatsapp": "WhatsApp",
+      "email": "אימייל"
+    },
+    "status": {
+      "queued": "ממתין",
+      "sent": "נשלח",
+      "failed": "נכשל",
+      "skipped": "לא נשלח"
+    }
   },
   "platform": {
     "title": "כל הקליניקות",
@@ -130,8 +139,23 @@
   },
   "common": {
     "more": "עוד פעולות",
-    "pagination": {"label":"דפדוף","previous":"הקודם","next":"הבא","range":"{from}–{to} מתוך {total}","pageOf":"עמוד {page} מתוך {pages}"},
-    "validation": {"required":"יש למלא שדה זה","tooLong":"הטקסט ארוך מדי","invalidFormat":"הערך לא תקין","invalidDate":"התאריך לא תקין","invalidEmail":"כתובת האימייל לא תקינה"},
+    "pagination": {
+      "label": "דפדוף",
+      "previous": "הקודם",
+      "next": "הבא",
+      "range": "{from}–{to} מתוך {total}",
+      "pageOf": "עמוד {page} מתוך {pages}",
+      "none": "אין שורות בעמוד הזה",
+      "rangeUnknown": "{from}–{to}",
+      "backToLast": "לעמוד האחרון"
+    },
+    "validation": {
+      "required": "יש למלא שדה זה",
+      "tooLong": "הטקסט ארוך מדי",
+      "invalidFormat": "הערך לא תקין",
+      "invalidDate": "התאריך לא תקין",
+      "invalidEmail": "כתובת האימייל לא תקינה"
+    },
     "showingOf": "מוצגים {shown} מתוך {total}",
     "appName": "הרבליסט",
     "appTagline": "ניהול קליניקה לרפואה סינית",
@@ -827,7 +851,13 @@
     "keepInvoice": "להשאיר את החשבונית",
     "removeLineConfirm": "להסיר את השורה מהחשבונית?",
     "lineRemoved": "השורה הוסרה",
-    "newPicker": {"title":"חשבונית חדשה","subtitle":"למי החשבונית? חשבונית על טיפול נפתחת מתוך הטיפול עצמו.","patient":"מטופל","searchPlaceholder":"חיפוש לפי שם או טלפון","create":"פתיחת חשבונית"},
+    "newPicker": {
+      "title": "חשבונית חדשה",
+      "subtitle": "למי החשבונית? חשבונית על טיפול נפתחת מתוך הטיפול עצמו.",
+      "patient": "מטופל",
+      "searchPlaceholder": "חיפוש לפי שם או טלפון",
+      "create": "פתיחת חשבונית"
+    },
     "title": "חיוב וחשבוניות",
     "invoice": "חשבונית",
     "invoiceNumber": "חשבונית מס׳ {number}",

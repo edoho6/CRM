@@ -105,7 +105,6 @@ export function PatientForm({ patient }: { patient?: Patient }) {
     switch (failure.type) {
       case 'too_big':
         return tc('validation.tooLong');
-      case 'invalid_string':
       case 'invalid_format':
         return tc('validation.invalidFormat');
       default:

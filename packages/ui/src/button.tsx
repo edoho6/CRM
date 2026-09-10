@@ -16,7 +16,10 @@ const buttonVariants = cva(
     'hover:-translate-y-px hover:shadow-md active:translate-y-0 active:shadow-sm ' +
     `${focusRing} ` +
     'disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none disabled:translate-y-0 ' +
-    'disabled:cursor-not-allowed',
+    'disabled:cursor-not-allowed ' +
+    // `asChild` renders a link or a span, which `:disabled` never matches;
+    // the same look follows `aria-disabled` so a dead pager button looks dead.
+    'aria-disabled:pointer-events-none aria-disabled:opacity-50 aria-disabled:shadow-none aria-disabled:translate-y-0',
   {
     variants: {
       variant: {

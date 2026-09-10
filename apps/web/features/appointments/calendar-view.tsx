@@ -11,6 +11,7 @@ import { NowLine } from './now-line';
 import { Button, PageHeader, SegmentedControl, cn } from '@clinic/ui';
 import { DateInput } from '@/components/date-input';
 import type { Locale } from '@clinic/domain';
+import { useSearchParams } from 'next/navigation';
 import { usePathname, useRouter } from '@clinic/i18n/navigation';
 import type { AppointmentType, AppointmentWithRelations, Patient } from '@clinic/db/types';
 import { appointmentTypeName, patientFullName } from '@/lib/display';
@@ -174,6 +175,7 @@ export function CalendarView({
   const isRtl = locale === 'he';
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   const anchor = useMemo(() => fromDateKey(anchorDate), [anchorDate]);
   const days = useMemo(() => {
@@ -203,7 +205,13 @@ export function CalendarView({
   useEffect(() => {
     if (view === 'day') return;
     const narrow = window.matchMedia('(max-width: 767px)');
-    if (narrow.matches) router.replace({ pathname, query: { date: anchorDate, view: 'day' } });
+    // Everything else in the URL — the patient being booked, `new=1` — rides along.
+    if (narrow.matches) {
+      router.replace({
+        pathname,
+        query: { ...Object.fromEntries(searchParams.entries()), date: anchorDate, view: 'day' },
+      });
+    }
     // Only on arrival and when the view changes; resizing a window mid-visit
     // is not a reason to lose the week.
     // eslint-disable-next-line react-hooks/exhaustive-deps

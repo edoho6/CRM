@@ -164,6 +164,14 @@ export function AppointmentDialog({
   const [response, setResponse] = useState<'confirmed' | 'declined' | null>(null);
   const [respondedAt, setRespondedAt] = useState<string | null>(null);
 
+  // The site's origin, for the confirmation link in the reminder. Read after
+  // mount: reading `window` during render gives the server and the client
+  // different markup for the same booking.
+  const [origin, setOrigin] = useState('');
+  useEffect(() => {
+    setOrigin(window.location.origin);
+  }, []);
+
   const isEditing = Boolean(draft?.id);
 
   const activeLocations = useMemo(
@@ -379,8 +387,8 @@ export function AppointmentDialog({
 
   const startDate = new Date(start);
   const confirmLink =
-    draft?.confirmationToken && typeof window !== 'undefined'
-      ? `${window.location.origin}${confirmationPath(locale, draft.confirmationToken)}`
+    draft?.confirmationToken && origin
+      ? `${origin}${confirmationPath(locale, draft.confirmationToken)}`
       : '';
   const reminderText = fillReminderTemplate(
     reminderTemplate?.trim() || t('reminder.defaultTemplate'),

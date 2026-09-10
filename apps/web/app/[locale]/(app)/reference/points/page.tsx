@@ -69,7 +69,7 @@ export default async function PointsPage({
 
   return (
     <>
-      <PageHeader title={t('title')} description={t('count', { count: points.length })} />
+      <PageHeader title={t('title')} description={t('count', { count: count ?? points.length })} />
       <ReferenceNav />
 
       <div className="mb-4">
@@ -84,7 +84,7 @@ export default async function PointsPage({
         />
       ) : (
         <TableWrapper responsive>
-          <SortableTable defaultSortKey="code">
+          <SortableTable defaultSortKey="code" sortDisabled={(count ?? 0) > CATALOGUE_PAGE}>
             <thead>
               <tr>
                 <th scope="col" className="w-10 border-b border-ink-200 bg-ink-50 px-3 py-2">
