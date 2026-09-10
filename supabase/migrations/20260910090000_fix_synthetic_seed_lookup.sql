@@ -1,3 +1,9 @@
+-- Re-creates seed_synthetic_data() and purge_synthetic_data() with one fix:
+-- the "which sandbox clinic" lookup used min(id) on a uuid column, which
+-- Postgres cannot do, so the function failed the moment it was called with
+-- no explicit clinic. Everything else is identical to the original migration;
+-- both statements are create-or-replace, so running this is safe.
+
 -- ============================================================================
 -- 18 · Synthetic data for development
 -- ============================================================================
