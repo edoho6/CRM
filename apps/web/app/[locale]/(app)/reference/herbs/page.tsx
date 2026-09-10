@@ -4,9 +4,7 @@ import {
   Badge,
   Button,
   EmptyState,
-  SortBody,
-  SortTh,
-  SortableTable,
+  Table,
   TableWrapper,
   Td,
   Tr,
@@ -18,10 +16,30 @@ import { TEMPERATURES, type Locale } from '@clinic/domain';
 import { PageHeader } from '@/components/app-shell';
 import { CATALOGUE_PAGE, Pagination, pageFrom, pageRange } from '@/components/pagination';
 import { RememberQuery } from '@/components/remember-query';
+import { SortLinkTh } from '@/components/sort-link-th';
+import { compareComputed, parseSort, type SortState } from '@/lib/sort-params';
 import { TcmChip, TcmChips } from '@/components/tcm-chip';
 
 /** Every chip links back into this list, filtered by what the chip says. */
 const HERBS_PATH = '/reference/herbs';
+
+/**
+ * Columns the list can be ordered by, and the database column behind each.
+ * Temperature and stock have no column that sorts the way a person means —
+ * hot to cold is not alphabetical, and stock lives in another table — so
+ * those two are ordered here, over every matching herb, before the page is cut.
+ */
+const HERB_SORT_KEYS = ['name', 'cat', 'temp', 'taste', 'dose', 'stock'] as const;
+type HerbSortKey = (typeof HERB_SORT_KEYS)[number];
+const HERB_SORT_COLUMNS: Record<HerbSortKey, string | null> = {
+  name: 'pinyin_name',
+  cat: 'tcm_category',
+  temp: null,
+  taste: 'tastes',
+  dose: 'dosage_min_g',
+  stock: null,
+};
+const HERB_DEFAULT_SORT: SortState<HerbSortKey> = { key: 'name', dir: 'asc' };
 import { getClinicScope } from '@/lib/session';
 import { herbBotanicalName, herbChineseName, herbPrimaryName } from '@/lib/display';
 import { ReferenceNav } from '@/features/reference/reference-nav';
@@ -57,27 +75,30 @@ export default async function HerbsPage({
   const scope = await getClinicScope();
   if (!scope) return null;
 
-  let query = scope.supabase
-    .from('herbs')
-    .select('*', { count: 'exact' })
-    .order('pinyin_name', { ascending: true })
-    .range(...pageRange(page, CATALOGUE_PAGE));
+  const tracksInventory = scope.context.clinic.tracks_inventory !== false;
+  const sort = parseSort(
+    rawParams as { sort?: string; dir?: string },
+    tracksInventory ? HERB_SORT_KEYS : HERB_SORT_KEYS.filter((key) => key !== 'stock'),
+    HERB_DEFAULT_SORT,
+  );
 
-  if (filters.q) {
-    const escaped = filters.q.replace(/[%,()]/g, ' ');
-    query = query.or(
-      `pinyin_name.ilike.%${escaped}%,chinese_name.ilike.%${escaped}%,english_name.ilike.%${escaped}%,hebrew_name.ilike.%${escaped}%,botanical_name.ilike.%${escaped}%`,
-    );
-  }
-  // Values within a facet are alternatives; the facets themselves narrow.
-  if (filters.cat.length) query = query.in('tcm_category', filters.cat);
-  if (filters.temp.length) query = query.in('temperature', filters.temp);
-  if (filters.taste.length) query = query.overlaps('tastes', filters.taste);
-  if (filters.chan.length) query = query.overlaps('channels', filters.chan);
-  if (filters.review) query = query.eq('needs_review', true);
-
-  const { data, count } = await query.returns<Herb[]>();
-  const herbs = data ?? [];
+  /** The catalogue narrowed by the URL's filters; the caller chooses what to select. */
+  const filtered = (select: string) => {
+    let query = scope.supabase.from('herbs').select(select, { count: 'exact' });
+    if (filters.q) {
+      const escaped = filters.q.replace(/[%,()]/g, ' ');
+      query = query.or(
+        `pinyin_name.ilike.%${escaped}%,chinese_name.ilike.%${escaped}%,english_name.ilike.%${escaped}%,hebrew_name.ilike.%${escaped}%,botanical_name.ilike.%${escaped}%`,
+      );
+    }
+    // Values within a facet are alternatives; the facets themselves narrow.
+    if (filters.cat.length) query = query.in('tcm_category', filters.cat);
+    if (filters.temp.length) query = query.in('temperature', filters.temp);
+    if (filters.taste.length) query = query.overlaps('tastes', filters.taste);
+    if (filters.chan.length) query = query.overlaps('channels', filters.chan);
+    if (filters.review) query = query.eq('needs_review', true);
+    return query;
+  };
 
   /**
    * The library says nothing about stock unless the clinic keeps any. When it
@@ -85,9 +106,8 @@ export default async function HerbsPage({
    * querying the view: the filters above read columns (tastes, channels) that
    * only the base table carries.
    */
-  const tracksInventory = scope.context.clinic.tracks_inventory !== false;
   let stockByHerb = new Map<string, { remaining: number; unit: string; low: boolean }>();
-  if (tracksInventory && herbs.length > 0) {
+  if (tracksInventory) {
     const { data: levels } = await scope.supabase
       .from('herb_stock_levels')
       .select('herb_id, total_remaining, default_unit, is_below_threshold, is_stocked')
@@ -111,6 +131,45 @@ export default async function HerbsPage({
     );
   }
 
+  let herbs: Herb[] = [];
+  let count: number | null = null;
+  const column = HERB_SORT_COLUMNS[sort.key];
+  if (column) {
+    const result = await filtered('*')
+      .order(column, { ascending: sort.dir === 'asc', nullsFirst: false })
+      .order('pinyin_name', { ascending: true })
+      .range(...pageRange(page, CATALOGUE_PAGE))
+      .returns<Herb[]>();
+    herbs = result.data ?? [];
+    count = result.count;
+  } else {
+    // Ordered here: every matching herb by its computed value, then only the
+    // page's rows fetched in full and put back in that order.
+    const light = await filtered('id, pinyin_name, temperature')
+      .limit(5000)
+      .returns<Pick<Herb, 'id' | 'pinyin_name' | 'temperature'>[]>();
+    const collator = new Intl.Collator(locale);
+    const valueOf = (row: Pick<Herb, 'temperature' | 'id'>) =>
+      sort.key === 'temp'
+        ? row.temperature
+          ? TEMPERATURES.indexOf(row.temperature)
+          : null
+        : (stockByHerb.get(row.id)?.remaining ?? null);
+    const ordered = [...(light.data ?? [])].sort(
+      (a, b) =>
+        compareComputed(valueOf(a), valueOf(b), sort.dir, collator) ||
+        collator.compare(a.pinyin_name ?? '', b.pinyin_name ?? ''),
+    );
+    count = light.count ?? ordered.length;
+    const [from, to] = pageRange(page, CATALOGUE_PAGE);
+    const ids = ordered.slice(from, to + 1).map((row) => row.id);
+    if (ids.length) {
+      const rows = await filtered('*').in('id', ids).returns<Herb[]>();
+      const byId = new Map((rows.data ?? []).map((row) => [row.id, row]));
+      herbs = ids.map((id) => byId.get(id)).filter((row): row is Herb => Boolean(row));
+    }
+  }
+
   return (
     <>
       <PageHeader
@@ -125,11 +184,18 @@ export default async function HerbsPage({
           </Button>
         }
       />
-      <ReferenceNav />
 
       <div className="mb-4 space-y-3">
-        <RememberQuery id="herbs" keys={['q', 'cat', 'temp', 'taste', 'chan', 'review']} />
-        <CatalogueSearch initialQuery={filters.q} placeholder={t('searchPlaceholder')} />
+        <RememberQuery
+          id="herbs"
+          keys={['q', 'cat', 'temp', 'taste', 'chan', 'review', 'sort', 'dir']}
+        />
+        {/* The catalogue switch and the search share a row: one line of
+            furniture over the list instead of three. */}
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <ReferenceNav />
+          <CatalogueSearch initialQuery={filters.q} placeholder={t('searchPlaceholder')} />
+        </div>
         <HerbFilters filters={filters} />
       </div>
 
@@ -148,21 +214,21 @@ export default async function HerbsPage({
         />
       ) : (
         <TableWrapper responsive>
-          <SortableTable defaultSortKey="name" sortDisabled={(count ?? 0) > CATALOGUE_PAGE}>
+          <Table>
             <thead>
               <tr>
                 <th scope="col" className="w-10 border-b border-ink-200 bg-ink-50 px-3 py-2">
                   <span className="sr-only">{tCompare('column')}</span>
                 </th>
-                <SortTh sortKey="name">{tc('name')}</SortTh>
-                <SortTh sortKey="cat">{t('fields.tcmCategory')}</SortTh>
-                <SortTh sortKey="temp">{t('fields.temperature')}</SortTh>
-                <SortTh sortKey="taste">{t('fields.tastes')}</SortTh>
-                <SortTh sortKey="dose">{t('fields.dosageRange')}</SortTh>
-                {tracksInventory ? <SortTh sortKey="stock">{t('inStock')}</SortTh> : null}
+                <SortLinkTh sortKey="name" sort={sort} defaultSort={HERB_DEFAULT_SORT}>{tc('name')}</SortLinkTh>
+                <SortLinkTh sortKey="cat" sort={sort} defaultSort={HERB_DEFAULT_SORT}>{t('fields.tcmCategory')}</SortLinkTh>
+                <SortLinkTh sortKey="temp" sort={sort} defaultSort={HERB_DEFAULT_SORT}>{t('fields.temperature')}</SortLinkTh>
+                <SortLinkTh sortKey="taste" sort={sort} defaultSort={HERB_DEFAULT_SORT}>{t('fields.tastes')}</SortLinkTh>
+                <SortLinkTh sortKey="dose" sort={sort} defaultSort={HERB_DEFAULT_SORT}>{t('fields.dosageRange')}</SortLinkTh>
+                {tracksInventory ? <SortLinkTh sortKey="stock" sort={sort} defaultSort={HERB_DEFAULT_SORT}>{t('inStock')}</SortLinkTh> : null}
               </tr>
             </thead>
-            <SortBody locale={locale}>
+            <tbody>
               {herbs.map((herb) => {
                 const chinese = herbChineseName(herb);
                 const botanical = herbBotanicalName(herb);
@@ -176,19 +242,7 @@ export default async function HerbsPage({
                     : null;
                 return (
                   <Tr
-                    key={herb.id}
-                    sort={{
-                      name: herbPrimaryName(herb, locale as Locale),
-                      cat: herb.tcm_category ? tTcm(herb.tcm_category) : null,
-                      // Sorted by how hot it is, not by how the word is spelled.
-                      temp: herb.temperature ? TEMPERATURES.indexOf(herb.temperature) : null,
-                      taste: tastes.map((value) => tTaste(value)).join(' '),
-                      dose: herb.dosage_min_g === null ? null : Number(herb.dosage_min_g),
-                      // Herbs the clinic does not stock sort below the ones it
-                      // does, rather than tying with the ones that ran out.
-                      stock: stock ? stock.remaining : null,
-                    }}
-                  >
+                    key={herb.id}>
                     <Td className="w-10">
                       <CompareToggle
                         kind="herb"
@@ -314,8 +368,8 @@ export default async function HerbsPage({
                   </Tr>
                 );
               })}
-            </SortBody>
-          </SortableTable>
+            </tbody>
+          </Table>
         </TableWrapper>
       )}
 

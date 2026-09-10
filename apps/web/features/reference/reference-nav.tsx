@@ -24,7 +24,12 @@ const KIND_TO_SECTION: Record<string, string> = {
   point: '/reference/points',
 };
 
-export function ReferenceNav() {
+/**
+ * `compact` is the form for a single record's header: small pills beside the
+ * actions, so the switch between catalogues stays one click away without a
+ * row of its own pushing the monograph down.
+ */
+export function ReferenceNav({ compact = false }: { compact?: boolean }) {
   const t = useTranslations('nav');
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -36,7 +41,7 @@ export function ReferenceNav() {
     <SegmentedLinks
       as="nav"
       label={t('reference')}
-      className="mb-5"
+      size={compact ? 'sm' : 'md'}
       items={SECTIONS.map((section) => ({
         href: section.href,
         label: t(section.labelKey),

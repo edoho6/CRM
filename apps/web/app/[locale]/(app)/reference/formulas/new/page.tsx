@@ -23,8 +23,7 @@ export default async function NewFormulaPage({ params }: { params: Promise<{ loc
 
   return (
     <>
-      <PageHeader title={t('new')} />
-      <ReferenceNav />
+      <PageHeader title={t('new')} actions={<ReferenceNav compact />} />
       <FormulaForm herbs={herbs ?? []} />
     </>
   );

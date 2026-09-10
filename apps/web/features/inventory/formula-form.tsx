@@ -19,10 +19,8 @@ import {
   Textarea,
 } from '@clinic/ui';
 import {
-  FORMULA_CATEGORIES,
   FORMULA_TCM_CATEGORIES,
   HERB_UNITS,
-  type FormulaCategory,
   type FormulaTcmCategory,
   type HerbUnit,
   type Locale,
@@ -48,7 +46,6 @@ interface ItemRow {
 export function FormulaForm({ formula, herbs }: { formula?: HerbFormulaWithItems; herbs: Herb[] }) {
   const t = useTranslations('inventory.formulas');
   const tf = useTranslations('inventory.formulas.fields');
-  const tCategory = useTranslations('inventory.formulas.category');
   const tFormulaTcm = useTranslations('inventory.formulaTcmCategory');
   const tUnit = useTranslations('inventory.unit');
   const tc = useTranslations('common');
@@ -62,7 +59,6 @@ export function FormulaForm({ formula, herbs }: { formula?: HerbFormulaWithItems
   const [nameChinese, setNameChinese] = useState(formula?.name_chinese ?? '');
   const [nameEnglish, setNameEnglish] = useState(formula?.name_english ?? '');
   const [nameHebrew, setNameHebrew] = useState(formula?.name_hebrew ?? '');
-  const [category, setCategory] = useState<FormulaCategory>(formula?.category ?? 'custom');
   const [tcmCategory, setTcmCategory] = useState<FormulaTcmCategory | ''>(
     formula?.tcm_category ?? '',
   );
@@ -113,7 +109,9 @@ export function FormulaForm({ formula, herbs }: { formula?: HerbFormulaWithItems
       name_chinese: nameChinese,
       name_english: nameEnglish,
       name_hebrew: nameHebrew,
-      category,
+      // Classical / modified / custom was a question nobody answered; the
+      // column stays, unshown, at what it was.
+      category: formula?.category ?? 'custom',
       tcm_category: tcmCategory,
       source_text: sourceText,
       actions,
@@ -178,19 +176,6 @@ export function FormulaForm({ formula, herbs }: { formula?: HerbFormulaWithItems
                   value={nameHebrew}
                   onChange={(event) => setNameHebrew(event.target.value)}
                 />
-              </Field>
-              <Field label={tf('category')} htmlFor="category">
-                <Select
-                  id="category"
-                  value={category}
-                  onChange={(event) => setCategory(event.target.value as FormulaCategory)}
-                >
-                  {FORMULA_CATEGORIES.map((value) => (
-                    <option key={value} value={value}>
-                      {tCategory(value)}
-                    </option>
-                  ))}
-                </Select>
               </Field>
               <Field label={tf('tcmCategory')} htmlFor="tcm_category">
                 <Select

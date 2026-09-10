@@ -181,6 +181,7 @@ export default async function HerbDetailPage({
         }
         actions={
           <>
+            <ReferenceNav compact />
             {tracksInventory ? (
               <Button asChild variant="secondary">
                 <Link href={{ pathname: '/inventory/batches/receive', query: { herb: herb.id } }}>
@@ -198,7 +199,6 @@ export default async function HerbDetailPage({
           </>
         }
       />
-      <ReferenceNav />
 
       {herb.needs_review ? (
         <Alert tone="warning" className="mb-4">

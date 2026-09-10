@@ -1,5 +1,5 @@
 import { getTranslations } from 'next-intl/server';
-import { FORMULA_CATEGORIES, FORMULA_TCM_CATEGORIES } from '@clinic/domain';
+import { FORMULA_TCM_CATEGORIES } from '@clinic/domain';
 import { FacetFilters, type Facet } from './facet-filters';
 import {
   activeFormulaFilterCount,
@@ -13,10 +13,7 @@ const PATH = '/reference/formulas';
 export async function FormulaFilters({ filters }: { filters: FormulaFilterState }) {
   const tf = await getTranslations('inventory.formulas.fields');
   const tReview = await getTranslations('inventory.review');
-  const [tFormulaTcm, tCategory] = await Promise.all([
-    getTranslations('inventory.formulaTcmCategory'),
-    getTranslations('inventory.formulas.category'),
-  ]);
+  const tFormulaTcm = await getTranslations('inventory.formulaTcmCategory');
 
   const facets: Facet[] = [
     {
@@ -28,18 +25,6 @@ export async function FormulaFilters({ filters }: { filters: FormulaFilterState 
         label: tFormulaTcm(value),
         selected: filters.cat.includes(value),
         href: { pathname: PATH, query: toggledFormulaQuery(filters, 'cat', value) },
-      })),
-    },
-    {
-      key: 'kind',
-      heading: tf('category'),
-      scale: null,
-      options: FORMULA_CATEGORIES.map((value) => ({
-        value,
-        label: tCategory(value),
-        selected: filters.kind.includes(value),
-        href: { pathname: PATH, query: toggledFormulaQuery(filters, 'kind', value) },
-        className: 'bg-ink-100 text-ink-700 ring-1 ring-ink-200',
       })),
     },
     {
@@ -67,7 +52,7 @@ export async function FormulaFilters({ filters }: { filters: FormulaFilterState 
       activeCount={activeFormulaFilterCount(filters)}
       clearHref={{
         pathname: PATH,
-        query: formulaFilterQuery({ q: filters.q, cat: [], kind: [], review: false }),
+        query: formulaFilterQuery({ q: filters.q, cat: [], review: false }),
       }}
     />
   );

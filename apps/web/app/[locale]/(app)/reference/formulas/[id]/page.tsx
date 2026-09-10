@@ -73,7 +73,6 @@ export default async function FormulaDetailPage({
 
   const t = await getTranslations('inventory.formulas');
   const tf = await getTranslations('inventory.formulas.fields');
-  const tCategory = await getTranslations('inventory.formulas.category');
   const tFormulaTcm = await getTranslations('inventory.formulaTcmCategory');
   const tTcm = await getTranslations('inventory.tcmCategory');
   const tTemp = await getTranslations('inventory.temperature');
@@ -141,15 +140,17 @@ export default async function FormulaDetailPage({
           </span>
         }
         actions={
-          <Button asChild variant="secondary">
-            <Link href={`/reference/formulas/${formula.id}/edit`}>
-              <Pencil className="h-4 w-4" />
-              {tc('edit')}
-            </Link>
-          </Button>
+          <>
+            <ReferenceNav compact />
+            <Button asChild variant="secondary">
+              <Link href={`/reference/formulas/${formula.id}/edit`}>
+                <Pencil className="h-4 w-4" />
+                {tc('edit')}
+              </Link>
+            </Button>
+          </>
         }
       />
-      <ReferenceNav />
 
       {formula.needs_review ? (
         <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">

@@ -106,9 +106,10 @@ export default async function PointDetailPage({
             {tChannel(point.channel)}
           </span>
         }
+        actions={<ReferenceNav compact />}
         // Previous and next along the channel are navigation, not actions on
-        // this point, so they sit under the heading beside the catalogue
-        // strip rather than in the slot the other pages use for "edit".
+        // this point, so they sit under the heading rather than in the slot
+        // the other pages use for "edit".
         below={
           previous || next ? (
             <div className="flex items-center gap-1">
@@ -130,7 +131,6 @@ export default async function PointDetailPage({
           ) : undefined
         }
       />
-      <ReferenceNav />
 
       {!hasClinicalText ? (
         <Alert tone="info" className="mb-4">

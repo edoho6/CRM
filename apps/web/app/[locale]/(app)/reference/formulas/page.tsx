@@ -5,9 +5,7 @@ import {
   Badge,
   Button,
   EmptyState,
-  SortBody,
-  SortTh,
-  SortableTable,
+  Table,
   TableWrapper,
   Td,
   Tr,
@@ -18,6 +16,8 @@ import type { Locale } from '@clinic/domain';
 import { PageHeader } from '@/components/app-shell';
 import { CATALOGUE_PAGE, Pagination, pageFrom, pageRange } from '@/components/pagination';
 import { RememberQuery } from '@/components/remember-query';
+import { SortLinkTh } from '@/components/sort-link-th';
+import { compareComputed, parseSort, type SortState } from '@/lib/sort-params';
 import { TcmChip } from '@/components/tcm-chip';
 import { getClinicScope } from '@/lib/session';
 import { formulaChineseName, formulaPrimaryName, herbPrimaryName } from '@/lib/display';
@@ -29,6 +29,24 @@ import {
   parseFormulaFilters,
   type FormulaSearchParams,
 } from '@/features/inventory/formula-filter-params';
+
+/**
+ * Columns the list can be ordered by. The number of herbs and the total weight
+ * are summed from the items, so those two are ordered here over every matching
+ * formula before the page is cut; the rest the database orders.
+ */
+const FORMULA_SORT_KEYS = ['name', 'cat', 'source', 'items', 'weight'] as const;
+type FormulaSortKey = (typeof FORMULA_SORT_KEYS)[number];
+const FORMULA_SORT_COLUMNS: Record<FormulaSortKey, string | null> = {
+  name: 'name_pinyin',
+  cat: 'tcm_category',
+  source: 'source_text',
+  items: null,
+  weight: null,
+};
+const FORMULA_DEFAULT_SORT: SortState<FormulaSortKey> = { key: 'name', dir: 'asc' };
+const FORMULA_SELECT =
+  '*, items:herb_formula_items(*, herb:herbs(id, pinyin_name, chinese_name, english_name, hebrew_name, default_unit))';
 
 export default async function FormulasPage({
   params,
@@ -53,27 +71,63 @@ export default async function FormulasPage({
   const scope = await getClinicScope();
   if (!scope) return null;
 
-  let query = scope.supabase
-    .from('herb_formulas')
-    .select(
-      '*, items:herb_formula_items(*, herb:herbs(id, pinyin_name, chinese_name, english_name, hebrew_name, default_unit))',
-      { count: 'exact' },
-    )
-    .order('name_pinyin', { ascending: true })
-    .range(...pageRange(page, CATALOGUE_PAGE));
+  const sort = parseSort(
+    rawParams as { sort?: string; dir?: string },
+    FORMULA_SORT_KEYS,
+    FORMULA_DEFAULT_SORT,
+  );
 
-  if (filters.q) {
-    const escaped = filters.q.replace(/[%,()]/g, ' ');
-    query = query.or(
-      `name_pinyin.ilike.%${escaped}%,name_chinese.ilike.%${escaped}%,name_english.ilike.%${escaped}%,name_hebrew.ilike.%${escaped}%,source_text.ilike.%${escaped}%`,
+  /** The catalogue narrowed by the URL's filters; the caller chooses what to select. */
+  const filtered = (select: string) => {
+    let query = scope.supabase.from('herb_formulas').select(select, { count: 'exact' });
+    if (filters.q) {
+      const escaped = filters.q.replace(/[%,()]/g, ' ');
+      query = query.or(
+        `name_pinyin.ilike.%${escaped}%,name_chinese.ilike.%${escaped}%,name_english.ilike.%${escaped}%,name_hebrew.ilike.%${escaped}%,source_text.ilike.%${escaped}%`,
+      );
+    }
+    if (filters.cat.length) query = query.in('tcm_category', filters.cat);
+    if (filters.review) query = query.eq('needs_review', true);
+    return query;
+  };
+
+  let formulas: HerbFormulaWithItems[] = [];
+  let count: number | null = null;
+  const column = FORMULA_SORT_COLUMNS[sort.key];
+  if (column) {
+    const result = await filtered(FORMULA_SELECT)
+      .order(column, { ascending: sort.dir === 'asc', nullsFirst: false })
+      .order('name_pinyin', { ascending: true })
+      .range(...pageRange(page, CATALOGUE_PAGE))
+      .returns<HerbFormulaWithItems[]>();
+    formulas = result.data ?? [];
+    count = result.count;
+  } else {
+    type Light = { id: string; name_pinyin: string | null; items: { dosage: number | string }[] };
+    const light = await filtered('id, name_pinyin, items:herb_formula_items(dosage)')
+      .limit(5000)
+      .returns<Light[]>();
+    const collator = new Intl.Collator(locale);
+    const valueOf = (row: Light) =>
+      sort.key === 'items'
+        ? row.items.length
+        : row.items.reduce((sum, item) => sum + Number(item.dosage), 0);
+    const ordered = [...(light.data ?? [])].sort(
+      (a, b) =>
+        compareComputed(valueOf(a), valueOf(b), sort.dir, collator) ||
+        collator.compare(a.name_pinyin ?? '', b.name_pinyin ?? ''),
     );
+    count = light.count ?? ordered.length;
+    const [from, to] = pageRange(page, CATALOGUE_PAGE);
+    const ids = ordered.slice(from, to + 1).map((row) => row.id);
+    if (ids.length) {
+      const rows = await filtered(FORMULA_SELECT).in('id', ids).returns<HerbFormulaWithItems[]>();
+      const byId = new Map((rows.data ?? []).map((row) => [row.id, row]));
+      formulas = ids
+        .map((id) => byId.get(id))
+        .filter((row): row is HerbFormulaWithItems => Boolean(row));
+    }
   }
-  if (filters.cat.length) query = query.in('tcm_category', filters.cat);
-  if (filters.kind.length) query = query.in('category', filters.kind);
-  if (filters.review) query = query.eq('needs_review', true);
-
-  const { data, count } = await query.returns<HerbFormulaWithItems[]>();
-  const formulas = data ?? [];
 
   return (
     <>
@@ -89,11 +143,13 @@ export default async function FormulasPage({
           </Button>
         }
       />
-      <ReferenceNav />
 
       <div className="mb-4 space-y-3">
-        <RememberQuery id="formulas" keys={['q', 'cat', 'kind', 'review']} />
-        <CatalogueSearch initialQuery={filters.q} placeholder={t('searchPlaceholder')} />
+        <RememberQuery id="formulas" keys={['q', 'cat', 'review', 'sort', 'dir']} />
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <ReferenceNav />
+          <CatalogueSearch initialQuery={filters.q} placeholder={t('searchPlaceholder')} />
+        </div>
         <FormulaFilters filters={filters} />
       </div>
 
@@ -110,20 +166,20 @@ export default async function FormulasPage({
         />
       ) : (
         <TableWrapper responsive>
-          <SortableTable defaultSortKey="name" sortDisabled={(count ?? 0) > CATALOGUE_PAGE}>
+          <Table>
             <thead>
               <tr>
                 <th scope="col" className="w-10 border-b border-ink-200 bg-ink-50 px-3 py-2">
                   <span className="sr-only">{tCompare('column')}</span>
                 </th>
-                <SortTh sortKey="name">{tc('name')}</SortTh>
-                <SortTh sortKey="cat">{t('fields.tcmCategory')}</SortTh>
-                <SortTh sortKey="source">{t('fields.sourceText')}</SortTh>
-                <SortTh sortKey="items">{t('herbCount')}</SortTh>
-                <SortTh sortKey="weight">{t('totalWeight')}</SortTh>
+                <SortLinkTh sortKey="name" sort={sort} defaultSort={FORMULA_DEFAULT_SORT}>{tc('name')}</SortLinkTh>
+                <SortLinkTh sortKey="cat" sort={sort} defaultSort={FORMULA_DEFAULT_SORT}>{t('fields.tcmCategory')}</SortLinkTh>
+                <SortLinkTh sortKey="source" sort={sort} defaultSort={FORMULA_DEFAULT_SORT}>{t('fields.sourceText')}</SortLinkTh>
+                <SortLinkTh sortKey="items" sort={sort} defaultSort={FORMULA_DEFAULT_SORT}>{t('herbCount')}</SortLinkTh>
+                <SortLinkTh sortKey="weight" sort={sort} defaultSort={FORMULA_DEFAULT_SORT}>{t('totalWeight')}</SortLinkTh>
               </tr>
             </thead>
-            <SortBody locale={locale}>
+            <tbody>
               {formulas.map((formula) => {
                 const chinese = formulaChineseName(formula);
                 const total = formula.items.reduce((sum, item) => sum + Number(item.dosage), 0);
@@ -138,15 +194,7 @@ export default async function FormulasPage({
                   .join(' · ');
                 return (
                   <Tr
-                    key={formula.id}
-                    sort={{
-                      name: formulaPrimaryName(formula, locale as Locale),
-                      cat: formula.tcm_category ? tFormulaTcm(formula.tcm_category) : null,
-                      source: formula.source_text,
-                      items: formula.items.length,
-                      weight: total,
-                    }}
-                  >
+                    key={formula.id}>
                     <Td className="w-10">
                       <CompareToggle
                         kind="formula"
@@ -201,8 +249,8 @@ export default async function FormulasPage({
                   </Tr>
                 );
               })}
-            </SortBody>
-          </SortableTable>
+            </tbody>
+          </Table>
         </TableWrapper>
       )}
 

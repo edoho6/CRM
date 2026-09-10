@@ -60,8 +60,7 @@ export default async function ComparePage({
 
   const empty = (
     <>
-      <PageHeader title={t('title')} />
-      <ReferenceNav />
+      <PageHeader title={t('title')} actions={<ReferenceNav compact />} />
       <EmptyState
         icon={<Columns3 className="h-8 w-8" />}
         title={t('nothingSelected')}
@@ -238,8 +237,7 @@ export default async function ComparePage({
     <>
       {/* No "back to list" button: the catalogue strip under the heading and
           the shell's back button already lead there. */}
-      <PageHeader title={t('title')} description={t('subtitle')} />
-      <ReferenceNav />
+      <PageHeader title={t('title')} description={t('subtitle')} actions={<ReferenceNav compact />} />
       <TableWrapper>
         <CompareTable
           columns={columns}

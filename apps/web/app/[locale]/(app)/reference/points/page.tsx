@@ -1,15 +1,35 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { MapPin } from 'lucide-react';
-import { EmptyState, SortBody, SortTh, SortableTable, TableWrapper, Td, Tr, Dash } from '@clinic/ui';
+import { EmptyState, Table, TableWrapper, Td, Tr, Dash } from '@clinic/ui';
 import { Link } from '@clinic/i18n/navigation';
 import type { AcupuncturePoint } from '@clinic/db/types';
 import { POINT_BODY_AREAS, POINT_CATEGORIES, POINT_CHANNELS } from '@clinic/domain';
 import { PageHeader } from '@/components/app-shell';
 import { CATALOGUE_PAGE, Pagination, pageFrom, pageRange } from '@/components/pagination';
+import { RememberQuery } from '@/components/remember-query';
+import { SortLinkTh } from '@/components/sort-link-th';
+import { parseSort, type SortState } from '@/lib/sort-params';
 import { getClinicScope } from '@/lib/session';
 import { ReferenceNav } from '@/features/reference/reference-nav';
 import { CompareToggle, CompareTray } from '@/features/reference/compare-controls';
 import { PointSearch } from '@/features/reference/point-search';
+
+/**
+ * Columns the list can be ordered by; every one is a column, so the database
+ * orders. The code is channel then number, so ascending reads as a channel
+ * walked in order rather than LU1, LU10, LU11, LU2.
+ */
+const POINT_SORT_KEYS = ['code', 'pinyin', 'chinese', 'english', 'channel', 'area'] as const;
+type PointSortKey = (typeof POINT_SORT_KEYS)[number];
+const POINT_SORT_COLUMNS: Record<PointSortKey, string> = {
+  code: 'channel',
+  pinyin: 'pinyin_name',
+  chinese: 'chinese_name',
+  english: 'english_name',
+  channel: 'channel',
+  area: 'body_area',
+};
+const POINT_DEFAULT_SORT: SortState<PointSortKey> = { key: 'code', dir: 'asc' };
 
 export default async function PointsPage({
   params,
@@ -22,11 +42,15 @@ export default async function PointsPage({
     area?: string;
     category?: string;
     page?: string;
+    sort?: string;
+    dir?: string;
   }>;
 }) {
   const { locale } = await params;
-  const { q = '', channel = '', area = '', category = '', page: pageParam } = await searchParams;
+  const rawParams = await searchParams;
+  const { q = '', channel = '', area = '', category = '', page: pageParam } = rawParams;
   const page = pageFrom(pageParam);
+  const sort = parseSort(rawParams, POINT_SORT_KEYS, POINT_DEFAULT_SORT);
   setRequestLocale(locale);
 
   const t = await getTranslations('reference.points');
@@ -38,11 +62,14 @@ export default async function PointsPage({
   const scope = await getClinicScope();
   if (!scope) return null;
 
+  const ascending = sort.dir === 'asc';
   let query = scope.supabase
     .from('acupuncture_points')
     .select('*', { count: 'exact' })
-    .order('channel', { ascending: true })
-    .order('point_number', { ascending: true })
+    .order(POINT_SORT_COLUMNS[sort.key], { ascending, nullsFirst: false })
+    // Within equal values, and for the code itself, the channel walked in order.
+    .order('channel', { ascending: sort.key === 'code' ? ascending : true })
+    .order('point_number', { ascending: sort.key === 'code' ? ascending : true })
     .range(...pageRange(page, CATALOGUE_PAGE));
 
   const term = q.trim();
@@ -70,15 +97,19 @@ export default async function PointsPage({
   return (
     <>
       <PageHeader title={t('title')} description={t('count', { count: count ?? points.length })} />
-      <ReferenceNav />
 
-      {/* Three rows of filter chips over an empty catalogue are furniture with
-          nothing to filter; they appear with the first point. */}
-      {points.length > 0 || term || channel || area || category ? (
-        <div className="mb-4">
-          <PointSearch initialQuery={term} channel={channel} area={area} category={category} />
-        </div>
-      ) : null}
+      <div className="mb-4 space-y-3">
+        <RememberQuery id="points" keys={['q', 'channel', 'area', 'category', 'sort', 'dir']} />
+        {/* Three rows of filter chips over an empty catalogue are furniture with
+            nothing to filter; they appear with the first point. */}
+        <PointSearch
+          initialQuery={term}
+          channel={channel}
+          area={area}
+          category={category}
+          withFilters={points.length > 0 || Boolean(term || channel || area || category)}
+        />
+      </div>
 
       {points.length === 0 ? (
         <EmptyState
@@ -88,35 +119,24 @@ export default async function PointsPage({
         />
       ) : (
         <TableWrapper responsive>
-          <SortableTable defaultSortKey="code" sortDisabled={(count ?? 0) > CATALOGUE_PAGE}>
+          <Table>
             <thead>
               <tr>
                 <th scope="col" className="w-10 border-b border-ink-200 bg-ink-50 px-3 py-2">
                   <span className="sr-only">{tCompare('column')}</span>
                 </th>
-                <SortTh sortKey="code">{t('fields.code')}</SortTh>
-                <SortTh sortKey="pinyin">{t('fields.pinyin')}</SortTh>
-                <SortTh sortKey="chinese">{t('fields.chineseName')}</SortTh>
-                <SortTh sortKey="english">{t('fields.english')}</SortTh>
-                <SortTh sortKey="channel">{t('fields.channel')}</SortTh>
-                <SortTh sortKey="area">{t('fields.bodyArea')}</SortTh>
+                <SortLinkTh sortKey="code" sort={sort} defaultSort={POINT_DEFAULT_SORT}>{t('fields.code')}</SortLinkTh>
+                <SortLinkTh sortKey="pinyin" sort={sort} defaultSort={POINT_DEFAULT_SORT}>{t('fields.pinyin')}</SortLinkTh>
+                <SortLinkTh sortKey="chinese" sort={sort} defaultSort={POINT_DEFAULT_SORT}>{t('fields.chineseName')}</SortLinkTh>
+                <SortLinkTh sortKey="english" sort={sort} defaultSort={POINT_DEFAULT_SORT}>{t('fields.english')}</SortLinkTh>
+                <SortLinkTh sortKey="channel" sort={sort} defaultSort={POINT_DEFAULT_SORT}>{t('fields.channel')}</SortLinkTh>
+                <SortLinkTh sortKey="area" sort={sort} defaultSort={POINT_DEFAULT_SORT}>{t('fields.bodyArea')}</SortLinkTh>
               </tr>
             </thead>
-            <SortBody locale={locale}>
+            <tbody>
               {points.map((point) => (
                 <Tr
-                  key={point.id}
-                  sort={{
-                    // Channel first, then number, so ascending "point" reads as a
-                    // channel walked in order rather than LU1, LU10, LU11, LU2.
-                    code: `${point.channel} ${String(point.point_number ?? 0).padStart(3, '0')}`,
-                    pinyin: point.pinyin_name,
-                    chinese: point.chinese_name,
-                    english: point.english_name,
-                    channel: tChannel(point.channel),
-                    area: point.body_area ? tArea(point.body_area) : null,
-                  }}
-                >
+                  key={point.id}>
                   <Td className="w-10">
                     <CompareToggle kind="point" id={point.id} label={point.code} />
                   </Td>
@@ -172,8 +192,8 @@ export default async function PointsPage({
                   </Td>
                 </Tr>
               ))}
-            </SortBody>
-          </SortableTable>
+            </tbody>
+          </Table>
         </TableWrapper>
       )}
 
@@ -184,7 +204,7 @@ export default async function PointsPage({
         total={count ?? null}
         shown={points.length}
         pathname="/reference/points"
-        query={{ q, channel, area, category }}
+        query={{ ...rawParams }}
       />
     </>
   );

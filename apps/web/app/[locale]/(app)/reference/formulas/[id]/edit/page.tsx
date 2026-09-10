@@ -41,8 +41,11 @@ export default async function EditFormulaPage({
 
   return (
     <>
-      <PageHeader title={t('edit')} description={formulaPrimaryName(formula, locale as Locale)} />
-      <ReferenceNav />
+      <PageHeader
+        title={t('edit')}
+        description={formulaPrimaryName(formula, locale as Locale)}
+        actions={<ReferenceNav compact />}
+      />
       <FormulaForm formula={formula} herbs={herbs ?? []} />
     </>
   );

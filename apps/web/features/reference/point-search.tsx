@@ -6,6 +6,8 @@ import { POINT_BODY_AREAS, POINT_CATEGORIES, POINT_CHANNELS } from '@clinic/doma
 import { cn } from '@clinic/ui';
 import { Link, usePathname, useRouter } from '@clinic/i18n/navigation';
 import { CatalogueSearch } from './catalogue-search';
+import { ReferenceNav } from './reference-nav';
+import { FilterDisclosure } from '@/features/inventory/filter-disclosure';
 
 /**
  * Finding a point.
@@ -21,13 +23,17 @@ export function PointSearch({
   channel,
   area,
   category,
+  withFilters = true,
 }: {
   initialQuery: string;
   channel: string;
   area: string;
   category: string;
+  /** False over an empty catalogue: chips with nothing to filter are furniture. */
+  withFilters?: boolean;
 }) {
   const t = useTranslations('reference.points');
+  const tFilters = useTranslations('inventory.herbs.filters');
   const tChannel = useTranslations('reference.pointChannel');
   const tArea = useTranslations('reference.bodyArea');
   const tCategory = useTranslations('reference.pointCategory');
@@ -56,11 +62,17 @@ export function PointSearch({
         : 'bg-ink-100 text-ink-700 hover:-translate-y-px hover:bg-ink-200 hover:text-ink-900',
     );
 
+  const activeCount = [channel, area, category].filter(Boolean).length;
+
   return (
     <div className="space-y-3">
-      <CatalogueSearch initialQuery={initialQuery} placeholder={t('searchPlaceholder')} />
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <ReferenceNav />
+        <CatalogueSearch initialQuery={initialQuery} placeholder={t('searchPlaceholder')} />
+      </div>
 
-      <div className="space-y-2 rounded-card border border-ink-200 bg-white p-3">
+      {withFilters ? (
+      <FilterDisclosure title={tFilters('title')} activeCount={activeCount}>
         <fieldset>
           <legend className="mb-1.5 text-xs font-semibold text-ink-600">
             {t('filterByChannel')}
@@ -87,7 +99,7 @@ export function PointSearch({
           </div>
         </fieldset>
 
-        <fieldset className="border-t border-ink-100 pt-2">
+        <fieldset>
           <legend className="mb-1.5 text-xs font-semibold text-ink-600">{t('filterByArea')}</legend>
           <div className="flex flex-wrap gap-1.5">
             <Link
@@ -113,7 +125,7 @@ export function PointSearch({
           </div>
         </fieldset>
 
-        <fieldset className="border-t border-ink-100 pt-2">
+        <fieldset>
           <legend className="mb-1.5 text-xs font-semibold text-ink-600">
             {t('filterByCategory')}
           </legend>
@@ -138,7 +150,8 @@ export function PointSearch({
             ))}
           </div>
         </fieldset>
-      </div>
+      </FilterDisclosure>
+      ) : null}
     </div>
   );
 }

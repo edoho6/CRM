@@ -30,8 +30,11 @@ export default async function EditHerbPage({
 
   return (
     <>
-      <PageHeader title={t('edit')} description={herbPrimaryName(herb, locale as Locale)} />
-      <ReferenceNav />
+      <PageHeader
+        title={t('edit')}
+        description={herbPrimaryName(herb, locale as Locale)}
+        actions={<ReferenceNav compact />}
+      />
       <HerbForm herb={herb} />
     </>
   );

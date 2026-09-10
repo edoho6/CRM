@@ -10,8 +10,7 @@ export default async function NewHerbPage({ params }: { params: Promise<{ locale
 
   return (
     <>
-      <PageHeader title={t('new')} />
-      <ReferenceNav />
+      <PageHeader title={t('new')} actions={<ReferenceNav compact />} />
       <HerbForm />
     </>
   );
