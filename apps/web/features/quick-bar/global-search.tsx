@@ -73,14 +73,6 @@ export function GlobalSearch() {
   const rootRef = useRef<HTMLDivElement>(null);
 
   const [open, setOpen] = useState(false);
-  // The handler already accepts either modifier; this only decides which one
-  // to print. Decided after mount so the server and the browser render the
-  // same first frame — the server has no idea what keyboard is on the desk.
-  const [mac, setMac] = useState(false);
-  useEffect(() => {
-    setMac(/Mac|iPhone|iPad/i.test(navigator.platform || navigator.userAgent));
-  }, []);
-  const shortcut = mac ? '⌘ K' : 'Ctrl K';
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
@@ -274,8 +266,8 @@ export function GlobalSearch() {
         <button
           type="button"
           aria-label={t('search')}
-          title={`${t('search')} · ${shortcut}`}
-          aria-keyshortcuts={mac ? 'Meta+K' : 'Control+K'}
+          title={t('search')}
+          aria-keyshortcuts="Control+K"
           onClick={() => (open ? inputRef.current?.focus() : reveal())}
           className={cn(
             'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-ink-200 bg-white text-ink-600',
@@ -316,16 +308,6 @@ export function GlobalSearch() {
               'focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-focus focus-visible:border-focus',
             )}
           />
-          {/* The shortcut, where the eye lands when the box opens empty. */}
-          {!query && open ? (
-            <kbd
-              dir="ltr"
-              aria-hidden
-              className="pointer-events-none absolute inset-y-0 end-2 my-auto hidden h-5 items-center gap-0.5 rounded border border-ink-200 bg-ink-50 px-1 font-sans text-xs text-ink-600 sm:flex"
-            >
-              {shortcut}
-            </kbd>
-          ) : null}
           {query ? (
             <button
               type="button"

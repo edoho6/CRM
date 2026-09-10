@@ -1,5 +1,7 @@
 'use client';
 
+import { useState } from 'react';
+
 import { useFormatter, useLocale, useTranslations } from 'next-intl';
 import { Badge } from '@clinic/ui';
 import { defineWidget } from '@clinic/domain/widgets';
@@ -114,11 +116,15 @@ function TodayAppointmentsWidget() {
 
 function UpcomingAppointmentsWidget() {
   const t = useTranslations('widgets.upcomingAppointments');
-  const now = new Date();
-  const horizon = new Date(now);
-  horizon.setDate(horizon.getDate() + 7);
-  const from = now.toISOString();
-  const to = horizon.toISOString();
+  // Fixed once per mount. Taken on every render, "now" moved by a few
+  // milliseconds each time, the dependencies changed, the fetch ran again,
+  // the spinner came back, and the widget twitched without end.
+  const [{ from, to }] = useState(() => {
+    const now = new Date();
+    const horizon = new Date(now);
+    horizon.setDate(horizon.getDate() + 7);
+    return { from: now.toISOString(), to: horizon.toISOString() };
+  });
 
   const { data, loading } = useAsyncData<AppointmentRow[]>(
     async (supabase) => {
