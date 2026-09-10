@@ -48,7 +48,7 @@ export default async function SuppliersPage({ params }: { params: Promise<{ loca
           action={<NewSupplierDialog />}
         />
       ) : (
-        <TableWrapper>
+        <TableWrapper responsive>
           <SortableTable defaultSortKey="name">
             <thead>
               <tr>

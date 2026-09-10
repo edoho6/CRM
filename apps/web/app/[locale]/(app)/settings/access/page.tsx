@@ -172,7 +172,7 @@ export default async function AccessLogPage({
       {activity.length === 0 ? (
         <EmptyState icon={<ShieldCheck className="h-8 w-8" />} title={t('empty')} />
       ) : (
-        <TableWrapper>
+        <TableWrapper responsive>
           <SortableTable defaultSortKey="when" defaultSortDirection="desc">
             <thead>
               <tr>

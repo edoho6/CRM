@@ -47,7 +47,7 @@ export default async function PlatformPage({ params }: { params: Promise<{ local
       {rows.length === 0 ? (
         <EmptyState icon={<Building2 className="h-8 w-8" />} title={t('empty')} />
       ) : (
-        <TableWrapper>
+        <TableWrapper responsive>
           <SortableTable defaultSortKey="created" defaultSortDirection="desc">
             <thead>
               <tr>

@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { AlertTriangle, ClipboardList } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 import { Alert, Badge, Button, Card, CardBody, CardHeader, CardTitle, Dash, DetailRow } from '@clinic/ui';
 import { Link } from '@clinic/i18n/navigation';
 import type { AcupuncturePoint } from '@clinic/db/types';
@@ -37,7 +37,6 @@ export default async function PointDetailPage({
   const tArea = await getTranslations('reference.bodyArea');
   const tPointCategory = await getTranslations('reference.pointCategory');
   const tReview = await getTranslations('inventory.review');
-  const tc = await getTranslations('common');
 
   const scope = await getClinicScope();
   if (!scope) return null;
@@ -107,23 +106,28 @@ export default async function PointDetailPage({
             {tChannel(point.channel)}
           </span>
         }
-        actions={
-          <div className="flex items-center gap-1">
-            {previous ? (
-              <Button asChild variant="secondary" size="sm">
-                <Link href={`/reference/points/${previous.id}`}>
-                  <span dir="ltr">{previous.code}</span>
-                </Link>
-              </Button>
-            ) : null}
-            {next ? (
-              <Button asChild variant="secondary" size="sm">
-                <Link href={`/reference/points/${next.id}`}>
-                  <span dir="ltr">{next.code}</span>
-                </Link>
-              </Button>
-            ) : null}
-          </div>
+        // Previous and next along the channel are navigation, not actions on
+        // this point, so they sit under the heading beside the catalogue
+        // strip rather than in the slot the other pages use for "edit".
+        below={
+          previous || next ? (
+            <div className="flex items-center gap-1">
+              {previous ? (
+                <Button asChild variant="secondary" size="sm">
+                  <Link href={`/reference/points/${previous.id}`}>
+                    <span dir="ltr">{previous.code}</span>
+                  </Link>
+                </Button>
+              ) : null}
+              {next ? (
+                <Button asChild variant="secondary" size="sm">
+                  <Link href={`/reference/points/${next.id}`}>
+                    <span dir="ltr">{next.code}</span>
+                  </Link>
+                </Button>
+              ) : null}
+            </div>
+          ) : undefined
         }
       />
       <ReferenceNav />
@@ -214,18 +218,6 @@ export default async function PointDetailPage({
 
         <div className="space-y-5">
           <BodyMap points={mapped} />
-
-          <Card>
-            <CardBody>
-              <p className="text-sm text-ink-600">{t('useInTreatment')}</p>
-              <Button asChild variant="secondary" size="sm" className="mt-2">
-                <Link href="/encounters">
-                  <ClipboardList className="h-4 w-4" />
-                  {tc('viewAll')}
-                </Link>
-              </Button>
-            </CardBody>
-          </Card>
         </div>
       </div>
     </>

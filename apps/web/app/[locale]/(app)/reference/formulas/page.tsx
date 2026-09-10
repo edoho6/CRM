@@ -107,7 +107,7 @@ export default async function FormulasPage({
           }
         />
       ) : (
-        <TableWrapper>
+        <TableWrapper responsive>
           <SortableTable defaultSortKey="name">
             <thead>
               <tr>

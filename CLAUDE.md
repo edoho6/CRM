@@ -185,6 +185,14 @@
   למעלה, +Z חזית, ראשית בין הרגליים, +X = שמאל המטופל; דו-צדדי נשמר בימין
   (x<0) ומשוקף. הדגם ב-`public/models/body.glb` חייב להיות glb רגיל — **בלי
   Draco/Meshopt/טקסטורות** — כי ה-CSP חוסם worker ו-blob; לא להרחיב את ה-CSP
+- **מבנה דף אחיד:** כותרת דף רק דרך `PageHeader` מ-`@clinic/ui` (חריצים `actions`
+  לפעולה הראשית, `banner` לאזהרה, `below` לפס תחת הכותרת — לא שוליים שליליים);
+  ניווט משנה ומסננים ב-URL דרך `components/segmented-links.tsx`, בחירה
+  בלחיצה דרך `SegmentedControl`; רשימה ארוכה מדפדפת עם `components/pagination.tsx`
+  (`pageFrom`/`pageRange` + `count: 'exact'`), לא `limit` שקט; טבלת רשימה מקבלת
+  `<TableWrapper responsive>` כדי להפוך לכרטיסים בטלפון; שדה קטן בתוך שורה הוא
+  `compact`, לא `h-7` ידני. סולם טקסט: h1 `text-xl`, כותרת כרטיס `text-base`, גוף
+  `text-sm`, כיתוב `text-xs` — **אין `text-[Npx]`**
 
 ## לפני commit
 

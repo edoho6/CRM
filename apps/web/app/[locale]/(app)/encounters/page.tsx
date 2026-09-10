@@ -195,7 +195,7 @@ export default async function EncountersPage({
           title={range.preset === 'all' ? t('empty') : tFilters('noneInRange')}
         />
       ) : (
-        <TableWrapper>
+        <TableWrapper responsive>
           <SortableTable defaultSortKey="date" defaultSortDirection="desc">
             <thead>
               <tr>

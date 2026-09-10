@@ -600,3 +600,62 @@
     break-after: avoid;
   }
 }
+
+/*
+   Tables as cards on a phone.
+
+   A `TableWrapper` marked `responsive` keeps its table on a wide screen and
+   turns each row into a stacked card below `md`. The column headings are
+   copied onto every cell as `data-label` (see `CellLabels` in the shared
+   kit), and shown here before the value. The heading row itself is hidden:
+   on a phone the list is read top to bottom, and sorting waits for a desk.
+*/
+@media (max-width: 767px) {
+  .table-cards {
+    overflow-x: visible;
+    border: 0;
+    background: transparent;
+  }
+  .table-cards table,
+  .table-cards tbody,
+  .table-cards tr,
+  .table-cards td {
+    display: block;
+    width: 100%;
+  }
+  .table-cards thead {
+    display: none;
+  }
+  .table-cards tr {
+    margin-bottom: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--color-ink-200);
+    border-radius: var(--radius-card, 0.75rem);
+    background: var(--color-white);
+  }
+  .table-cards td {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 0.75rem;
+    padding: 0.35rem 0;
+    border: 0;
+    text-align: end;
+  }
+  .table-cards td[data-label]::before {
+    content: attr(data-label);
+    flex: 0 0 auto;
+    max-width: 45%;
+    font-size: 0.75rem;
+    line-height: 1.25;
+    color: var(--color-ink-600);
+    text-align: start;
+  }
+  .table-cards td:not([data-label]) {
+    justify-content: flex-start;
+    text-align: start;
+  }
+  .table-cards td + td {
+    border-top: 1px solid var(--color-ink-100);
+  }
+}

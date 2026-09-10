@@ -211,7 +211,7 @@ export default async function StockRoomPage({
             description={tOrder('emptyBody')}
           />
         ) : (
-          <TableWrapper>
+          <TableWrapper responsive>
             <SortableTable defaultSortKey="name">
               <thead>
                 <tr>
@@ -301,7 +301,7 @@ export default async function StockRoomPage({
                 {tHerbs('title')}{' '}
                 <span className="font-normal text-ink-500">({shownHerbs.length})</span>
               </h2>
-              <TableWrapper>
+              <TableWrapper responsive>
                 <SortableTable defaultSortKey="stock">
                   <thead>
                     <tr>
@@ -446,7 +446,7 @@ export default async function StockRoomPage({
                 <span className="font-normal text-ink-500">({shownFormulas.length})</span>
               </h2>
               <p className="mb-2 text-xs text-ink-500">{t('formulaHint')}</p>
-              <TableWrapper>
+              <TableWrapper responsive>
                 <SortableTable defaultSortKey="doses">
                   <thead>
                     <tr>

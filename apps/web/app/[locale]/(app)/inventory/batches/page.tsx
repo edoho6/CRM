@@ -75,7 +75,7 @@ export default async function BatchesPage({ params }: { params: Promise<{ locale
           }
         />
       ) : (
-        <TableWrapper>
+        <TableWrapper responsive>
           <SortableTable defaultSortKey="expiry">
             <thead>
               <tr>

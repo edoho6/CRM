@@ -72,7 +72,7 @@ export default async function BillingPage({ params }: { params: Promise<{ locale
           description={t('emptyBody')}
         />
       ) : (
-        <TableWrapper>
+        <TableWrapper responsive>
           <SortableTable defaultSortKey="date" defaultSortDirection="desc">
             <thead>
               <tr>

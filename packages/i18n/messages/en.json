@@ -101,7 +101,7 @@
       "email": "Email",
       "sms": "SMS"
     },
-    "channelHint": "An in-app alert shows on the bell at the top, and as a browser notification if you allowed one. Email and SMS are coming soon. Needs a date and a time.",
+    "channelHint": "An in-app alert shows in the bell, and in the browser if you allowed it. Email and SMS are coming.",
     "sections": {
       "overdue": "Overdue",
       "today": "Today",
@@ -117,7 +117,7 @@
     "deleted": "Task deleted",
     "deleteConfirm": "Delete this task?",
     "browserNotifications": "Browser notifications",
-    "browserHint": "While the app is open in the browser — even in another tab or a minimised window — a task whose time has come pops up as a browser notification. When the app is closed, it waits on the bell for your next visit.",
+    "browserHint": "While the system is open in a browser, a task that falls due pops up as a notification. When it is closed, the alert waits in the bell.",
     "enableBrowser": "Turn on browser notifications",
     "browserOn": "Browser notifications are on",
     "browserBlocked": "The browser blocks notifications for this site. It can be changed in the browser's site settings.",
@@ -568,7 +568,6 @@
     "type": "Appointment type",
     "startAt": "Starts",
     "endAt": "Ends",
-    "location": "Location",
     "selectPatient": "Select a patient",
     "selectType": "Select a type",
     "overlapError": "This practitioner already has an overlapping appointment",
@@ -613,7 +612,7 @@
     "outsideHours": "Outside the working hours you set",
     "closedDay": "Closed",
     "repeatSeries": "Course of treatment",
-    "repeatSeriesHint": "This appointment repeats at the interval you choose. Closed days are skipped, and any hour already taken is reported at the end — the rest are booked regardless.",
+    "repeatSeriesHint": "The appointment repeats at the chosen interval. Closed days are skipped, and clashes are reported at the end.",
     "everyWeeks": "Every N weeks",
     "occurrences": "Number of times",
     "bookSeries": "Book {count} appointments",
@@ -641,13 +640,13 @@
     "encounterOn": "Treatment on {date}",
     "created": "Treatment started",
     "saved": "Treatment saved",
-    "signed": "Record signed",
+    "signed": "The treatment was signed",
     "sign": "Sign record",
-    "signConfirmTitle": "Sign this record?",
-    "signConfirmBody": "Once signed the record is locked for editing. Any later change is written to the audit log.",
+    "signConfirmTitle": "Sign the treatment?",
+    "signConfirmBody": "After signing, the treatment is locked for editing. Any further change is recorded in the audit log.",
     "signedAt": "Signed on {date}",
     "signedBy": "Signed by",
-    "lockedNotice": "This record is signed and locked for editing.",
+    "lockedNotice": "The treatment is signed and closed for editing.",
     "empty": "No treatments yet",
     "status": {
       "draft": "Draft",
@@ -790,7 +789,7 @@
       "herbs": "Herbs",
       "none": "None",
       "was": "was {quantity}",
-      "firstVisit": "First visit — nothing to compare with yet.",
+      "firstVisit": "First treatment",
       "legend": "Amber on the left: given then, not now. Green on the right: new now. Amber on the right: the dose changed."
     },
     "tonguePhotos": {
@@ -1456,7 +1455,7 @@
     "booking": {
       "subtitle": "The page where patients book for themselves — from the link you send.",
       "title": "Online booking",
-      "intro": "One link to send patients. They pick a treatment and a free hour, leave a name and a number, and the booking lands in the diary. The text at the top of the page is yours to write.",
+      "intro": "One link to send patients: they choose a treatment and a time, and the appointment lands in the calendar. The text at the top of the page is yours to edit.",
       "enabled": "Page is on",
       "slug": "Page address",
       "slugHint": "Letters, digits and dashes. For example: clinic-dana",
@@ -1474,7 +1473,7 @@
       "horizonDaysHint": "How far ahead a booking may be made.",
       "verifySms": "Verify with an SMS code",
       "verifySmsHint": "Needs an SMS sending service. Until one is connected, leave this off — otherwise nobody can book.",
-      "noTypes": "No treatment is open for booking. In the personal area → treatment types, tick \"open for online booking\" on the ones you want."
+      "noTypes": "No treatment is open for booking. In My area → Treatment types, tick \"open for online booking\" beside the ones you want."
     },
     "locations": {
       "intro": "The addresses you see patients at. With more than one, every booking names one, and rooms are sorted under them.",
@@ -1492,7 +1491,7 @@
       "anyLocation": "Any clinic",
       "empty": "No rooms yet. Without rooms the diary behaves as before — one booking per hour.",
       "subtitle": "Treatment rooms. With rooms, several patients can be booked for the same hour — each in their own.",
-      "intro": "Every booking goes into a room. A room cannot be taken twice at the same hour, but one practitioner can work several rooms at once. With no rooms the diary behaves as before — one booking per hour.",
+      "intro": "Every appointment belongs to a room, and a room is never booked twice at once. Without rooms the calendar behaves as usual.",
       "name": "Room name",
       "colour": "Colour",
       "active": "Active",
@@ -1558,7 +1557,6 @@
     "nav": {
       "label": "Settings",
       "booking": "Online booking",
-      "rooms": "Rooms",
       "tags": "Tags",
       "general": "General",
       "access": "Access log",
@@ -1601,7 +1599,7 @@
         "title": "Unusual patterns",
         "clear": "Nothing unusual",
         "clearBody": "No unusual access patterns in the last 30 days.",
-        "rules": "Two rules, deliberately blunt: thirty or more distinct records in one hour, or five or more reads between 23:00 and 06:00. A flag is not proof of anything — it is a reason to look. Failed logins and login location are not monitored yet.",
+        "rules": "Two rules: 30 or more different records in one hour, or 5 or more reads between 23:00 and 06:00. A flag is a reason to look, not necessarily a problem.",
         "kind": {
           "bulk_access": "{count, plural, one {opened 1 record} other {opened # records}} in one hour",
           "after_hours": "{count, plural, one {1 read} other {# reads}} overnight"
@@ -1811,7 +1809,7 @@
       "email": "Email"
     },
     "exportTitle": "Export the patient file",
-    "exportBody": "Downloads everything the clinic holds about this patient as one file: personal details, medical history, appointments, treatments, clinical notes, prescriptions, the document list, the consent history, and who accessed the record and when. Uploaded documents are listed by name and date; the files themselves are downloaded separately.",
+    "exportBody": "Everything in the patient's file, in one download: details, medical history, appointments, treatments, prescriptions, documents, consents, and who opened the file and when.",
     "exportButton": "Download {name}’s file",
     "documentsTitle": "Consent documents",
     "documentsSubtitle": "The texts patients are asked to accept",
@@ -1980,7 +1978,7 @@
       }
     },
     "title": "Working hours",
-    "subtitle": "The days and hours you see patients, and diary closures. The calendar shades hours outside these and marks closed days — it does not block them, because sometimes you do see someone at eight in the evening.",
+    "subtitle": "The days and hours you see patients, and diary closures. Other hours are shaded in the calendar, not blocked.",
     "workingHours": "Working week",
     "weekday": {
       "0": "Sunday",
@@ -2014,7 +2012,7 @@
   },
   "protocols": {
     "title": "Treatment protocols",
-    "subtitle": "Point combinations and prescriptions you come back to. A protocol is a starting point — it fills a treatment in and leaves everything editable, and no link is kept between a treatment and the protocol it started from.",
+    "subtitle": "Point and prescription combinations you return to. A protocol fills the treatment in and leaves everything open to edit.",
     "manage": "Manage protocols",
     "apply": "Apply a protocol",
     "applyAction": "Apply",
@@ -2056,7 +2054,7 @@
     "noRows": "That query returned nothing.",
     "truncated": "Showing the first 50 rows only.",
     "privacyTitle": "What leaves the clinic",
-    "privacyBody": "Your question and the query results — names, dates and numbers — are sent to Anthropic so the answer can be written. The contents of clinical records, national ID numbers and addresses are never sent. If that is not acceptable, simply do not use this screen; nothing else in the system talks to an external service.",
+    "privacyBody": "The question and its results (names, dates and numbers) are sent to Anthropic to phrase the answer. Clinical records, ID numbers and addresses are never sent.",
     "notConfigured": "The assistant is not set up",
     "notConfiguredBody": "It needs an Anthropic API key in the {variable} environment variable in apps/web/.env.local, then a server restart. The key stays on the server and never enters the code or git.",
     "unavailable": "Could not reach the service. Try again in a moment.",
@@ -2112,7 +2110,7 @@
       "billed": "Billed",
       "paid": "Paid",
       "outstanding": "Outstanding",
-      "firstVisit": "First visit",
+      "firstVisit": "First treatment",
       "returning": "Return",
       "weekday": "Day",
       "bookings": "Bookings",

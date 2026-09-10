@@ -521,7 +521,6 @@ export function AppShell({
             <GlobalSearch />
             <TaskBell />
             <QuickCreateMenu />
-            <LanguageSwitcher className="hidden sm:inline-flex lg:hidden" placement="down" />
           </div>
         </header>
 

@@ -276,7 +276,7 @@ export default async function PatientsPage({
           }
         />
       ) : (
-        <TableWrapper>
+        <TableWrapper responsive>
           <SortableTable defaultSortKey="name">
             <thead>
               <tr>

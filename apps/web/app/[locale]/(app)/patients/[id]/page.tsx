@@ -317,7 +317,7 @@ export default async function PatientDetailPage({
         action={<StartEncounterButton patientId={patient.id} />}
       />
     ) : (
-      <TableWrapper>
+      <TableWrapper responsive>
         <SortableTable defaultSortKey="date" defaultSortDirection="desc">
           <thead>
             <tr>
@@ -364,7 +364,7 @@ export default async function PatientDetailPage({
     appointments.length === 0 ? (
       <EmptyState title={t('noAppointments')} />
     ) : (
-      <TableWrapper>
+      <TableWrapper responsive>
         <SortableTable defaultSortKey="date" defaultSortDirection="desc">
           <thead>
             <tr>

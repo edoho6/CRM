@@ -83,7 +83,7 @@ export default async function PointsPage({
           description={term ? undefined : t('emptyBody')}
         />
       ) : (
-        <TableWrapper>
+        <TableWrapper responsive>
           <SortableTable defaultSortKey="code">
             <thead>
               <tr>

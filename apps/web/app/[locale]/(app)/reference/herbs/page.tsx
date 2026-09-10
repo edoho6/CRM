@@ -144,7 +144,7 @@ export default async function HerbsPage({
           }
         />
       ) : (
-        <TableWrapper>
+        <TableWrapper responsive>
           <SortableTable defaultSortKey="name">
             <thead>
               <tr>

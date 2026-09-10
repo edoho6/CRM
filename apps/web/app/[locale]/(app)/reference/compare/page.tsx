@@ -1,7 +1,6 @@
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
-import { Columns3, List } from 'lucide-react';
-import { Button, EmptyState, TableWrapper } from '@clinic/ui';
-import { Link } from '@clinic/i18n/navigation';
+import { Columns3 } from 'lucide-react';
+import { EmptyState, TableWrapper } from '@clinic/ui';
 import type { AcupuncturePoint, Herb, HerbFormulaWithItems } from '@clinic/db/types';
 import type { Locale } from '@clinic/domain';
 import { PageHeader } from '@/components/app-shell';
@@ -75,14 +74,12 @@ export default async function ComparePage({
 
   let columns: CompareColumn[] = [];
   let rows: CompareRow[] = [];
-  let backHref = '/reference';
 
   /** Rendered as a dash when there is nothing: absence is a finding. */
   const list = (values: string[] | null | undefined, translate: (value: string) => string) =>
     values && values.length > 0 ? values.map(translate).join(', ') : null;
 
   if (kind === 'herb') {
-    backHref = '/reference/herbs';
     const { data } = await scope.supabase
       .from('herbs')
       .select('*')
@@ -142,7 +139,6 @@ export default async function ComparePage({
       { label: tHerb('cautions'), values: herbs.map((h) => h.cautions) },
     ];
   } else if (kind === 'formula') {
-    backHref = '/reference/formulas';
     const { data } = await scope.supabase
       .from('herb_formulas')
       .select(
@@ -197,7 +193,6 @@ export default async function ComparePage({
       { label: tFormula('modifications'), values: formulas.map((f) => f.modifications) },
     ];
   } else if (kind === 'point') {
-    backHref = '/reference/points';
     const { data } = await scope.supabase
       .from('acupuncture_points')
       .select('*')
@@ -241,18 +236,9 @@ export default async function ComparePage({
 
   return (
     <>
-      <PageHeader
-        title={t('title')}
-        description={t('subtitle')}
-        actions={
-          <Button asChild variant="secondary">
-            <Link href={backHref}>
-              <List className="h-4 w-4" />
-              {t('backToList')}
-            </Link>
-          </Button>
-        }
-      />
+      {/* No "back to list" button: the catalogue strip under the heading and
+          the shell's back button already lead there. */}
+      <PageHeader title={t('title')} description={t('subtitle')} />
       <ReferenceNav />
       <TableWrapper>
         <CompareTable

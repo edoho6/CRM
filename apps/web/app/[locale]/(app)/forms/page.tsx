@@ -70,7 +70,7 @@ export default async function FormsPage({ params }: { params: Promise<{ locale: 
           }
         />
       ) : (
-        <TableWrapper>
+        <TableWrapper responsive>
           <SortableTable defaultSortKey="title">
             <thead>
               <tr>

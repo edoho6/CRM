@@ -199,7 +199,7 @@ export function DocumentsPanel({
           description={t('emptyBody')}
         />
       ) : (
-        <TableWrapper>
+        <TableWrapper responsive>
           <SortableTable defaultSortKey="uploaded" defaultSortDirection="desc">
             <thead>
               <tr>

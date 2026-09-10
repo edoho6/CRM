@@ -1,18 +1,37 @@
 import * as React from 'react';
 import { cn } from './cn';
+import { CellLabels } from './cell-labels';
 
 /**
  * Table primitives.
  *
  * The wrapper scrolls horizontally on its own so a wide table never forces the
  * whole page to scroll sideways — which in RTL is especially disorienting.
+ *
+ * `responsive` goes further on a phone: under `md` the rows become stacked
+ * cards, each cell labelled with its column heading (see `.table-cards` in
+ * the app's stylesheet and `CellLabels`). A six-column table on a 390px
+ * screen was a sideways scroll in both directions; a list of cards is read
+ * top to bottom like everything else on the phone.
  */
-export function TableWrapper({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
+export function TableWrapper({
+  className,
+  responsive = false,
+  children,
+  ...props
+}: React.HTMLAttributes<HTMLDivElement> & { responsive?: boolean }) {
   return (
     <div
-      className={cn('overflow-x-auto rounded-card border border-ink-200 bg-white', className)}
+      className={cn(
+        'overflow-x-auto rounded-card border border-ink-200 bg-white',
+        responsive && 'table-cards',
+        className,
+      )}
       {...props}
-    />
+    >
+      {responsive ? <CellLabels /> : null}
+      {children}
+    </div>
   );
 }
 
