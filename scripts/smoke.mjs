@@ -160,7 +160,15 @@ async function visit(context, { route, locale, width, label = route, expect404 =
   let flow = null;
   try {
     if (before) await before(page);
-    const response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+    // The dev server compiles a route the first time it is asked for, and
+    // under load that can outlast the timeout. One retry tells a slow compile
+    // apart from a page that genuinely never answers.
+    let response = await page
+      .goto(url, { waitUntil: 'domcontentloaded', timeout: 45_000 })
+      .catch(() => null);
+    if (!response) {
+      response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60_000 });
+    }
     httpStatus = response?.status() ?? null;
     await page.waitForLoadState('networkidle', { timeout: 20_000 }).catch(() => {});
     // Client-side widgets fetch after hydration; give them a moment so the
@@ -214,6 +222,10 @@ async function collectIds(context, route, pattern, limit = 2) {
   const page = await context.newPage();
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto(`${baseUrl}/he${route}`, { waitUntil: 'networkidle', timeout: 45_000 }).catch(() => {});
+  // A list page may navigate once more right after load (remembered filters
+  // are put back into the URL), which destroys the first evaluation context.
+  await page.waitForTimeout(600);
+  await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {});
   const ids = await page.evaluate(
     ({ pattern, limit }) => {
       const regex = new RegExp(pattern);
@@ -362,6 +374,51 @@ const flows = {
     return { ok, detail: box ? `x ${box.x} y ${box.y} w ${box.width} h ${box.height}` : 'no dialog box' };
   },
   /* ---- write flows: save something, see it, remove it --------------------- */
+  /* The seed makes no herbs, questionnaires or invoices, so the walk skips
+     their detail pages. These flows make one standing row of each on the
+     sandbox — created on the first run, only opened on later ones — and
+     the next plain run then opens billing/[id], forms/[id], herbs/[id]. */
+  async writeHerb(page) {
+    const name = 'בדיקה אוטומטית';
+    const existing = page.locator('main a[href*="/reference/herbs/"]', { hasText: name }).first();
+    if ((await existing.count()) > 0) return { ok: true, detail: 'standing test herb already there' };
+    await page.goto(new URL('/he/reference/herbs/new', page.url()).href, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => {});
+    await page.fill('#pinyin_name', 'Ce Shi Cao');
+    await page.fill('#hebrew_name', name);
+    await page.click('form button[type="submit"]');
+    const created = await page.waitForURL(/\/reference\/herbs\/[0-9a-f-]{36}$/, { timeout: 15_000 }).then(() => true).catch(() => false);
+    return { ok: created, detail: created ? 'created the standing test herb' : 'stayed on ' + page.url() };
+  },
+  async writeForm(page) {
+    const name = 'שאלון בדיקה אוטומטית';
+    const existing = page.locator('main a[href*="/forms/"]', { hasText: name }).first();
+    if ((await existing.count()) > 0) return { ok: true, detail: 'standing test questionnaire already there' };
+    await page.goto(new URL('/he/forms/new', page.url()).href, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => {});
+    await page.fill('#form_title', name);
+    await page.locator('main button', { hasText: /הוספת שאלה/ }).first().click();
+    await page.locator('input[id^="label-"]').first().fill('איך אתם מרגישים היום?');
+    await page.locator('main button', { hasText: /^שמירה$/ }).last().click();
+    const created = await page.waitForURL(/\/forms\/[0-9a-f-]{36}$/, { timeout: 15_000 }).then(() => true).catch(() => false);
+    return { ok: created, detail: created ? 'created the standing test questionnaire' : 'stayed on ' + page.url() };
+  },
+  async writeInvoice(page) {
+    // Invoice rows only: the page also links to /billing/new and /billing/settings.
+    const rows = page.locator('main a[href*="/billing/"]:not([href*="/billing/new"]):not([href*="/billing/settings"])');
+    if ((await rows.count()) > 0) return { ok: true, detail: 'an invoice already exists' };
+    await page.goto(new URL('/he/billing/new', page.url()).href, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => {});
+    const field = page.locator('main [role="combobox"]').first();
+    await field.fill('א');
+    const option = page.locator('[role="option"]').first();
+    await option.waitFor({ timeout: 5_000 });
+    await option.click();
+    await page.locator('main button[type="submit"]').first().click();
+    const created = await page.waitForURL(/\/billing\/[0-9a-f-]{36}$/, { timeout: 15_000 }).then(() => true).catch(() => false);
+    const editor = created ? await page.locator('main h1').first().textContent().catch(() => '') : '';
+    return { ok: created, detail: created ? 'opened a blank invoice: ' + (editor ?? '').trim() : 'stayed on ' + page.url() };
+  },
   async writePatient(page) {
     // One standing test patient, edited on every run rather than a new one
     // per run: the search finds it, or the first run creates it.
@@ -573,6 +630,9 @@ async function main() {
       await visit(context, { route: '/patients?q=%D7%91%D7%93%D7%99%D7%A7%D7%94&inactive=1', locale: 'he', width: desktop, label: 'flow write-patient', after: flows.writePatient });
       await visit(context, { route: '/', locale: 'he', width: desktop, label: 'flow write-task', after: flows.writeTask });
       await visit(context, { route: `/calendar?view=day&date=${tomorrow}&new=1`, locale: 'he', width: desktop, label: 'flow write-appointment', after: flows.writeAppointment });
+      await visit(context, { route: '/reference/herbs?q=%D7%91%D7%93%D7%99%D7%A7%D7%94', locale: 'he', width: desktop, label: 'flow write-herb', after: flows.writeHerb });
+      await visit(context, { route: '/forms', locale: 'he', width: desktop, label: 'flow write-form', after: flows.writeForm });
+      await visit(context, { route: '/billing', locale: 'he', width: desktop, label: 'flow write-invoice', after: flows.writeInvoice });
     }
 
     if (skipped.length) console.log(`\nskipped (no rows to open): ${skipped.join(', ')}`);
