@@ -40,6 +40,7 @@ import {
 } from '@/lib/display';
 import { ReferenceNav } from '@/features/reference/reference-nav';
 import { HerbImageCard } from '@/features/inventory/herb-image-card';
+import { referenceImageFor } from '@/features/inventory/herb-reference-image';
 import { OrderDialog } from '@/features/inventory/order-dialog';
 import { formatDate } from '@clinic/i18n';
 
@@ -299,6 +300,7 @@ export default async function HerbDetailPage({
             herbId={herb.id}
             imageUrl={herb.image_url}
             attribution={herb.image_attribution}
+            reference={referenceImageFor(herb)}
             alt={primary}
           />
 

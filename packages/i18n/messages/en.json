@@ -1387,6 +1387,8 @@
       "countHint": "{count} herbs awaiting review"
     },
     "image": {
+      "referenceCredit": "Photo: {author} · {source}",
+      "referenceNote": "A reference photo from the catalogue. Upload your own to replace it.",
       "title": "Image",
       "upload": "Upload image",
       "replace": "Replace image",
@@ -1984,6 +1986,23 @@
     "toSettings": "Go to payment settings"
   },
   "forms": {
+    "library": {
+      "button": "From the library",
+      "title": "Ready-made questionnaires",
+      "intro": "A questionnaire from the library is added to the clinic as it is, and can be edited afterwards like any other.",
+      "add": "Add to clinic",
+      "added": "The questionnaire was added. You can edit it here.",
+      "questions": "{count} questions",
+      "filedNote": "Every filled-in questionnaire is kept in the patient's file, under documents."
+    },
+    "rendered": {
+      "patient": "Patient",
+      "submittedAt": "Filled in on",
+      "signature": "Signature",
+      "noAnswer": "—",
+      "yes": "Yes",
+      "no": "No"
+    },
     "title": "Questionnaires",
     "subtitle": "Intake forms, follow-ups and outcome scales — each one built by you.",
     "newForm": "New form",

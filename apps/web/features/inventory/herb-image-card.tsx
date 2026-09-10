@@ -19,6 +19,7 @@ import {
 import { useRouter } from '@clinic/i18n/navigation';
 import { removeHerbImage, uploadHerbImage } from './image-actions';
 import { shrinkImage } from '@/lib/shrink-image';
+import type { ReferenceImage } from './herb-reference-image';
 
 /**
  * The herb's photograph, with upload and replace.
@@ -31,11 +32,14 @@ export function HerbImageCard({
   herbId,
   imageUrl,
   attribution,
+  reference = null,
   alt,
 }: {
   herbId: string;
   imageUrl: string | null;
   attribution: string | null;
+  /** The catalogue's own photograph, shown while the clinic has none. */
+  reference?: ReferenceImage | null;
   alt: string;
 }) {
   const t = useTranslations('inventory.image');
@@ -116,6 +120,27 @@ export function HerbImageCard({
                 {attribution}
               </figcaption>
             ) : null}
+          </figure>
+        ) : reference ? (
+          <figure>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={reference.src}
+              alt={alt}
+              className="aspect-square w-full rounded-lg border border-ink-100 object-cover"
+            />
+            {/* The credit is a condition of the licence, not decoration: the
+                photographer's name and the licence, with links to both. */}
+            <figcaption className="mt-1 text-xs text-ink-500">
+              <a href={reference.page} target="_blank" rel="noreferrer" className="underline-offset-2 hover:underline">
+                {t('referenceCredit', { author: reference.author, source: reference.source, licence: reference.licence })}
+              </a>
+              {' · '}
+              <a href={reference.licenceUrl} target="_blank" rel="noreferrer" className="underline-offset-2 hover:underline" dir="ltr">
+                {reference.licence}
+              </a>
+              <span className="block text-ink-500">{t('referenceNote')}</span>
+            </figcaption>
           </figure>
         ) : (
           <div className="flex aspect-square w-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-ink-200 bg-ink-50 text-ink-500">

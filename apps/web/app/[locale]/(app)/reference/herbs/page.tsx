@@ -26,6 +26,7 @@ import { getClinicScope } from '@/lib/session';
 import { herbBotanicalName, herbChineseName, herbPrimaryName } from '@/lib/display';
 import { ReferenceNav } from '@/features/reference/reference-nav';
 import { CatalogueSearch } from '@/features/reference/catalogue-search';
+import { referenceImageFor } from '@/features/inventory/herb-reference-image';
 import { CompareToggle, CompareTray } from '@/features/reference/compare-controls';
 import { HerbFilters } from '@/features/inventory/herb-filters';
 import { parseHerbFilters, type HerbSearchParams } from '@/features/inventory/herb-filter-params';
@@ -197,11 +198,12 @@ export default async function HerbsPage({
                     </Td>
                     <Td data-card-title>
                       <div className="flex items-start gap-3">
-                        {herb.image_url ? (
+                        {herb.image_url || referenceImageFor(herb) ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
-                            src={herb.image_url}
+                            src={herb.image_url ?? referenceImageFor(herb)!.src}
                             alt=""
+                            loading="lazy"
                             className="h-12 w-12 shrink-0 rounded-lg border border-ink-100 object-cover"
                           />
                         ) : (
