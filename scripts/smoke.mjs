@@ -228,7 +228,12 @@ async function visitOnce(context, { route, locale, width, label = route, expect4
     // screenshot shows data rather than a spinner.
     await page.waitForTimeout(900);
     try {
-      if (after) flow = await after(page);
+      if (after) {
+        flow = await after(page);
+        await page
+          .evaluate(() => Promise.all(document.getAnimations().map((animation) => animation.finished.catch(() => null))))
+          .catch(() => null);
+      }
     } catch (error) {
       bag.pageErrors.push(`harness: ${String(error?.message ?? error).slice(0, 300)}`);
     }
@@ -661,7 +666,9 @@ const flows = {
     await page.locator('#doc_category').selectOption('other').catch(() => {});
     await page.locator('main form:has(input[type="file"]) button[type="submit"]').first().click();
     if (!(await toast(/המסמך הועלה/))) return { ok: false, detail: 'no "uploaded" toast' };
-    const link = page.locator('main a[href^="/api/documents/"]').first();
+    const row = page.locator('main tr', { hasText: 'smoke-pixel.png' }).first();
+    await row.waitFor({ timeout: 10_000 });
+    const link = row.locator('a[href^="/api/documents/"]').first();
     await link.waitFor({ timeout: 10_000 });
     const href = await link.getAttribute('href');
     const response = await page.request.get(new URL(href, page.url()).href);
