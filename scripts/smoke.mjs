@@ -305,12 +305,23 @@ const flows = {
     return { ok: clickable, detail: `body clickable ${clickable}` };
   },
   async statusTileKeepsFilter(page) {
-    const tile = page.locator('main button[aria-pressed], main a[aria-current]').nth(1);
+    // The "no upcoming appointment" tile by its label: the display-mode
+    // switch also carries aria-pressed, and picking by position hit that.
+    const tile = page
+      .locator('main button[aria-pressed]', { hasText: /ללא תור עתידי|No upcoming/ })
+      .first();
     if ((await tile.count()) === 0) return { ok: true, detail: 'no tiles' };
-    await tile.click();
-    await page.waitForTimeout(900);
+    // In dev the first visit can still be hydrating after network idle, so a
+    // click may land before React listens; the filter is a URL change, and
+    // a second click after a short wait is the retry.
+    const filtered = /[?&](status|inactive|noUpcoming)=/;
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      await tile.click();
+      await page.waitForURL(filtered, { timeout: 8000 }).catch(() => {});
+      if (filtered.test(page.url())) break;
+    }
     const url = page.url();
-    return { ok: /[?&](status|inactive|noUpcoming)=/.test(url), detail: url };
+    return { ok: filtered.test(url), detail: url };
   },
   async patientTab(page) {
     const selected = await page.locator('[role="tab"][aria-selected="true"]').getAttribute('id');
