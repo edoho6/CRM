@@ -51,6 +51,25 @@ describe('renderSubmissionHtml', () => {
     expect(html).toContain('dir="rtl"');
   });
 
+  it('reads a stored date as day/month/year', () => {
+    const html = renderSubmissionHtml({
+      title: 't',
+      clinicName: 'c',
+      patientName: 'p',
+      submittedAt: 'now',
+      locale: 'he',
+      labels,
+      fields: [
+        field({ id: 'd', type: 'date', label: 'תאריך לידה' }),
+        field({ id: 'e', type: 'date', label: 'ריק' }),
+      ],
+      answers: { d: '1987-03-09' },
+    });
+    expect(html).toContain('<div class="answer">09/03/1987</div>');
+    expect(html).not.toContain('1987-03-09');
+    expect(html).toContain('<div class="answer">—</div>');
+  });
+
   it('only embeds a drawn signature that is really an image data URL', () => {
     const base = {
       title: 't',

@@ -51,7 +51,7 @@ function answerText(
   if (typeof value === 'number') return String(value);
   // A date answer is stored as YYYY-MM-DD; people read day/month/year.
   if (field.type === 'date') {
-    const m = /^(d{4})-(d{2})-(d{2})$/.exec(String(value));
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value));
     if (m) return `${m[3]}/${m[2]}/${m[1]}`;
   }
   return String(value);
