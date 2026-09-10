@@ -217,7 +217,11 @@ export default async function AccessLogPage({
                           {row.patient_name}
                         </Link>
                       ) : (
-                        <span className="text-ink-600">{t(`tables.${row.table_name}`)}</span>
+                        <span className="text-ink-600">
+                          {t.has(`tables.${row.table_name}`)
+                            ? t(`tables.${row.table_name}`)
+                            : row.table_name}
+                        </span>
                       )}
                     </Td>
                   </Tr>

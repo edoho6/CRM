@@ -33,6 +33,8 @@ const args = new Set(process.argv.slice(2));
 const publicOnly = args.has('--public-only');
 const desktopOnly = args.has('--desktop-only');
 const heOnly = args.has('--he-only');
+/** --only=/reports,/patients limits the walk to routes containing one of these. */
+const only = [...args].find((arg) => arg.startsWith('--only='))?.slice(7).split(',').filter(Boolean) ?? null;
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const env = readEnv(path.join(root, 'apps', 'web', '.env.test.local'));
@@ -97,11 +99,11 @@ function observe(page) {
     if (IGNORED_CONSOLE.some((pattern) => pattern.test(text))) return;
     if (message.type() === 'error') {
       const where = message.location()?.url ? ` @ ${message.location().url}` : '';
-      bag.consoleErrors.push(`${text.slice(0, 400)}${where}`);
+      bag.consoleErrors.push(`${text.slice(0, 2500)}${where}`);
     }
     else if (message.type() === 'warning') bag.consoleWarnings.push(text.slice(0, 300));
   });
-  page.on('pageerror', (error) => bag.pageErrors.push(String(error?.message ?? error).slice(0, 500)));
+  page.on('pageerror', (error) => bag.pageErrors.push(String(error?.message ?? error).slice(0, 4000)));
   page.on('response', (response) => {
     const status = response.status();
     const url = response.url();
@@ -142,6 +144,7 @@ async function inspect(page) {
 }
 
 async function visit(context, { route, locale, width, label = route, expect404 = false, before, after }) {
+  if (only && !only.some((needle) => route.includes(needle) || label.includes(needle))) return null;
   const page = await context.newPage();
   await page.setViewportSize({ width: width.width, height: width.height });
   const bag = observe(page);
@@ -156,12 +159,16 @@ async function visit(context, { route, locale, width, label = route, expect404 =
     const response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45_000 });
     httpStatus = response?.status() ?? null;
     await page.waitForLoadState('networkidle', { timeout: 20_000 }).catch(() => {});
-    await page.waitForTimeout(400);
+    // Client-side widgets fetch after hydration; give them a moment so the
+    // screenshot shows data rather than a spinner.
+    await page.waitForTimeout(900);
     if (after) flow = await after(page);
     finalUrl = page.url();
     inspection = await inspect(page);
     const file = `${locale}__${label.replace(/[^a-z0-9]+/gi, '_').replace(/^_|_$/g, '') || 'home'}__${width.name}.png`;
-    await page.screenshot({ path: path.join(shotDir, file), fullPage: true });
+    // `caret: 'initial'`: the default hides the caret by writing a style onto the
+    // focused input, which React then reports as a hydration mismatch.
+    await page.screenshot({ path: path.join(shotDir, file), fullPage: true, caret: 'initial' });
     inspection.screenshot = path.join('screenshots', file);
   } catch (error) {
     bag.pageErrors.push(`harness: ${String(error?.message ?? error).slice(0, 300)}`);
@@ -267,7 +274,9 @@ const flows = {
     await dialog.first().waitFor({ timeout: 5_000 });
     const patientField = await dialog.locator('#patient_id').count();
     await page.keyboard.press('Escape');
-    await page.waitForTimeout(400);
+    // Client-side widgets fetch after hydration; give them a moment so the
+    // screenshot shows data rather than a spinner.
+    await page.waitForTimeout(900);
     const clickable = await page.evaluate(() => getComputedStyle(document.body).pointerEvents !== 'none');
     return { ok: patientField === 1 && clickable, detail: `patient field ${patientField}, body clickable ${clickable}` };
   },

@@ -544,26 +544,38 @@ export const QUERIES: QueryDefinition[] = [
       'Returns nothing when the clinic keeps no stock.',
     parameters: { type: 'object', properties: {} },
     async run(client) {
+      // Two queries, not an embed: the stock level is a view, and PostgREST
+      // cannot follow a foreign key through a view, so `herb:herbs(...)` failed
+      // and this section showed "could not load" on every reports page.
       const data = rows(
         'low_stock',
         await client
-        .from('herb_stock_levels')
-        .select('total_remaining, default_unit, is_below_threshold, herb:herbs(pinyin_name)')
-        .eq('is_below_threshold', true)
-        .limit(200)
-        .returns<
-          {
-            total_remaining: number;
-            default_unit: string;
-            herb: { pinyin_name: string | null } | null;
-          }[]
-        >(),
+          .from('herb_stock_levels')
+          .select('herb_id, total_remaining, default_unit')
+          .eq('is_below_threshold', true)
+          .limit(200)
+          .returns<{ herb_id: string; total_remaining: number; default_unit: string }[]>(),
       );
+      const names = new Map<string, string | null>();
+      if (data.length > 0) {
+        const herbs = rows(
+          'low_stock',
+          await client
+            .from('herbs')
+            .select('id, pinyin_name')
+            .in(
+              'id',
+              data.map((row) => row.herb_id),
+            )
+            .returns<{ id: string; pinyin_name: string | null }[]>(),
+        );
+        for (const herb of herbs) names.set(herb.id, herb.pinyin_name);
+      }
 
       return result(
         ['herb', 'remaining', 'unit'],
         data.map((row) => ({
-          herb: row.herb?.pinyin_name ?? null,
+          herb: names.get(row.herb_id) ?? null,
           remaining: Number(row.total_remaining),
           unit: row.default_unit,
         })),

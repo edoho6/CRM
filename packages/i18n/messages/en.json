@@ -1628,6 +1628,16 @@
         "sign": "Signed"
       },
       "tables": {
+        "patient_medical_history": "Medical history",
+        "patient_consents": "Consent",
+        "consent_documents": "Consent document",
+        "form_templates": "Questionnaire",
+        "form_submissions": "Questionnaire answers",
+        "treatment_confirmations": "Treatment confirmation",
+        "treatment_protocols": "Protocol",
+        "patient_packages": "Package",
+        "package_redemptions": "Package redemption",
+        "patient_tag_links": "Patient tag",
         "patients": "Patient",
         "encounters": "Treatment",
         "tcm_notes": "Clinical note",

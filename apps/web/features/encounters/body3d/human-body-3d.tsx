@@ -172,7 +172,7 @@ export function HumanBody3D({
             dir="ltr"
             role="img"
             aria-label={t('sceneLabel', { count: instances.length })}
-            className="relative h-[26rem] w-full overflow-hidden rounded-md"
+            className="relative h-[20rem] w-full overflow-hidden rounded-md sm:h-[22rem]"
           >
             <SceneErrorBoundary
               key={attempt}

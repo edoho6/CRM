@@ -1628,6 +1628,16 @@
         "sign": "חתימה"
       },
       "tables": {
+        "patient_medical_history": "היסטוריה רפואית",
+        "patient_consents": "הסכמה",
+        "consent_documents": "מסמך הסכמה",
+        "form_templates": "שאלון",
+        "form_submissions": "תשובות לשאלון",
+        "treatment_confirmations": "אישור טיפול",
+        "treatment_protocols": "פרוטוקול",
+        "patient_packages": "כרטיסייה",
+        "package_redemptions": "מימוש כרטיסייה",
+        "patient_tag_links": "תגית מטופל",
         "patients": "מטופל",
         "encounters": "טיפול",
         "tcm_notes": "רשומה קלינית",

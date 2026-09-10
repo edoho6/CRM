@@ -1,5 +1,5 @@
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
-import { Alert, Card, CardBody, Table, TableWrapper, Td, Th, Tr } from '@clinic/ui';
+import { Alert, Card, CardBody, Dash, Table, TableWrapper, Td, Th, Tr } from '@clinic/ui';
 import { Link } from '@clinic/i18n/navigation';
 import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
@@ -215,6 +215,7 @@ export default async function ReportsPage({
                 last_treatment: t('columns.lastTreatment'),
                 status: t('columns.status'),
               }}
+              cells={{ status: (value) => safeStatus(String(value ?? ''), tStatus) }}
               emptyLabel={t('noData')}
             />
 
@@ -460,6 +461,7 @@ function ListCard({
   unavailableLabel,
   failed,
   footer,
+  cells = {},
 }: {
   title: string;
   hint?: string;
@@ -469,6 +471,8 @@ function ListCard({
   unavailableLabel: string;
   failed?: boolean;
   footer?: React.ReactNode;
+  /** How to write a column's raw value — a status code as its name, say. */
+  cells?: Record<string, (value: unknown) => string>;
 }) {
   const rows = result?.rows ?? [];
   const columns = result?.columns ?? [];
@@ -509,7 +513,11 @@ function ListCard({
                           dir={isNumber ? 'ltr' : 'auto'}
                           className={isNumber ? 'tabular-nums' : undefined}
                         >
-                          {value === null || value === '' ? '—' : String(value)}
+                          {value === null || value === '' ? (
+                            <Dash />
+                          ) : (
+                            (cells[column]?.(value) ?? String(value))
+                          )}
                         </Td>
                       );
                     })}

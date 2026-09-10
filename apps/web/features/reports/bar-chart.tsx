@@ -123,7 +123,10 @@ export function BarChart({
                       fill={`var(--color-series-${seriesIndex + 1})`}
                     >
                       <title>
-                        {label} · {entry.label} · {formatValue(value)}
+                        {/* One string, not three text nodes: React hydrates an SVG
+                            title with several children as a mismatch and rebuilds
+                            the whole page on the client. */}
+                        {`${label} · ${entry.label} · ${formatValue(value)}`}
                       </title>
                     </rect>
                   );
