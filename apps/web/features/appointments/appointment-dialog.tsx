@@ -90,6 +90,20 @@ export interface AppointmentDraft {
  * what the dialog is opened for on the day, and it belongs above the fields
  * rather than under them.
  */
+/**
+ * Opens the browser's own date-and-time picker for the field that was clicked.
+ * The native control opens it only from the small icon at its end; a click
+ * anywhere in the box is what people try first.
+ */
+function openNativePicker(event: React.MouseEvent<HTMLInputElement>) {
+  const input = event.currentTarget as HTMLInputElement & { showPicker?: () => void };
+  try {
+    input.showPicker?.();
+  } catch {
+    // Not every browser offers one; the field still takes typed input.
+  }
+}
+
 export function AppointmentDialog({
   open,
   draft,
@@ -532,11 +546,15 @@ export function AppointmentDialog({
             </Field>
 
             <Field label={t('startAt')} htmlFor="start_at" required>
+              {/* A click anywhere in the box opens the date-and-time picker, not
+                  only the small icon at its end; Tab still lands in the field
+                  for typing. */}
               <LtrInput
                 id="start_at"
                 type="datetime-local"
                 value={start}
                 onChange={(event) => handleStartChange(event.target.value)}
+                onClick={openNativePicker}
                 required
               />
             </Field>
@@ -547,6 +565,7 @@ export function AppointmentDialog({
                 type="datetime-local"
                 value={end}
                 onChange={(event) => setEnd(event.target.value)}
+                onClick={openNativePicker}
                 required
               />
             </Field>

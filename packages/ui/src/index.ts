@@ -68,6 +68,7 @@ export {
 export { TableWrapper, Table, Th, Td, Tr } from './table';
 export { TableSizeControl, type TableSize } from './table-size';
 export { UiLabelsProvider, useUiLabels, type UiLabels } from './ui-labels';
+export { DateInput, toDisplayDate, fromDisplayDate, maskDate, type DateInputLabels } from './date-input';
 export { SortableTable, SortTh, SortBody } from './sortable-table';
 export {
   compareSortValues,

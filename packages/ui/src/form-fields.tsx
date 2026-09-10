@@ -5,6 +5,7 @@ import type { FormField } from '@clinic/domain';
 import { cn } from './cn';
 import { Card, CardBody } from './card';
 import { Field, Input, LtrInput, Select, Textarea } from './field';
+import { DateInput } from './date-input';
 
 /**
  * The questions of a form, rendered.
@@ -97,9 +98,11 @@ export function FormFields({
                     }
                   />
                 ) : field.type === 'date' ? (
-                  <LtrInput
+                  /* Day/month/year typed, whatever language the browser is in;
+                     the answer stored stays YYYY-MM-DD. */
+                  <DateInput
                     id={`in-${field.id}`}
-                    type="date"
+                    compact={false}
                     disabled={readOnly}
                     value={String(value ?? '')}
                     onChange={(e) => set(field.id, e.target.value)}

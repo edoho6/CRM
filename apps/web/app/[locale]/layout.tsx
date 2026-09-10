@@ -137,6 +137,11 @@ export default async function LocaleLayout({
                       regular: t('tableSize.regular'),
                       large: t('tableSize.large'),
                     },
+                    dateInput: {
+                      placeholder: t('dateInput.placeholder'),
+                      openCalendar: t('dateInput.openCalendar'),
+                      invalid: t('dateInput.invalid'),
+                    },
                   }}
                 >
                   {children}

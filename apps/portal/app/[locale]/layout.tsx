@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server';
 import { getDirection, isLocale, locales } from '@clinic/i18n';
-import { ConfirmProvider, ToastProvider, UiDirectionProvider } from '@clinic/ui';
+import { ConfirmProvider, ToastProvider, UiDirectionProvider, UiLabelsProvider } from '@clinic/ui';
 import '../globals.css';
 
 /* The same font as the staff app, declared separately because these are two
@@ -60,7 +60,19 @@ export default async function PortalLocaleLayout({
                 cancelLabel={t('cancel')}
                 closeLabel={t('close')}
               >
-                {children}
+                {/* Words for controls inside shared primitives — the date
+                    field in a questionnaire — so no screen passes them itself. */}
+                <UiLabelsProvider
+                  labels={{
+                    dateInput: {
+                      placeholder: t('dateInput.placeholder'),
+                      openCalendar: t('dateInput.openCalendar'),
+                      invalid: t('dateInput.invalid'),
+                    },
+                  }}
+                >
+                  {children}
+                </UiLabelsProvider>
               </ConfirmProvider>
             </ToastProvider>
           </UiDirectionProvider>
