@@ -74,7 +74,7 @@ export default async function PlatformPage({ params }: { params: Promise<{ local
                     last: row.last_booking_at ? new Date(row.last_booking_at).getTime() : null,
                   }}
                 >
-                  <Td>
+                  <Td data-card-title>
                     <span className="flex items-center gap-2">
                       <span className="font-medium text-ink-900" dir="auto">
                         {row.name}

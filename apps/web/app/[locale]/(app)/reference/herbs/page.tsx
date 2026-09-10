@@ -195,7 +195,7 @@ export default async function HerbsPage({
                         label={herbPrimaryName(herb, locale as Locale)}
                       />
                     </Td>
-                    <Td>
+                    <Td data-card-title>
                       <div className="flex items-start gap-3">
                         {herb.image_url ? (
                           // eslint-disable-next-line @next/next/no-img-element

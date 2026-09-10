@@ -344,7 +344,9 @@ async function RevenueCard({
     <ReportCard
       title={t('revenue')}
       failed={result === null}
-      headline={money(billed)}
+      // No invoices in the range is an absence, not a total of zero shekels;
+      // "₪0.00" over "no data" said both at once.
+      headline={rows.length === 0 ? undefined : money(billed)}
       // Outstanding is stated rather than drawn: it is the gap between the two
       // bars, and a third bar for a difference is a bar that double-counts.
       hint={outstanding > 0 ? t('outstandingTotal', { amount: money(outstanding) }) : undefined}

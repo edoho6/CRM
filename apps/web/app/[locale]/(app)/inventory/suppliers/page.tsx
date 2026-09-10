@@ -71,7 +71,7 @@ export default async function SuppliersPage({ params }: { params: Promise<{ loca
                     status: supplier.is_active ? 0 : 1,
                   }}
                 >
-                  <Td className="font-medium text-ink-900">{supplier.name}</Td>
+                  <Td data-card-title className="font-medium text-ink-900">{supplier.name}</Td>
                   <Td>{supplier.contact_name ?? <Dash />}</Td>
                   <Td>
                     {supplier.phone ? (

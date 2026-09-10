@@ -104,7 +104,7 @@ export default async function BatchesPage({ params }: { params: Promise<{ locale
                       location: batch.storage_location,
                     }}
                   >
-                    <Td>
+                    <Td data-card-title>
                       {batch.herb ? (
                         <Link
                           href={`/reference/herbs/${batch.herb.id}`}

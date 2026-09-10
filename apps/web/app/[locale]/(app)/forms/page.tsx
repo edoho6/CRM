@@ -99,7 +99,7 @@ export default async function FormsPage({ params }: { params: Promise<{ locale: 
                       updated: new Date(template.updated_at).getTime(),
                     }}
                   >
-                    <Td>
+                    <Td data-card-title>
                       <Link
                         href={`/forms/${template.id}`}
                         className="font-medium text-jade-800 underline-offset-2 hover:underline"

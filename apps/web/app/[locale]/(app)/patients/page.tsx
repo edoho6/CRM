@@ -310,7 +310,7 @@ export default async function PatientsPage({
                       status: t(`status.${patient.treatment_status ?? 'active'}`),
                     }}
                   >
-                    <Td>
+                    <Td data-card-title>
                       <Link
                         href={`/patients/${patient.id}`}
                         className="font-medium text-jade-800 underline-offset-2 hover:underline"

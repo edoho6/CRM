@@ -191,7 +191,8 @@
   בלחיצה דרך `SegmentedControl`; רשימה ארוכה מדפדפת עם `components/pagination.tsx`
   (`pageFrom`/`pageRange` + `count: 'exact'`), לא `limit` שקט, ומקבלת `RememberQuery`
   (`components/remember-query.tsx`) כדי שהמסננים יחזרו בביקור הבא באותה לשונית; טבלת רשימה מקבלת
-  `<TableWrapper responsive>` כדי להפוך לכרטיסים בטלפון; שדה קטן בתוך שורה הוא
+  `<TableWrapper responsive>` כדי להפוך לכרטיסים בטלפון, והתא שמזהה את השורה מסומן
+  `<Td data-card-title>` (כותרת הכרטיס; תא שכולו `<Dash/>` נעלם בטלפון); שדה קטן בתוך שורה הוא
   `compact`, לא `h-7` ידני. סולם טקסט: h1 `text-xl`, כותרת כרטיס `text-base`, גוף
   `text-sm`, כיתוב `text-xs` — **אין `text-[Npx]`**
 

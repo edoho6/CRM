@@ -154,7 +154,7 @@ export default async function FormulasPage({
                         label={formulaPrimaryName(formula, locale as Locale)}
                       />
                     </Td>
-                    <Td>
+                    <Td data-card-title>
                       <Link
                         href={`/reference/formulas/${formula.id}`}
                         className="flex items-baseline gap-2 underline-offset-2 hover:underline"

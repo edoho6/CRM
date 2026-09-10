@@ -241,7 +241,7 @@ export default async function EncountersPage({
                     payment: payments.get(encounter.id)?.payment_state ?? 'unbilled',
                   }}
                 >
-                  <Td className="w-28 pe-1">
+                  <Td className="w-28 pe-1" data-card-title>
                     <Link
                       href={`/encounters/${encounter.id}`}
                       className="font-medium text-jade-800 underline-offset-2 hover:underline"

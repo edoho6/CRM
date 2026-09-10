@@ -57,10 +57,14 @@ export function BarChart({
   // would be the dual-axis mistake wearing a different hat.
   const max = Math.max(1, ...series.flatMap((entry) => entry.values));
 
-  /* Every label would collide at any real number of months, so only the first,
-     the last and roughly the middle are printed. */
+  /* Up to six months every label fits; past that they would collide, so only
+     the first, the last and roughly the middle are printed. Four bars with
+     three labels read as a missing month, not as thinning. */
   const labelAt = (index: number) =>
-    index === 0 || index === labels.length - 1 || index === Math.floor((labels.length - 1) / 2);
+    labels.length <= 6 ||
+    index === 0 ||
+    index === labels.length - 1 ||
+    index === Math.floor((labels.length - 1) / 2);
 
   return (
     <div className="space-y-2">

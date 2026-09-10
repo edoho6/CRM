@@ -177,7 +177,7 @@ export function PatientStatusSummary({ counts }: { counts: StatusCounts }) {
       label={t('kpi.view')}
       value={mode}
       onChange={chooseMode}
-      className="shrink-0"
+      className="shrink-0 self-end sm:self-auto"
       options={MODES.map((candidate) => {
         const Icon = MODE_ICONS[candidate];
         return {
@@ -189,8 +189,10 @@ export function PatientStatusSummary({ counts }: { counts: StatusCounts }) {
     />
   );
 
+  // On a phone the switcher drops under the tiles: beside them it took half
+  // the width and left nine tiles squeezed into the other half.
   return (
-    <div className="flex items-start justify-between gap-3">
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
       <div className="min-w-0 flex-1">
         {mode === 'tiles' ? (
           <div className="space-y-1.5">
@@ -224,8 +226,10 @@ export function PatientStatusSummary({ counts }: { counts: StatusCounts }) {
 }
 
 function TileRow({ items }: { items: Item[] }) {
+  // Two even columns on a phone: nine tiles of uneven width wrapping freely
+  // left a lone tile on the last row and no pattern to scan.
   return (
-    <div className="flex flex-wrap gap-1.5">
+    <div className="grid grid-cols-2 gap-1.5 sm:flex sm:flex-wrap">
       {items.map((item) => {
         const style = TONES[item.tone];
         return (

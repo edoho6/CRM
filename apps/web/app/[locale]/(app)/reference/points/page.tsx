@@ -120,7 +120,7 @@ export default async function PointsPage({
                   <Td className="w-10">
                     <CompareToggle kind="point" id={point.id} label={point.code} />
                   </Td>
-                  <Td>
+                  <Td data-card-title>
                     <Link
                       href={`/reference/points/${point.id}`}
                       className="text-base font-semibold text-jade-800 underline-offset-2 hover:underline"

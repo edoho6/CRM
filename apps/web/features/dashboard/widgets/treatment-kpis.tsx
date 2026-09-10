@@ -273,7 +273,7 @@ function TreatmentKpisWidget({ size }: WidgetProps<Record<string, never>>) {
 
   return (
     <div className="flex h-full flex-col">
-      <div className={cn('grid gap-3', compact ? 'grid-cols-1' : 'grid-cols-3')}>
+      <div className={cn('grid gap-3', compact ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-3')}>
         {periods.map((period) => {
           const stat = stats[period.key];
           const isOpen = openPeriod === period.key;

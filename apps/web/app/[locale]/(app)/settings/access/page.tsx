@@ -198,7 +198,7 @@ export default async function AccessLogPage({
                       record: row.patient_name ?? row.table_name,
                     }}
                   >
-                    <Td>
+                    <Td data-card-title>
                       <span dir="ltr" className="tabular-nums text-ink-700">
                         {formatDateTime(new Date(row.changed_at))}
                       </span>

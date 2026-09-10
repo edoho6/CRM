@@ -244,7 +244,7 @@ export default async function StockRoomPage({
                         added: new Date(entry.created_at).getTime(),
                       }}
                     >
-                      <Td>
+                      <Td data-card-title>
                         <Link
                           href={href}
                           className="font-medium text-jade-800 underline-offset-2 hover:underline"

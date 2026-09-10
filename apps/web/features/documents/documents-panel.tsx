@@ -223,7 +223,7 @@ export function DocumentsPanel({
                       shared: document.shared_with_patient,
                     }}
                   >
-                    <Td>
+                    <Td data-card-title>
                       <span className="flex items-center gap-2">
                         <FileText className="h-4 w-4 shrink-0 text-ink-500" aria-hidden />
                         <span className="min-w-0">

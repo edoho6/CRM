@@ -672,6 +672,20 @@
   .table-cards td + td {
     border-top: 1px solid var(--color-ink-100);
   }
+  /* The cell marked as the card's title reads as one — no column label,
+     heavier type — and a cell whose whole content is a dash is a row that
+     says "nothing"; on a phone that is space, not information. */
+  .table-cards td[data-card-title] {
+    justify-content: flex-start;
+    font-weight: 600;
+    font-size: 0.9375rem;
+  }
+  .table-cards td[data-card-title]::before {
+    display: none;
+  }
+  .table-cards td:has(> [data-dash]:only-child) {
+    display: none;
+  }
 }
 
 /*

@@ -131,7 +131,12 @@ export function DetailRow({
  */
 export function Dash({ label, className }: { label?: string; className?: string }) {
   return (
-    <span aria-hidden={label ? undefined : true} aria-label={label} className={cn('text-ink-400', className)}>
+    <span
+      data-dash
+      aria-hidden={label ? undefined : true}
+      aria-label={label}
+      className={cn('text-ink-400', className)}
+    >
       —
     </span>
   );

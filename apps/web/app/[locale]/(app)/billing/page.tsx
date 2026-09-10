@@ -102,7 +102,7 @@ export default async function BillingPage({ params }: { params: Promise<{ locale
                     status: t(`status.${invoice.status}`),
                   }}
                 >
-                  <Td>
+                  <Td data-card-title>
                     <Link
                       href={`/billing/${invoice.id}`}
                       className="font-medium text-jade-800 underline-offset-2 hover:underline"

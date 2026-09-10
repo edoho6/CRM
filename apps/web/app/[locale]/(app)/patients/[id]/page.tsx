@@ -346,7 +346,7 @@ export default async function PatientDetailPage({
                     the far end of the row — the one place in the app where
                     the thing you look at and the thing you click were
                     different cells. */}
-                <Td>
+                <Td data-card-title>
                   <Link
                     href={`/encounters/${encounter.id}`}
                     className="font-medium text-jade-800 underline-offset-2 hover:underline"
