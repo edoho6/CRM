@@ -158,8 +158,13 @@ export function Popover({
             ref={panelRef}
             role="dialog"
             aria-label={panelLabel}
+            data-floating
             style={{
               position: 'fixed',
+              // A modal dialog turns pointer events off for everything outside
+              // itself, and this panel lives in <body>: without this, a click
+              // on it inside a dialog lands on nothing.
+              pointerEvents: 'auto',
               top: position?.top ?? -9999,
               left: position?.left ?? -9999,
               width,
@@ -322,7 +327,10 @@ export const FloatingList = React.forwardRef<
     <ul
       {...props}
       ref={ref}
-      style={style}
+      data-floating
+      // See the Popover panel: inside a modal dialog the body has no pointer
+      // events, and a list nobody can click is a list that only works by keyboard.
+      style={{ ...style, pointerEvents: 'auto' }}
       className={cn(
         'z-popover overflow-y-auto overscroll-contain rounded-lg border border-ink-200 bg-white py-1 shadow-lg',
         'transition-[opacity,translate] duration-(--duration-fast) ease-standard starting:translate-y-1 starting:opacity-0',

@@ -20,7 +20,9 @@
  * The browser is the Edge already installed on Windows (`channel: 'msedge'`);
  * set PW_CHANNEL=chromium after `npx playwright install chromium` to use that.
  *
- * Usage:  node scripts/smoke.mjs [--public-only] [--desktop-only] [--he-only]
+ * Usage:  node scripts/smoke.mjs [--public-only] [--desktop-only] [--he-only] [--write]
+ * --write adds flows that save, then remove, a patient edit, a task and an
+ * appointment — the paths a screenshot cannot judge. Sandbox clinic only.
  * Output: test-results/smoke/<timestamp>/{report.json, summary.md, screenshots/}
  */
 
@@ -33,6 +35,8 @@ const args = new Set(process.argv.slice(2));
 const publicOnly = args.has('--public-only');
 const desktopOnly = args.has('--desktop-only');
 const heOnly = args.has('--he-only');
+/** --write also runs the flows that create and delete rows (sandbox clinic only). */
+const writeFlows = args.has('--write');
 /** --only=/reports,/patients limits the walk to routes containing one of these. */
 const only = [...args].find((arg) => arg.startsWith('--only='))?.slice(7).split(',').filter(Boolean) ?? null;
 
@@ -357,6 +361,89 @@ const flows = {
     const ok = Boolean(box && viewport && Math.abs(box.y + box.height - viewport.height) < 2 && box.width >= viewport.width - 1);
     return { ok, detail: box ? `x ${box.x} y ${box.y} w ${box.width} h ${box.height}` : 'no dialog box' };
   },
+  /* ---- write flows: save something, see it, remove it --------------------- */
+  async writePatient(page) {
+    // One standing test patient, edited on every run rather than a new one
+    // per run: the search finds it, or the first run creates it.
+    const name = 'בדיקה אוטומטית';
+    const stamp = new Date().toISOString().slice(0, 16);
+    const existing = page.locator('main a[href*="/patients/"]', { hasText: name }).first();
+    if ((await existing.count()) > 0) {
+      await existing.click();
+      await page.waitForURL(/\/patients\/[0-9a-f-]{36}$/, { timeout: 15_000 });
+      await page.locator('main a[href$="/edit"]').first().click();
+      await page.waitForURL(/\/edit$/, { timeout: 15_000 });
+      await page.fill('#occupation', `smoke ${stamp}`);
+      await page.click('form button[type="submit"]');
+      const saved = await page.locator('[role="status"], [role="alert"]', { hasText: /נשמר|Saved/ }).first().waitFor({ timeout: 10_000 }).then(() => true).catch(() => false);
+      return { ok: saved, detail: saved ? 'edited the standing test patient' : 'no "saved" toast after edit: ' + page.url() };
+    }
+    await page.goto(new URL('/he/patients/new', page.url()).href, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => {});
+    await page.fill('#first_name', 'בדיקה');
+    await page.fill('#last_name', 'אוטומטית');
+    // A phone in a range no carrier allocates, like the seed's own.
+    await page.fill('#phone', '050-0000099');
+    await page.fill('#occupation', `smoke ${stamp}`);
+    await page.click('form button[type="submit"]');
+    const created = await page.waitForURL(/\/patients\/[0-9a-f-]{36}$/, { timeout: 15_000 }).then(() => true).catch(() => false);
+    const h1 = (await page.locator('h1').first().textContent().catch(() => '')) ?? '';
+    return { ok: created && h1.includes('בדיקה'), detail: created ? 'created: ' + h1.trim() : 'stayed on ' + page.url() };
+  },
+  async writeTask(page) {
+    const title = `בדיקה אוטומטית ${Date.now()}`;
+    const input = page.getByPlaceholder('מה צריך לעשות?').first();
+    await input.fill(title);
+    await input.press('Enter');
+    const row = page.locator('main li', { hasText: title }).first();
+    const appeared = await row.waitFor({ timeout: 10_000 }).then(() => true).catch(() => false);
+    if (!appeared) return { ok: false, detail: 'task never appeared in the widget' };
+    await row.locator('button[aria-label="מחיקה"]').first().click();
+    const gone = await row.waitFor({ state: 'detached', timeout: 10_000 }).then(() => true).catch(() => false);
+    return { ok: gone, detail: gone ? 'task created and deleted' : 'task still listed after delete' };
+  },
+  async writeAppointment(page) {
+    // Books tomorrow 10:00 for the first patient the list offers, sees it
+    // drawn on the day, and deletes it. A 10:00 left over from an earlier
+    // run is deleted first, or the booking would collide with it.
+    const toast = (pattern) => page.locator('[role="status"], [role="alert"]', { hasText: pattern }).first().waitFor({ timeout: 10_000 }).then(() => true).catch(() => false);
+    const blockAtTen = () => page.locator('main button.absolute', { hasText: '10:00' }).first();
+    const deleteBlock = async (block) => {
+      await block.click();
+      const edit = page.locator('[role="dialog"]').first();
+      await edit.waitFor({ timeout: 5_000 });
+      await edit.locator('button', { hasText: /^מחיקה$/ }).first().click();
+      await page.locator('[role="dialog"]').last().locator('button', { hasText: /^מחיקה$/ }).last().click();
+      return toast(/התור נמחק/);
+    };
+
+    const dialog = page.locator('[role="dialog"]').first();
+    await dialog.waitFor({ timeout: 5_000 });
+    if ((await blockAtTen().count()) > 0) {
+      await page.keyboard.press('Escape');
+      await page.waitForTimeout(400);
+      if (!(await deleteBlock(blockAtTen()))) return { ok: false, detail: 'could not clear a leftover 10:00 booking' };
+      await blockAtTen().waitFor({ state: 'detached', timeout: 10_000 }).catch(() => {});
+      await page.locator('main a[href*="new=1"], main button', { hasText: /תור חדש/ }).first().click();
+      await dialog.waitFor({ timeout: 5_000 });
+    }
+
+    await dialog.locator('#patient_id').fill('א');
+    const option = page.locator('[role="option"]').first();
+    await option.waitFor({ timeout: 5_000 });
+    const chosen = ((await option.textContent()) ?? '').trim();
+    await option.click();
+    const day = new URL(page.url()).searchParams.get('date');
+    await page.fill('#start_at', `${day}T10:00`);
+    await dialog.locator('button[type="submit"]').click();
+    if (!(await toast(/התור נקבע/))) return { ok: false, detail: 'no "booked" toast; dialogs open: ' + (await page.locator('[role="dialog"]').count()) };
+
+    // The diary redraws through a server refresh, which in dev takes a moment.
+    const drawn = await blockAtTen().waitFor({ timeout: 15_000 }).then(() => true).catch(() => false);
+    if (!drawn) return { ok: false, detail: 'booked, but the appointment is not drawn on the day within 15 s' };
+    const removed = await deleteBlock(blockAtTen());
+    return { ok: removed, detail: removed ? `booked ${chosen} at 10:00, saw it drawn, deleted it` : 'delete gave no toast' };
+  },
   async patientTab(page) {
     const selected = await page.locator('[role="tab"][aria-selected="true"]').getAttribute('id');
     const ok = /encounters/.test(selected ?? '') || (await page.locator('[role="tab"][aria-selected="true"]').textContent())?.includes('טיפול');
@@ -479,6 +566,13 @@ async function main() {
         before: (page) => page.addInitScript(() => localStorage.setItem('herbalist-theme', 'dark')),
         after: flows.darkModeApplied,
       });
+    }
+
+    if (writeFlows) {
+      const tomorrow = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
+      await visit(context, { route: '/patients?q=%D7%91%D7%93%D7%99%D7%A7%D7%94&inactive=1', locale: 'he', width: desktop, label: 'flow write-patient', after: flows.writePatient });
+      await visit(context, { route: '/', locale: 'he', width: desktop, label: 'flow write-task', after: flows.writeTask });
+      await visit(context, { route: `/calendar?view=day&date=${tomorrow}&new=1`, locale: 'he', width: desktop, label: 'flow write-appointment', after: flows.writeAppointment });
     }
 
     if (skipped.length) console.log(`\nskipped (no rows to open): ${skipped.join(', ')}`);

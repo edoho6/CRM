@@ -24,7 +24,8 @@ import {
 /** `''` from an unselected <select> becomes null rather than failing the enum. */
 const optionalEnum = <T extends readonly [string, ...string[]]>(values: T) =>
   z
-    .union([z.enum(values), z.literal(''), z.null(), z.undefined()])
+    .union([z.enum(values), z.literal(''), z.null()])
+    .optional()
     .transform((value) => (value ? value : null));
 
 /** Master catalogue entry for a single herb / granule / patent product. */

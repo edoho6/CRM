@@ -23,16 +23,13 @@ import { optionalNumber, optionalText, requiredText } from './common';
 export const acupuncturePointSchema = z.object({
   point: requiredText(24),
   point_id: z
-    .union([z.string().uuid(), z.literal(''), z.null(), z.undefined()])
+    .union([z.string().uuid(), z.literal(''), z.null()])
+    .optional()
     .transform((value) => (value ? value : null)),
   // Read leniently: a note saved before placements existed carries one of the
   // five old flat regions, and it has to keep opening. The translation happens
   // here rather than in the editor so every reader of a note gets it.
-  region: z
-    .unknown()
-    .transform(toPointPlacement)
-    .pipe(z.enum(POINT_PLACEMENTS))
-    .default('right'),
+  region: z.unknown().transform(toPointPlacement).pipe(z.enum(POINT_PLACEMENTS)).default('right'),
   side: z.enum(POINT_SIDES).optional(),
   technique: z.enum(NEEDLE_TECHNIQUES).default('even'),
   retention_minutes: optionalNumber,
@@ -97,7 +94,8 @@ export type EncounterFormValues = z.input<typeof encounterFormSchema>;
 /** One herb in a protocol's prescription, in the shape `record_prescription` takes. */
 export const protocolHerbSchema = z.object({
   herb_id: z
-    .union([z.string().uuid(), z.literal(''), z.null(), z.undefined()])
+    .union([z.string().uuid(), z.literal(''), z.null()])
+    .optional()
     .transform((value) => (value ? value : null)),
   // Kept alongside the id so a protocol still reads correctly if the herb is
   // later removed from the catalogue, and so a herb that was never in it — a

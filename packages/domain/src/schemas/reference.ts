@@ -49,7 +49,8 @@ export const acupuncturePointFormSchema = z.object({
   bilateral: z.boolean().default(true),
   default_region: z.enum(POINT_REGIONS).default('upper'),
   body_area: z
-    .union([z.enum(POINT_BODY_AREAS), z.literal(''), z.null(), z.undefined()])
+    .union([z.enum(POINT_BODY_AREAS), z.literal(''), z.null()])
+    .optional()
     .transform((value) => (value ? value : null)),
   location: optionalText(2000),
   actions: optionalText(2000),
@@ -72,7 +73,8 @@ export const orderListEntrySchema = z
     herb_id: z.union([uuidField, z.literal(''), z.null()]).transform((v) => (v ? v : null)),
     formula_id: z.union([uuidField, z.literal(''), z.null()]).transform((v) => (v ? v : null)),
     quantity: z
-      .union([z.string(), z.number(), z.null(), z.undefined()])
+      .union([z.string(), z.number(), z.null()])
+      .optional()
       .transform((v) => (v === null || v === undefined || v === '' ? null : Number(v)))
       .refine((v) => v === null || (Number.isFinite(v) && v > 0), { error: 'invalid_quantity' }),
     // `dose` used to be appended here because the unit list did not carry it.

@@ -4,6 +4,7 @@ import * as React from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { X } from 'lucide-react';
 import { cn } from './cn';
+import { isInsideFloatingPanel } from './dialog';
 import { focusRing } from './focus';
 
 /**
@@ -31,6 +32,8 @@ export function SheetContent({
   description,
   closeLabel = 'Close',
   side = 'start',
+  onPointerDownOutside,
+  onFocusOutside,
   ...props
 }: React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & {
   title: React.ReactNode;
@@ -50,6 +53,14 @@ export function SheetContent({
           'data-[state=open]:animate-sheet-in data-[state=closed]:animate-sheet-out',
           className,
         )}
+        onPointerDownOutside={(event) => {
+          if (isInsideFloatingPanel(event.detail.originalEvent)) event.preventDefault();
+          onPointerDownOutside?.(event);
+        }}
+        onFocusOutside={(event) => {
+          if (isInsideFloatingPanel(event.detail.originalEvent)) event.preventDefault();
+          onFocusOutside?.(event);
+        }}
         {...props}
       >
         <div className="flex items-center justify-between gap-4 border-b border-ink-100 px-4 py-3">

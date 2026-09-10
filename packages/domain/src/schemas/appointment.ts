@@ -15,10 +15,12 @@ export const appointmentFormSchema = z
     status: z.enum(APPOINTMENT_STATUSES).default('scheduled'),
     /** The room, when the clinic has any. Empty from a <select> means none. */
     room_id: z
-      .union([uuidField, z.literal(""), z.null(), z.undefined()])
+      .union([uuidField, z.literal(''), z.null()])
+      .optional()
       .transform((v) => (v ? v : null)),
     location_id: z
-      .union([uuidField, z.literal(''), z.null(), z.undefined()])
+      .union([uuidField, z.literal(''), z.null()])
+      .optional()
       .transform((value) => (value ? value : null)),
     location: optionalText(160),
     notes: optionalText(2000),
@@ -149,8 +151,7 @@ export const closurePeriodSchema = z
     (value) => {
       // A year is past anything a clinic closes for in one go, and the cap is
       // what stops a mistyped year writing thousands of rows.
-      const days =
-        (Date.parse(value.to) - Date.parse(value.from)) / 86_400_000;
+      const days = (Date.parse(value.to) - Date.parse(value.from)) / 86_400_000;
       return Number.isFinite(days) && days <= 366;
     },
     { error: 'closure_too_long', path: ['to'] },

@@ -6,6 +6,16 @@ import { X } from 'lucide-react';
 import { cn } from './cn';
 import { focusRing } from './focus';
 
+/**
+ * A click on a floating panel (a combobox list, a popover) is not a click
+ * outside the dialog, even though the panel is rendered into <body>. Without
+ * this, choosing a patient from the list closed the dialog around it.
+ */
+export function isInsideFloatingPanel(event: { target: EventTarget | null }): boolean {
+  const target = event.target;
+  return target instanceof Element && Boolean(target.closest('[data-floating]'));
+}
+
 export const Dialog = DialogPrimitive.Root;
 export const DialogTrigger = DialogPrimitive.Trigger;
 export const DialogClose = DialogPrimitive.Close;
@@ -17,6 +27,8 @@ export function DialogContent({
   description,
   closeLabel = 'Close',
   onOpenAutoFocus,
+  onPointerDownOutside,
+  onFocusOutside,
   ...props
 }: React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & {
   title: React.ReactNode;
@@ -73,6 +85,14 @@ export function DialogContent({
           className,
         )}
         onOpenAutoFocus={focusFirstField}
+        onPointerDownOutside={(event) => {
+          if (isInsideFloatingPanel(event.detail.originalEvent)) event.preventDefault();
+          onPointerDownOutside?.(event);
+        }}
+        onFocusOutside={(event) => {
+          if (isInsideFloatingPanel(event.detail.originalEvent)) event.preventDefault();
+          onFocusOutside?.(event);
+        }}
         {...props}
       >
         <div className="flex items-start justify-between gap-4 border-b border-ink-100 px-5 py-3">

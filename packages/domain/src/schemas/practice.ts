@@ -165,8 +165,8 @@ export const clinicTaskSchema = z.object({
         error: 'invalid_datetime',
       }),
       z.null(),
-      z.undefined(),
     ])
+    .optional()
     .transform((value) => (value ? new Date(value).toISOString() : null)),
   remind_via: z.enum(REMIND_CHANNELS).default('app'),
 });
@@ -177,11 +177,11 @@ export type ClinicTaskValues = z.input<typeof clinicTaskSchema>;
  * Rooms, patient tags, reminder wording
  * ------------------------------------------------------------------------ */
 
-
 export const roomSchema = z.object({
   name: requiredText(80),
   location_id: z
-    .union([uuidField, z.literal(''), z.null(), z.undefined()])
+    .union([uuidField, z.literal(''), z.null()])
+    .optional()
     .transform((value) => (value ? value : null)),
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
   is_active: z.boolean().default(true),
@@ -248,8 +248,12 @@ export type BookingSettingsValues = z.input<typeof bookingSettingsSchema>;
  */
 export const scheduleBlockSchema = z
   .object({
-    start_at: z.string().refine((value) => !Number.isNaN(Date.parse(value)), { error: 'invalid_datetime' }),
-    end_at: z.string().refine((value) => !Number.isNaN(Date.parse(value)), { error: 'invalid_datetime' }),
+    start_at: z
+      .string()
+      .refine((value) => !Number.isNaN(Date.parse(value)), { error: 'invalid_datetime' }),
+    end_at: z
+      .string()
+      .refine((value) => !Number.isNaN(Date.parse(value)), { error: 'invalid_datetime' }),
     reason: optionalText(160),
   })
   .refine((value) => Date.parse(value.end_at) > Date.parse(value.start_at), {

@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useTranslations } from 'next-intl';
 import { AlertTriangle, Plus, Trash2 } from 'lucide-react';
-import { Button, Input, Spinner } from '@clinic/ui';
+import { Button, Input, Spinner, useToast } from '@clinic/ui';
 import { cn } from '@clinic/ui/cn';
 import { defineWidget } from '@clinic/domain/widgets';
 import { formatDate, formatDateTime } from '@clinic/i18n';
@@ -29,6 +29,7 @@ import { WidgetEmpty, WidgetLoading } from '../widget-frame';
 function TasksWidget() {
   const t = useTranslations('widgets.tasks');
   const tc = useTranslations('common');
+  const { toast } = useToast();
 
   const [title, setTitle] = useState('');
   const [isPending, startTransition] = useTransition();
@@ -65,7 +66,12 @@ function TasksWidget() {
         is_urgent: false,
         patient_id: '',
       });
-      if (!result.ok) return;
+      // A silent failure here looked like nothing happened — and the title
+      // stayed in the box, so people pressed Enter again and again.
+      if (!result.ok) {
+        toast({ tone: 'danger', title: tc('errorGeneric') });
+        return;
+      }
       setTitle('');
       refresh();
     });

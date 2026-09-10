@@ -9,11 +9,14 @@ import { z } from 'zod';
  */
 
 export const optionalText = (max = 500) =>
-  z.union([z.string().max(max), z.null(), z.undefined()]).transform((value) => {
-    if (value === null || value === undefined) return null;
-    const trimmed = value.trim();
-    return trimmed === '' ? null : trimmed;
-  });
+  z
+    .union([z.string().max(max), z.null()])
+    .optional()
+    .transform((value) => {
+      if (value === null || value === undefined) return null;
+      const trimmed = value.trim();
+      return trimmed === '' ? null : trimmed;
+    });
 
 export const requiredText = (max = 255, min = 1) =>
   z
@@ -22,7 +25,8 @@ export const requiredText = (max = 255, min = 1) =>
     .pipe(z.string().min(min).max(max));
 
 export const optionalEmail = z
-  .union([z.string(), z.null(), z.undefined()])
+  .union([z.string(), z.null()])
+  .optional()
   .transform((value) => {
     if (value === null || value === undefined) return null;
     const trimmed = value.trim();
@@ -34,7 +38,8 @@ export const optionalEmail = z
 
 /** ISO date string, `YYYY-MM-DD`, as produced by `<input type="date">`. */
 export const optionalDate = z
-  .union([z.string(), z.null(), z.undefined()])
+  .union([z.string(), z.null()])
+  .optional()
   .transform((value) => {
     if (value === null || value === undefined) return null;
     const trimmed = value.trim();
@@ -46,7 +51,8 @@ export const optionalDate = z
 
 /** Accepts `''`/null from a numeric input and normalises to null. */
 export const optionalNumber = z
-  .union([z.string(), z.number(), z.null(), z.undefined()])
+  .union([z.string(), z.number(), z.null()])
+  .optional()
   .transform((value) => {
     if (value === null || value === undefined || value === '') return null;
     const parsed = typeof value === 'number' ? value : Number(value);
