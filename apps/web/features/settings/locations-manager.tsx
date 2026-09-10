@@ -15,6 +15,7 @@ import {
   useToast,
 } from '@clinic/ui';
 import { useRouter } from '@clinic/i18n/navigation';
+import { DEFAULT_ENTRY_COLOR } from '@clinic/domain';
 import type { Location } from '@clinic/db/types';
 import { deleteLocation, saveLocation } from './actions';
 
@@ -39,7 +40,7 @@ function toDraft(location?: Location): Draft {
     id: location?.id ?? null,
     name: location?.name ?? '',
     address: location?.address ?? '',
-    color: location?.color ?? '#0e7490',
+    color: location?.color ?? DEFAULT_ENTRY_COLOR,
     is_active: location?.is_active ?? true,
   };
 }

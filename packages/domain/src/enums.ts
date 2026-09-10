@@ -20,6 +20,21 @@ export type MembershipRole = (typeof MEMBERSHIP_ROLES)[number];
 export const SEXES = ['female', 'male', 'other', 'unspecified'] as const;
 export type Sex = (typeof SEXES)[number];
 
+/**
+ * The colour a diary entry wears when nothing chose one for it.
+ *
+ * A hex rather than a token because these colours are stored per treatment
+ * type, room and location — the person picks them — and a stored value cannot
+ * be a variable. It is the palette's second series colour, so an uncoloured
+ * entry looks deliberate beside the coloured ones, and it is not the accent
+ * green, which already means something.
+ *
+ * One constant because there were three: the diary fell back to sky, the
+ * dashboard to slate, and a newly created type was given cyan — so the same
+ * appointment was a different colour on two screens.
+ */
+export const DEFAULT_ENTRY_COLOR = '#0369a1';
+
 export const APPOINTMENT_STATUSES = [
   'scheduled',
   'confirmed',

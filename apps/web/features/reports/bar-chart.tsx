@@ -97,7 +97,9 @@ export function BarChart({
             shorter chart is a better trade than distorted text. */}
         <svg
           viewBox={`0 0 ${Math.max(labels.length * 44, 280)} ${HEIGHT}`}
-          className="h-[180px] w-full"
+          width={Math.max(labels.length * 44, 280)}
+          height={HEIGHT}
+          className="mx-auto block"
           role="presentation"
           aria-hidden
         >
@@ -141,7 +143,7 @@ export function BarChart({
                     x={x + columnWidth / 2}
                     y={HEIGHT - 6}
                     textAnchor="middle"
-                    className="fill-ink-500 text-[10px]"
+                    className="fill-ink-500 text-xs"
                   >
                     {label}
                   </text>

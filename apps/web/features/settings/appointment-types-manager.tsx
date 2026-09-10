@@ -17,6 +17,7 @@ import {
   useToast,
 } from '@clinic/ui';
 import { useRouter } from '@clinic/i18n/navigation';
+import { DEFAULT_ENTRY_COLOR } from '@clinic/domain';
 import type { AppointmentType } from '@clinic/db/types';
 import { deleteAppointmentType, saveAppointmentType } from './actions';
 
@@ -52,7 +53,7 @@ function toDraft(type?: AppointmentType): Draft {
     name_en: type?.name_en ?? '',
     default_duration_minutes: String(type?.default_duration_minutes ?? 60),
     price: type?.price === null || type?.price === undefined ? '' : String(type.price),
-    color: type?.color ?? '#0e7490',
+    color: type?.color ?? DEFAULT_ENTRY_COLOR,
     notes: type?.notes ?? '',
     is_active: type?.is_active ?? true,
     online_bookable: type?.online_bookable ?? false,

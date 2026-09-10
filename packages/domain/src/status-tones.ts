@@ -52,6 +52,14 @@ export const ENCOUNTER_STATUS_TONES: Record<string, StatusTone> = {
   signed: 'success',
 };
 
+export const PAYMENT_STATUS_TONES: Record<string, StatusTone> = {
+  pending: 'neutral',
+  paid: 'success',
+  failed: 'danger',
+  // Money returned is a closed matter, not a failure.
+  refunded: 'muted',
+};
+
 /** A consent: given, withdrawn, or never asked. */
 export const CONSENT_TONES = {
   granted: 'success',

@@ -986,7 +986,7 @@
     "search": "Quick search",
     "searchTitle": "Search everything",
     "searchPlaceholder": "Patient name, phone, or herb name…",
-    "searchHint": "Open from any screen with Ctrl+K",
+    "searchHint": "Open from any screen with {shortcut}",
     "typeToSearch": "Start typing to search",
     "noResults": "Nothing found for \"{query}\"",
     "searching": "Searching…",

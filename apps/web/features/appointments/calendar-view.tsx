@@ -10,7 +10,7 @@ import { DayAddMenu } from './day-add-menu';
 import { NowLine } from './now-line';
 import { Button, PageHeader, SegmentedControl, cn } from '@clinic/ui';
 import { DateInput } from '@/components/date-input';
-import type { Locale } from '@clinic/domain';
+import { DEFAULT_ENTRY_COLOR, type Locale } from '@clinic/domain';
 import { useSearchParams } from 'next/navigation';
 import { Link, usePathname, useRouter } from '@clinic/i18n/navigation';
 import type { AppointmentType, AppointmentWithRelations, Patient } from '@clinic/db/types';
@@ -635,7 +635,7 @@ export function CalendarView({
                     ) : null}
 
                     {positioned.map(({ appointment, top, height, column, columns }) => {
-                      const color = appointment.appointment_type?.color ?? '#0ea5e9';
+                      const color = appointment.appointment_type?.color ?? DEFAULT_ENTRY_COLOR;
                       const isCancelled = appointment.status === 'cancelled';
                       const widthPercent = 100 / columns;
                       return (

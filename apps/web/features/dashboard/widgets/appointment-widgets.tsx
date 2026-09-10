@@ -3,7 +3,12 @@
 import { useFormatter, useLocale, useTranslations } from 'next-intl';
 import { Badge } from '@clinic/ui';
 import { defineWidget } from '@clinic/domain/widgets';
-import { APPOINTMENT_STATUS_TONES, statusTone, type Locale } from '@clinic/domain';
+import {
+  APPOINTMENT_STATUS_TONES,
+  DEFAULT_ENTRY_COLOR,
+  statusTone,
+  type Locale,
+} from '@clinic/domain';
 import { Link } from '@clinic/i18n/navigation';
 import { useAsyncData } from '@/lib/use-supabase';
 import { appointmentTypeName, patientFullName } from '@/lib/display';
@@ -52,7 +57,7 @@ function AppointmentList({
             <span
               aria-hidden
               className="h-8 w-1 shrink-0 rounded-full"
-              style={{ backgroundColor: row.appointment_type?.color ?? '#cbd5e1' }}
+              style={{ backgroundColor: row.appointment_type?.color ?? DEFAULT_ENTRY_COLOR }}
             />
             <span className="w-24 shrink-0 text-xs font-medium text-ink-700 tabular-nums" dir="ltr">
               {showDate

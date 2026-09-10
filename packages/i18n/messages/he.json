@@ -986,7 +986,7 @@
     "search": "חיפוש מהיר",
     "searchTitle": "חיפוש בכל המערכת",
     "searchPlaceholder": "שם מטופל, טלפון או שם צמח…",
-    "searchHint": "אפשר לפתוח בכל מסך עם Ctrl+K",
+    "searchHint": "אפשר לפתוח בכל מסך עם {shortcut}",
     "typeToSearch": "התחילו להקליד כדי לחפש",
     "noResults": "לא נמצאו תוצאות עבור \"{query}\"",
     "searching": "מחפש…",

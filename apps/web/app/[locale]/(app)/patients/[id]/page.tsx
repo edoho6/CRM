@@ -36,7 +36,12 @@ import type {
   PatientMedicalHistory,
   PatientTag,
 } from '@clinic/db/types';
-import { APPOINTMENT_STATUS_TONES, type Locale } from '@clinic/domain';
+import {
+  APPOINTMENT_STATUS_TONES,
+  ENCOUNTER_STATUS_TONES,
+  statusTone,
+  type Locale,
+} from '@clinic/domain';
 import { PageHeader } from '@/components/app-shell';
 import { PhoneActions } from '@/components/phone-actions';
 import { PaymentAction } from '@/features/billing/payment-status';
@@ -356,7 +361,7 @@ export default async function PatientDetailPage({
                   </Link>
                 </Td>
                 <Td>
-                  <Badge tone={encounter.status === 'signed' ? 'success' : 'warning'}>
+                  <Badge tone={statusTone(ENCOUNTER_STATUS_TONES, encounter.status)}>
                     {tEnc(`status.${encounter.status}`)}
                   </Badge>
                 </Td>

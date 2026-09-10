@@ -131,7 +131,9 @@ export function OutcomeChart({ series }: { series: OutcomeSeries[] }) {
       <div className="overflow-x-auto">
         <svg
           viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
-          className="h-[200px] w-full min-w-[420px]"
+          width={WIDTH}
+          height={HEIGHT}
+          className="mx-auto block"
           role="presentation"
           aria-hidden
         >
@@ -154,7 +156,7 @@ export function OutcomeChart({ series }: { series: OutcomeSeries[] }) {
                   x={PADDING.left - 6}
                   y={y + 4}
                   textAnchor="end"
-                  className="fill-ink-500 text-[10px]"
+                  className="fill-ink-500 text-xs"
                 >
                   {value}
                 </text>
@@ -193,7 +195,7 @@ export function OutcomeChart({ series }: { series: OutcomeSeries[] }) {
                 x={geometry.coords[0]!.x}
                 y={HEIGHT - 8}
                 textAnchor="start"
-                className="fill-ink-500 text-[10px]"
+                className="fill-ink-500 text-xs"
               >
                 {formatDate(new Date(geometry.coords[0]!.date))}
               </text>
@@ -202,7 +204,7 @@ export function OutcomeChart({ series }: { series: OutcomeSeries[] }) {
                   x={geometry.coords[geometry.coords.length - 1]!.x}
                   y={HEIGHT - 8}
                   textAnchor="end"
-                  className="fill-ink-500 text-[10px]"
+                  className="fill-ink-500 text-xs"
                 >
                   {format.dateTime(
                     new Date(geometry.coords[geometry.coords.length - 1]!.date),

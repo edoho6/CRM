@@ -21,6 +21,7 @@ import {
 import {
   CONSENT_KINDS,
   CONSENT_METHODS,
+  CONSENT_TONES,
   type ConsentKind,
   type ConsentMethod,
 } from '@clinic/domain';
@@ -186,7 +187,7 @@ export function ConsentPanel({
                     )}
                   </span>
 
-                  <Badge tone={granted ? 'success' : status ? 'danger' : 'muted'}>
+                  <Badge tone={CONSENT_TONES[granted ? 'granted' : status ? 'withdrawn' : 'missing']}>
                     {granted
                       ? t('status.granted')
                       : status

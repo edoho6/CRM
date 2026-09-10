@@ -27,7 +27,7 @@ import {
 import { useRouter } from '@clinic/i18n/navigation';
 import { describeActionError } from '@/lib/action-error';
 import type { InvoiceWithDetails, PaymentMethod } from '@clinic/db/types';
-import { INVOICE_STATUS_TONES, statusTone } from '@clinic/domain';
+import { INVOICE_STATUS_TONES, PAYMENT_STATUS_TONES, statusTone } from '@clinic/domain';
 import {
   cancelInvoice,
   createGrowPaymentLink,
@@ -411,7 +411,7 @@ export function InvoiceEditor({ invoice }: { invoice: InvoiceWithDetails }) {
                         {t(`payment.methods.${payment.method}`)}
                       </span>
                     </span>
-                    <Badge tone={payment.status === 'paid' ? 'success' : 'neutral'}>
+                    <Badge tone={statusTone(PAYMENT_STATUS_TONES, payment.status)}>
                       {t(`payment.statuses.${payment.status}`)}
                     </Badge>
                   </li>

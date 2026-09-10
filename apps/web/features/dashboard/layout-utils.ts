@@ -27,7 +27,11 @@ export const SIZE_CLASSES: Record<WidgetSize, string> = {
   xl: 'md:col-span-6 xl:col-span-12',
 };
 
-/** Minimum heights so a row of mixed widgets reads as one row, not a staircase. */
+/**
+ * Minimum heights so a row of mixed widgets reads as one row, not a staircase.
+ * The card stretches to its row; what it may *not* do is grow past this when
+ * its data lands — see BODY_MAX_HEIGHT in widget-frame.tsx.
+ */
 export const SIZE_MIN_HEIGHT: Record<WidgetSize, string> = {
   sm: 'min-h-56',
   md: 'min-h-56',

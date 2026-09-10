@@ -12,6 +12,7 @@ import {
   Td,
   Tr,
 } from '@clinic/ui';
+import { ENCOUNTER_STATUS_TONES, statusTone } from '@clinic/domain';
 import { Link } from '@clinic/i18n/navigation';
 import type { Appointment, Encounter, EncounterPaymentStatus, Patient } from '@clinic/db/types';
 import { PageHeader } from '@/components/app-shell';
@@ -275,7 +276,7 @@ export default async function EncountersPage({
                     )}
                   </Td>
                   <Td>
-                    <Badge tone={encounter.status === 'signed' ? 'success' : 'warning'}>
+                    <Badge tone={statusTone(ENCOUNTER_STATUS_TONES, encounter.status)}>
                       {t(`status.${encounter.status}`)}
                     </Badge>
                   </Td>

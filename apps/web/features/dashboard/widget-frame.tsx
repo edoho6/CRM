@@ -10,6 +10,26 @@ import { cn, Spinner } from '@clinic/ui';
 import type { WidgetSize } from '@clinic/domain/widgets';
 
 /**
+ * The most a widget's body may take before it scrolls, from `md` up: the
+ * size's minimum height less the title bar.
+ *
+ * Widgets fetch on their own and finish at different moments. A body that
+ * grew when its rows arrived made the row taller, which moved every card in
+ * it — the dashboard twitched for a second or two on every load. Capping the
+ * body, not the card, keeps the reflow out while the card still stretches to
+ * its row, so a short widget beside a tall one is a tall card with room below
+ * its content, as before. On a phone the grid is one column, where a growing
+ * card only pushes the next one down; the cap is not applied there, so nothing
+ * is trapped in a short box.
+ */
+const BODY_MAX_HEIGHT: Record<WidgetSize, string> = {
+  sm: 'md:max-h-[11.5rem]',
+  md: 'md:max-h-[11.5rem]',
+  lg: 'md:max-h-[15.5rem]',
+  xl: 'md:max-h-[7.5rem]',
+};
+
+/**
  * Chrome shared by every widget: title bar, drag handle, resize and remove.
  *
  * Only the header carries the drag listeners, so text and controls inside a
@@ -93,7 +113,9 @@ export function WidgetFrame({
           </button>
         ) : null}
       </header>
-      <div className={cn('min-h-0 flex-1 overflow-y-auto p-3', bodyClassName)}>{children}</div>
+      <div className={cn('min-h-0 flex-1 overflow-y-auto p-3', BODY_MAX_HEIGHT[size], bodyClassName)}>
+        {children}
+      </div>
     </section>
   );
 }

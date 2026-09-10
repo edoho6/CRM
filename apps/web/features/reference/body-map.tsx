@@ -324,7 +324,7 @@ export function BodyMap({
                         x={cx > W / 2 ? cx + 11 : cx - 11}
                         y={cy - 9}
                         textAnchor={cx > W / 2 ? 'start' : 'end'}
-                        className="fill-ink-900 text-[12px] font-semibold"
+                        className="fill-ink-900 text-xs font-semibold"
                         style={{ paintOrder: 'stroke', stroke: 'var(--color-white)', strokeWidth: 3.5 }}
                       >
                         {point.code}
