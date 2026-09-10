@@ -10,7 +10,6 @@ import {
   Td,
   Tr,
   cn,
-
   Dash,
 } from '@clinic/ui';
 import { Link } from '@clinic/i18n/navigation';
@@ -18,10 +17,11 @@ import { formatDateTime } from '@clinic/i18n';
 import { TREATMENT_STATUSES, type TreatmentStatus } from '@clinic/domain';
 import type { PatientTag, PatientWithDiary } from '@clinic/db/types';
 import { PageHeader } from '@/components/app-shell';
+import { SegmentedLinks } from '@/components/segmented-links';
+import { Pagination, pageFrom, pageRange } from '@/components/pagination';
 import { getClinicScope } from '@/lib/session';
 import { ageFromDateOfBirth } from '@/lib/display';
 import { PatientSearch } from '@/features/patients/patient-search';
-import { TreatmentStatusFilter } from '@/features/patients/treatment-status-filter';
 import { PatientStatusCell } from '@/features/patients/status-cell';
 import { PatientStatusSummary, type StatusCounts } from '@/features/patients/status-summary';
 import { TagChipLink, type TagChip } from '@/features/patients/patient-tags';
@@ -43,10 +43,12 @@ export default async function PatientsPage({
     status?: string;
     tag?: string;
     noUpcoming?: string;
+    page?: string;
   }>;
 }) {
   const { locale } = await params;
-  const { q = '', inactive, status, tag, noUpcoming } = await searchParams;
+  const { q = '', inactive, status, tag, noUpcoming, page: pageParam } = await searchParams;
+  const page = pageFrom(pageParam);
   setRequestLocale(locale);
 
   const t = await getTranslations('patients');
@@ -65,7 +67,7 @@ export default async function PatientsPage({
     // "showing 200 of 1,340" instead of silently stopping at 200.
     .select('*', { count: 'exact' })
     .order('last_name', { ascending: true })
-    .limit(200);
+    .range(...pageRange(page));
 
   if (inactive !== '1') {
     query = query.eq('is_active', true);
@@ -214,28 +216,28 @@ export default async function PatientsPage({
       <div className="mb-4 space-y-3">
         <PatientStatusSummary counts={counts} />
         <PatientSearch initialQuery={q} showInactive={inactive === '1'} />
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          <TreatmentStatusFilter />
-          {/* Its own chip rather than a status: "nothing booked" is a fact
-              about the diary, and it combines with any outcome. */}
-          <Link
-            href={
-              noUpcoming === '1'
-                ? without('noUpcoming')
-                : { pathname: '/patients', query: { ...without('noUpcoming').query, noUpcoming: '1' } }
-            }
-            aria-current={noUpcoming === '1' ? 'true' : undefined}
-            className={cn(
-              'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-colors',
-              noUpcoming === '1'
-                ? 'bg-accent text-accent-fg'
-                : 'border border-ink-200 bg-white text-ink-700 hover:bg-ink-50',
-            )}
-          >
-            <CalendarX2 className="h-3.5 w-3.5" aria-hidden />
-            {t('noUpcomingFilter')}
-          </Link>
-        </div>
+        {/* The status tiles above are the status filter; a second row of the
+            same choices as chips said everything twice. What is left here is
+            the one filter that is not a status: "nothing booked" is a fact
+            about the diary, and it combines with any outcome. */}
+        <SegmentedLinks
+          label={t('noUpcomingFilter')}
+          size="sm"
+          items={[
+            {
+              href:
+                noUpcoming === '1'
+                  ? without('noUpcoming')
+                  : {
+                      pathname: '/patients',
+                      query: { ...without('noUpcoming').query, noUpcoming: '1' },
+                    },
+              label: t('noUpcomingFilter'),
+              active: noUpcoming === '1',
+              icon: <CalendarX2 className="h-3.5 w-3.5" aria-hidden />,
+            },
+          ]}
+        />
 
         {activeTag ? (
           <p className="flex flex-wrap items-center gap-2 text-sm text-ink-700">
@@ -369,6 +371,13 @@ export default async function PatientsPage({
           </SortableTable>
         </TableWrapper>
       )}
+      <Pagination
+        page={page}
+        total={matching ?? null}
+        shown={patients.length}
+        pathname="/patients"
+        query={{ q: q || undefined, inactive, status, tag, noUpcoming }}
+      />
     </>
   );
 }

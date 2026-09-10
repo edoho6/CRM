@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useState, useTransition } from 'react';
 import { useFormatter, useTranslations } from 'next-intl';
-import { BookmarkPlus, Lock, Save } from 'lucide-react';
+import { BookmarkPlus, Lock, MoreHorizontal, Save } from 'lucide-react';
 import {
   Alert,
   Button,
@@ -11,6 +11,10 @@ import {
   Dialog,
   DialogContent,
   DialogFooter,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
   Field,
   FieldGrid,
   Input,
@@ -357,7 +361,7 @@ export function EncounterForm({
     // Not destructive — signing is the point — but irreversible, so it is
     // asked in the product's own dialog rather than the browser's.
     const confirmed = await confirm({
-      title: t('sign'),
+      title: t('signConfirmTitle'),
       body: t('signConfirmBody'),
       confirmLabel: t('sign'),
     });
@@ -377,6 +381,9 @@ export function EncounterForm({
         setStatus('error');
         return;
       }
+      // The one irreversible act on this page deserves to be acknowledged
+      // in words, not only by the form going grey.
+      toast({ tone: 'success', title: t('signed') });
       router.refresh();
     });
   }
@@ -650,7 +657,11 @@ export function EncounterForm({
         </Card>
 
         {!isSigned ? (
-          <div className="flex flex-wrap items-center justify-end gap-2">
+          /* Stuck to the bottom of the window. This is the longest page in the
+             app, and the buttons that save and sign it were at the foot of a
+             column that ended below a 3D body and a dispensing table — a
+             consultation's worth of scrolling away from where the typing is. */
+          <div className="sticky bottom-0 z-sticky -mx-4 flex flex-wrap items-center justify-end gap-2 border-t border-ink-200 bg-white px-4 py-3 sm:-mx-6 sm:px-6">
             {/* What the autosave is doing, stated rather than assumed. A form that
               saves itself silently is indistinguishable from one that does not,
               and the whole reassurance is in being able to see the last time. */}
@@ -665,22 +676,36 @@ export function EncounterForm({
                       })
                     : t('autosaveOn')}
             </p>
-            <Button
-              variant="ghost"
-              onClick={() => setProtocolOpen(true)}
-              disabled={isPending}
-              title={tProtocols('saveFromTreatmentHint')}
-            >
-              <BookmarkPlus className="h-4 w-4" />
-              {tProtocols('saveFromTreatment')}
-            </Button>
-            <Button variant="secondary" onClick={handleSave} disabled={isPending}>
-              {isPending ? <Spinner /> : <Save className="h-4 w-4" />}
-              {isPending ? tc('saving') : tc('save')}
-            </Button>
-            <Button onClick={handleSign} disabled={isPending}>
+            {/* The rare action behind a menu; the two everyday ones as buttons.
+                Save is the primary: it is pressed twenty times a visit, while
+                signing happens once and locks the record, so it must never be
+                the button the hand reaches for by habit. */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  disabled={isPending}
+                  aria-label={tc('more')}
+                  title={tc('more')}
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onSelect={() => setProtocolOpen(true)}>
+                  <BookmarkPlus className="h-4 w-4" />
+                  {tProtocols('saveFromTreatment')}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <Button variant="secondary" onClick={handleSign} disabled={isPending}>
               <Lock className="h-4 w-4" />
               {t('sign')}
+            </Button>
+            <Button onClick={handleSave} disabled={isPending}>
+              {isPending ? <Spinner /> : <Save className="h-4 w-4" />}
+              {isPending ? tc('saving') : tc('save')}
             </Button>
           </div>
         ) : null}

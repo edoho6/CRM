@@ -126,7 +126,11 @@ export function InvoiceEditor({ invoice }: { invoice: InvoiceWithDetails }) {
         // when the real issue is a missing phone number or unfinished setup.
         const raw = result.error?.key ?? '';
         setError(
-          raw.includes('serverError') ? t('errors.providerFailed') : t('errors.providerFailed'),
+          raw.includes('patient_phone_required')
+            ? t('errors.providerPhone')
+            : raw.includes('grow_not_configured')
+              ? t('errors.providerNotConfigured')
+              : t('errors.providerFailed'),
         );
         return;
       }
@@ -217,7 +221,18 @@ export function InvoiceEditor({ invoice }: { invoice: InvoiceWithDetails }) {
                             type="button"
                             aria-label={tc('delete')}
                             disabled={isPending}
-                            onClick={() => run(() => deleteInvoiceItem(item.id))}
+                            onClick={async () => {
+                              // One click used to drop the line and re-total
+                              // the invoice; a mis-click on a bill is money.
+                              const confirmed = await confirm({
+                                title: tc('delete'),
+                                body: t('removeLineConfirm'),
+                                confirmLabel: tc('delete'),
+                                destructive: true,
+                              });
+                              if (!confirmed) return;
+                              run(() => deleteInvoiceItem(item.id), t('lineRemoved'));
+                            }}
                             className="rounded-md p-1.5 text-ink-500 transition-colors hover:bg-red-50 hover:text-red-600"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -306,7 +321,7 @@ export function InvoiceEditor({ invoice }: { invoice: InvoiceWithDetails }) {
         {!locked ? (
           <Card>
             <CardHeader>
-              <CardTitle>{t('payment.title')}</CardTitle>
+              <CardTitle>{t('payment.collectTitle')}</CardTitle>
             </CardHeader>
             <CardBody className="space-y-3">
               {invoice.payment_url ? (
@@ -374,7 +389,7 @@ export function InvoiceEditor({ invoice }: { invoice: InvoiceWithDetails }) {
 
         <Card>
           <CardHeader>
-            <CardTitle>{t('payment.title')}</CardTitle>
+            <CardTitle>{t('payment.historyTitle')}</CardTitle>
           </CardHeader>
           <CardBody className="p-0">
             {invoice.payments.length === 0 ? (
@@ -410,10 +425,13 @@ export function InvoiceEditor({ invoice }: { invoice: InvoiceWithDetails }) {
             className="w-full text-red-600 hover:bg-red-50"
             disabled={isPending}
             onClick={async () => {
+              // "Keep the invoice" rather than "cancel", or the dialog shows
+              // two buttons that both begin with the word cancel.
               const confirmed = await confirm({
                 title: t('cancel'),
                 body: t('cancelConfirm'),
                 confirmLabel: t('cancel'),
+                cancelLabel: t('keepInvoice'),
                 destructive: true,
               });
               if (!confirmed) return;

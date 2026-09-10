@@ -1,8 +1,21 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import { useSearchParams } from 'next/navigation';
 import { Stethoscope } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@clinic/ui';
+import { usePathname, useRouter } from '@clinic/i18n/navigation';
+
+const TABS = [
+  'overview',
+  'encounters',
+  'appointments',
+  'documents',
+  'medical',
+  'forms',
+  'consent',
+] as const;
+type Tab = (typeof TABS)[number];
 
 /**
  * Tab shell for the patient file.
@@ -10,6 +23,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@clinic/ui';
  * The panels are server-rendered and passed in as props, so the tabs are purely a
  * visibility control — no client-side fetching, and every tab is present in the
  * initial HTML.
+ *
+ * Which tab is open lives in the URL (`?tab=`). Opening a document, pressing
+ * Back, or reloading used to drop you on the overview every time, and a tab
+ * could not be linked to. `replace` rather than `push`, so the tabs do not
+ * pile up in the history.
  */
 export function PatientTabs({
   overview,
@@ -32,9 +50,24 @@ export function PatientTabs({
   consent: React.ReactNode;
 }) {
   const t = useTranslations('patients.tabs');
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const requested = searchParams.get('tab');
+  const value: Tab = (TABS as readonly string[]).includes(requested ?? '')
+    ? (requested as Tab)
+    : 'overview';
+
+  function choose(next: string) {
+    const params = new URLSearchParams(searchParams.toString());
+    if (next === 'overview') params.delete('tab');
+    else params.set('tab', next);
+    const query = params.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+  }
 
   return (
-    <Tabs defaultValue="overview">
+    <Tabs value={value} onValueChange={choose}>
       <TabsList>
         <TabsTrigger value="overview">{t('overview')}</TabsTrigger>
         {/* The count on the tab, so "how many times have I seen this person"

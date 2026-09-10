@@ -66,7 +66,13 @@ function QuickActionsWidget() {
   // goes to the reports instead of to a page the sidebar does not even list.
   const actions = [
     { href: '/patients/new' as const, label: t('newPatient'), icon: UserPlus },
-    { href: '/calendar' as const, label: t('newAppointment'), icon: CalendarPlus },
+    // `new=1` opens the booking dialog on arrival; without it this tile and
+    // "open calendar" went to the same place under two names.
+    {
+      href: { pathname: '/calendar', query: { new: '1' } } as const,
+      label: t('newAppointment'),
+      icon: CalendarPlus,
+    },
     tracksInventory
       ? { href: '/inventory/batches/receive' as const, label: t('receiveStock'), icon: PackagePlus }
       : { href: '/reports' as const, label: t('openReports'), icon: ChartColumn },

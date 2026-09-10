@@ -10,13 +10,13 @@ import {
   TableWrapper,
   Td,
   Tr,
-
   Dash,
 } from '@clinic/ui';
 import { Link } from '@clinic/i18n/navigation';
 import type { Herb, HerbStockLevel } from '@clinic/db/types';
 import { TEMPERATURES, type Locale } from '@clinic/domain';
 import { PageHeader } from '@/components/app-shell';
+import { CATALOGUE_PAGE, Pagination, pageFrom, pageRange } from '@/components/pagination';
 import { TcmChip, TcmChips } from '@/components/tcm-chip';
 
 /** Every chip links back into this list, filtered by what the chip says. */
@@ -37,7 +37,9 @@ export default async function HerbsPage({
   searchParams: Promise<HerbSearchParams>;
 }) {
   const { locale } = await params;
-  const filters = parseHerbFilters(await searchParams);
+  const rawParams = await searchParams;
+  const filters = parseHerbFilters(rawParams);
+  const page = pageFrom((rawParams as { page?: string }).page);
   setRequestLocale(locale);
 
   const t = await getTranslations('inventory.herbs');
@@ -55,9 +57,9 @@ export default async function HerbsPage({
 
   let query = scope.supabase
     .from('herbs')
-    .select('*')
+    .select('*', { count: 'exact' })
     .order('pinyin_name', { ascending: true })
-    .limit(2000);
+    .range(...pageRange(page, CATALOGUE_PAGE));
 
   if (filters.q) {
     const escaped = filters.q.replace(/[%,()]/g, ' ');
@@ -72,7 +74,7 @@ export default async function HerbsPage({
   if (filters.chan.length) query = query.overlaps('channels', filters.chan);
   if (filters.review) query = query.eq('needs_review', true);
 
-  const { data } = await query.returns<Herb[]>();
+  const { data, count } = await query.returns<Herb[]>();
   const herbs = data ?? [];
 
   /**
@@ -316,6 +318,14 @@ export default async function HerbsPage({
       {/* Fixed to the bottom of the window, so ticking a row far down the
           catalogue still leaves the Compare button in reach. */}
       <CompareTray />
+      <Pagination
+        page={page}
+        size={CATALOGUE_PAGE}
+        total={count ?? null}
+        shown={herbs.length}
+        pathname="/reference/herbs"
+        query={{ ...rawParams }}
+      />
     </>
   );
 }

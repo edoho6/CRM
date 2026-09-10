@@ -448,18 +448,18 @@ export default async function PatientDetailPage({
             </Button>
           </>
         }
+        // The labels the practitioner put on this file, each a link to
+        // everyone else who carries it. A toolbar under the heading, in the
+        // header's own slot for one, rather than pulled up with a negative margin.
+        below={
+          <PatientTags
+            patientId={patient.id}
+            tags={(tagLinksResult.data ?? []).flatMap((row) => (row.tag ? [row.tag] : []))}
+            allTags={allTagsResult.data ?? []}
+          />
+        }
       />
 
-      {/* The labels the practitioner put on this file, each a link to
-          everyone else who carries it. Under the header rather than in it:
-          the header is a paragraph, and this is a toolbar. */}
-      <div className="-mt-3 mb-4">
-        <PatientTags
-          patientId={patient.id}
-          tags={(tagLinksResult.data ?? []).flatMap((row) => (row.tag ? [row.tag] : []))}
-          allTags={allTagsResult.data ?? []}
-        />
-      </div>
 
       {/* Puts this file on the tab strip in the shell, which knows the URL
           but not whose name is on it. */}

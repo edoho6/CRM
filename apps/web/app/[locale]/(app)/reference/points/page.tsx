@@ -5,6 +5,7 @@ import { Link } from '@clinic/i18n/navigation';
 import type { AcupuncturePoint } from '@clinic/db/types';
 import { POINT_BODY_AREAS, POINT_CATEGORIES, POINT_CHANNELS } from '@clinic/domain';
 import { PageHeader } from '@/components/app-shell';
+import { CATALOGUE_PAGE, Pagination, pageFrom, pageRange } from '@/components/pagination';
 import { getClinicScope } from '@/lib/session';
 import { ReferenceNav } from '@/features/reference/reference-nav';
 import { CompareToggle, CompareTray } from '@/features/reference/compare-controls';
@@ -15,10 +16,17 @@ export default async function PointsPage({
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ q?: string; channel?: string; area?: string; category?: string }>;
+  searchParams: Promise<{
+    q?: string;
+    channel?: string;
+    area?: string;
+    category?: string;
+    page?: string;
+  }>;
 }) {
   const { locale } = await params;
-  const { q = '', channel = '', area = '', category = '' } = await searchParams;
+  const { q = '', channel = '', area = '', category = '', page: pageParam } = await searchParams;
+  const page = pageFrom(pageParam);
   setRequestLocale(locale);
 
   const t = await getTranslations('reference.points');
@@ -32,10 +40,10 @@ export default async function PointsPage({
 
   let query = scope.supabase
     .from('acupuncture_points')
-    .select('*')
+    .select('*', { count: 'exact' })
     .order('channel', { ascending: true })
     .order('point_number', { ascending: true })
-    .limit(1000);
+    .range(...pageRange(page, CATALOGUE_PAGE));
 
   const term = q.trim();
   if (term) {
@@ -56,7 +64,7 @@ export default async function PointsPage({
     query = query.contains('point_categories', [category]);
   }
 
-  const { data } = await query.returns<AcupuncturePoint[]>();
+  const { data, count } = await query.returns<AcupuncturePoint[]>();
   const points = data ?? [];
 
   return (
@@ -166,6 +174,14 @@ export default async function PointsPage({
       )}
 
       <CompareTray />
+      <Pagination
+        page={page}
+        size={CATALOGUE_PAGE}
+        total={count ?? null}
+        shown={points.length}
+        pathname="/reference/points"
+        query={{ q, channel, area, category }}
+      />
     </>
   );
 }

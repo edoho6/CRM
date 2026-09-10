@@ -15,6 +15,7 @@ import {
 import { Link } from '@clinic/i18n/navigation';
 import type { Appointment, Encounter, EncounterPaymentStatus, Patient } from '@clinic/db/types';
 import { PageHeader } from '@/components/app-shell';
+import { Pagination, pageFrom, pageRange } from '@/components/pagination';
 import { DateRangeFilter } from '@/components/date-range-filter';
 import { getClinicScope } from '@/lib/session';
 import { resolveRange, toDateKey } from '@/lib/date-range';
@@ -58,7 +59,7 @@ export default async function EncountersPage({
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ range?: string; from?: string; to?: string }>;
+  searchParams: Promise<{ range?: string; from?: string; to?: string; page?: string }>;
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
@@ -77,7 +78,9 @@ export default async function EncountersPage({
   // Filtering happens in the query, not in the browser. A practitioner who has
   // been in practice for five years has thousands of these, and "show me today"
   // should not mean fetching all of them and hiding most.
-  const range = resolveRange(await searchParams);
+  const rangeParams = await searchParams;
+  const range = resolveRange(rangeParams);
+  const page = pageFrom(rangeParams.page);
 
   let query = scope.supabase
     .from('encounters')
@@ -89,7 +92,7 @@ export default async function EncountersPage({
     )
     .order('encounter_date', { ascending: false })
     .order('started_at', { ascending: false })
-    .limit(500);
+    .range(...pageRange(page));
 
   if (range.from) query = query.gte('encounter_date', range.from);
   if (range.to) query = query.lte('encounter_date', range.to);
@@ -286,6 +289,13 @@ export default async function EncountersPage({
           </SortableTable>
         </TableWrapper>
       )}
+      <Pagination
+        page={page}
+        total={matching ?? null}
+        shown={encounters.length}
+        pathname="/encounters"
+        query={{ range: rangeParams.range, from: rangeParams.from, to: rangeParams.to }}
+      />
     </>
   );
 }

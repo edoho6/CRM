@@ -377,6 +377,14 @@ export default async function EncounterPage({
               </Link>
               {/* Which session this is, and the way to the ones either side. */}
               <EncounterNav encounterId={encounter.id} steps={steps} />
+              {/* When it was signed, in the same line as everything else
+                  about this record — it used to be a whole card of its own,
+                  under a badge that already said "signed". */}
+              {isSigned && encounter.signed_at ? (
+                <span className="text-ink-600" dir="auto">
+                  {t('signedAt', { date: formatDateTime(new Date(encounter.signed_at)) })}
+                </span>
+              ) : null}
             </span>
           ) : null
         }
@@ -395,21 +403,6 @@ export default async function EncounterPage({
           </>
         }
       />
-
-      {isSigned && encounter.signed_at ? (
-        <Card className="mb-4">
-          <CardHeader>
-            <CardTitle>{t('status.signed')}</CardTitle>
-          </CardHeader>
-          <CardBody>
-            <p className="text-sm text-ink-600" dir="auto">
-              {t('signedAt', {
-                date: formatDateTime(new Date(encounter.signed_at)),
-              })}
-            </p>
-          </CardBody>
-        </Card>
-      ) : null}
 
       {/* The form owns the two-column layout: tongue, pulse and dispensing all
           belong to the same side column, so it places them together. */}

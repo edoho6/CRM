@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useFormatter, useLocale, useTranslations } from 'next-intl';
 import { CalendarPlus, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { Location, Room } from '@clinic/db/types';
@@ -193,6 +193,21 @@ export function CalendarView({
 
   /** Day and week draw a time grid; month and range draw lists. */
   const isTimeGrid = view === 'day' || view === 'week';
+
+  /*
+   * A phone shows one day. The week grid is 720px wide and the month grid
+   * 640px, and on a 390px screen either becomes a two-axis scroll with
+   * labels too small to read. The switch between views is hidden there too,
+   * so the day view is not a trap the user can walk out of by accident.
+   */
+  useEffect(() => {
+    if (view === 'day') return;
+    const narrow = window.matchMedia('(max-width: 767px)');
+    if (narrow.matches) router.replace({ pathname, query: { date: anchorDate, view: 'day' } });
+    // Only on arrival and when the view changes; resizing a window mid-visit
+    // is not a reason to lose the week.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view]);
 
   /*
    * The open hours for each visible day, keyed by date.
@@ -410,6 +425,7 @@ export function CalendarView({
 
         <div className="flex flex-wrap items-center gap-1">
           <SegmentedControl
+            className="hidden md:inline-flex"
             label={t('views.label')}
             size="md"
             value={view}

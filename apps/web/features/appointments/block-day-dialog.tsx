@@ -13,6 +13,7 @@ import {
   Input,
   Spinner,
   TimeSelect,
+  useConfirm,
   useToast,
 } from '@clinic/ui';
 import { useRouter } from '@clinic/i18n/navigation';
@@ -71,6 +72,7 @@ export function BlockDayDialog({
   const format = useFormatter();
   const router = useRouter();
   const { toast } = useToast();
+  const confirm = useConfirm();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [wholeDay, setWholeDay] = useState(false);
@@ -167,7 +169,16 @@ export function BlockDayDialog({
     });
   }
 
-  function removeWindow(id: string) {
+  async function removeWindow(id: string) {
+    // The row used to vanish on one click with no word said. Reopening hours
+    // is reversible, but a mis-tap next to the time fields is easy.
+    const confirmed = await confirm({
+      title: t('removeWindow'),
+      body: t('removeConfirm'),
+      confirmLabel: t('removeWindow'),
+      destructive: true,
+    });
+    if (!confirmed) return;
     setError(null);
     startTransition(async () => {
       const result = await deleteScheduleBlock(id);
@@ -175,6 +186,7 @@ export function BlockDayDialog({
         setError(t('failed'));
         return;
       }
+      toast({ tone: 'success', title: t('removed') });
       router.refresh();
     });
   }

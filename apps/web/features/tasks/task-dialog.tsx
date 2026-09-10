@@ -257,13 +257,17 @@ export function TaskDialog({
           </fieldset>
 
           <DialogFooter>
+            {/* Delete sits at the far end of the row, after Save, with a gap.
+                It used to be pushed to the start edge — the first thing the
+                eye meets in a Hebrew footer, for the one action that cannot be
+                undone. */}
             {task ? (
               <Button
                 type="button"
                 variant="ghost"
                 disabled={isPending}
                 onClick={remove}
-                className="me-auto text-red-600 hover:bg-red-50"
+                className="order-last ms-3 text-red-600 hover:bg-red-50"
               >
                 <Trash2 className="h-4 w-4" aria-hidden />
                 {tc('delete')}

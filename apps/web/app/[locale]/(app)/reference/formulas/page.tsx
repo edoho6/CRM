@@ -16,6 +16,7 @@ import { Link } from '@clinic/i18n/navigation';
 import type { HerbFormulaWithItems } from '@clinic/db/types';
 import type { Locale } from '@clinic/domain';
 import { PageHeader } from '@/components/app-shell';
+import { CATALOGUE_PAGE, Pagination, pageFrom, pageRange } from '@/components/pagination';
 import { TcmChip } from '@/components/tcm-chip';
 import { getClinicScope } from '@/lib/session';
 import { formulaChineseName, formulaPrimaryName, herbPrimaryName } from '@/lib/display';
@@ -36,7 +37,9 @@ export default async function FormulasPage({
   searchParams: Promise<FormulaSearchParams>;
 }) {
   const { locale } = await params;
-  const filters = parseFormulaFilters(await searchParams);
+  const rawParams = await searchParams;
+  const filters = parseFormulaFilters(rawParams);
+  const page = pageFrom((rawParams as { page?: string }).page);
   setRequestLocale(locale);
 
   const t = await getTranslations('inventory.formulas');
@@ -53,9 +56,10 @@ export default async function FormulasPage({
     .from('herb_formulas')
     .select(
       '*, items:herb_formula_items(*, herb:herbs(id, pinyin_name, chinese_name, english_name, hebrew_name, default_unit))',
+      { count: 'exact' },
     )
     .order('name_pinyin', { ascending: true })
-    .limit(1000);
+    .range(...pageRange(page, CATALOGUE_PAGE));
 
   if (filters.q) {
     const escaped = filters.q.replace(/[%,()]/g, ' ');
@@ -67,7 +71,7 @@ export default async function FormulasPage({
   if (filters.kind.length) query = query.in('category', filters.kind);
   if (filters.review) query = query.eq('needs_review', true);
 
-  const { data } = await query.returns<HerbFormulaWithItems[]>();
+  const { data, count } = await query.returns<HerbFormulaWithItems[]>();
   const formulas = data ?? [];
 
   return (
@@ -201,6 +205,14 @@ export default async function FormulasPage({
       )}
 
       <CompareTray />
+      <Pagination
+        page={page}
+        size={CATALOGUE_PAGE}
+        total={count ?? null}
+        shown={formulas.length}
+        pathname="/reference/formulas"
+        query={{ ...rawParams }}
+      />
     </>
   );
 }

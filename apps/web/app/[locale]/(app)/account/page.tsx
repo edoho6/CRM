@@ -24,7 +24,6 @@ import { getClinicScope } from '@/lib/session';
 import { AppointmentTypesManager } from '@/features/settings/appointment-types-manager';
 import { AppearanceSettings } from '@/features/settings/appearance-settings';
 import { PractitionerForm } from '@/features/settings/practitioner-form';
-import { ScheduleForm } from '@/features/settings/schedule-form';
 import { LocationsManager } from '@/features/settings/locations-manager';
 import { RoomsManager } from '@/features/settings/rooms-manager';
 
@@ -158,10 +157,12 @@ export default async function AccountPage({ params }: { params: Promise<{ locale
           description={t('scheduleBody')}
           icon={<Clock className="h-4 w-4" aria-hidden />}
         >
-          <ScheduleForm
-            schedules={schedulesResult.data ?? []}
-            exceptions={exceptionsResult.data ?? []}
-          />
+          <Link
+            href="/account/schedule"
+            className="inline-flex items-center gap-1.5 rounded-md text-sm font-medium text-jade-700 underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+          >
+            {t('scheduleManage')}
+          </Link>
         </Collapsible>
 
         {/* Where, and in which bed. Side by side because they are one

@@ -129,6 +129,9 @@
     "openAll": "All tasks"
   },
   "common": {
+    "more": "More actions",
+    "pagination": {"label":"Pagination","previous":"Previous","next":"Next","range":"{from}–{to} of {total}","pageOf":"Page {page} of {pages}"},
+    "validation": {"required":"This field is required","tooLong":"The text is too long","invalidFormat":"This value is not valid","invalidDate":"This date is not valid","invalidEmail":"This email address is not valid"},
     "showingOf": "Showing {shown} of {total}",
     "appName": "Herbalist",
     "appTagline": "Chinese medicine clinic management",
@@ -534,6 +537,8 @@
       "defaultTemplate": "Hi '{name}', a reminder of your appointment at '{clinic}' on '{date}' at '{time}'. Please confirm here: '{link}'"
     },
     "block": {
+      "removeConfirm": "Remove this blocked window? The hours will open for bookings again.",
+      "removed": "The window was removed",
       "hoursHint": "Block several windows in one day, each with its own reason. The other hours stay open.",
       "from": "From",
       "to": "Until",
@@ -820,6 +825,9 @@
     "sessionNumber": "Session {number} of {total}"
   },
   "billing": {
+    "keepInvoice": "Keep the invoice",
+    "removeLineConfirm": "Remove this line from the invoice?",
+    "lineRemoved": "The line was removed",
     "newPicker": {"title":"New invoice","subtitle":"Who is it for? An invoice for a treatment is opened from the treatment itself.","patient":"Patient","searchPlaceholder":"Search by name or phone","create":"Open invoice"},
     "title": "Billing",
     "invoice": "Invoice",
@@ -847,6 +855,8 @@
       "cancelled": "Cancelled"
     },
     "payment": {
+      "collectTitle": "Take a payment",
+      "historyTitle": "Payments received",
       "title": "Payments",
       "empty": "No payments recorded",
       "createLink": "Create payment link",
@@ -888,6 +898,8 @@
     "cancel": "Cancel invoice",
     "cancelConfirm": "Cancel this invoice? It cannot be restored.",
     "errors": {
+      "providerPhone": "The patient has no phone number, and a payment link needs one. Add it in the patient file.",
+      "providerNotConfigured": "The payment connection has not been set up yet. Complete it in billing settings.",
       "notConfigured": "Grow is not connected yet. Finish the setup in settings.",
       "phoneRequired": "Grow needs a valid Israeli mobile number for the patient.",
       "nothingToCharge": "This invoice has nothing left to charge.",
@@ -1843,6 +1855,7 @@
     "noneInRange": "Nothing in this range"
   },
   "account": {
+    "scheduleManage": "Edit working hours",
     "places": {
       "title": "Clinics and rooms",
       "subtitle": "Where you see patients, and in which rooms. Neither is required — set them up only when there is more than one.",

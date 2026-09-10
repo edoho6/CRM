@@ -89,7 +89,29 @@ export function PatientForm({ patient }: { patient?: Patient }) {
     });
   }
 
-  const fieldError = (name: keyof PatientFormValues) => (errors[name] ? tc('requiredField') : null);
+  /*
+   * The message says what is actually wrong. Every failure used to read
+   * "please fill this field", against a field that visibly had text in it:
+   * a name over the length limit, a malformed date, a bad email address. The
+   * validator's own message is English; its `type` is the reason, and that
+   * maps to a sentence in the reader's language.
+   */
+  const fieldError = (name: keyof PatientFormValues) => {
+    const failure = errors[name];
+    if (!failure) return null;
+    // The schema's own refinements name their reason in the message.
+    if (failure.message === 'invalid_email') return tc('validation.invalidEmail');
+    if (failure.message === 'invalid_date') return tc('validation.invalidDate');
+    switch (failure.type) {
+      case 'too_big':
+        return tc('validation.tooLong');
+      case 'invalid_string':
+      case 'invalid_format':
+        return tc('validation.invalidFormat');
+      default:
+        return tc('validation.required');
+    }
+  };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">

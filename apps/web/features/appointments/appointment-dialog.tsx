@@ -14,6 +14,7 @@ import {
   FieldGrid,
   LtrInput,
   Select,
+  Collapsible,
   Spinner,
   Textarea,
   cn,
@@ -655,15 +656,13 @@ export function AppointmentDialog({
               opens. The answer comes back through the link on its own, and
               can be set here for a patient who rang instead: the button that
               is true turns its colour and says when. */}
+          {/* Folded by default: the booking's fields are what the dialog is
+              opened for, and the reminder trail is read once a day at most.
+              The badge on the fold says where things stand without opening it. */}
           {isEditing && draft?.confirmationToken ? (
-            <section
-              aria-labelledby="reminder-heading"
-              className="space-y-3 rounded-lg border border-ink-200 p-3"
-            >
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <h3 id="reminder-heading" className="text-sm font-semibold text-ink-900">
-                  {t('reminder.title')}
-                </h3>
+            <Collapsible
+              title={t('reminder.title')}
+              badge={
                 <ConfirmationBadge
                   appointment={{
                     status,
@@ -671,8 +670,8 @@ export function AppointmentDialog({
                     confirmation_response: response,
                   }}
                 />
-              </div>
-
+              }
+            >
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
                 {whatsappHref ? (
                   <Button asChild size="sm" variant={reminderSentAt ? 'secondary' : 'primary'}>
@@ -745,17 +744,19 @@ export function AppointmentDialog({
                   </span>
                 </p>
               ) : null}
-            </section>
+            </Collapsible>
           ) : null}
 
           <DialogFooter>
+            {/* Delete after Save, with a gap, rather than at the start edge
+                where a Hebrew reader's eye lands first. */}
             {isEditing ? (
               <Button
                 type="button"
                 variant="ghost"
                 onClick={handleDelete}
                 disabled={isPending}
-                className="me-auto text-red-600 hover:bg-red-50"
+                className="order-last ms-3 text-red-600 hover:bg-red-50"
               >
                 <Trash2 className="h-4 w-4" />
                 {tc('delete')}
