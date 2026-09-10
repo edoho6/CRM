@@ -196,7 +196,8 @@
   מחפש ב-Commons (ו-Openverse) לפי השם הסיני בשני הכתבים, הפינין והשם הפרמצבטי, מנקד לפי מילות
   החומר (dried, slices, 饮片, 藥材, Radix…) ופוסל צמח חי, חנויות, מאכלים ואיורים; רק כשאין —
   `scripts/fetch-herb-images.mjs` מביא את הצמח החי (iNaturalist / Commons / GBIF עם אימות מין).
-  רק CC0 / CC BY (לא BY-SA, לא NC), מאומת מול המקור עצמו. `herb-reference-rejects.json` = דפים
+  CC0 / CC BY / CC BY-SA בסדר הזה (לא NC, לא ND); BY-SA אושר כי התמונה מוצגת כפי שהיא ולא נערכת
+  (הקטנה בלבד), ולכן אין יצירה נגזרת. מאומת מול המקור עצמו. `herb-reference-rejects.json` = דפים
   שנפסלו בבדיקה בעין ולא ייבחרו שוב. `referenceImageFor(herb)` מחפש לפי פינין ואז לפי מין
   (תמונת חומר לעולם לא משמשת צמח אחר מאותו מין), מציג רק כשאין תמונה של הקליניקה, תמיד עם
   הקרדיט (CC BY מחייב) וכיתוב שאומר אם זה החומר או הצמח. לא להוסיף תמונה בלי רשומה ב-manifest
@@ -236,6 +237,8 @@ pnpm typecheck && pnpm test && pnpm build && pnpm check:contrast && pnpm check:t
 
 `check:i18n` עובר על כל `t('…')` בקוד ומוודא שהמפתח קיים ב-`he.json` — מפתח
 חסר לא נכשל בבנייה, הוא מופיע על המסך כטקסט לועזי באמצע העברית.
+**קוד ומפתחות התרגום שלו נכנסים לאותו commit.** ה-CI מריץ את `lib/message-keys.test.ts` על
+checkout נקי; מפתח ששונה ב-`he.json` בעוד הקובץ שמשתמש בו נשאר בצד — עובר אצלך ונופל ב-GitHub.
 
 **PostgREST ומקשר אחד-לאחד:** טבלה עם FK ייחודי (`tcm_notes.encounter_id`,
 `encounters.appointment_id`) מוטמעת כ-**אובייקט או null**, לא כרשימה.
