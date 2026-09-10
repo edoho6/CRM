@@ -20,12 +20,15 @@ export function ThresholdCell({
   kind,
   value,
   suffix,
+  reorderQuantity = null,
 }: {
   id: string;
   kind: 'herb' | 'formula';
   value: number | null;
   /** Grams for a herb, doses for a formula. */
   suffix: string;
+  /** A herb's reorder quantity, carried through untouched: this cell edits only the threshold. */
+  reorderQuantity?: number | null;
 }) {
   const t = useTranslations('inventory.stock');
   const router = useRouter();
@@ -42,7 +45,10 @@ export function ThresholdCell({
     startTransition(async () => {
       const result =
         kind === 'herb'
-          ? await setHerbThreshold(id, { reorder_threshold: trimmed, reorder_quantity: '' })
+          ? await setHerbThreshold(id, {
+              reorder_threshold: trimmed,
+              reorder_quantity: reorderQuantity === null ? '' : String(reorderQuantity),
+            })
           : await setFormulaThreshold(id, { reorder_threshold_doses: trimmed });
       if (result.ok) {
         setSaved(true);

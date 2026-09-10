@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useTranslations } from 'next-intl';
 import { Check, Plus, ShoppingCart } from 'lucide-react';
-import { Button, Field, LtrInput, Popover, Select, Spinner } from '@clinic/ui';
+import { Button, Field, Input, LtrInput, Popover, Select, Spinner } from '@clinic/ui';
 import { cn } from '@clinic/ui/cn';
 import { HERB_PREPARATIONS, preparationUnit, type HerbPreparation } from '@clinic/domain';
 import { useRouter } from '@clinic/i18n/navigation';
@@ -25,6 +25,7 @@ export function OrderDialog({
   formulaId,
   suggestedQuantity,
   listedPreparations = [],
+  suppliers = [],
 }: {
   herbId?: string;
   formulaId?: string;
@@ -32,8 +33,11 @@ export function OrderDialog({
   suggestedQuantity?: number | null;
   /** Preparations already on the list, shown as a reminder rather than a block. */
   listedPreparations?: (HerbPreparation | null)[];
+  /** The clinic's suppliers, to say who this is to be ordered from. */
+  suppliers?: { id: string; name: string }[];
 }) {
   const t = useTranslations('inventory.order');
+  const tBatches = useTranslations('inventory.batches');
   const tPrep = useTranslations('inventory.preparation');
   const tUnit = useTranslations('inventory.unit');
   const tc = useTranslations('common');
@@ -41,6 +45,8 @@ export function OrderDialog({
 
   const [preparation, setPreparation] = useState<HerbPreparation>('dried_herb');
   const [quantity, setQuantity] = useState(suggestedQuantity ? String(suggestedQuantity) : '');
+  const [supplierId, setSupplierId] = useState('');
+  const [notes, setNotes] = useState('');
   const [isPending, startTransition] = useTransition();
   const [justAdded, setJustAdded] = useState(false);
 
@@ -56,12 +62,13 @@ export function OrderDialog({
         quantity: quantity.trim() === '' ? null : Number(quantity),
         unit,
         preparation: formulaId ? null : preparation,
-        supplier_id: null,
+        supplier_id: supplierId || null,
         status: 'pending',
-        notes: null,
+        notes: notes.trim() || null,
       });
       if (result.ok) {
         setJustAdded(true);
+        setNotes('');
         close();
         window.setTimeout(() => setJustAdded(false), 1800);
         router.refresh();
@@ -71,7 +78,7 @@ export function OrderDialog({
 
   return (
     <Popover
-      width={256}
+      width={288}
       align="end"
       panelLabel={t('add')}
       triggerLabel={t('add')}
@@ -121,6 +128,32 @@ export function OrderDialog({
               onKeyDown={(event) => {
                 if (event.key === 'Enter') submit(close);
               }}
+            />
+          </Field>
+
+          {suppliers.length > 0 ? (
+            <Field label={tBatches('supplier')} htmlFor={`order-sup-${herbId ?? formulaId}`} density="compact">
+              <Select
+                id={`order-sup-${herbId ?? formulaId}`}
+                value={supplierId}
+                onChange={(event) => setSupplierId(event.target.value)}
+              >
+                <option value="">{tBatches('noSupplier')}</option>
+                {suppliers.map((supplier) => (
+                  <option key={supplier.id} value={supplier.id}>
+                    {supplier.name}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          ) : null}
+
+          <Field label={tc('notes')} htmlFor={`order-notes-${herbId ?? formulaId}`} density="compact">
+            <Input
+              id={`order-notes-${herbId ?? formulaId}`}
+              value={notes}
+              placeholder={t('notesPlaceholder')}
+              onChange={(event) => setNotes(event.target.value)}
             />
           </Field>
 

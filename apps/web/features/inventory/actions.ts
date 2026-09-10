@@ -61,13 +61,25 @@ export async function createSupplier(input: unknown): Promise<ActionResult<{ id:
   const parsed = supplierFormSchema.safeParse(input);
   if (!parsed.success) return actionError(new Error('validation'));
 
-  const { data, error } = await scope.supabase
+  const row = { ...parsed.data, clinic_id: scope.context.clinic.id };
+  let { data, error } = await scope.supabase
     .from('suppliers')
-    .insert({ ...parsed.data, clinic_id: scope.context.clinic.id })
+    .insert(row)
     .select('id')
     .single<{ id: string }>();
 
-  if (error) return actionError(error);
+  // Until migration 20260910180000 has been run the column is not there;
+  // the supplier is still worth saving, without its terms.
+  if (error?.code === '42703' || /payment_terms/.test(error?.message ?? '')) {
+    const { payment_terms: _dropped, ...withoutTerms } = row;
+    ({ data, error } = await scope.supabase
+      .from('suppliers')
+      .insert(withoutTerms)
+      .select('id')
+      .single<{ id: string }>());
+  }
+
+  if (error || !data) return actionError(error ?? new Error('insert'));
   return actionOk({ id: data.id });
 }
 

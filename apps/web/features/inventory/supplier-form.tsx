@@ -26,7 +26,35 @@ import { createSupplier } from './actions';
 type SupplierInput = z.input<typeof supplierFormSchema>;
 type SupplierOutput = z.output<typeof supplierFormSchema>;
 
-export function NewSupplierDialog() {
+const EMPTY: SupplierInput = {
+  name: '',
+  contact_name: '',
+  phone: '',
+  email: '',
+  address: '',
+  payment_terms: '',
+  notes: '',
+  is_active: true,
+};
+
+/**
+ * A new supplier, from wherever the need for one arises.
+ *
+ * On the suppliers page it is the primary button. From the receiving form it
+ * is a link beside the supplier field — the moment you discover the supplier
+ * is not on the list is the moment you are booking in their delivery, and
+ * leaving the half-filled form to go and add them is how the delivery ends up
+ * booked with "no supplier". `onCreated` hands the new row back so the form
+ * can select it.
+ */
+export function NewSupplierDialog({
+  trigger,
+  onCreated,
+}: {
+  /** Replaces the default primary button. */
+  trigger?: React.ReactNode;
+  onCreated?: (supplier: { id: string; name: string }) => void;
+}) {
   const t = useTranslations('inventory.suppliers');
   const tc = useTranslations('common');
   const tPatients = useTranslations('patients.fields');
@@ -42,15 +70,7 @@ export function NewSupplierDialog() {
     formState: { errors },
   } = useForm<SupplierInput, unknown, SupplierOutput>({
     resolver: zodResolver(supplierFormSchema),
-    defaultValues: {
-      name: '',
-      contact_name: '',
-      phone: '',
-      email: '',
-      address: '',
-      notes: '',
-      is_active: true,
-    },
+    defaultValues: EMPTY,
   });
 
   function onSubmit(values: SupplierOutput) {
@@ -61,8 +81,9 @@ export function NewSupplierDialog() {
         setError(true);
         return;
       }
-      reset();
+      reset(EMPTY);
       setOpen(false);
+      onCreated?.({ id: result.data.id, name: values.name });
       router.refresh();
     });
   }
@@ -70,10 +91,12 @@ export function NewSupplierDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>
-          <Plus className="h-4 w-4" />
-          {t('new')}
-        </Button>
+        {trigger ?? (
+          <Button>
+            <Plus className="h-4 w-4" />
+            {t('new')}
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent title={t('new')} closeLabel={tc('close')}>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -100,6 +123,18 @@ export function NewSupplierDialog() {
             </Field>
             <Field label={tPatients('address')} htmlFor="supplier_address">
               <Input id="supplier_address" {...register('address')} />
+            </Field>
+            <Field
+              label={t('paymentTerms')}
+              htmlFor="supplier_payment_terms"
+              hint={t('paymentTermsHint')}
+              className="sm:col-span-2"
+            >
+              <Input
+                id="supplier_payment_terms"
+                placeholder={t('paymentTermsPlaceholder')}
+                {...register('payment_terms')}
+              />
             </Field>
           </FieldGrid>
 

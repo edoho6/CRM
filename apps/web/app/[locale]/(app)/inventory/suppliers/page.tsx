@@ -56,6 +56,7 @@ export default async function SuppliersPage({ params }: { params: Promise<{ loca
                 <SortTh sortKey="contact">{t('contactName')}</SortTh>
                 <SortTh sortKey="phone">{tPatients('phone')}</SortTh>
                 <SortTh sortKey="email">{tPatients('email')}</SortTh>
+                <SortTh sortKey="terms">{t('paymentTerms')}</SortTh>
                 <SortTh sortKey="status">{tc('status')}</SortTh>
               </tr>
             </thead>
@@ -68,6 +69,7 @@ export default async function SuppliersPage({ params }: { params: Promise<{ loca
                     contact: supplier.contact_name,
                     phone: supplier.phone,
                     email: supplier.email,
+                    terms: supplier.payment_terms ?? null,
                     status: supplier.is_active ? 0 : 1,
                   }}
                 >
@@ -83,6 +85,7 @@ export default async function SuppliersPage({ params }: { params: Promise<{ loca
                     )}
                   </Td>
                   <Td>{supplier.email ? <span dir="ltr">{supplier.email}</span> : <Dash />}</Td>
+                  <Td>{supplier.payment_terms ? supplier.payment_terms : <Dash />}</Td>
                   <Td>
                     <Badge tone={supplier.is_active ? 'success' : 'muted'}>
                       {supplier.is_active ? tc('active') : tc('inactive')}

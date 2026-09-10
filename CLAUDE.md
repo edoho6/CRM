@@ -192,16 +192,31 @@
   (x<0) ומשוקף. הדגם ב-`public/models/body.glb` חייב להיות glb רגיל — **בלי
   Draco/Meshopt/טקסטורות** — כי ה-CSP חוסם worker ו-blob; לא להרחיב את ה-CSP
 - **תמונות ייחוס לצמחים:** `apps/web/public/herbs/` + `features/inventory/herb-reference-images.json`
-  (מקור, צלם, רישיון, קישור). נאספות ב-`scripts/fetch-herb-images.mjs` — רק CC0 / CC BY, עם
-  אימות מין (תצפית research-grade ב-iNaturalist, קטגוריית המין ב-Commons, התאמת טקסון ב-GBIF);
-  `scripts/shrink-herb-images.mjs` מקטין ל-640px. `referenceImageFor(herb)` מציג אותן רק כשאין
-  תמונה של הקליניקה, תמיד עם הקרדיט (CC BY מחייב). לא להוסיף תמונה בלי רשומה ב-manifest
+  (מקור, צלם, רישיון, קישור, `form`). **חומר המרפא היבש קודם** — `scripts/fetch-herb-material-images.mjs`
+  מחפש ב-Commons (ו-Openverse) לפי השם הסיני בשני הכתבים, הפינין והשם הפרמצבטי, מנקד לפי מילות
+  החומר (dried, slices, 饮片, 藥材, Radix…) ופוסל צמח חי, חנויות, מאכלים ואיורים; רק כשאין —
+  `scripts/fetch-herb-images.mjs` מביא את הצמח החי (iNaturalist / Commons / GBIF עם אימות מין).
+  רק CC0 / CC BY (לא BY-SA, לא NC), מאומת מול המקור עצמו. `herb-reference-rejects.json` = דפים
+  שנפסלו בבדיקה בעין ולא ייבחרו שוב. `referenceImageFor(herb)` מחפש לפי פינין ואז לפי מין
+  (תמונת חומר לעולם לא משמשת צמח אחר מאותו מין), מציג רק כשאין תמונה של הקליניקה, תמיד עם
+  הקרדיט (CC BY מחייב) וכיתוב שאומר אם זה החומר או הצמח. לא להוסיף תמונה בלי רשומה ב-manifest
 - **שאלונים מהספרייה:** `features/forms/library.ts` — תבניות מוכנות עם מזהי שדות קבועים.
   כל מילוי שאלון מקבל שורה ב-`patient_documents` עם `file_path = 'form-submission:<id>'`
   (trigger ב-migration 20260910170000); אין קובץ באחסון — `/api/documents/[id]` מרנדר את
   התשובות מה-`fields` הקפואים של ההגשה דרך `renderSubmissionHtml` (packages/domain)
 - **תאריכים:** תמיד `components/date-input.tsx` (dd/mm/yyyy עם לוח שנה), לא `type="date"` ישיר —
   הדפדפן מציג את הפורמט לפי שפת הדפדפן ולא לפי הדף. טפסי react-hook-form: `watch`/`setValue`
+- **מיון רשימות מדפדפות:** `components/sort-link-th.tsx` + `lib/sort-params.ts` — הכותרת היא קישור
+  שכותב `sort`/`dir` ל-URL ומוחק `page`, והשאילתה ממיינת (עמודת DB) או ממיינת בזיכרון על כל
+  השורות התואמות ואז חותכת עמוד (ערך מחושב כמו מלאי או משקל). `SortableTable` (מיון בצד לקוח)
+  נשאר רק לטבלה שכולה בעמוד אחד — מיון של עמוד מתוך כמה הוא שקר
+- **גודל שורות בטבלה:** `TableWrapper responsive` מציג את `TableSizeControl` (חבילה משותפת);
+  הבחירה נשמרת ב-localStorage ומוחלת כ-`data-table-size` על העוטף, הכללים ב-`globals.css`.
+  המילים מגיעות מ-`UiLabelsProvider` ב-layout — לא מעבירים תוויות לכל טבלה
+- **אריחי סטטוס במטופלים:** הסדר וההסתרה של המשתמש ב-`features/patients/tile-layout.ts`
+  (טהור, עם בדיקות), נשמרים ב-localStorage; אריח חדש שלא נשמר סדר עבורו נכנס בסוף, לא נעלם
+- **ניווט המאגר:** ברשימות — שורה אחת עם החיפוש; בדפי רשומה (מונוגרף, עריכה, חדש, השוואה) —
+  `<ReferenceNav compact />` בחריץ `actions` של `PageHeader`, לא שורה משלו מתחת לכותרת
 - **מבנה דף אחיד:** כותרת דף רק דרך `PageHeader` מ-`@clinic/ui` (חריצים `actions`
   לפעולה הראשית, `banner` לאזהרה, `below` לפס תחת הכותרת — לא שוליים שליליים);
   ניווט משנה ומסננים ב-URL דרך `components/segmented-links.tsx`, בחירה

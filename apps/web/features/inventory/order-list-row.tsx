@@ -18,6 +18,7 @@ import { removeFromOrderList, updateOrderListEntry } from './actions';
  */
 export function OrderListRowControls({
   entry,
+  suppliers = [],
 }: {
   entry: {
     id: string;
@@ -25,27 +26,40 @@ export function OrderListRowControls({
     formula_id: string | null;
     quantity: number | null;
     unit: string;
+    preparation?: string | null;
+    supplier_id: string | null;
     status: OrderListStatus;
     notes: string | null;
   };
+  suppliers?: { id: string; name: string }[];
 }) {
   const t = useTranslations('inventory.order');
+  const tBatches = useTranslations('inventory.batches');
   const tUnit = useTranslations('inventory.unit');
   const tc = useTranslations('common');
   const router = useRouter();
   const [quantity, setQuantity] = useState(entry.quantity === null ? '' : String(entry.quantity));
   const [notes, setNotes] = useState(entry.notes ?? '');
+  const [supplierId, setSupplierId] = useState(entry.supplier_id ?? '');
   const [isPending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
 
-  function save(patch: { quantity?: string; notes?: string; status?: OrderListStatus }) {
+  function save(patch: {
+    quantity?: string;
+    notes?: string;
+    status?: OrderListStatus;
+    supplier_id?: string;
+  }) {
     startTransition(async () => {
+      // Every field goes back, edited or not: this used to send the supplier
+      // as null, so changing the status of a line forgot who it was from.
       const result = await updateOrderListEntry(entry.id, {
         herb_id: entry.herb_id,
         formula_id: entry.formula_id,
         quantity: patch.quantity ?? quantity,
         unit: entry.unit,
-        supplier_id: null,
+        preparation: entry.preparation ?? null,
+        supplier_id: (patch.supplier_id ?? supplierId) || null,
         status: patch.status ?? entry.status,
         notes: patch.notes ?? notes,
       });
@@ -89,6 +103,25 @@ export function OrderListRowControls({
         </span>
       </Td>
       <Td>
+        <Select
+          aria-label={tBatches('supplier')}
+          value={supplierId}
+          compact
+          className="min-w-32"
+          onChange={(event) => {
+            setSupplierId(event.target.value);
+            save({ supplier_id: event.target.value });
+          }}
+        >
+          <option value="">{tBatches('noSupplier')}</option>
+          {suppliers.map((supplier) => (
+            <option key={supplier.id} value={supplier.id}>
+              {supplier.name}
+            </option>
+          ))}
+        </Select>
+      </Td>
+      <Td>
         <Input
           type="text"
           compact
@@ -104,7 +137,8 @@ export function OrderListRowControls({
         <Select
           aria-label={tc('status')}
           value={entry.status}
-          className="h-7 w-auto text-xs"
+          compact
+          className="min-w-28"
           onChange={(event) => save({ status: event.target.value as OrderListStatus })}
         >
           {ORDER_LIST_STATUSES.map((status) => (

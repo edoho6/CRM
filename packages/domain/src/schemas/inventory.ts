@@ -103,6 +103,8 @@ export const supplierFormSchema = z.object({
   phone: optionalText(30),
   email: optionalText(160),
   address: optionalText(300),
+  /** Free text — "שוטף + 30", "מזומן במסירה" — because every supplier says it differently. */
+  payment_terms: optionalText(300),
   notes: optionalText(1000),
   is_active: z.boolean().default(true),
 });
