@@ -227,7 +227,7 @@ export function InvoiceEditor({ invoice }: { invoice: InvoiceWithDetails }) {
                               // One click used to drop the line and re-total
                               // the invoice; a mis-click on a bill is money.
                               const confirmed = await confirm({
-                                title: tc('delete'),
+                                title: tc('deleteNamed', { thing: tc('things.line') }),
                                 body: t('removeLineConfirm'),
                                 confirmLabel: tc('delete'),
                                 destructive: true,

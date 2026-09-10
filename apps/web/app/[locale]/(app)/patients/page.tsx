@@ -19,6 +19,7 @@ import type { PatientTag, PatientWithDiary } from '@clinic/db/types';
 import { PageHeader } from '@/components/app-shell';
 import { SegmentedLinks } from '@/components/segmented-links';
 import { PAGE_SIZE, Pagination, pageFrom, pageRange } from '@/components/pagination';
+import { RememberQuery } from '@/components/remember-query';
 import { getClinicScope } from '@/lib/session';
 import { ageFromDateOfBirth } from '@/lib/display';
 import { PatientSearch } from '@/features/patients/patient-search';
@@ -214,6 +215,7 @@ export default async function PatientsPage({
       />
 
       <div className="mb-4 space-y-3">
+        <RememberQuery id="patients" keys={['q', 'inactive', 'status', 'tag', 'noUpcoming']} />
         <PatientStatusSummary counts={counts} />
         <PatientSearch initialQuery={q} showInactive={inactive === '1'} />
         {/* The status tiles above are the status filter; a second row of the

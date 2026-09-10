@@ -16,6 +16,7 @@ import {
 } from '@clinic/ui';
 import { Link } from '@clinic/i18n/navigation';
 import { PageHeader } from '@/components/app-shell';
+import { PAGE_SIZE, Pagination, pageFrom, pageRange } from '@/components/pagination';
 import { getClinicScope } from '@/lib/session';
 import { SettingsNav } from '@/features/settings/settings-nav';
 import { formatDateTime } from '@clinic/i18n';
@@ -51,17 +52,18 @@ interface AnomalyRow {
   kind: 'bulk_access' | 'after_hours';
 }
 
-const RECENT_LIMIT = 200;
 
 export default async function AccessLogPage({
   params,
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ action?: string }>;
+  searchParams: Promise<{ action?: string; page?: string }>;
 }) {
   const { locale } = await params;
-  const { action = '' } = await searchParams;
+  const { action = '', page: pageParam } = await searchParams;
+  const page = pageFrom(pageParam);
+  const [from, to] = pageRange(page);
   setRequestLocale(locale);
 
   const t = await getTranslations('settings.access');
@@ -72,9 +74,9 @@ export default async function AccessLogPage({
 
   let query = scope.supabase
     .from('access_activity')
-    .select('*')
+    .select('*', { count: 'exact' })
     .order('changed_at', { ascending: false })
-    .limit(RECENT_LIMIT);
+    .range(from, to);
 
   if (action === 'reads') query = query.in('action', ['view', 'export']);
   else if (action === 'writes') query = query.in('action', ['insert', 'update', 'delete', 'sign']);
@@ -94,6 +96,7 @@ export default async function AccessLogPage({
   ]);
 
   const activity = activityResult.data ?? [];
+  const activityCount = activityResult.count ?? null;
   const anomalies = anomalyResult.data ?? [];
   const actorNames = new Map((actorsResult.data ?? []).map((row) => [row.id, row.full_name ?? '']));
 
@@ -232,9 +235,15 @@ export default async function AccessLogPage({
         </TableWrapper>
       )}
 
-      <p className="mt-4 text-xs leading-relaxed text-ink-600">
-        {t('retentionNote', { count: RECENT_LIMIT })}
-      </p>
+      <Pagination
+        page={page}
+        total={activityCount}
+        shown={activity.length}
+        pathname="/settings/access"
+        query={{ action: action || undefined }}
+      />
+
+      <p className="mt-4 text-xs leading-relaxed text-ink-600">{t('retentionNote')}</p>
     </>
   );
 }

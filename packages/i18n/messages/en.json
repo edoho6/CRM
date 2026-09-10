@@ -124,7 +124,7 @@
     "created": "Task added",
     "updated": "Task updated",
     "deleted": "Task deleted",
-    "deleteConfirm": "Delete this task?",
+    "deleteConfirm": "This action cannot be undone.",
     "browserNotifications": "Browser notifications",
     "browserHint": "While the system is open in a browser, a task that falls due pops up as a notification. When it is closed, the alert waits in the bell.",
     "enableBrowser": "Turn on browser notifications",
@@ -138,6 +138,21 @@
     "openAll": "All tasks"
   },
   "common": {
+    "deleteNamed": "Delete {thing}?",
+    "things": {
+      "appointment": "this appointment",
+      "package": "this package",
+      "document": "this document",
+      "confirmation": "this confirmation",
+      "protocol": "this protocol",
+      "photo": "this photo",
+      "appointmentType": "this treatment type",
+      "location": "this clinic",
+      "room": "this room",
+      "tag": "this tag",
+      "task": "this task",
+      "line": "this line"
+    },
     "more": "More actions",
     "pagination": {
       "label": "Pagination",
@@ -192,7 +207,6 @@
     "retry": "Try again",
     "saved": "Saved",
     "deleted": "Deleted",
-    "deleteConfirmTitle": "Delete this?",
     "deleteConfirmBody": "This action cannot be undone.",
     "unit": "Unit",
     "quantity": "Quantity",
@@ -861,7 +875,7 @@
   },
   "billing": {
     "keepInvoice": "Keep the invoice",
-    "removeLineConfirm": "Remove this line from the invoice?",
+    "removeLineConfirm": "The invoice total updates accordingly.",
     "lineRemoved": "The line was removed",
     "newPicker": {
       "title": "New invoice",
@@ -1016,7 +1030,7 @@
     "uploadedAt": "Uploaded",
     "download": "Download",
     "delete": "Delete",
-    "deleteConfirm": "Delete this document? This cannot be undone.",
+    "deleteConfirm": "This cannot be undone.",
     "uploaded": "Document uploaded",
     "deleted": "Document deleted",
     "shared": "Shared with patient",
@@ -1037,7 +1051,7 @@
       "created": "Herb added to the catalogue",
       "updated": "Herb updated",
       "empty": "The catalogue is empty",
-      "emptyBody": "Add herbs manually, or start from the common herb list seeded with the system.",
+      "emptyBody": "Add the first herb from the button; from there the catalogue grows with every prescription.",
       "searchPlaceholder": "Search pinyin, Chinese, English or Hebrew",
       "inStock": "In stock",
       "belowThreshold": "Below threshold",
@@ -1147,6 +1161,10 @@
       "herbCount": "Herbs"
     },
     "batches": {
+      "noHerbsAction": "Add a herb to the catalogue",
+      "noHerbs": "No herbs in the catalogue yet — add a herb first",
+      "chooseHerb": "Choose a herb",
+      "noSupplier": "No supplier",
       "title": "Stock batches",
       "receive": "Receive stock",
       "received": "Stock received",
@@ -1524,7 +1542,7 @@
       "colour": "Colour",
       "active": "Active",
       "add": "Add a clinic",
-      "deleteConfirm": "Delete this clinic? Bookings and rooms in it stay, without one.",
+      "deleteConfirm": "Bookings and rooms in it stay, without one.",
       "inUse": "There are bookings or rooms in this clinic, so it was retired rather than deleted.",
       "empty": "One clinic only — nothing to set up. Add one only when you work from several addresses."
     },
@@ -1538,7 +1556,7 @@
       "colour": "Colour",
       "active": "Active",
       "add": "Add a room",
-      "deleteConfirm": "Delete this room? Bookings already in it stay, without a room.",
+      "deleteConfirm": "Bookings already in it stay, without a room.",
       "inUse": "There are bookings in this room, so it was retired rather than deleted."
     },
     "tags": {
@@ -1556,7 +1574,7 @@
       },
       "add": "Add a tag",
       "usage": "{count, plural, =0 {no patients} one {one patient} other {# patients}}",
-      "deleteConfirm": "Delete this tag? It will be removed from {count} files.",
+      "deleteConfirm": "It will be removed from {count} files.",
       "saveFailed": "Not saved. There may already be a tag with this name.",
       "empty": "No tags yet. Add one here, or from a patient file."
     },
@@ -1618,7 +1636,7 @@
         "reads": "Reads and downloads",
         "writes": "Changes"
       },
-      "retentionNote": "Showing the {count} most recent entries. The log itself is kept in full and cannot be edited or deleted from within the application — not even by you.",
+      "retentionNote": "The log is kept in full and cannot be edited or deleted from inside the app — not even by you.",
       "actions": {
         "view": "Viewed",
         "export": "Downloaded",
@@ -1670,7 +1688,7 @@
       "colour": "Colour in the diary",
       "active": "Offered when booking",
       "add": "Add a treatment type",
-      "deleteConfirm": "Delete this treatment type?",
+      "deleteConfirm": "Bookings already made with this type stay.",
       "inUse": "This type is attached to existing bookings, so it was hidden from the picker rather than deleted — past appointments keep their label.",
       "countBadge": "{count, plural, =0 {No types} one {1 type} other {# types}}"
     }
@@ -2063,6 +2081,7 @@
     "openOnlyBetween": "Open only between"
   },
   "protocols": {
+    "emptyTitle": "No protocols yet",
     "title": "Treatment protocols",
     "subtitle": "Point and prescription combinations you return to. A protocol fills the treatment in and leaves everything open to edit.",
     "manage": "Manage protocols",
@@ -2088,7 +2107,7 @@
     "retired": "Retired",
     "pointCount": "{count, plural, one {1 point} other {# points}}",
     "hasPrescription": "Has a prescription",
-    "empty": "No protocols yet. The usual way to make one is to finish a treatment and press “Save as protocol”."
+    "empty": "The usual way to make one is to finish a treatment and press \"Save as protocol\"."
   },
   "workspace": {
     "openFiles": "Open files",
@@ -2107,8 +2126,8 @@
     "truncated": "Showing the first 50 rows only.",
     "privacyTitle": "What leaves the clinic",
     "privacyBody": "The question and its results (names, dates and numbers) are sent to Anthropic to phrase the answer. Clinical records, ID numbers and addresses are never sent.",
-    "notConfigured": "The assistant is not set up",
-    "notConfiguredBody": "It needs an Anthropic API key in the {variable} environment variable in apps/web/.env.local, then a server restart. The key stays on the server and never enters the code or git.",
+    "notConfigured": "The assistant is not switched on yet",
+    "notConfiguredBody": "It is switched on during installation, by whoever set the system up — the instructions are in the setup guide in the project folder. Everything else works as usual meanwhile.",
     "unavailable": "Could not reach the service. Try again in a moment.",
     "gaveUp": "I could not answer that from the data I can reach. Try putting it another way.",
     "tooLong": "That question is too long. One sentence is enough.",

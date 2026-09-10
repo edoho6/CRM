@@ -2,8 +2,8 @@
 
 import { useEffect, useState, useTransition } from 'react';
 import { useTranslations } from 'next-intl';
-import { AlertTriangle, Bell, BellRing, Plus } from 'lucide-react';
-import { Button, Card, CardBody, CardHeader, CardTitle, Collapsible, cn } from '@clinic/ui';
+import { AlertTriangle, Bell, BellRing, ListChecks, Plus } from 'lucide-react';
+import { Button, Card, CardBody, CardHeader, CardTitle, Collapsible, EmptyState, cn } from '@clinic/ui';
 import { formatDate, formatDateTime } from '@clinic/i18n';
 import { Link, useRouter } from '@clinic/i18n/navigation';
 import type { ClinicTaskWithPatient } from '@clinic/db/types';
@@ -197,9 +197,16 @@ export function TasksBoard({
       </div>
 
       {open.length === 0 ? (
-        <Card>
-          <CardBody className="text-center text-sm text-ink-600">{t('empty')}</CardBody>
-        </Card>
+        <EmptyState
+          icon={<ListChecks className="h-8 w-8" />}
+          title={t('empty')}
+          action={
+            <Button type="button" variant="secondary" onClick={() => edit(null)}>
+              <Plus className="h-4 w-4" aria-hidden />
+              {t('new')}
+            </Button>
+          }
+        />
       ) : (
         <>
           {section('overdue')}

@@ -93,7 +93,7 @@ export function RoomsManager({ rooms, locations }: { rooms: Room[]; locations: L
       return;
     }
     const confirmed = await confirm({
-      title: tc('deleteConfirmTitle'),
+      title: tc('deleteNamed', { thing: tc('things.room') }),
       body: t('deleteConfirm'),
       confirmLabel: tc('delete'),
       destructive: true,

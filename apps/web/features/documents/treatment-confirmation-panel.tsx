@@ -277,7 +277,7 @@ export function TreatmentConfirmationPanel({
                       disabled={isPending}
                       onClick={async () => {
                         const confirmed = await confirm({
-                          title: tc('deleteConfirmTitle'),
+                          title: tc('deleteNamed', { thing: tc('things.confirmation') }),
                           body: tc('deleteConfirmBody'),
                           confirmLabel: tc('delete'),
                           destructive: true,

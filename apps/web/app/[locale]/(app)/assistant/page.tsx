@@ -5,7 +5,6 @@ import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
 import { assistantAvailable } from '@/features/assistant/actions';
 import { AssistantPanel } from '@/features/assistant/assistant-panel';
-import { ANTHROPIC_KEY_VAR } from '@/features/assistant/anthropic';
 
 /**
  * Questions about the clinic's own numbers.
@@ -54,7 +53,7 @@ export default async function AssistantPage({
         <EmptyState
           icon={<Sparkles className="h-8 w-8" />}
           title={t('notConfigured')}
-          description={t('notConfiguredBody', { variable: ANTHROPIC_KEY_VAR })}
+          description={t('notConfiguredBody')}
         />
       )}
     </>

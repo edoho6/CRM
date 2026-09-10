@@ -423,14 +423,14 @@ export function CalendarView({
             <div className="flex flex-wrap items-center gap-1.5">
               <DateInput
                 aria-label={tFilters('from')}
-                value={rangeFrom ?? ''}
+                value={rangeFrom ?? toDateKey(days[0]!)}
                 max={rangeTo ?? undefined}
                 onChange={(event) => setRangeBound('from', event.target.value)}
               />
               <span className="text-sm text-ink-600">–</span>
               <DateInput
                 aria-label={tFilters('to')}
-                value={rangeTo ?? ''}
+                value={rangeTo ?? toDateKey(days[days.length - 1]!)}
                 min={rangeFrom ?? undefined}
                 onChange={(event) => setRangeBound('to', event.target.value)}
               />

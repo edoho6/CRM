@@ -125,7 +125,7 @@ export function TaskDialog({
   async function remove() {
     if (!task) return;
     const confirmed = await confirm({
-      title: tc('deleteConfirmTitle'),
+      title: tc('deleteNamed', { thing: tc('things.task') }),
       body: t('deleteConfirm'),
       confirmLabel: tc('delete'),
       destructive: true,

@@ -2,13 +2,14 @@
 
 import { useState, useTransition } from 'react';
 import { useTranslations } from 'next-intl';
-import { Archive, ArchiveRestore, Pencil, Plus, Trash2 } from 'lucide-react';
+import { Archive, ArchiveRestore, ClipboardList, Pencil, Plus, Trash2 } from 'lucide-react';
 import {
   Alert,
   Badge,
   Button,
   Card,
   CardBody,
+  EmptyState,
   Dialog,
   DialogContent,
   DialogFooter,
@@ -128,7 +129,7 @@ export function ProtocolsManager({ protocols }: { protocols: TreatmentProtocol[]
 
   async function remove(protocol: TreatmentProtocol) {
     const confirmed = await confirm({
-      title: tc('deleteConfirmTitle'),
+      title: tc('deleteNamed', { thing: tc('things.protocol') }),
       body: tc('deleteConfirmBody'),
       confirmLabel: tc('delete'),
       destructive: true,
@@ -157,11 +158,17 @@ export function ProtocolsManager({ protocols }: { protocols: TreatmentProtocol[]
       </div>
 
       {protocols.length === 0 ? (
-        <Card>
-          <CardBody>
-            <p className="text-sm text-ink-700">{t('empty')}</p>
-          </CardBody>
-        </Card>
+        <EmptyState
+          icon={<ClipboardList className="h-8 w-8" />}
+          title={t('emptyTitle')}
+          description={t('empty')}
+          action={
+            <Button type="button" variant="secondary" onClick={openCreate}>
+              <Plus className="h-4 w-4" />
+              {t('newProtocol')}
+            </Button>
+          }
+        />
       ) : (
         <ul className="space-y-2">
           {protocols.map((protocol) => (

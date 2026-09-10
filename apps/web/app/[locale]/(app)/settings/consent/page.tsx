@@ -1,6 +1,5 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { FileText } from 'lucide-react';
-import { Alert, Badge, Card, CardBody, CardHeader, CardTitle, EmptyState } from '@clinic/ui';
+import { Alert, Badge, Card, CardBody, CardHeader, CardTitle } from '@clinic/ui';
 import { CONSENT_KINDS } from '@clinic/domain';
 import type { ConsentDocument } from '@clinic/db/types';
 import { PageHeader } from '@/components/app-shell';
@@ -62,7 +61,7 @@ export default async function ConsentDocumentsPage({
               </CardHeader>
               <CardBody className="space-y-4">
                 {versions.length === 0 ? (
-                  <EmptyState icon={<FileText className="h-8 w-8" />} title={t('noVersions')} />
+                  <p className="text-sm text-ink-600">{t('noVersions')}</p>
                 ) : (
                   <ul className="divide-y divide-ink-100 text-sm">
                     {versions.map((doc) => (

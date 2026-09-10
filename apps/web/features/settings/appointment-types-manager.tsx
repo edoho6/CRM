@@ -111,7 +111,7 @@ export function AppointmentTypesManager({ types }: { types: AppointmentType[] })
     }
 
     const confirmed = await confirm({
-      title: tc('deleteConfirmTitle'),
+      title: tc('deleteNamed', { thing: tc('things.appointmentType') }),
       body: t('deleteConfirm'),
       confirmLabel: tc('delete'),
       destructive: true,

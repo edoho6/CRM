@@ -72,9 +72,13 @@ export default async function PointsPage({
       <PageHeader title={t('title')} description={t('count', { count: count ?? points.length })} />
       <ReferenceNav />
 
-      <div className="mb-4">
-        <PointSearch initialQuery={term} channel={channel} area={area} category={category} />
-      </div>
+      {/* Three rows of filter chips over an empty catalogue are furniture with
+          nothing to filter; they appear with the first point. */}
+      {points.length > 0 || term || channel || area || category ? (
+        <div className="mb-4">
+          <PointSearch initialQuery={term} channel={channel} area={area} category={category} />
+        </div>
+      ) : null}
 
       {points.length === 0 ? (
         <EmptyState

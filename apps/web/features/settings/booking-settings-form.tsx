@@ -110,7 +110,7 @@ export function BookingSettingsForm({
         {error ? <Alert tone="danger">{error}</Alert> : null}
         {on && bookableTypes === 0 ? <Alert tone="warning">{t('noTypes')}</Alert> : null}
 
-        <Toggle checked={on} onChange={setOn} label={t('enabled')} />
+        <Toggle checked={on} onChange={setOn} label={t('enabled')} showLabel />
 
         <Field label={t('slug')} htmlFor="booking_slug" hint={t('slugHint')} required>
           <LtrInput
@@ -181,7 +181,7 @@ export function BookingSettingsForm({
         </FieldGrid>
 
         <div className="space-y-1">
-          <Toggle checked={verify} onChange={setVerify} label={t('verifySms')} />
+          <Toggle checked={verify} onChange={setVerify} label={t('verifySms')} showLabel />
           <p className="text-xs text-ink-500">{t('verifySmsHint')}</p>
         </div>
 

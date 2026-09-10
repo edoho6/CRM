@@ -7,6 +7,7 @@ import { Link } from '@clinic/i18n/navigation';
 import { LanguageSwitcher } from './language-switcher';
 import { ThemeToggle } from './theme-toggle';
 import { clearOpenFiles } from '@/features/workspace/open-files';
+import { forgetAllFilters } from '@/components/remember-query';
 
 /**
  * Who you are, and the handful of things that belong to you rather than to the
@@ -100,10 +101,14 @@ export function UserMenu({
             <LanguageSwitcher className="w-full justify-center" />
           </div>
 
-          {/* Signing out clears the open-files strip. A shared clinic computer
-              must not still be listing who the last person had open — which is
-              why this handler travels with the form wherever the form goes. */}
-          <form action={onSignOut} onSubmit={() => clearOpenFiles()} className="border-t border-ink-100 pt-2">
+          {/* Signing out clears the open-files strip and the remembered list
+              filters. A shared clinic computer must not still be listing who
+              the last person had open, or the name they searched for — which
+              is why this handler travels with the form wherever the form goes. */}
+          <form action={onSignOut} onSubmit={() => {
+              clearOpenFiles();
+              forgetAllFilters();
+            }} className="border-t border-ink-100 pt-2">
             <button
               type="submit"
               className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-start text-sm text-ink-800 transition-colors hover:bg-ink-100"

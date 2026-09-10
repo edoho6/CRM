@@ -51,7 +51,7 @@ export function DialogContent({
   return (
     <DialogPrimitive.Portal>
       <DialogPrimitive.Overlay className="fixed inset-0 z-overlay bg-ink-900/40 backdrop-blur-[1px] data-[state=open]:animate-fade-in data-[state=closed]:animate-fade-out" />
-      {/* Centred by `inset-0` + `m-auto` on the content itself — the way a
+      {/* From `sm` up, centred by `inset-0` + `m-auto` on the content itself — the way a
           native <dialog> centres — rather than by a wrapping flex box.
 
           The wrapper was not harmless. Radix's Portal puts each direct child in
@@ -62,10 +62,14 @@ export function DialogContent({
           so there is no sign to flip for RTL. */}
       <DialogPrimitive.Content
         className={cn(
-          'fixed inset-0 z-overlay m-auto h-fit w-[calc(100%-2rem)] max-w-lg',
-          'rounded-card border border-ink-200 bg-white shadow-lg',
-          'max-h-[calc(100vh-4rem)] overflow-y-auto',
-          'data-[state=open]:animate-dialog-in data-[state=closed]:animate-dialog-out',
+          // Phone: a drawer pinned to the bottom edge, full width, that
+          // slides up. From `sm` on: the centred card.
+          'fixed inset-x-0 bottom-0 z-overlay h-fit max-h-[calc(100dvh-3rem)] w-full overflow-y-auto',
+          'rounded-t-card border-t border-ink-200 bg-white shadow-lg pb-[env(safe-area-inset-bottom)]',
+          'data-[state=open]:animate-drawer-in data-[state=closed]:animate-drawer-out',
+          'sm:inset-0 sm:m-auto sm:w-[calc(100%-2rem)] sm:max-w-lg sm:max-h-[calc(100vh-4rem)] sm:pb-0',
+          'sm:rounded-card sm:border',
+          'sm:data-[state=open]:animate-dialog-in sm:data-[state=closed]:animate-dialog-out',
           className,
         )}
         onOpenAutoFocus={focusFirstField}

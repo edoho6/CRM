@@ -16,6 +16,7 @@ import { Link } from '@clinic/i18n/navigation';
 import type { Appointment, Encounter, EncounterPaymentStatus, Patient } from '@clinic/db/types';
 import { PageHeader } from '@/components/app-shell';
 import { PAGE_SIZE, Pagination, pageFrom, pageRange } from '@/components/pagination';
+import { RememberQuery } from '@/components/remember-query';
 import { DateRangeFilter } from '@/components/date-range-filter';
 import { getClinicScope } from '@/lib/session';
 import { resolveRange, toDateKey } from '@/lib/date-range';
@@ -187,6 +188,7 @@ export default async function EncountersPage({
         }
       />
 
+      <RememberQuery id="encounters" keys={['range', 'from', 'to']} />
       <DateRangeFilter className="mb-4" />
 
       {encounters.length === 0 ? (

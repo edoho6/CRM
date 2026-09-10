@@ -19,7 +19,7 @@ export default async function PortalLoginPage({
     <main className="grid min-h-dvh place-items-center px-6 py-12">
       <div className="w-full max-w-sm space-y-5">
         <div className="flex flex-col items-center gap-2 text-center">
-          <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-jade-700 text-white">
+          <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-accent text-accent-fg">
             <Leaf className="h-5 w-5" />
           </span>
           <h1 className="text-lg font-semibold text-ink-900">{tc('appName')}</h1>

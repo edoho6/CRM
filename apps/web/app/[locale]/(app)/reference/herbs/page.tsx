@@ -17,6 +17,7 @@ import type { Herb, HerbStockLevel } from '@clinic/db/types';
 import { TEMPERATURES, type Locale } from '@clinic/domain';
 import { PageHeader } from '@/components/app-shell';
 import { CATALOGUE_PAGE, Pagination, pageFrom, pageRange } from '@/components/pagination';
+import { RememberQuery } from '@/components/remember-query';
 import { TcmChip, TcmChips } from '@/components/tcm-chip';
 
 /** Every chip links back into this list, filtered by what the chip says. */
@@ -126,6 +127,7 @@ export default async function HerbsPage({
       <ReferenceNav />
 
       <div className="mb-4 space-y-3">
+        <RememberQuery id="herbs" keys={['q', 'cat', 'temp', 'taste', 'chan', 'review']} />
         <CatalogueSearch initialQuery={filters.q} placeholder={t('searchPlaceholder')} />
         <HerbFilters filters={filters} />
       </div>

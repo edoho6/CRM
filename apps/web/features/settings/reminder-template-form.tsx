@@ -92,7 +92,7 @@ export function ReminderTemplateForm({
       <CardBody className="space-y-4">
         <p className="text-sm text-ink-600">{t('intro')}</p>
 
-        <Toggle checked={on} onChange={setOn} label={t('enabled')} />
+        <Toggle checked={on} onChange={setOn} label={t('enabled')} showLabel />
 
         <FieldGrid>
           <Field label={t('hoursBefore')} htmlFor="reminder_hours">

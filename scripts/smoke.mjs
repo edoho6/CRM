@@ -323,6 +323,40 @@ const flows = {
     const url = page.url();
     return { ok: filtered.test(url), detail: url };
   },
+  async filtersRemembered(page) {
+    // Search once, leave, come back bare: the list should reopen filtered.
+    const input = page.locator('main input[type="search"]').first();
+    await input.fill('אב');
+    await page.waitForURL(/[?&]q=/, { timeout: 8000 }).catch(() => {});
+    if (!/[?&]q=/.test(page.url())) return { ok: false, detail: 'search never reached the URL: ' + page.url() };
+    await page.goto(new URL('/he', page.url()).href, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => {});
+    await page.goto(new URL('/he/patients', page.url()).href, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => {});
+    await page.waitForURL(/[?&]q=/, { timeout: 8000 }).catch(() => {});
+    const remembered = /[?&]q=/.test(page.url());
+    // Clearing must be remembered too, or the term springs back forever.
+    await page.locator('main input[type="search"]').first().fill('');
+    await page.waitForURL((url) => !/[?&]q=/.test(url.href), { timeout: 8000 }).catch(() => {});
+    await page.goto(new URL('/he', page.url()).href, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => {});
+    await page.goto(new URL('/he/patients', page.url()).href, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => {});
+    await page.waitForTimeout(900);
+    const cleared = !/[?&]q=/.test(page.url());
+    return { ok: remembered && cleared, detail: `remembered ${remembered}, cleared ${cleared}, at ${page.url()}` };
+  },
+  async phoneDrawer(page) {
+    // On a phone the dialog is a drawer: full width, pinned to the bottom
+    // edge. Left open so the screenshot shows it.
+    const dialog = page.locator('[role="dialog"]').first();
+    await dialog.waitFor({ timeout: 5_000 });
+    await page.waitForTimeout(600);
+    const box = await dialog.boundingBox();
+    const viewport = page.viewportSize();
+    const ok = Boolean(box && viewport && Math.abs(box.y + box.height - viewport.height) < 2 && box.width >= viewport.width - 1);
+    return { ok, detail: box ? `x ${box.x} y ${box.y} w ${box.width} h ${box.height}` : 'no dialog box' };
+  },
   async patientTab(page) {
     const selected = await page.locator('[role="tab"][aria-selected="true"]').getAttribute('id');
     const ok = /encounters/.test(selected ?? '') || (await page.locator('[role="tab"][aria-selected="true"]').textContent())?.includes('טיפול');
@@ -418,6 +452,8 @@ async function main() {
     await visit(context, { route: '/calendar?new=1', locale: 'he', width: desktop, label: 'flow new-appointment', after: flows.newAppointmentDialog });
     await visit(context, { route: '/calendar?view=week', locale: 'he', width: desktop, label: 'flow block-day-escape', after: flows.blockDayThenEscape });
     await visit(context, { route: '/patients', locale: 'he', width: desktop, label: 'flow status-tile-filter', after: flows.statusTileKeepsFilter });
+    await visit(context, { route: '/patients', locale: 'he', width: desktop, label: 'flow filters-remembered', after: flows.filtersRemembered });
+    if (phone) await visit(context, { route: '/calendar?new=1', locale: 'he', width: phone, label: 'flow phone-dialog-drawer', after: flows.phoneDrawer });
     await visit(context, { route: '/reference/herbs?page=2', locale: 'he', width: desktop, label: 'catalogue page 2' });
     if (patientIds[0]) {
       await visit(context, { route: `/patients/${patientIds[0]}?tab=encounters`, locale: 'he', width: desktop, label: 'flow patient-tab', after: flows.patientTab });

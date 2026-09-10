@@ -83,6 +83,10 @@ cp apps/portal/.env.example apps/portal/.env.local
 ממלאים בשני הקבצים את `NEXT_PUBLIC_SUPABASE_URL` ואת
 `NEXT_PUBLIC_SUPABASE_ANON_KEY` מתוך **Settings → API**.
 
+העוזר "שאלות על הנתונים" הוא רשות: כדי להפעיל אותו ממלאים גם
+`ANTHROPIC_API_KEY` ב־`apps/web/.env.local` (מפתח מ־console.anthropic.com) ומפעילים
+מחדש את השרת. בלי המפתח המסך מציג שהעוזר עדיין לא הופעל, ושאר המערכת לא מושפעת.
+
 ### 6. הרצה
 
 ```bash

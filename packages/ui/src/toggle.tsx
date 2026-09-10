@@ -19,6 +19,7 @@ export function Toggle({
   checked,
   onChange,
   label,
+  showLabel = false,
   disabled,
   className,
 }: {
@@ -26,10 +27,16 @@ export function Toggle({
   onChange: (checked: boolean) => void;
   /** The accessible name — e.g. "Sunday". */
   label: string;
+  /**
+   * Also print the label beside the switch. Off where the row already says
+   * what the switch is for (a day name, a room); on where the switch stands
+   * alone — an unlabelled switch in a form is a guess.
+   */
+  showLabel?: boolean;
   disabled?: boolean;
   className?: string;
 }) {
-  return (
+  const control = (
     <button
       type="button"
       role="switch"
@@ -56,5 +63,20 @@ export function Toggle({
         )}
       />
     </button>
+  );
+
+  if (!showLabel) return control;
+  return (
+    <span className={cn('inline-flex items-center gap-2', disabled && 'opacity-50')}>
+      {control}
+      {/* Hidden from assistive tech: the button already carries the name. */}
+      <span
+        aria-hidden
+        onClick={() => !disabled && onChange(!checked)}
+        className="cursor-pointer text-sm text-ink-800 select-none"
+      >
+        {label}
+      </span>
+    </span>
   );
 }

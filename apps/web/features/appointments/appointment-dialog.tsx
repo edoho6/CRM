@@ -379,7 +379,7 @@ export function AppointmentDialog({
   async function handleDelete() {
     if (!draft?.id) return;
     const confirmed = await confirm({
-      title: tc('deleteConfirmTitle'),
+      title: tc('deleteNamed', { thing: tc('things.appointment') }),
       body: tc('deleteConfirmBody'),
       confirmLabel: tc('delete'),
       destructive: true,

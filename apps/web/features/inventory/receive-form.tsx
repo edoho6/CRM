@@ -20,7 +20,7 @@ import {
 } from '@clinic/ui';
 import { HERB_UNITS, receiveBatchSchema, type Locale } from '@clinic/domain';
 import type { z } from 'zod';
-import { useRouter } from '@clinic/i18n/navigation';
+import { Link, useRouter } from '@clinic/i18n/navigation';
 import type { Herb, Supplier } from '@clinic/db/types';
 import { herbPrimaryName, herbSecondaryName } from '@/lib/display';
 import { receiveBatch } from './actions';
@@ -104,6 +104,14 @@ export function ReceiveForm({
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
       {status === 'error' ? <Alert tone="danger">{tc('errorGeneric')}</Alert> : null}
+      {herbs.length === 0 ? (
+        <Alert tone="info">
+          {t('noHerbs')}{' '}
+          <Link href="/reference/herbs/new" className="font-medium underline underline-offset-2">
+            {t('noHerbsAction')}
+          </Link>
+        </Alert>
+      ) : null}
 
       <Card>
         <CardBody>
@@ -115,8 +123,8 @@ export function ReceiveForm({
               error={errors.herb_id ? tc('requiredField') : null}
               className="sm:col-span-2"
             >
-              <Select id="herb_id" {...register('herb_id')}>
-                <option value="">—</option>
+              <Select id="herb_id" {...register('herb_id')} disabled={herbs.length === 0}>
+                <option value="">{herbs.length === 0 ? t('noHerbs') : t('chooseHerb')}</option>
                 {herbs.map((herb) => {
                   const secondary = herbSecondaryName(herb, locale);
                   return (
@@ -150,7 +158,7 @@ export function ReceiveForm({
 
             <Field label={t('supplier')} htmlFor="supplier_id">
               <Select id="supplier_id" {...register('supplier_id')}>
-                <option value="">—</option>
+                <option value="">{t('noSupplier')}</option>
                 {suppliers.map((supplier) => (
                   <option key={supplier.id} value={supplier.id}>
                     {supplier.name}

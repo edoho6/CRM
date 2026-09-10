@@ -162,7 +162,7 @@ export function DocumentsPanel({
     // Asked before the transition starts, as the browser prompt was, so the
     // row does not show as busy while the question is still open.
     const confirmed = await confirm({
-      title: tc('deleteConfirmTitle'),
+      title: tc('deleteNamed', { thing: tc('things.document') }),
       body: t('deleteConfirm'),
       confirmLabel: tc('delete'),
       destructive: true,

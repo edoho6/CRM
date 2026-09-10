@@ -170,7 +170,7 @@ export function TonguePhotos({
   async function handleRemove() {
     if (!latest) return;
     const confirmed = await confirm({
-      title: tc('deleteConfirmTitle'),
+      title: tc('deleteNamed', { thing: tc('things.photo') }),
       body: tc('deleteConfirmBody'),
       confirmLabel: tc('delete'),
       destructive: true,

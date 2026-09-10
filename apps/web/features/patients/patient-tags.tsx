@@ -145,10 +145,23 @@ export function PatientTags({
 
       {editable ? (
         <Popover
-          triggerContent={<Plus className="h-3.5 w-3.5" aria-hidden />}
+          triggerContent={
+            current.length === 0 ? (
+              <>
+                <Plus className="h-3.5 w-3.5" aria-hidden />
+                <span>{t('add')}</span>
+              </>
+            ) : (
+              <Plus className="h-3.5 w-3.5" aria-hidden />
+            )
+          }
           triggerLabel={t('add')}
           triggerTitle={t('add')}
-          triggerClassName="inline-flex h-6 w-6 items-center justify-center rounded-full border border-dashed border-ink-300 text-ink-500 transition-colors hover:border-ink-500 hover:bg-ink-100 hover:text-ink-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+          triggerClassName={cn(
+            'inline-flex h-6 items-center justify-center gap-1 rounded-full border border-dashed text-xs',
+            current.length === 0 ? 'px-2.5' : 'w-6',
+            'border-ink-300 text-ink-500 transition-colors hover:border-ink-500 hover:bg-ink-100 hover:text-ink-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus',
+          )}
           panelLabel={t('add')}
           width={272}
           disabled={isPending}

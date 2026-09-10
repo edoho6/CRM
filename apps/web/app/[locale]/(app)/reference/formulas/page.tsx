@@ -17,6 +17,7 @@ import type { HerbFormulaWithItems } from '@clinic/db/types';
 import type { Locale } from '@clinic/domain';
 import { PageHeader } from '@/components/app-shell';
 import { CATALOGUE_PAGE, Pagination, pageFrom, pageRange } from '@/components/pagination';
+import { RememberQuery } from '@/components/remember-query';
 import { TcmChip } from '@/components/tcm-chip';
 import { getClinicScope } from '@/lib/session';
 import { formulaChineseName, formulaPrimaryName, herbPrimaryName } from '@/lib/display';
@@ -91,6 +92,7 @@ export default async function FormulasPage({
       <ReferenceNav />
 
       <div className="mb-4 space-y-3">
+        <RememberQuery id="formulas" keys={['q', 'cat', 'kind', 'review']} />
         <CatalogueSearch initialQuery={filters.q} placeholder={t('searchPlaceholder')} />
         <FormulaFilters filters={filters} />
       </div>

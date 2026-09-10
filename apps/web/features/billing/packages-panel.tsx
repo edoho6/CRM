@@ -198,7 +198,7 @@ export function PackagesPanel({
                         disabled={isPending}
                         onClick={async () => {
                           const confirmed = await confirm({
-                            title: tc('deleteConfirmTitle'),
+                            title: tc('deleteNamed', { thing: tc('things.package') }),
                             body: tc('deleteConfirmBody'),
                             confirmLabel: tc('delete'),
                             destructive: true,

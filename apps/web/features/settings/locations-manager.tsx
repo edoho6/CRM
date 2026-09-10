@@ -87,7 +87,7 @@ export function LocationsManager({ locations }: { locations: Location[] }) {
       return;
     }
     const confirmed = await confirm({
-      title: tc('deleteConfirmTitle'),
+      title: tc('deleteNamed', { thing: tc('things.location') }),
       body: t('deleteConfirm'),
       confirmLabel: tc('delete'),
       destructive: true,

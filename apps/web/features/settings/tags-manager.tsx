@@ -76,7 +76,7 @@ export function TagsManager({
     }
     const count = usage[draft.id] ?? 0;
     const confirmed = await confirm({
-      title: tc('deleteConfirmTitle'),
+      title: tc('deleteNamed', { thing: tc('things.tag') }),
       body: t('deleteConfirm', { count }),
       confirmLabel: tc('delete'),
       destructive: true,
