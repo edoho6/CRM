@@ -83,6 +83,7 @@ export function Combobox({
   limit = 200,
   className,
   emptyCustomHint,
+  autoFocus = false,
 }: {
   options: ComboboxOption[];
   value: ComboboxValue | null;
@@ -102,6 +103,8 @@ export function Combobox({
   className?: string;
   /** Shown under the list when nothing matched and free text is allowed. */
   emptyCustomHint?: string;
+  /** For a page whose only job is this field: the cursor is already in it. */
+  autoFocus?: boolean;
 }) {
   const [term, setTerm] = React.useState('');
   const [open, setOpen] = React.useState(false);
@@ -178,6 +181,7 @@ export function Combobox({
         type="text"
         role="combobox"
         autoComplete="off"
+        autoFocus={autoFocus}
         disabled={disabled}
         value={display}
         placeholder={placeholder}

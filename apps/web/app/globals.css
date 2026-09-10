@@ -659,3 +659,30 @@
     border-top: 1px solid var(--color-ink-100);
   }
 }
+
+/*
+   Folding sections open smoothly.
+
+   `Collapsible` is a native `<details>`, which snaps open by default. With
+   `interpolate-size` the browser can animate to and from `auto`, and the
+   `::details-content` box gets the same easing as every other reveal in the
+   app. Browsers without either simply keep snapping; nothing breaks.
+*/
+:root {
+  interpolate-size: allow-keywords;
+}
+details::details-content {
+  block-size: 0;
+  overflow-y: clip;
+  transition:
+    block-size var(--duration-base) var(--ease-standard),
+    content-visibility var(--duration-base) allow-discrete;
+}
+details[open]::details-content {
+  block-size: auto;
+}
+@media (prefers-reduced-motion: reduce) {
+  details::details-content {
+    transition: none;
+  }
+}

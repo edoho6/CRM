@@ -70,14 +70,14 @@ function RevenueWidget() {
     >
       <div>
         <p className="text-xs font-medium text-ink-500">{t('collectedThisMonth')}</p>
-        <p className="mt-1 text-3xl font-semibold text-jade-800" dir="ltr">
+        <p className="mt-1 text-3xl font-semibold text-jade-800 tabular-nums" dir="ltr">
           {format.number(data?.collectedThisMonth ?? 0, 'currency')}
         </p>
       </div>
       <div className="grid grid-cols-2 gap-2">
         <div className="rounded-lg bg-ink-50 px-3 py-2">
           <p className="text-xs text-ink-600">{t('outstanding')}</p>
-          <p className="text-sm font-semibold text-ink-800" dir="ltr">
+          <p className="text-sm font-semibold text-ink-800 tabular-nums" dir="ltr">
             {format.number(data?.outstanding ?? 0, 'currency')}
           </p>
         </div>

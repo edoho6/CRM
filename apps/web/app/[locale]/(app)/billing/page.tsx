@@ -70,6 +70,11 @@ export default async function BillingPage({ params }: { params: Promise<{ locale
           icon={<Receipt className="h-8 w-8" />}
           title={t('empty')}
           description={t('emptyBody')}
+          action={
+            <Button asChild size="sm">
+              <Link href="/billing/new">{t('new')}</Link>
+            </Button>
+          }
         />
       ) : (
         <TableWrapper responsive>

@@ -25,6 +25,7 @@ import {
 } from '@clinic/ui';
 import { REMIND_CHANNELS, type RemindChannel } from '@clinic/domain';
 import { useRouter } from '@clinic/i18n/navigation';
+import { describeActionError } from '@/lib/action-error';
 import type { ClinicTaskWithPatient } from '@clinic/db/types';
 import { combineDateAndTime, toDateKey, toTimeValue } from '@/features/appointments/date-utils';
 import { createTask, deleteTask, updateTask } from './actions';
@@ -51,6 +52,7 @@ export function TaskDialog({
 }) {
   const t = useTranslations('tasks');
   const tc = useTranslations('common');
+  const tAll = useTranslations();
   const tSchedule = useTranslations('schedule');
   const router = useRouter();
   const confirm = useConfirm();
@@ -80,7 +82,8 @@ export function TaskDialog({
       setDate(toDateKey(due));
       setTime(toTimeValue(due));
     } else {
-      setDate(task?.due_on ?? '');
+      // A new task lands on today; the time field only unlocks once a date exists.
+      setDate(task?.due_on ?? (task ? '' : toDateKey(new Date())));
       setTime('');
     }
     setUrgent(task?.is_urgent ?? false);
@@ -110,7 +113,7 @@ export function TaskDialog({
     startTransition(async () => {
       const result = task ? await updateTask(task.id, payload) : await createTask(payload);
       if (!result.ok) {
-        setError(tc('errorGeneric'));
+        setError(describeActionError(tAll, result.error?.key));
         return;
       }
       toast({ tone: 'success', title: t(task ? 'updated' : 'created') });
@@ -131,7 +134,7 @@ export function TaskDialog({
     startTransition(async () => {
       const result = await deleteTask(task.id);
       if (!result.ok) {
-        setError(tc('errorGeneric'));
+        setError(describeActionError(tAll, result.error?.key));
         return;
       }
       toast({ tone: 'success', title: t('deleted') });

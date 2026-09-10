@@ -156,7 +156,7 @@ export function ToastProvider({
       <div
         role="status"
         aria-live="polite"
-        className="pointer-events-none fixed bottom-4 end-4 z-toast flex w-[min(24rem,calc(100vw-2rem))] flex-col gap-2"
+        className="pointer-events-none fixed bottom-20 end-4 z-toast flex w-[min(24rem,calc(100vw-2rem))] flex-col gap-2"
       >
         {items.map((item) => (
           <ToastItem

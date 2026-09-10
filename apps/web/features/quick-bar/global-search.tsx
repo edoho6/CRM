@@ -231,6 +231,35 @@ export function GlobalSearch() {
   const term = query.trim();
   const showPanel = open && term.length >= MIN_QUERY_LENGTH;
 
+  /*
+   * Arrow keys walk the results and Enter opens the lit one, the way the
+   * combobox and the point picker already work. Before this, Ctrl+K and a
+   * name got you a list you could only Tab through.
+   */
+  const flat = useMemo(() => grouped.flatMap((entry) => entry.items), [grouped]);
+  const [highlight, setHighlight] = useState(0);
+  useEffect(() => {
+    setHighlight(0);
+  }, [results]);
+  const optionId = (result: SearchResult) => `global-search-${result.group}-${result.id}`;
+
+  function onInputKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
+    if (!showPanel || flat.length === 0) return;
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      setHighlight((current) => (current + 1) % flat.length);
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      setHighlight((current) => (current - 1 + flat.length) % flat.length);
+    } else if (event.key === 'Enter') {
+      const chosen = flat[highlight];
+      if (!chosen) return;
+      event.preventDefault();
+      dismiss();
+      router.push(chosen.href);
+    }
+  }
+
   return (
     <div ref={rootRef} className="relative">
       <div className="flex items-center gap-1.5">
@@ -240,7 +269,6 @@ export function GlobalSearch() {
           title={`${t('search')} · Ctrl+K`}
           aria-keyshortcuts="Control+K"
           onClick={() => (open ? inputRef.current?.focus() : reveal())}
-          onFocus={reveal}
           className={cn(
             'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-ink-200 bg-white text-ink-600',
             'transition-all duration-150 ease-out',
@@ -265,8 +293,14 @@ export function GlobalSearch() {
             type="search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
+            onKeyDown={onInputKeyDown}
             placeholder={t('searchPlaceholder')}
             aria-label={t('searchPlaceholder')}
+            role="combobox"
+            aria-expanded={showPanel}
+            aria-controls="global-search-results"
+            aria-autocomplete="list"
+            aria-activedescendant={showPanel && flat[highlight] ? optionId(flat[highlight]) : undefined}
             tabIndex={open ? 0 : -1}
             className={cn(
               'h-11 w-full rounded-xl border border-ink-200 bg-white px-3 pe-8 text-sm text-ink-900',
@@ -299,6 +333,8 @@ export function GlobalSearch() {
 
       {showPanel ? (
         <div
+          id="global-search-results"
+          role="listbox"
           className="absolute top-full z-popover mt-1.5 max-h-96 w-80 overflow-y-auto rounded-xl border border-ink-200 bg-white p-1.5 shadow-lg transition-[opacity,translate] duration-(--duration-fast) ease-standard starting:translate-y-1 starting:opacity-0 sm:w-96"
           style={{ insetInlineEnd: 0 }}
         >
@@ -324,11 +360,18 @@ export function GlobalSearch() {
                       <li key={`${result.group}-${result.id}`}>
                         <button
                           type="button"
+                          id={optionId(result)}
+                          role="option"
+                          aria-selected={flat[highlight] === result}
+                          onMouseEnter={() => setHighlight(flat.indexOf(result))}
                           onClick={() => {
                             dismiss();
                             router.push(result.href);
                           }}
-                          className="flex w-full items-start gap-2.5 rounded-lg px-2 py-2 text-start transition-colors hover:bg-jade-50 focus-visible:bg-jade-50 focus-visible:outline-none"
+                          className={cn(
+                            'flex w-full items-start gap-2.5 rounded-lg px-2 py-2 text-start transition-colors hover:bg-jade-50 focus-visible:bg-jade-50 focus-visible:outline-none',
+                            flat[highlight] === result && 'bg-jade-50',
+                          )}
                         >
                           <Icon className="mt-0.5 h-4 w-4 shrink-0 text-ink-500" aria-hidden />
                           <span className="min-w-0 flex-1">

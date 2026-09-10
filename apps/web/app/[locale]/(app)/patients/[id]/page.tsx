@@ -369,7 +369,17 @@ export default async function PatientDetailPage({
 
   const appointmentsPanel =
     appointments.length === 0 ? (
-      <EmptyState title={t('noAppointments')} />
+      <EmptyState
+        icon={<CalendarPlus className="h-8 w-8" />}
+        title={t('noAppointments')}
+        action={
+          <Button asChild size="sm">
+            <Link href={{ pathname: '/calendar', query: { patient: patient.id, new: '1' } }}>
+              {tApp('new')}
+            </Link>
+          </Button>
+        }
+      />
     ) : (
       <TableWrapper responsive>
         <SortableTable defaultSortKey="date" defaultSortDirection="desc">

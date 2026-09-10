@@ -64,7 +64,7 @@ export default async function SchedulePage({
     <>
       <PageHeader title={t('title')} description={t('subtitle')} />
       <SettingsNav />
-      <div className="max-w-3xl space-y-6">
+      <div className="max-w-3xl space-y-5">
         <ScheduleForm
           schedules={schedulesResult.data ?? []}
           exceptions={exceptionsResult.data ?? []}

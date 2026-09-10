@@ -12,7 +12,7 @@ import { Button, PageHeader, SegmentedControl, cn } from '@clinic/ui';
 import { DateInput } from '@/components/date-input';
 import type { Locale } from '@clinic/domain';
 import { useSearchParams } from 'next/navigation';
-import { usePathname, useRouter } from '@clinic/i18n/navigation';
+import { Link, usePathname, useRouter } from '@clinic/i18n/navigation';
 import type { AppointmentType, AppointmentWithRelations, Patient } from '@clinic/db/types';
 import { appointmentTypeName, patientFullName } from '@/lib/display';
 import { AppointmentDialog, type AppointmentDraft } from './appointment-dialog';
@@ -408,6 +408,16 @@ export function CalendarView({
                 {tc('today')}
               </Button>
               <span className="ms-2 text-sm font-medium text-ink-700">{rangeLabel}</span>
+              {/* A diary with no working hours looks exactly like one with them —
+                  nothing is shaded either way — so the difference is said here. */}
+              {availability.blocks.length === 0 && availability.exceptions.length === 0 ? (
+                <Link
+                  href="/account/schedule"
+                  className="ms-2 text-xs font-medium text-amber-700 underline-offset-2 hover:underline"
+                >
+                  {t('noHoursHint')}
+                </Link>
+              ) : null}
             </>
           ) : (
             <div className="flex flex-wrap items-center gap-1.5">
@@ -570,6 +580,9 @@ export function CalendarView({
                         <button
                           key={index}
                           type="button"
+                          // Not a tab stop: 210 half-hour slots between the toolbar and
+                          // the next control. The day's "+" menu is the keyboard's way in.
+                          tabIndex={-1}
                           onClick={() => openSlot(day, index)}
                           style={{ height: SLOT_HEIGHT }}
                           className={cn(
@@ -600,7 +613,9 @@ export function CalendarView({
                             top: (start / SLOT_MINUTES) * SLOT_HEIGHT,
                             height: ((end - start) / SLOT_MINUTES) * SLOT_HEIGHT,
                             backgroundImage:
-                              'repeating-linear-gradient(135deg, rgb(0 0 0 / 0.04) 0 6px, rgb(0 0 0 / 0.09) 6px 8px)',
+                              // Mixed from the ink colour, not from black: black on a dark
+                              // surface is nothing, and a closed afternoon read as open.
+                              'repeating-linear-gradient(135deg, color-mix(in srgb, var(--color-ink-900) 6%, transparent) 0 6px, color-mix(in srgb, var(--color-ink-900) 13%, transparent) 6px 8px)',
                           }}
                         >
                           <span className="truncate" dir="auto">

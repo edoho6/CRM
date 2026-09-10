@@ -208,6 +208,10 @@ pnpm typecheck && pnpm test && pnpm build && pnpm check:contrast && pnpm check:t
 `row.note[0]` על null הפיל את דף הטיפול. תמיד `Array.isArray` או בדיקת null.
 
 ואם השרת רץ, גם `pnpm check:a11y` (axe מול העמודים הציבוריים).
+n**בדיקה בדפדפן אמיתי:** `pnpm smoke` (`scripts/smoke.mjs`, Edge דרך playwright-core)
+מתחבר לקליניקת בדיקות, פותח כל מסך ב-he/en וב-1280/390, ומוציא דוח וצילומי מסך
+ל-`test-results/smoke/`. פרטי ההתחברות ב-`apps/web/.env.test.local` (לא ב-git). הסקריפט
+**מסרב לרוץ** בלי הבאנר "סביבת פיתוח" — לעולם לא מול קליניקה אמיתית.
 
 ולהריץ בפועל את המסלולים שנגעת בהם מול השרת. **בנייה שעוברת אינה ערובה**
 שהעמוד נטען — באגי גבול server/client נראים רק בזמן ריצה.

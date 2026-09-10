@@ -105,7 +105,7 @@ export function HerbForm({ herb }: { herb?: Herb }) {
       {errors.pinyin_name ? <Alert tone="danger">{t('nameRequired')}</Alert> : null}
 
       <Card>
-        <CardBody className="space-y-6">
+        <CardBody className="space-y-5">
           <Section title={ts('identity')}>
             <FieldGrid>
               {/* Pinyin, Chinese and Latin are left-to-right identifiers even in a

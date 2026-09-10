@@ -2,6 +2,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
 import { DashboardGrid } from '@/features/dashboard/dashboard-grid';
+import { GettingStarted } from '@/features/dashboard/getting-started';
 import { defaultDashboardLayout } from '@/features/dashboard/default-layout';
 import { parseStoredLayout } from '@/features/dashboard/layout-utils';
 
@@ -15,12 +16,23 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
   // during `next build` before any credentials exist.
   if (!scope) return null;
 
-  const { data } = await scope.supabase
-    .from('dashboard_layouts')
-    .select('layout')
-    .eq('user_id', scope.context.membership.user_id)
-    .eq('name', 'default')
-    .maybeSingle<{ layout: unknown }>();
+  const [{ data }, patientsCount, hoursCount, typesCount] = await Promise.all([
+    scope.supabase
+      .from('dashboard_layouts')
+      .select('layout')
+      .eq('user_id', scope.context.membership.user_id)
+      .eq('name', 'default')
+      .maybeSingle<{ layout: unknown }>(),
+    // Three head counts for the first-run checklist: cheap, and the card
+    // disappears for good once there is a patient.
+    scope.supabase.from('patients').select('id', { count: 'exact', head: true }).limit(1),
+    scope.supabase
+      .from('practitioner_schedules')
+      .select('id', { count: 'exact', head: true })
+      .eq('practitioner_id', scope.context.membership.user_id)
+      .limit(1),
+    scope.supabase.from('appointment_types').select('id', { count: 'exact', head: true }).limit(1),
+  ]);
 
   const tracksInventory = scope.context.clinic.tracks_inventory !== false;
 
@@ -32,6 +44,11 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
   return (
     <>
       <PageHeader title={name ? t('greeting', { name }) : t('title')} />
+      <GettingStarted
+        hasHours={(hoursCount.count ?? 0) > 0}
+        hasTypes={(typesCount.count ?? 0) > 0}
+        hasPatients={(patientsCount.count ?? 0) > 0}
+      />
       <DashboardGrid initialLayout={layout} tracksInventory={tracksInventory} />
     </>
   );

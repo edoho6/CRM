@@ -16,12 +16,38 @@ export function DialogContent({
   title,
   description,
   closeLabel = 'Close',
+  onOpenAutoFocus,
   ...props
 }: React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & {
   title: React.ReactNode;
   description?: React.ReactNode;
   closeLabel?: string;
 }) {
+  /*
+   * Focus lands on the first field, not on the ✕.
+   *
+   * The close button is rendered before the body, so it is the first focusable
+   * thing and Radix would park focus there: open "new appointment" and the
+   * first Enter closes it. A caller can mark the field it wants with
+   * `data-autofocus`; otherwise the first enabled control in the body wins,
+   * and a dialog with no controls at all keeps Radix's default.
+   */
+  const focusFirstField = (event: Event) => {
+    onOpenAutoFocus?.(event);
+    if (event.defaultPrevented) return;
+    const content = event.currentTarget as HTMLElement | null;
+    const body = content?.querySelector<HTMLElement>('[data-dialog-body]');
+    const target =
+      body?.querySelector<HTMLElement>('[data-autofocus]') ??
+      body?.querySelector<HTMLElement>(
+        'input:not([type=hidden]):not([disabled]):not([readonly]), select:not([disabled]), textarea:not([disabled]), [role=combobox]:not([disabled])',
+      );
+    if (target) {
+      event.preventDefault();
+      target.focus();
+    }
+  };
+
   return (
     <DialogPrimitive.Portal>
       <DialogPrimitive.Overlay className="fixed inset-0 z-overlay bg-ink-900/40 backdrop-blur-[1px] data-[state=open]:animate-fade-in data-[state=closed]:animate-fade-out" />
@@ -42,6 +68,7 @@ export function DialogContent({
           'data-[state=open]:animate-dialog-in data-[state=closed]:animate-dialog-out',
           className,
         )}
+        onOpenAutoFocus={focusFirstField}
         {...props}
       >
         <div className="flex items-start justify-between gap-4 border-b border-ink-100 px-5 py-3">
@@ -67,7 +94,9 @@ export function DialogContent({
             <X className="h-4 w-4" aria-hidden />
           </DialogPrimitive.Close>
         </div>
-        <div className="px-5 py-4">{children}</div>
+        <div data-dialog-body className="px-5 py-4">
+          {children}
+        </div>
       </DialogPrimitive.Content>
     </DialogPrimitive.Portal>
   );

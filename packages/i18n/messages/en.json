@@ -316,6 +316,17 @@
     "readmeLink": "The full walkthrough lives in the project README."
   },
   "dashboard": {
+    "gettingStarted": {
+      "title": "Welcome. Three steps and the clinic is ready",
+      "hours": "Your working hours",
+      "hoursBody": "The calendar shades the hours outside them.",
+      "types": "Treatment types",
+      "typesBody": "A default length for each appointment, and what is open for booking.",
+      "patient": "The first patient",
+      "patientBody": "Or a whole practice, one by one, as they come in.",
+      "done": "Done",
+      "dismiss": "Hide"
+    },
     "title": "Dashboard",
     "greeting": "Hello, {name}",
     "editLayout": "Edit layout",
@@ -527,6 +538,7 @@
     "singular": "Patient"
   },
   "appointments": {
+    "noHoursHint": "Working hours not set yet",
     "previousPeriod": "Previous period",
     "nextPeriod": "Next period",
     "place": "Clinic",

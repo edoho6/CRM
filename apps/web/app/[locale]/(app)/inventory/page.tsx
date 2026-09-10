@@ -294,7 +294,7 @@ export default async function StockRoomPage({
           }
         />
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-5">
           {shownHerbs.length > 0 ? (
             <section>
               <h2 className="mb-2 text-base font-semibold text-ink-900">

@@ -205,7 +205,7 @@ export default async function HerbsPage({
                         ) : (
                           <span
                             aria-hidden
-                            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-jade-50 text-jade-300"
+                            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-jade-50 text-jade-700"
                           >
                             <Sprout className="h-5 w-5" />
                           </span>

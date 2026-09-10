@@ -206,7 +206,9 @@ export function AppointmentDialog({
           }
         : null,
     );
-    setTypeId(draft.typeId ?? '');
+    // A new booking starts on the first active type: a one-type clinic used to
+    // pick the same option every time, and the duration was already its.
+    setTypeId(draft.typeId ?? (draft.id ? '' : (appointmentTypes.find((type) => type.is_active)?.id ?? '')));
     setStart(toDateTimeLocalValue(draft.start));
     setEnd(toDateTimeLocalValue(draft.end));
     setStatus(draft.status ?? 'scheduled');
@@ -298,16 +300,28 @@ export function AppointmentDialog({
     const startDate = new Date(start);
     const endDate = new Date(end);
 
-    if (!patientId || Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+    // Say which field, by putting the cursor in it: "something is missing"
+    // above an eleven-field form is a puzzle, not a message.
+    const missing = !patientId
+      ? 'patient_id'
+      : Number.isNaN(startDate.getTime())
+        ? 'start_at'
+        : Number.isNaN(endDate.getTime())
+          ? 'end_at'
+          : null;
+    if (missing) {
       setErrorKey('common.somethingMissing');
+      document.getElementById(missing)?.focus();
       return;
     }
     if (endDate <= startDate) {
       setErrorKey('errors.endMustBeAfterStart');
+      document.getElementById('end_at')?.focus();
       return;
     }
     if ((hasRooms && !roomId) || (hasLocations && !locationId)) {
       setErrorKey('common.somethingMissing');
+      document.getElementById(hasLocations && !locationId ? 'location_id' : 'room_id')?.focus();
       return;
     }
 

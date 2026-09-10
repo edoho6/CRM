@@ -14,6 +14,7 @@ import {
 } from '@clinic/domain';
 import { LOCALE_LABELS } from '@clinic/i18n';
 import { useRouter } from '@clinic/i18n/navigation';
+import { describeActionError } from '@/lib/action-error';
 import {
   Alert,
   Button,
@@ -27,6 +28,7 @@ import {
   Select,
   Spinner,
   Textarea,
+  useToast,
 } from '@clinic/ui';
 import type { Patient } from '@clinic/db/types';
 import { createPatient, updatePatient } from './actions';
@@ -40,8 +42,10 @@ import { createPatient, updatePatient } from './actions';
 export function PatientForm({ patient }: { patient?: Patient }) {
   const t = useTranslations('patients');
   const tc = useTranslations('common');
+  const tAll = useTranslations();
   const tSex = useTranslations('patients.sex');
   const router = useRouter();
+  const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [serverError, setServerError] = useState<string | null>(null);
 
@@ -79,12 +83,19 @@ export function PatientForm({ patient }: { patient?: Patient }) {
         : await createPatient(values);
 
       if (!result.ok) {
-        setServerError(tc('errorGeneric'));
+        setServerError(describeActionError(tAll, result.error?.key));
         return;
       }
 
-      const id = patient ? patient.id : (result.data as { id: string }).id;
-      router.push(`/patients/${id}`);
+      // A new file opens itself; an edited one stays put. Being thrown out to
+      // the read view after correcting one phone number meant Edit, fix, Save,
+      // notice the typo, Edit again.
+      if (patient) {
+        toast({ tone: 'success', title: tc('saved') });
+        router.refresh();
+        return;
+      }
+      router.push(`/patients/${(result.data as { id: string }).id}`);
       router.refresh();
     });
   }
@@ -126,7 +137,7 @@ export function PatientForm({ patient }: { patient?: Patient }) {
                 required
                 error={fieldError('first_name')}
               >
-                <Input id="first_name" autoComplete="given-name" {...register('first_name')} />
+                <Input id="first_name" autoComplete="given-name" autoFocus {...register('first_name')} />
               </Field>
               <Field
                 label={t('fields.lastName')}

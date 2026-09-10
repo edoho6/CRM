@@ -5,6 +5,7 @@ import { useFormatter, useTranslations } from 'next-intl';
 import { Stethoscope } from 'lucide-react';
 import { Alert, Button, Card, CardBody, Combobox, Spinner, type ComboboxOption, type ComboboxValue } from '@clinic/ui';
 import { useRouter } from '@clinic/i18n/navigation';
+import { describeActionError } from '@/lib/action-error';
 import { startEncounter } from './actions';
 
 export interface TodayVisit {
@@ -65,7 +66,7 @@ export function NewEncounterPicker({
     <div className="space-y-5">
       {errorKey ? (
         <Alert tone="danger">
-          {tAll.has(errorKey) ? tAll(errorKey) : tAll('common.errorGeneric')}
+          {describeActionError(tAll, errorKey)}
         </Alert>
       ) : null}
 
@@ -109,6 +110,7 @@ export function NewEncounterPicker({
               options={options}
               value={choice}
               onChange={setChoice}
+              autoFocus
             />
             <div className="flex justify-end">
               <Button

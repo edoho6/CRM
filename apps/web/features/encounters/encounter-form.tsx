@@ -515,7 +515,7 @@ export function EncounterForm({
         ) : null}
 
         <Card>
-          <CardBody className="space-y-6">
+          <CardBody className="space-y-5">
             <Section title={t('sections.complaint')}>
               <div className="space-y-4">
                 <Field label={tf('chiefComplaint')} htmlFor="chief_complaint">
@@ -614,7 +614,11 @@ export function EncounterForm({
                       is visible rather than deduced. */}
                     <HumanBody3D
                       points={mappedPoints}
-                      onSelect={(point) => router.push(`/reference/points/${point.pointId}`)}
+                      onSelect={async (point) => {
+                        // Leaving the page is not one of autosave's triggers; flush first.
+                        await autosave.saveNow();
+                        router.push(`/reference/points/${point.pointId}`);
+                      }}
                     />
                   </div>
                 </div>

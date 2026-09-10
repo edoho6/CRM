@@ -193,6 +193,13 @@ export default async function EncountersPage({
         <EmptyState
           icon={<ClipboardList className="h-8 w-8" />}
           title={range.preset === 'all' ? t('empty') : tFilters('noneInRange')}
+          action={
+            range.preset === 'all' ? (
+              <Button asChild size="sm">
+                <Link href="/encounters/new">{t('new')}</Link>
+              </Button>
+            ) : undefined
+          }
         />
       ) : (
         <TableWrapper responsive>

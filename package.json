@@ -23,11 +23,13 @@
     "check:contrast": "node scripts/check-contrast.mjs",
     "check:a11y": "node scripts/check-a11y.mjs",
     "check:tokens": "node scripts/check-tokens.mjs",
+    "smoke": "node scripts/smoke.mjs",
     "check:i18n": "node scripts/check-i18n-keys.mjs"
   },
   "devDependencies": {
     "axe-core": "^4.13.0",
     "jsdom": "^30.0.1",
+    "playwright-core": "1.56.1",
     "prettier": "^3.4.2",
     "rimraf": "^6.0.1",
     "supabase": "^2.116.0",

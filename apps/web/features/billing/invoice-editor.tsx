@@ -25,6 +25,7 @@ import {
   useToast,
 } from '@clinic/ui';
 import { useRouter } from '@clinic/i18n/navigation';
+import { describeActionError } from '@/lib/action-error';
 import type { InvoiceWithDetails, PaymentMethod } from '@clinic/db/types';
 import { INVOICE_STATUS_TONES, statusTone } from '@clinic/domain';
 import {
@@ -47,6 +48,7 @@ const MANUAL_METHODS: Exclude<PaymentMethod, 'card'>[] = ['cash', 'bank_transfer
 export function InvoiceEditor({ invoice }: { invoice: InvoiceWithDetails }) {
   const t = useTranslations('billing');
   const tc = useTranslations('common');
+  const tAll = useTranslations();
   const format = useFormatter();
   const router = useRouter();
   const confirm = useConfirm();
@@ -75,7 +77,7 @@ export function InvoiceEditor({ invoice }: { invoice: InvoiceWithDetails }) {
     startTransition(async () => {
       const result = await action();
       if (!result.ok) {
-        setError(tc('errorGeneric'));
+        setError(describeActionError(tAll, result.error?.key));
         return;
       }
       toast({ tone: 'success', title: done });

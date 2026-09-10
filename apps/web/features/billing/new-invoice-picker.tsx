@@ -14,6 +14,7 @@ import {
   type ComboboxValue,
 } from '@clinic/ui';
 import { useRouter } from '@clinic/i18n/navigation';
+import { describeActionError } from '@/lib/action-error';
 import { createBlankInvoice } from './actions';
 
 /**
@@ -64,22 +65,31 @@ export function NewInvoicePicker({
 
   return (
     <Card>
-      <CardBody className="space-y-4">
-        <Combobox
-          label={t('patient')}
-          placeholder={t('searchPlaceholder')}
-          options={options}
-          value={choice}
-          onChange={setChoice}
-        />
-        {errorKey ? <Alert tone="danger">{tAll(errorKey)}</Alert> : null}
-        <div className="flex justify-end">
-          <Button type="button" onClick={create} disabled={!patientId || isPending}>
-            {isPending ? <Spinner /> : <Receipt className="h-4 w-4" />}
-            {t('create')}
-          </Button>
-        </div>
-      </CardBody>
+      {/* A form, so Enter after choosing a patient opens the invoice. */}
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+          create();
+        }}
+      >
+        <CardBody className="space-y-4">
+          <Combobox
+            label={t('patient')}
+            placeholder={t('searchPlaceholder')}
+            options={options}
+            value={choice}
+            onChange={setChoice}
+            autoFocus
+          />
+          {errorKey ? <Alert tone="danger">{describeActionError(tAll, errorKey)}</Alert> : null}
+          <div className="flex justify-end">
+            <Button type="submit" disabled={!patientId || isPending}>
+              {isPending ? <Spinner /> : <Receipt className="h-4 w-4" />}
+              {t('create')}
+            </Button>
+          </div>
+        </CardBody>
+      </form>
     </Card>
   );
 }
