@@ -88,7 +88,10 @@ export function PatientTasksPanel({
                   >
                     <span className={cn('block truncate text-sm text-ink-900')} dir="auto">
                       {task.is_urgent ? (
-                        <AlertTriangle aria-label={t('urgent')} className="me-1 inline h-3.5 w-3.5 text-amber-700" />
+                        <AlertTriangle
+                          aria-label={t('urgent')}
+                          className="me-1 inline h-3.5 w-3.5 text-amber-700"
+                        />
                       ) : null}
                       {task.title}
                     </span>

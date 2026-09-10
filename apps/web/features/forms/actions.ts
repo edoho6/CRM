@@ -7,6 +7,7 @@ import {
   type FormField,
 } from '@clinic/domain';
 import { getClinicScope } from '@/lib/session';
+import { libraryEntry } from './library';
 import { actionError, actionOk, type ActionResult } from '@/lib/errors';
 
 /**
@@ -144,4 +145,15 @@ export async function submitForm(input: unknown): Promise<ActionResult<{ id: str
 
   if (error) return actionError(error);
   return actionOk({ id: data.id });
+}
+
+/**
+ * Adds one of the ready-made questionnaires to the clinic, as a form of its
+ * own that can be edited afterwards. The library entry is looked up on the
+ * server: the browser sends a key, never a template.
+ */
+export async function addFormFromLibrary(key: string): Promise<ActionResult<{ id: string }>> {
+  const entry = libraryEntry(key);
+  if (!entry) return actionError(new Error('not_found'));
+  return saveFormTemplate(null, entry.template);
 }

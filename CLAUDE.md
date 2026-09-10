@@ -191,6 +191,17 @@
   למעלה, +Z חזית, ראשית בין הרגליים, +X = שמאל המטופל; דו-צדדי נשמר בימין
   (x<0) ומשוקף. הדגם ב-`public/models/body.glb` חייב להיות glb רגיל — **בלי
   Draco/Meshopt/טקסטורות** — כי ה-CSP חוסם worker ו-blob; לא להרחיב את ה-CSP
+- **תמונות ייחוס לצמחים:** `apps/web/public/herbs/` + `features/inventory/herb-reference-images.json`
+  (מקור, צלם, רישיון, קישור). נאספות ב-`scripts/fetch-herb-images.mjs` — רק CC0 / CC BY, עם
+  אימות מין (תצפית research-grade ב-iNaturalist, קטגוריית המין ב-Commons, התאמת טקסון ב-GBIF);
+  `scripts/shrink-herb-images.mjs` מקטין ל-640px. `referenceImageFor(herb)` מציג אותן רק כשאין
+  תמונה של הקליניקה, תמיד עם הקרדיט (CC BY מחייב). לא להוסיף תמונה בלי רשומה ב-manifest
+- **שאלונים מהספרייה:** `features/forms/library.ts` — תבניות מוכנות עם מזהי שדות קבועים.
+  כל מילוי שאלון מקבל שורה ב-`patient_documents` עם `file_path = 'form-submission:<id>'`
+  (trigger ב-migration 20260910170000); אין קובץ באחסון — `/api/documents/[id]` מרנדר את
+  התשובות מה-`fields` הקפואים של ההגשה דרך `renderSubmissionHtml` (packages/domain)
+- **תאריכים:** תמיד `components/date-input.tsx` (dd/mm/yyyy עם לוח שנה), לא `type="date"` ישיר —
+  הדפדפן מציג את הפורמט לפי שפת הדפדפן ולא לפי הדף. טפסי react-hook-form: `watch`/`setValue`
 - **מבנה דף אחיד:** כותרת דף רק דרך `PageHeader` מ-`@clinic/ui` (חריצים `actions`
   לפעולה הראשית, `banner` לאזהרה, `below` לפס תחת הכותרת — לא שוליים שליליים);
   ניווט משנה ומסננים ב-URL דרך `components/segmented-links.tsx`, בחירה

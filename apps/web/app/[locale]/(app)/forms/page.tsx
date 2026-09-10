@@ -14,6 +14,8 @@ import {
 import { Link } from '@clinic/i18n/navigation';
 import type { FormTemplate } from '@clinic/db/types';
 import { PageHeader } from '@/components/app-shell';
+import { FORM_LIBRARY } from '@/features/forms/library';
+import { LibraryPicker } from '@/features/forms/library-picker';
 import { getClinicScope } from '@/lib/session';
 import { formatDate } from '@clinic/i18n';
 
@@ -49,12 +51,22 @@ export default async function FormsPage({ params }: { params: Promise<{ locale: 
         title={t('title')}
         description={t('subtitle')}
         actions={
-          <Button asChild>
-            <Link href="/forms/new">
-              <Plus className="h-4 w-4" />
-              {t('newForm')}
-            </Link>
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <LibraryPicker
+              entries={FORM_LIBRARY.map((entry) => ({
+                key: entry.key,
+                title: entry.title,
+                description: entry.description,
+                questions: entry.template.fields.filter((field) => field.type !== 'section').length,
+              }))}
+            />
+            <Button asChild>
+              <Link href="/forms/new">
+                <Plus className="h-4 w-4" />
+                {t('newForm')}
+              </Link>
+            </Button>
+          </div>
         }
       />
 

@@ -46,8 +46,12 @@ export const formFieldSchema = z
     id: z.string().min(1).max(40),
     type: z.enum(FORM_FIELD_TYPES),
     label: requiredText(300),
-    /** Shown under the field — an example, a unit, a clarification. */
-    help: optionalText(300),
+    /**
+     * Shown under the field — an example, a unit, a clarification. Under a
+     * section it is the paragraph itself, and a health declaration or a
+     * cancellation policy runs to several hundred characters.
+     */
+    help: optionalText(2000),
     required: z.boolean().default(false),
     /** For dropdown, single choice and multi choice. */
     options: z.array(requiredText(160)).max(60).default([]),

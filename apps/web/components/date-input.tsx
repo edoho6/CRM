@@ -91,7 +91,9 @@ export function DateInput({
     }
   };
 
-  const describedBy = [ariaDescribedBy, invalid && id ? `${id}-date-error` : null].filter(Boolean).join(' ') || undefined;
+  const describedBy =
+    [ariaDescribedBy, invalid && id ? `${id}-date-error` : null].filter(Boolean).join(' ') ||
+    undefined;
 
   // Left-to-right as a whole, so "end" is the same edge for the field's
   // padding and for the calendar button — inside a Hebrew page the two
@@ -194,7 +196,9 @@ function fromDisplay(text: string): string | null {
 /** Digits only, slashes written by the field: "3" → "3", "0309" → "03/09", "03092026" → "03/09/2026". */
 function mask(raw: string): string {
   const digits = raw.replace(/\D/g, '').slice(0, 8);
-  const parts = [digits.slice(0, 2), digits.slice(2, 4), digits.slice(4, 8)].filter((p) => p !== '');
+  const parts = [digits.slice(0, 2), digits.slice(2, 4), digits.slice(4, 8)].filter(
+    (p) => p !== '',
+  );
   let out = parts.join('/');
   // Keep the slash the person just typed past, so "03/" does not snap back to "03".
   if (/\/$/.test(raw) && (digits.length === 2 || digits.length === 4)) out += '/';

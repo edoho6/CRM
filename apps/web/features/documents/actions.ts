@@ -120,7 +120,10 @@ export async function deleteDocument(documentId: string): Promise<ActionResult> 
   if (fetchError) return actionError(fetchError);
   if (!document) return actionOk(); // Already gone — deleting twice should not be an error.
 
-  const { error: storageError } = await scope.supabase.storage
+  // A filed questionnaire has no object in storage; its path is a marker.
+  const { error: storageError } = document.file_path.startsWith('form-submission:')
+    ? { error: null }
+    : await scope.supabase.storage
     .from('patient-documents')
     .remove([document.file_path]);
 
