@@ -258,8 +258,8 @@ export function DocumentsPanel({
                     <Td>
                       <div className="flex items-center gap-1">
                         <Button variant="ghost" size="icon" asChild disabled={isRowPending}>
-                          <a href={`/api/documents/${document.id}`} title={t('download')}>
-                            <Download className="h-4 w-4" />
+                          <a href={`/api/documents/${document.id}`} title={t('download')} aria-label={t('download')}>
+                            <Download className="h-4 w-4" aria-hidden />
                           </a>
                         </Button>
                         <Button

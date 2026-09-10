@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { AlertTriangle, ClipboardList } from 'lucide-react';
-import { Badge, Button, Card, CardBody, CardHeader, CardTitle, DetailRow, Dash } from '@clinic/ui';
+import { Alert, Badge, Button, Card, CardBody, CardHeader, CardTitle, Dash, DetailRow } from '@clinic/ui';
 import { Link } from '@clinic/i18n/navigation';
 import type { AcupuncturePoint } from '@clinic/db/types';
 import { PageHeader } from '@/components/app-shell';
@@ -129,10 +129,9 @@ export default async function PointDetailPage({
       <ReferenceNav />
 
       {!hasClinicalText ? (
-        <p className="mb-4 flex items-start gap-2 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-sky-900">
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+        <Alert tone="info" className="mb-4">
           {t('noClinicalText')}
-        </p>
+        </Alert>
       ) : null}
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
@@ -197,14 +196,14 @@ export default async function PointDetailPage({
                 </DetailRow>
                 <DetailRow label={t('fields.channel')}>{tChannel(point.channel)}</DetailRow>
                 <DetailRow label={t('fields.pinyin')}>
-                  <span dir="ltr">{point.pinyin_name ?? '—'}</span>
+                  <span dir="ltr">{point.pinyin_name ?? <Dash />}</span>
                 </DetailRow>
-                <DetailRow label={t('fields.chinese')}>{point.chinese_name ?? '—'}</DetailRow>
+                <DetailRow label={t('fields.chinese')}>{point.chinese_name ?? <Dash />}</DetailRow>
                 <DetailRow label={t('fields.english')}>
-                  <span dir="ltr">{point.english_name ?? '—'}</span>
+                  <span dir="ltr">{point.english_name ?? <Dash />}</span>
                 </DetailRow>
                 <DetailRow label={t('fields.bodyArea')}>
-                  {point.body_area ? tArea(point.body_area) : '—'}
+                  {point.body_area ? tArea(point.body_area) : <Dash />}
                   {!point.bilateral ? ` · ${t('midlinePoint')}` : ''}
                 </DetailRow>
                 <DetailRow label={t('fields.region')}>{tRegion(point.default_region)}</DetailRow>

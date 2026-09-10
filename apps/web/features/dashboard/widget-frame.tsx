@@ -59,7 +59,7 @@ export function WidgetFrame({
         {isEditing ? (
           <GripVertical className="h-3.5 w-3.5 shrink-0 text-ink-500" aria-hidden />
         ) : null}
-        <h2 className="min-w-0 flex-1 truncate text-xs font-semibold tracking-wide text-ink-600 uppercase">
+        <h2 className="min-w-0 flex-1 truncate text-sm font-semibold text-ink-900">
           {title}
         </h2>
         {headerAction}

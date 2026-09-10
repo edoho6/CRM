@@ -30,7 +30,7 @@ export function DayAddMenu({
       triggerLabel={t('addOn')}
       triggerTitle={t('addOn')}
       triggerClassName={cn(
-        'inline-flex h-6 w-6 items-center justify-center rounded text-ink-500 transition-colors hover:bg-ink-100 hover:text-ink-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus',
+        'inline-flex h-7 w-7 -m-0.5 items-center justify-center rounded text-ink-500 transition-colors hover:bg-ink-100 hover:text-ink-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus',
         className,
       )}
       panelLabel={t('addOn')}

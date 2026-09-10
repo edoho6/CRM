@@ -25,7 +25,7 @@ export default async function SetupPage({ params }: { params: Promise<{ locale: 
   return (
     <main className="mx-auto flex min-h-dvh max-w-2xl flex-col justify-center gap-6 px-6 py-12">
       <header>
-        <h1 className="text-2xl font-semibold text-ink-900">{t('title')}</h1>
+        <h1 className="text-xl font-semibold text-ink-900">{t('title')}</h1>
         <p className="mt-1 text-sm text-ink-600">{t('intro')}</p>
       </header>
 

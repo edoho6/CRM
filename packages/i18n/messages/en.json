@@ -500,6 +500,8 @@
     "singular": "Patient"
   },
   "appointments": {
+    "previousPeriod": "Previous period",
+    "nextPeriod": "Next period",
     "place": "Clinic",
     "selectPlace": "Choose a clinic",
     "room": "Room",
@@ -734,6 +736,41 @@
       "backLabel": "{count, plural, =0 {Back view, no points} one {Back view, 1 point} other {Back view, # points}}",
       "disclaimer": "Schematic only — an illustration of the treatment, not an anatomical locator."
     },
+    "body3d": {
+      "viewLabel": "Body view",
+      "mode2d": "Flat",
+      "mode3d": "3D",
+      "cameraLabel": "Camera angle",
+      "front": "Front",
+      "back": "Back",
+      "left": "Left",
+      "right": "Right",
+      "reset": "Reset",
+      "loading": "Loading the body model…",
+      "loadFailed": "The body model could not be shown. The flat chart is still available.",
+      "retry": "Try again",
+      "sceneLabel": "{count, plural, =0 {3D body model, no points marked} one {3D body model, 1 point marked} other {3D body model, # points marked}}",
+      "markersLabel": "Points marked on the model",
+      "markerLabel": "{code}, {side} — open the point page",
+      "sideRight": "right",
+      "sideLeft": "left",
+      "sideMidline": "midline",
+      "noPosition": "No position on the model yet for: {codes}",
+      "modelCaption": "Point positions on the model are illustrative and not yet validated. Drag to rotate, scroll to zoom.",
+      "editor": {
+        "title": "Point editor (development only)",
+        "hint": "Click the body to get a coordinate, then copy the entry into the points file.",
+        "code": "Point code",
+        "side": "Side",
+        "sideRight": "Right",
+        "sideLeft": "Left",
+        "sideMidline": "Midline",
+        "pick": "Click the body to show the coordinate here.",
+        "copy": "Copy",
+        "copied": "Copied",
+        "clear": "Clear"
+      }
+    },
     "autosaveOn": "Autosave is on",
     "autosavedAt": "Autosaved at {time}",
     "autosaveFailed": "Autosave failed — save manually",
@@ -783,6 +820,7 @@
     "sessionNumber": "Session {number} of {total}"
   },
   "billing": {
+    "newPicker": {"title":"New invoice","subtitle":"Who is it for? An invoice for a treatment is opened from the treatment itself.","patient":"Patient","searchPlaceholder":"Search by name or phone","create":"Open invoice"},
     "title": "Billing",
     "invoice": "Invoice",
     "invoiceNumber": "Invoice #{number}",
@@ -1451,6 +1489,7 @@
       "inUse": "There are bookings in this room, so it was retired rather than deleted."
     },
     "tags": {
+      "title": "Tags",
       "subtitle": "Patient tags — edited in one place.",
       "intro": "Tags are made from the patient file. Here you rename and colour them, and see how many patients carry each. The count opens all of them.",
       "name": "Tag name",
@@ -1472,7 +1511,11 @@
       "enabled": "Send reminders",
       "hoursBefore": "Hours before the appointment",
       "channel": "Channel",
-      "channels": { "sms": "SMS", "whatsapp": "WhatsApp", "email": "Email" },
+      "channels": {
+        "sms": "SMS",
+        "whatsapp": "WhatsApp",
+        "email": "Email"
+      },
       "queueHint": "Reminders arrive on the Messages screen and go out from there with a click. Once a sending service is connected, they go on their own.",
       "title": "Reminder wording",
       "intro": "The message sent to a patient before their appointment. Empty means the built-in wording in the app's language.",
@@ -1501,6 +1544,7 @@
     },
     "inventoryReversible": "Change it whenever you like. Turning it off hides your stock data rather than deleting it, so turning it back on restores exactly what was there.",
     "nav": {
+      "label": "Settings",
       "booking": "Online booking",
       "rooms": "Rooms",
       "tags": "Tags",
@@ -1708,7 +1752,7 @@
     "gapsIntro": "This list is deliberately specific. A statement that claims full conformance and is wrong is worse than one that names its own limits.",
     "gaps": {
       "screenReaderAudit": "A full manual pass with a screen reader (NVDA or VoiceOver) has not been done yet. Fixes so far were driven by the code and by automated checks.",
-      "bodyMap": "The acupuncture body chart is keyboard operable, but it is a schematic visual. The same information is fully available in the point list beside it.",
+      "bodyMap": "The acupuncture body chart is shown both as a 3D model and as a flat drawing. The 3D model is an image only; every point marked on it also appears as a keyboard-accessible button beneath it, and in the point list beside it.",
       "calendar": "The calendar view has not had a full accessibility pass. Every appointment is also reachable from the patient file.",
       "pdf": "Uploaded documents are shown as they arrive. If a document we receive is not accessible, we cannot make it so after the fact.",
       "automatedScope": "The automated axe check currently covers the public pages only. The screens behind the login need a test environment with synthetic data, which is not yet in place."

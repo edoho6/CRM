@@ -1,6 +1,7 @@
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
 import { FlaskConical, Plus } from 'lucide-react';
 import {
+  Dash,
   Badge,
   Button,
   EmptyState,
@@ -10,8 +11,6 @@ import {
   TableWrapper,
   Td,
   Tr,
-
-  Dash,
 } from '@clinic/ui';
 import { Link } from '@clinic/i18n/navigation';
 import type { HerbFormulaWithItems } from '@clinic/db/types';
@@ -182,7 +181,7 @@ export default async function FormulasPage({
                     </Td>
                     <Td>
                       <span className="text-xs text-ink-600 italic" dir="ltr">
-                        {formula.source_text ?? '—'}
+                        {formula.source_text ?? <Dash />}
                       </span>
                     </Td>
                     <Td>

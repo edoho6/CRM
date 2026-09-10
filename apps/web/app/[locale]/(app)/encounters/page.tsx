@@ -1,7 +1,9 @@
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
-import { ClipboardList } from 'lucide-react';
+import { ClipboardList, Plus } from 'lucide-react';
 import {
+  Dash,
   Badge,
+  Button,
   EmptyState,
   SortBody,
   SortTh,
@@ -9,8 +11,6 @@ import {
   TableWrapper,
   Td,
   Tr,
-
-  Dash,
 } from '@clinic/ui';
 import { Link } from '@clinic/i18n/navigation';
 import type { Appointment, Encounter, EncounterPaymentStatus, Patient } from '@clinic/db/types';
@@ -174,6 +174,14 @@ export default async function EncountersPage({
             ? tc('showingOf', { shown: encounters.length, total: matching })
             : undefined
         }
+        actions={
+          <Button asChild>
+            <Link href="/encounters/new">
+              <Plus className="h-4 w-4" />
+              {t('new')}
+            </Link>
+          </Button>
+        }
       />
 
       <DateRangeFilter className="mb-4" />
@@ -247,7 +255,7 @@ export default async function EncountersPage({
                         {encounter.patient.full_name}
                       </Link>
                     ) : (
-                      '—'
+                      <Dash />
                     )}
                   </Td>
                   <Td>

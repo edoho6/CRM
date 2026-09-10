@@ -76,13 +76,13 @@ function RevenueWidget() {
       </div>
       <div className="grid grid-cols-2 gap-2">
         <div className="rounded-lg bg-ink-50 px-3 py-2">
-          <p className="text-[11px] text-ink-500">{t('outstanding')}</p>
+          <p className="text-xs text-ink-600">{t('outstanding')}</p>
           <p className="text-sm font-semibold text-ink-800" dir="ltr">
             {format.number(data?.outstanding ?? 0, 'currency')}
           </p>
         </div>
         <div className="rounded-lg bg-ink-50 px-3 py-2">
-          <p className="text-[11px] text-ink-500">{t('invoicesThisMonth')}</p>
+          <p className="text-xs text-ink-600">{t('invoicesThisMonth')}</p>
           <p className="text-sm font-semibold text-ink-800">{data?.invoicesThisMonth ?? 0}</p>
         </div>
       </div>

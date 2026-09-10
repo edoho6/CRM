@@ -1,6 +1,7 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import type { PractitionerSchedule, ScheduleException } from '@clinic/db/types';
 import { PageHeader } from '@/components/app-shell';
+import { SettingsNav } from '@/features/settings/settings-nav';
 import { getClinicScope } from '@/lib/session';
 import { ScheduleForm } from '@/features/settings/schedule-form';
 import { CalendarFeedCard } from '@/features/settings/calendar-feed-card';
@@ -62,6 +63,7 @@ export default async function SchedulePage({
   return (
     <>
       <PageHeader title={t('title')} description={t('subtitle')} />
+      <SettingsNav />
       <div className="max-w-3xl space-y-6">
         <ScheduleForm
           schedules={schedulesResult.data ?? []}

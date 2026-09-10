@@ -390,7 +390,7 @@ function LightboxContent({
                       alt={alt(photo)}
                       className="h-14 w-14 rounded-md border border-ink-200 object-cover"
                     />
-                    <span className="mt-0.5 block text-center text-[11px] text-ink-500" dir="ltr">
+                    <span className="mt-0.5 block text-center text-xs text-ink-600" dir="ltr">
                       {formatDate(photo.date)}
                       {photo.encounterId === encounterId ? ` · ${t('current')}` : ''}
                     </span>
@@ -399,7 +399,7 @@ function LightboxContent({
               );
             })}
           </ul>
-          <p className="mt-1 text-[11px] text-ink-500">{t('pickMore')}</p>
+          <p className="mt-1 text-xs text-ink-600">{t('pickMore')}</p>
         </div>
       ) : null}
     </DialogContent>

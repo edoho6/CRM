@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { useFormatter, useTranslations } from 'next-intl';
 import { ChevronDown, ChevronUp, Minus, TrendingDown, TrendingUp } from 'lucide-react';
-import { cn } from '@clinic/ui';
+import { cn, Dash } from '@clinic/ui';
 import { defineWidget, type WidgetProps } from '@clinic/domain/widgets';
 import { Link } from '@clinic/i18n/navigation';
 import { useAsyncData } from '@/lib/use-supabase';
@@ -189,7 +189,7 @@ function DayColumns({ days, labelEvery }: { days: PeriodStats['days']; labelEver
         </div>
       </div>
 
-      <div className="mt-1 flex text-[10px] text-ink-500">
+      <div className="mt-1 flex text-xs text-ink-600">
         {days.map((day, index) => (
           <div key={day.key} className="text-center" style={{ width: `${columnWidth}%` }}>
             {index % labelEvery === 0 || day.isToday ? (
@@ -328,7 +328,7 @@ function TreatmentKpisWidget({ size }: WidgetProps<Record<string, never>>) {
                       href={`/encounters/${row.id}`}
                       className="flex items-center justify-between gap-2 py-2 text-sm transition-colors hover:bg-ink-50"
                     >
-                      <span className="truncate text-ink-900">{row.patient?.full_name ?? '—'}</span>
+                      <span className="truncate text-ink-900">{row.patient?.full_name ?? <Dash />}</span>
                       <span className="shrink-0 text-xs text-ink-500" dir="ltr">
                         {format.dateTime(new Date(row.created_at), 'time')}
                       </span>

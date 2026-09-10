@@ -19,6 +19,7 @@ import type {
   ScheduleException,
 } from '@clinic/db/types';
 import { PageHeader } from '@/components/app-shell';
+import { SettingsNav } from '@/features/settings/settings-nav';
 import { getClinicScope } from '@/lib/session';
 import { AppointmentTypesManager } from '@/features/settings/appointment-types-manager';
 import { AppearanceSettings } from '@/features/settings/appearance-settings';
@@ -112,11 +113,12 @@ export default async function AccountPage({ params }: { params: Promise<{ locale
   return (
     <>
       <PageHeader title={t('title')} description={t('subtitle')} />
+      <SettingsNav />
 
       {/* Collapsed by default, except the one that gates a printed document.
           Six open panels made a page that had to be scrolled to find anything;
           six headings make a page you read in one glance and open one of. */}
-      <div className="max-w-4xl space-y-3">
+      <div className="max-w-5xl space-y-3">
         <p className="text-xs text-ink-600">{tSections('hint')}</p>
 
         {/* Open on arrival, because everything printed for a patient carries

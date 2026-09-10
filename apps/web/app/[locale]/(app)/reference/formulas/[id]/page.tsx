@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
 import { AlertTriangle, Pencil } from 'lucide-react';
 import {
+  Dash,
   Badge,
   Button,
   Card,
@@ -15,8 +16,6 @@ import {
   TableWrapper,
   Td,
   Tr,
-
-  Dash,
 } from '@clinic/ui';
 import { Link } from '@clinic/i18n/navigation';
 import type { FormulaStockLevel, Herb, HerbFormula, HerbFormulaItem } from '@clinic/db/types';
@@ -396,18 +395,18 @@ export default async function FormulaDetailPage({
             <CardBody>
               <dl>
                 <DetailRow label={tf('namePinyin')}>
-                  <span dir="ltr">{formula.name_pinyin ?? '—'}</span>
+                  <span dir="ltr">{formula.name_pinyin ?? <Dash />}</span>
                 </DetailRow>
-                <DetailRow label={tf('nameChinese')}>{formula.name_chinese ?? '—'}</DetailRow>
+                <DetailRow label={tf('nameChinese')}>{formula.name_chinese ?? <Dash />}</DetailRow>
                 <DetailRow label={tf('nameEnglish')}>
-                  <span dir="ltr">{formula.name_english ?? '—'}</span>
+                  <span dir="ltr">{formula.name_english ?? <Dash />}</span>
                 </DetailRow>
                 {formula.name_hebrew ? (
                   <DetailRow label={tf('nameHebrew')}>{formula.name_hebrew}</DetailRow>
                 ) : null}
                 <DetailRow label={tf('sourceText')}>
                   <span dir="ltr" className="italic">
-                    {formula.source_text ?? '—'}
+                    {formula.source_text ?? <Dash />}
                   </span>
                 </DetailRow>
               </dl>

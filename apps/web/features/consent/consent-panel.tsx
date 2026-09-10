@@ -125,7 +125,8 @@ export function ConsentPanel({
             <Select
               value={method}
               onChange={(event) => setMethod(event.target.value as ConsentMethod)}
-              className="h-8 w-auto text-xs"
+              compact
+              className="w-auto text-xs"
               aria-label={t('method')}
             >
               {CONSENT_METHODS.map((entry) => (
@@ -237,16 +238,16 @@ export function ConsentPanel({
                   key={entry.id}
                   className="flex flex-wrap items-baseline gap-x-2 gap-y-1 px-4 py-2 text-sm"
                 >
-                  <span dir="ltr" className="text-xs tabular-nums text-ink-600">
+                  <span dir="ltr" className="text-sm tabular-nums text-ink-600">
                     {formatDateTime(new Date(entry.decided_at))}
                   </span>
                   <span className="font-medium text-ink-900">{t(`kinds.${entry.kind}`)}</span>
                   <Badge tone={entry.granted ? 'success' : 'danger'}>
                     {entry.granted ? t('status.granted') : t('status.withdrawn')}
                   </Badge>
-                  <span className="text-xs text-ink-600">{t(`methods.${entry.method}`)}</span>
+                  <span className="text-sm text-ink-600">{t(`methods.${entry.method}`)}</span>
                   {entry.document ? (
-                    <span className="text-xs text-ink-600">
+                    <span className="text-sm text-ink-600">
                       {entry.document.title} · {t('version', { version: entry.document.version })}
                     </span>
                   ) : null}

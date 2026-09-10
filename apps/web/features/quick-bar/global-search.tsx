@@ -17,7 +17,7 @@ import {
 /**
  * Global search that expands in place.
  *
- * Hovering the magnifier opens a search field beside it rather than a dialog:
+ * Clicking the magnifier opens a search field beside it rather than a dialog:
  * looking someone up is a glance, not a task that deserves to cover the screen.
  * Results appear as you type and only a click navigates, so scanning them never
  * moves you off the page you were on.
@@ -52,7 +52,6 @@ interface FormulaRow {
 const RESULTS_PER_GROUP = 5;
 const DEBOUNCE_MS = 200;
 const MIN_QUERY_LENGTH = 2;
-const CLOSE_DELAY_MS = 220;
 
 /** PostgREST `or=` splits on commas and parentheses, so they must not survive. */
 function escapeTerm(term: string): string {
@@ -67,42 +66,41 @@ const GROUP_META = {
 
 export function GlobalSearch() {
   const t = useTranslations('quickBar');
+  const tc = useTranslations('common');
   const router = useRouter();
   const supabase = useSupabase();
   const inputRef = useRef<HTMLInputElement>(null);
-  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
 
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
 
-  function cancelClose() {
-    if (closeTimer.current) {
-      clearTimeout(closeTimer.current);
-      closeTimer.current = null;
+  /*
+   * Opens on a click or Ctrl+K, never on the pointer merely passing over it.
+   * It used to expand on hover, which pushed the bell and the "+" sideways
+   * every time the mouse crossed the top bar on its way somewhere else, and
+   * on a touch screen a hover is a tap — so the two behaviours diverged.
+   * Closing is a click anywhere outside, or Escape.
+   */
+  useEffect(() => {
+    if (!open) return;
+    function onPointerDown(event: PointerEvent) {
+      if (rootRef.current && !rootRef.current.contains(event.target as Node)) dismiss();
     }
-  }
-
-  /** Only collapse an empty box: half-typed text must survive a stray mouse move. */
-  function scheduleClose() {
-    cancelClose();
-    closeTimer.current = setTimeout(() => {
-      if (!query.trim()) setOpen(false);
-    }, CLOSE_DELAY_MS);
-  }
-
-  useEffect(() => cancelClose, []);
+    document.addEventListener('pointerdown', onPointerDown);
+    return () => document.removeEventListener('pointerdown', onPointerDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   function reveal() {
-    cancelClose();
     setOpen(true);
     // The field is rendered by this same update, so focus waits a frame.
     requestAnimationFrame(() => inputRef.current?.focus());
   }
 
   function dismiss() {
-    cancelClose();
     setQuery('');
     setResults([]);
     setOpen(false);
@@ -234,7 +232,7 @@ export function GlobalSearch() {
   const showPanel = open && term.length >= MIN_QUERY_LENGTH;
 
   return (
-    <div className="relative" onMouseEnter={reveal} onMouseLeave={scheduleClose}>
+    <div ref={rootRef} className="relative">
       <div className="flex items-center gap-1.5">
         <button
           type="button"
@@ -281,7 +279,7 @@ export function GlobalSearch() {
             <kbd
               dir="ltr"
               aria-hidden
-              className="pointer-events-none absolute inset-y-0 end-2 my-auto hidden h-5 items-center gap-0.5 rounded border border-ink-200 bg-ink-50 px-1 font-sans text-[10px] text-ink-500 sm:flex"
+              className="pointer-events-none absolute inset-y-0 end-2 my-auto hidden h-5 items-center gap-0.5 rounded border border-ink-200 bg-ink-50 px-1 font-sans text-xs text-ink-600 sm:flex"
             >
               Ctrl K
             </kbd>
@@ -290,8 +288,8 @@ export function GlobalSearch() {
             <button
               type="button"
               onClick={dismiss}
-              aria-label={t('search')}
-              className="absolute inset-y-0 end-2 my-auto flex h-6 w-6 items-center justify-center rounded-md text-ink-500 transition-colors hover:bg-ink-100 hover:text-ink-700"
+              aria-label={tc('clear')}
+              className="absolute inset-y-0 end-1 my-auto flex h-8 w-8 items-center justify-center rounded-md text-ink-500 transition-colors hover:bg-ink-100 hover:text-ink-700"
             >
               <X className="h-3.5 w-3.5" />
             </button>

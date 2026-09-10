@@ -14,11 +14,28 @@ export const inputClasses =
   'disabled:cursor-not-allowed disabled:bg-ink-50 disabled:text-ink-500 ' +
   'read-only:bg-ink-50 read-only:text-ink-700';
 
+/**
+ * `compact` is the one smaller height a field may have: 32px, for a number
+ * inside a table row or a filter bar, where the standard 40px would be taller
+ * than the row it sits in. It is still a full-size target for a finger. There
+ * is deliberately no third size — four different input heights across the
+ * app was how this prop came to exist.
+ */
+export interface FieldSizing {
+  compact?: boolean;
+}
+
+const compactClasses = 'h-8 px-2 py-1';
+
 export const Input = React.forwardRef<
   HTMLInputElement,
-  React.InputHTMLAttributes<HTMLInputElement>
->(({ className, ...props }, ref) => (
-  <input ref={ref} className={cn(inputClasses, 'h-10', className)} {...props} />
+  React.InputHTMLAttributes<HTMLInputElement> & FieldSizing
+>(({ className, compact = false, ...props }, ref) => (
+  <input
+    ref={ref}
+    className={cn(inputClasses, compact ? compactClasses : 'h-10', className)}
+    {...props}
+  />
 ));
 Input.displayName = 'Input';
 
@@ -47,8 +64,8 @@ export const TIME_INPUT_LANG = 'en-GB';
  */
 export const LtrInput = React.forwardRef<
   HTMLInputElement,
-  React.InputHTMLAttributes<HTMLInputElement>
->(({ className, type, lang, ...props }, ref) => {
+  React.InputHTMLAttributes<HTMLInputElement> & FieldSizing
+>(({ className, type, lang, compact = false, ...props }, ref) => {
   const isClock = type === 'time' || type === 'datetime-local';
   return (
     <input
@@ -56,7 +73,7 @@ export const LtrInput = React.forwardRef<
       dir="ltr"
       type={type}
       lang={lang ?? (isClock ? TIME_INPUT_LANG : undefined)}
-      className={cn(inputClasses, 'h-10 field-ltr', className)}
+      className={cn(inputClasses, compact ? compactClasses : 'h-10', 'field-ltr', className)}
       {...props}
     />
   );
@@ -91,13 +108,14 @@ Textarea.displayName = 'Textarea';
  */
 export const Select = React.forwardRef<
   HTMLSelectElement,
-  React.SelectHTMLAttributes<HTMLSelectElement>
->(({ className, children, ...props }, ref) => (
+  React.SelectHTMLAttributes<HTMLSelectElement> & FieldSizing
+>(({ className, children, compact = false, ...props }, ref) => (
   <select
     ref={ref}
     className={cn(
       inputClasses,
-      'h-10 cursor-pointer pe-9 text-ellipsis',
+      compact ? compactClasses : 'h-10',
+      'cursor-pointer pe-9 text-ellipsis',
       className,
     )}
     {...props}

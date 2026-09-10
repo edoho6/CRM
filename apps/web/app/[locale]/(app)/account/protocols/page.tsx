@@ -1,6 +1,7 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import type { TreatmentProtocol } from '@clinic/db/types';
 import { PageHeader } from '@/components/app-shell';
+import { SettingsNav } from '@/features/settings/settings-nav';
 import { getClinicScope } from '@/lib/session';
 import { ProtocolsManager } from '@/features/encounters/protocols-manager';
 
@@ -36,6 +37,7 @@ export default async function ProtocolsPage({
   return (
     <>
       <PageHeader title={t('title')} description={t('subtitle')} />
+      <SettingsNav />
       <div className="max-w-3xl">
         <ProtocolsManager protocols={data ?? []} />
       </div>

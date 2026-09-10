@@ -26,7 +26,7 @@ export default async function BookingSettingsPage({
 
   return (
     <>
-      <PageHeader title={t('title')} description={t('booking.subtitle')} />
+      <PageHeader title={t('booking.title')} description={t('booking.subtitle')} />
       <SettingsNav />
       <div className="max-w-3xl">
         <BookingSettingsForm

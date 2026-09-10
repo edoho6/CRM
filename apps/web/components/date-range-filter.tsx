@@ -3,14 +3,15 @@
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { CalendarRange } from 'lucide-react';
-import { cn, TIME_INPUT_LANG } from '@clinic/ui';
+import { Button, SegmentedControl, cn } from '@clinic/ui';
 import { usePathname, useRouter } from '@clinic/i18n/navigation';
 import { useSearchParams } from 'next/navigation';
 import { RANGE_PRESETS, type RangePreset } from '@/lib/date-range';
+import { DateInput } from './date-input';
 
 /**
  * Today / last week / last month / everything, with a date pair behind the last
- * button.
+ * segment.
  *
  * The four presets cover what is actually asked for day to day, and the custom
  * pair is folded away because it is the rare case and two empty date fields on
@@ -52,84 +53,56 @@ export function DateRangeFilter({ className }: { className?: string }) {
     router.replace(query ? `${pathname}?${query}` : pathname);
   }
 
-  const presets = RANGE_PRESETS.filter((preset) => preset !== 'custom');
+  const selected: RangePreset = showCustom || hasCustom ? 'custom' : current;
 
   return (
-    <div className={cn('flex flex-wrap items-center gap-1.5', className)}>
-      <div role="group" aria-label={t('dateRange')} className="flex flex-wrap gap-1">
-        {presets.map((preset) => {
-          const active = !hasCustom && current === preset;
-          return (
-            <button
-              key={preset}
-              type="button"
-              aria-pressed={active}
-              onClick={() => {
-                setShowCustom(false);
-                apply({ range: preset === 'all' ? null : preset, from: null, to: null });
-              }}
-              className={cn(
-                'rounded-full px-3 py-1 text-xs font-medium transition-colors',
-                active
-                  ? 'bg-accent text-accent-fg'
-                  : 'border border-ink-200 bg-white text-ink-700 hover:bg-ink-50',
-              )}
-            >
-              {t(preset)}
-            </button>
-          );
-        })}
-
-        <button
-          type="button"
-          aria-pressed={showCustom || hasCustom}
-          aria-expanded={showCustom}
-          onClick={() => setShowCustom((value) => !value)}
-          className={cn(
-            'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-colors',
-            hasCustom
-              ? 'bg-accent text-accent-fg'
-              : 'border border-ink-200 bg-white text-ink-700 hover:bg-ink-50',
-          )}
-        >
-          <CalendarRange className="h-3.5 w-3.5" aria-hidden />
-          {t('custom')}
-        </button>
-      </div>
+    <div className={cn('flex flex-wrap items-center gap-2', className)}>
+      <SegmentedControl
+        label={t('dateRange')}
+        value={selected}
+        onChange={(preset) => {
+          if (preset === 'custom') {
+            setShowCustom(true);
+            return;
+          }
+          setShowCustom(false);
+          apply({ range: preset === 'all' ? null : preset, from: null, to: null });
+        }}
+        options={RANGE_PRESETS.map((preset) => ({
+          value: preset,
+          label: t(preset),
+          icon:
+            preset === 'custom' ? <CalendarRange className="h-3.5 w-3.5" aria-hidden /> : undefined,
+        }))}
+      />
 
       {showCustom ? (
         <div className="flex flex-wrap items-center gap-1.5">
-          {/* dir="ltr" on the inputs: a date reads left to right even in Hebrew,
-              and the native picker lays its fields out that way regardless. */}
-          <input
-            type="date"
-            lang={TIME_INPUT_LANG}
-            dir="ltr"
+          <DateInput
             aria-label={t('from')}
             value={from}
             max={to || undefined}
             onChange={(event) => apply({ from: event.target.value || null, range: null })}
-            className="h-8 rounded-lg border border-ink-200 bg-white px-2 text-xs text-ink-900 tabular-nums shadow-xs focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-focus focus-visible:border-focus"
           />
           <span className="text-xs text-ink-600">–</span>
-          <input
-            type="date"
-            lang={TIME_INPUT_LANG}
-            dir="ltr"
+          <DateInput
             aria-label={t('to')}
             value={to}
             min={from || undefined}
             onChange={(event) => apply({ to: event.target.value || null, range: null })}
-            className="h-8 rounded-lg border border-ink-200 bg-white px-2 text-xs text-ink-900 tabular-nums shadow-xs focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-focus focus-visible:border-focus"
           />
           {hasCustom ? (
-            <button
+            <Button
               type="button"
-              onClick={() => apply({ from: null, to: null, range: null })}
-              className="rounded-md px-2 py-1 text-xs text-ink-600 underline-offset-2 hover:text-ink-900 hover:underline"
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setShowCustom(false);
+                apply({ from: null, to: null, range: null });
+              }}
             >
               {t('clear')}
-            </button>
+            </Button>
           ) : null}
         </div>
       ) : null}

@@ -6,6 +6,7 @@ import { getClinicScope } from '@/lib/session';
 import { formulaPrimaryName, herbPrimaryName } from '@/lib/display';
 import { PrintButton } from '@/features/documents/print-button';
 import { formatDate } from '@clinic/i18n';
+import { Dash } from '@clinic/ui';
 
 /**
  * The prescription, on paper, for the patient to take home with the bag.
@@ -104,12 +105,12 @@ export default async function PrescriptionPrintPage({
       <dl className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm">
         <div>
           <dt className="text-xs text-ink-600">{t('patient')}</dt>
-          <dd dir="auto">{patient?.full_name ?? '—'}</dd>
+          <dd dir="auto">{patient?.full_name ?? <Dash />}</dd>
         </div>
         <div>
           <dt className="text-xs text-ink-600">{t('practitioner')}</dt>
           <dd dir="auto">
-            {[profile?.full_name, profile?.title].filter(Boolean).join(' · ') || '—'}
+            {[profile?.full_name, profile?.title].filter(Boolean).join(' · ') || <Dash />}
           </dd>
           {profile?.phone ? (
             <dd className="text-xs text-ink-600" dir="ltr">
@@ -132,7 +133,7 @@ export default async function PrescriptionPrintPage({
         <section className="rounded-lg border border-ink-300 p-4">
           <h3 className="text-sm font-semibold text-ink-900">{t('howToTake')}</h3>
           <p className="mt-1 text-2xl font-semibold" dir="auto">
-            {dosing || '—'}
+            {dosing || <Dash />}
           </p>
           {dailyTotal ? (
             <p className="mt-1 text-base text-ink-800" dir="auto">
@@ -171,7 +172,7 @@ export default async function PrescriptionPrintPage({
               {record.items.map((item) => (
                 <tr key={item.id}>
                   <td className="border-b border-ink-100 py-1" dir="auto">
-                    {item.herb ? herbPrimaryName(item.herb, uiLocale) : (item.custom_name ?? '—')}
+                    {item.herb ? herbPrimaryName(item.herb, uiLocale) : (item.custom_name ?? <Dash />)}
                   </td>
                   {/* No direction override: in a Hebrew line the bidi algorithm
                       already puts the figure before its unit, and forcing LTR is

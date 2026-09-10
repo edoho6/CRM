@@ -24,7 +24,8 @@ import { toPointPlacement, type BodyView, type TreatmentModality } from '@clinic
 import { useRouter } from '@clinic/i18n/navigation';
 import type { TcmNote, TreatmentProtocol } from '@clinic/db/types';
 import { useAutosave } from '@/lib/use-autosave';
-import { BodyMap, type MappedPoint } from '@/features/reference/body-map';
+import type { MappedPoint } from '@/features/reference/body-map';
+import { HumanBody3D } from './body3d/human-body-3d';
 import { PointsEditor, type PointOption, type PointRow } from './points-editor';
 import { EncounterCompare, type PreviousEncounter } from './encounter-compare';
 import {
@@ -594,7 +595,7 @@ export function EncounterForm({
                     </div>
                   ) : null}
 
-                  <div className="grid gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,1fr)]">
+                  <div className="grid gap-4 lg:grid-cols-[minmax(0,5fr)_minmax(0,2fr)]">
                     <PointsEditor
                       value={state.points_used}
                       catalogue={pointCatalogue}
@@ -604,7 +605,7 @@ export function EncounterForm({
                     {/* The chart is a mirror of the list, not a second input: it
                       reflects what has been chosen so a gap in the prescription
                       is visible rather than deduced. */}
-                    <BodyMap
+                    <HumanBody3D
                       points={mappedPoints}
                       onSelect={(point) => router.push(`/reference/points/${point.pointId}`)}
                     />

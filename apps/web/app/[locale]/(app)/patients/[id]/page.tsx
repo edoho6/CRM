@@ -1,7 +1,8 @@
 import { notFound } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { CalendarPlus, Pencil } from 'lucide-react';
+import { CalendarPlus, ClipboardList, Pencil } from 'lucide-react';
 import {
+  Dash,
   Badge,
   Button,
   Card,
@@ -253,7 +254,7 @@ export default async function PatientDetailPage({
         <dl className="grid grid-cols-1 gap-x-6 sm:grid-cols-2 lg:grid-cols-3">
           <DetailRow label={t('fields.fullName')}>{patient.full_name}</DetailRow>
           <DetailRow label={t('fields.phone')}>
-            {patient.phone ? <PhoneActions phone={patient.phone} /> : '—'}
+            {patient.phone ? <PhoneActions phone={patient.phone} /> : <Dash />}
           </DetailRow>
           <DetailRow label={t('fields.email')}>
             {patient.email ? (
@@ -261,7 +262,7 @@ export default async function PatientDetailPage({
                 {patient.email}
               </a>
             ) : (
-              '—'
+              <Dash />
             )}
           </DetailRow>
           <DetailRow label={t('fields.dateOfBirth')}>
@@ -271,7 +272,7 @@ export default async function PatientDetailPage({
                 {age !== null ? ` · ${t('years', { count: age })}` : ''}
               </span>
             ) : (
-              '—'
+              <Dash />
             )}
           </DetailRow>
           <DetailRow label={t('fields.nationalId')}>
@@ -280,21 +281,21 @@ export default async function PatientDetailPage({
                 {patient.national_id}
               </span>
             ) : (
-              '—'
+              <Dash />
             )}
           </DetailRow>
-          <DetailRow label={t('fields.city')}>{patient.city ?? '—'}</DetailRow>
-          <DetailRow label={t('fields.address')}>{patient.address ?? '—'}</DetailRow>
-          <DetailRow label={t('fields.occupation')}>{patient.occupation ?? '—'}</DetailRow>
-          <DetailRow label={t('fields.referralSource')}>{patient.referral_source ?? '—'}</DetailRow>
+          <DetailRow label={t('fields.city')}>{patient.city ?? <Dash />}</DetailRow>
+          <DetailRow label={t('fields.address')}>{patient.address ?? <Dash />}</DetailRow>
+          <DetailRow label={t('fields.occupation')}>{patient.occupation ?? <Dash />}</DetailRow>
+          <DetailRow label={t('fields.referralSource')}>{patient.referral_source ?? <Dash />}</DetailRow>
           <DetailRow label={t('fields.emergencyContactName')}>
-            {patient.emergency_contact_name ?? '—'}
+            {patient.emergency_contact_name ?? <Dash />}
           </DetailRow>
           <DetailRow label={t('fields.emergencyContactPhone')}>
             {patient.emergency_contact_phone ? (
               <PhoneActions phone={patient.emergency_contact_phone} />
             ) : (
-              '—'
+              <Dash />
             )}
           </DetailRow>
         </dl>
@@ -310,7 +311,11 @@ export default async function PatientDetailPage({
 
   const encountersPanel =
     encounters.length === 0 ? (
-      <EmptyState title={t('noEncounters')} />
+      <EmptyState
+        icon={<ClipboardList className="h-8 w-8" />}
+        title={t('noEncounters')}
+        action={<StartEncounterButton patientId={patient.id} />}
+      />
     ) : (
       <TableWrapper>
         <SortableTable defaultSortKey="date" defaultSortDirection="desc">
@@ -388,7 +393,7 @@ export default async function PatientDetailPage({
                   </span>
                 </Td>
                 <Td>
-                  {appointmentTypeName(appointment.appointment_type, locale as Locale) || '—'}
+                  {appointmentTypeName(appointment.appointment_type, locale as Locale) || <Dash />}
                 </Td>
                 <Td>
                   <ConfirmationBadge appointment={appointment} />

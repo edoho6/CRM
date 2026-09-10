@@ -133,6 +133,13 @@ export default async function HerbsPage({
           icon={<Sprout className="h-8 w-8" />}
           title={filters.q ? tc('noResults') : t('empty')}
           description={filters.q ? undefined : t('emptyBody')}
+          action={
+            filters.q ? undefined : (
+              <Button asChild size="sm">
+                <Link href="/reference/herbs/new">{t('new')}</Link>
+              </Button>
+            )
+          }
         />
       ) : (
         <TableWrapper>

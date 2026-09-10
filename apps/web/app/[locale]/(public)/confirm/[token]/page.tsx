@@ -55,7 +55,7 @@ export default async function ConfirmPage({
       <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-accent text-accent-fg">
         <Leaf className="h-5 w-5" aria-hidden />
       </span>
-      <h1 className="text-lg font-semibold text-ink-900">{row?.clinic_name ?? tc('appName')}</h1>
+      <h1 className="text-xl font-semibold text-ink-900">{row?.clinic_name ?? tc('appName')}</h1>
     </div>
   );
 

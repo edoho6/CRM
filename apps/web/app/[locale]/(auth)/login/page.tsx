@@ -34,7 +34,7 @@ export default async function LoginPage({ params }: { params: Promise<{ locale: 
             <Leaf className="h-5 w-5" />
           </span>
           <div>
-            <h1 className="text-lg font-semibold text-ink-900">{tc('appName')}</h1>
+            <h1 className="text-xl font-semibold text-ink-900">{tc('appName')}</h1>
             <p className="text-xs text-ink-500">{tc('appTagline')}</p>
           </div>
         </div>

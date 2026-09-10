@@ -1,6 +1,7 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Truck } from 'lucide-react';
 import {
+  Dash,
   Badge,
   EmptyState,
   SortBody,
@@ -41,7 +42,11 @@ export default async function SuppliersPage({ params }: { params: Promise<{ loca
       <InventoryNav />
 
       {suppliers.length === 0 ? (
-        <EmptyState icon={<Truck className="h-8 w-8" />} title={t('empty')} />
+        <EmptyState
+          icon={<Truck className="h-8 w-8" />}
+          title={t('empty')}
+          action={<NewSupplierDialog />}
+        />
       ) : (
         <TableWrapper>
           <SortableTable defaultSortKey="name">
@@ -67,17 +72,17 @@ export default async function SuppliersPage({ params }: { params: Promise<{ loca
                   }}
                 >
                   <Td className="font-medium text-ink-900">{supplier.name}</Td>
-                  <Td>{supplier.contact_name ?? '—'}</Td>
+                  <Td>{supplier.contact_name ?? <Dash />}</Td>
                   <Td>
                     {supplier.phone ? (
                       <span dir="ltr" className="tabular-nums">
                         {supplier.phone}
                       </span>
                     ) : (
-                      '—'
+                      <Dash />
                     )}
                   </Td>
-                  <Td>{supplier.email ? <span dir="ltr">{supplier.email}</span> : '—'}</Td>
+                  <Td>{supplier.email ? <span dir="ltr">{supplier.email}</span> : <Dash />}</Td>
                   <Td>
                     <Badge tone={supplier.is_active ? 'success' : 'muted'}>
                       {supplier.is_active ? tc('active') : tc('inactive')}

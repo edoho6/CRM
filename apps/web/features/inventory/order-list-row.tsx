@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useTranslations } from 'next-intl';
 import { Check, Trash2, Undo2 } from 'lucide-react';
-import { Select, Spinner, Td } from '@clinic/ui';
+import { Input, LtrInput, Select, Spinner, Td } from '@clinic/ui';
 import { useRouter } from '@clinic/i18n/navigation';
 import { ORDER_LIST_STATUSES, type OrderListStatus } from '@clinic/domain';
 import { removeFromOrderList, updateOrderListEntry } from './actions';
@@ -68,11 +68,11 @@ export function OrderListRowControls({
     <>
       <Td>
         <span className="inline-flex items-center gap-1">
-          <input
+          <LtrInput
             type="number"
             min={0}
             step="0.1"
-            dir="ltr"
+            compact
             value={quantity}
             aria-label={tc('quantity')}
             placeholder="—"
@@ -81,7 +81,7 @@ export function OrderListRowControls({
             onKeyDown={(event) => {
               if (event.key === 'Enter') event.currentTarget.blur();
             }}
-            className="h-7 w-24 rounded-md border border-ink-200 bg-white px-1.5 text-sm tabular-nums shadow-xs focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-focus focus-visible:border-focus"
+            className="w-24 tabular-nums"
           />
           <span className="text-xs text-ink-500">
             {entry.unit === 'dose' ? t('doses') : tUnit(entry.unit as never)}
@@ -89,14 +89,15 @@ export function OrderListRowControls({
         </span>
       </Td>
       <Td>
-        <input
+        <Input
           type="text"
+          compact
           value={notes}
           aria-label={tc('notes')}
           placeholder={t('notesPlaceholder')}
           onChange={(event) => setNotes(event.target.value)}
           onBlur={() => save({})}
-          className="h-7 w-full min-w-32 rounded-md border border-ink-200 bg-white px-1.5 text-sm shadow-xs focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-focus focus-visible:border-focus"
+          className="min-w-32"
         />
       </Td>
       <Td>

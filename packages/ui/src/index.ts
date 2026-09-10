@@ -13,10 +13,14 @@ export {
   inputClasses,
   TIME_INPUT_LANG,
   type FieldProps,
+  type FieldSizing,
 } from './field';
 export { Popover, FloatingList, useAnchoredPosition } from './popover';
 export { Combobox, type ComboboxOption, type ComboboxValue } from './combobox';
 export { Card, CardHeader, CardTitle, CardBody, CardFooter, Section } from './card';
+export { PageHeader } from './page-header';
+export { PageBody } from './page-body';
+export { ArrangeToggle } from './arrange-toggle';
 export {
   Badge,
   Alert,
@@ -45,7 +49,14 @@ export {
   TabsContent,
 } from './menu';
 export { Collapsible } from './collapsible';
-export { SegmentedControl, type SegmentedOption } from './segmented-control';
+export {
+  SegmentedControl,
+  SegmentCount,
+  segmentClasses,
+  segmentGroupClasses,
+  type SegmentedOption,
+  type SegmentedSize,
+} from './segmented-control';
 export { FormFields, type FormFieldsLabels } from './form-fields';
 export { TimeSelect } from './time-select';
 export { Toggle } from './toggle';

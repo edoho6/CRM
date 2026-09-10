@@ -180,7 +180,8 @@ export function FormBuilder({
                 aria-label={t('fieldType')}
                 value={field.type}
                 onChange={(e) => changeType(index, e.target.value as FormFieldType)}
-                className="h-8 w-auto min-w-40 text-sm"
+                compact
+                className="w-auto min-w-40"
               >
                 {FORM_FIELD_TYPES.map((type) => (
                   <option key={type} value={type}>

@@ -1,6 +1,5 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import type { AppointmentType, AppointmentWithRelations, Location, Patient, Room } from '@clinic/db/types';
-import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
 import { CalendarView, type CalendarViewMode } from '@/features/appointments/calendar-view';
 import {
@@ -160,7 +159,6 @@ export default async function CalendarPage({
 
   return (
     <>
-      <PageHeader title={t('title')} />
       <CalendarView
         appointments={appointmentsResult.data ?? []}
         appointmentTypes={typesResult.data ?? []}

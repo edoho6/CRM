@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useTranslations } from 'next-intl';
 import { Check, Plus, ShoppingCart } from 'lucide-react';
-import { Spinner } from '@clinic/ui';
+import { LtrInput, Spinner } from '@clinic/ui';
 import { cn } from '@clinic/ui/cn';
 import { useRouter } from '@clinic/i18n/navigation';
 import { addToOrderList, setFormulaThreshold, setHerbThreshold } from './actions';
@@ -58,11 +58,11 @@ export function ThresholdCell({
     // "doses 0". The value comes first and the unit follows it, in both
     // languages.
     <span dir="ltr" className="inline-flex items-center gap-1">
-      <input
+      <LtrInput
         type="number"
         min={0}
         step="0.1"
-        dir="ltr"
+        compact
         value={draft}
         aria-label={t('threshold')}
         placeholder="—"
@@ -71,7 +71,7 @@ export function ThresholdCell({
         onKeyDown={(event) => {
           if (event.key === 'Enter') event.currentTarget.blur();
         }}
-        className="h-7 w-20 rounded-md border border-ink-200 bg-white px-1.5 text-sm tabular-nums text-ink-900 shadow-xs focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-focus focus-visible:border-focus"
+        className="w-20 tabular-nums"
       />
       <span className="text-xs text-ink-600">{suffix}</span>
       {isPending ? <Spinner className="h-3 w-3 text-ink-500" /> : null}

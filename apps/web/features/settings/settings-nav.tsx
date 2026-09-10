@@ -1,11 +1,21 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { Link, usePathname } from '@clinic/i18n/navigation';
-import { cn } from '@clinic/ui';
+import { usePathname } from '@clinic/i18n/navigation';
+import { SegmentedLinks } from '@/components/segmented-links';
 
+/**
+ * One strip for everything that is set up once.
+ *
+ * The clinic's settings and the practitioner's personal area are two places
+ * — one is about the practice, the other about the person — but for a clinic
+ * of one that distinction is invisible, and the personal area used to be
+ * reachable only from the menu behind your own name. Both areas now show the
+ * same strip, so from either you can see, and reach, the other.
+ */
 const SECTIONS = [
   { href: '/settings', labelKey: 'general', exact: true },
+  { href: '/account', labelKey: 'account', exact: false },
   { href: '/settings/booking', labelKey: 'booking', exact: false },
   { href: '/settings/tags', labelKey: 'tags', exact: false },
   { href: '/settings/access', labelKey: 'access', exact: false },
@@ -18,25 +28,15 @@ export function SettingsNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="mb-5 flex flex-wrap items-center gap-1 rounded-lg border border-ink-200 bg-white p-1">
-      {SECTIONS.map((section) => {
-        const isActive = section.exact
-          ? pathname === section.href
-          : pathname.startsWith(section.href);
-        return (
-          <Link
-            key={section.href}
-            href={section.href}
-            aria-current={isActive ? 'page' : undefined}
-            className={cn(
-              'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
-              isActive ? 'bg-accent text-accent-fg' : 'text-ink-600 hover:bg-ink-50',
-            )}
-          >
-            {t(section.labelKey)}
-          </Link>
-        );
-      })}
-    </nav>
+    <SegmentedLinks
+      as="nav"
+      label={t('label')}
+      className="mb-5"
+      items={SECTIONS.map((section) => ({
+        href: section.href,
+        label: t(section.labelKey),
+        active: section.exact ? pathname === section.href : pathname.startsWith(section.href),
+      }))}
+    />
   );
 }

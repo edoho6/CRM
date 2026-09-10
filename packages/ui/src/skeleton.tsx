@@ -126,7 +126,7 @@ export function SkeletonPage({
   children: React.ReactNode;
 }) {
   return (
-    <div role="status" aria-busy="true" aria-live="polite" className={cn('space-y-4', className)}>
+    <div role="status" aria-busy="true" aria-live="polite" className={cn('space-y-5', className)}>
       <span className="sr-only">{label}</span>
       {children}
     </div>

@@ -61,7 +61,7 @@ export default async function WelcomePage({ params }: { params: Promise<{ locale
           <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-accent text-accent-fg">
             <Leaf className="h-5 w-5" />
           </span>
-          <h1 className="text-lg font-semibold text-ink-900">{tc('appName')}</h1>
+          <h1 className="text-xl font-semibold text-ink-900">{tc('appName')}</h1>
         </div>
 
         <Card>

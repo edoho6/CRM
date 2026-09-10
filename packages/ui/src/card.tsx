@@ -23,7 +23,7 @@ export function CardHeader({ className, ...props }: React.HTMLAttributes<HTMLDiv
 }
 
 export function CardTitle({ className, ...props }: React.HTMLAttributes<HTMLHeadingElement>) {
-  return <h2 className={cn('text-sm font-semibold text-ink-800', className)} {...props} />;
+  return <h2 className={cn('text-base font-semibold text-ink-900', className)} {...props} />;
 }
 
 export function CardBody({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
@@ -60,8 +60,8 @@ export function Section({
     <section className={cn('space-y-3', className)}>
       <div className="flex flex-wrap items-end justify-between gap-2">
         <div>
-          <h3 className="text-sm font-semibold text-ink-800">{title}</h3>
-          {description ? <p className="text-xs text-ink-500">{description}</p> : null}
+          <h3 className="text-sm font-semibold text-ink-900">{title}</h3>
+          {description ? <p className="text-xs text-ink-600">{description}</p> : null}
         </div>
         {actions}
       </div>

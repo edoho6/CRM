@@ -37,33 +37,32 @@ const QUICK_ACTIONS: QuickAction[] = [
   { key: 'newPatient', href: '/patients/new', icon: UserPlus },
   { key: 'newAppointment', href: '/calendar?new=1', icon: CalendarPlus },
   { key: 'newEncounter', href: '/encounters/new', icon: Stethoscope },
-  { key: 'newInvoice', href: '/billing', icon: Receipt },
+  { key: 'newInvoice', href: '/billing/new', icon: Receipt },
   { key: 'receiveStock', href: '/inventory/batches/receive', icon: PackagePlus, startsGroup: true },
   { key: 'newHerb', href: '/reference/herbs/new', icon: Sprout },
   { key: 'newFormula', href: '/reference/formulas/new', icon: FlaskConical },
 ];
 
-const CLOSE_DELAY_MS = 180;
-
 export function QuickCreateMenu() {
   const t = useTranslations('quickBar');
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
 
-  function cancelClose() {
-    if (closeTimer.current) {
-      clearTimeout(closeTimer.current);
-      closeTimer.current = null;
+  /*
+   * Opens on a click, never on the pointer passing over it: a menu that
+   * unfolds because the mouse crossed it on the way to the bell is a menu
+   * that gets in the way, and on a touch screen a hover is a tap. Closing is
+   * a click anywhere outside, or Escape.
+   */
+  useEffect(() => {
+    if (!open) return;
+    function onPointerDown(event: PointerEvent) {
+      if (rootRef.current && !rootRef.current.contains(event.target as Node)) setOpen(false);
     }
-  }
-
-  function scheduleClose() {
-    cancelClose();
-    closeTimer.current = setTimeout(() => setOpen(false), CLOSE_DELAY_MS);
-  }
-
-  useEffect(() => cancelClose, []);
+    document.addEventListener('pointerdown', onPointerDown);
+    return () => document.removeEventListener('pointerdown', onPointerDown);
+  }, [open]);
 
   // Escape closes, matching what a keyboard user expects from any open menu.
   useEffect(() => {
@@ -76,14 +75,7 @@ export function QuickCreateMenu() {
   }, [open]);
 
   return (
-    <div
-      className="relative"
-      onMouseEnter={() => {
-        cancelClose();
-        setOpen(true);
-      }}
-      onMouseLeave={scheduleClose}
-    >
+    <div ref={rootRef} className="relative">
       <button
         type="button"
         aria-label={t('create')}
@@ -91,7 +83,6 @@ export function QuickCreateMenu() {
         aria-haspopup="menu"
         title={t('create')}
         onClick={() => setOpen((value) => !value)}
-        onFocus={() => setOpen(true)}
         className={cn(
           'flex h-11 w-11 items-center justify-center rounded-xl bg-accent text-accent-fg',
           'transition-all duration-150 ease-out',

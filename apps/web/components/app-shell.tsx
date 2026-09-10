@@ -21,12 +21,10 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import {
   Accessibility,
-  ArrowUpDown,
   BookOpen,
   Boxes,
   CalendarDays,
   ChartColumn,
-  Check,
   ChevronsRight,
   ClipboardList,
   FileText,
@@ -46,7 +44,7 @@ import {
   Users,
 } from 'lucide-react';
 import { Link, usePathname } from '@clinic/i18n/navigation';
-import { Button, Sheet, SheetContent, cn } from '@clinic/ui';
+import { ArrangeToggle, Button, Sheet, SheetContent, cn } from '@clinic/ui';
 import { LanguageSwitcher } from './language-switcher';
 import { ThemeToggle } from './theme-toggle';
 import { UserMenu } from './user-menu';
@@ -269,7 +267,7 @@ export function AppShell({
               ))}
             </SortableContext>
           </DndContext>
-          <p className="mt-2 px-1 text-[11px] text-ink-500">{t('arrangeHint')}</p>
+          <p className="mt-2 px-1 text-xs text-ink-600">{t('arrangeHint')}</p>
         </nav>
       );
     }
@@ -362,18 +360,14 @@ export function AppShell({
               </span>
               {/* Beside the menu it arranges. A switch, not a mode buried in
                   settings: press it, drag, press it again. */}
-              <Button
-                type="button"
-                variant={navEditing ? 'primary' : 'ghost'}
-                size="icon"
-                className="ms-auto h-7 w-7 shrink-0"
-                aria-pressed={navEditing}
-                aria-label={navEditing ? t('doneArranging') : t('arrangeMenu')}
-                title={navEditing ? t('doneArranging') : t('arrangeMenu')}
-                onClick={() => setNavEditing((value) => !value)}
-              >
-                {navEditing ? <Check className="h-3.5 w-3.5" /> : <ArrowUpDown className="h-3.5 w-3.5" />}
-              </Button>
+              <ArrangeToggle
+                iconOnly
+                editing={navEditing}
+                onToggle={() => setNavEditing((value) => !value)}
+                arrangeLabel={t('arrangeMenu')}
+                doneLabel={t('doneArranging')}
+                className="ms-auto shrink-0"
+              />
             </>
           ) : null}
         </div>
@@ -421,6 +415,20 @@ export function AppShell({
             <Link href="/settings" title={collapsed ? t('settings') : undefined}>
               <Settings className="h-4 w-4" />
               {!collapsed ? t('settings') : <span className="sr-only">{t('settings')}</span>}
+            </Link>
+          </Button>
+
+          {/* The personal area beside the clinic's settings. It used to live
+              only behind your own name, and nobody found it there. */}
+          <Button
+            asChild
+            variant="ghost"
+            size="sm"
+            className={cn('w-full', collapsed ? 'justify-center px-0' : 'justify-start')}
+          >
+            <Link href="/account" title={collapsed ? t('account') : undefined}>
+              <UserCog className="h-4 w-4" />
+              {!collapsed ? t('account') : <span className="sr-only">{t('account')}</span>}
             </Link>
           </Button>
 
@@ -593,31 +601,9 @@ export function AppShell({
   );
 }
 
-/** Shared page heading so every module gets the same rhythm. */
-export function PageHeader({
-  title,
-  description,
-  actions,
-}: {
-  title: React.ReactNode;
-  description?: React.ReactNode;
-  actions?: React.ReactNode;
-}) {
-  return (
-    <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
-      <div className="min-w-0">
-        <h1 className="text-xl font-semibold text-ink-900">{title}</h1>
-        {/* A `div`, not a `p`.
-
-            `description` is a ReactNode and callers pass real markup into it —
-            the treatment page puts a `<nav>` there. A `<nav>` inside a `<p>` is
-            invalid HTML, and the browser silently closes the paragraph before
-            it, so the server's tree and the client's disagree and React reports
-            a hydration error. Nothing about a one-line caption needs to be a
-            paragraph. */}
-        {description ? <div className="mt-0.5 text-sm text-ink-500">{description}</div> : null}
-      </div>
-      {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
-    </div>
-  );
-}
+/**
+ * The page heading now lives in the shared kit, so the sign-in and print
+ * screens use the same one. Re-exported here so the forty-odd pages that
+ * import it from the shell keep working.
+ */
+export { PageHeader } from '@clinic/ui';

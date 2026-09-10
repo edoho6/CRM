@@ -19,8 +19,8 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useTranslations } from 'next-intl';
-import { Check, LayoutGrid, Pencil, RotateCcw } from 'lucide-react';
-import { Alert, Button, EmptyState, cn, useConfirm } from '@clinic/ui';
+import { LayoutGrid, RotateCcw } from 'lucide-react';
+import { Alert, ArrangeToggle, Button, EmptyState, cn, useConfirm } from '@clinic/ui';
 import type { DashboardLayout, DashboardWidgetInstance, WidgetSize } from '@clinic/domain/widgets';
 import { AddWidgetDialog } from './add-widget-dialog';
 import { DashboardProvider } from './dashboard-context';
@@ -170,16 +170,12 @@ export function DashboardGrid({
             the whole grid behaves should look like a switch beside it, and
             "edit" is the icon everyone already reads. The name is still there
             for a screen reader and on hover. */}
-        <Button
-          variant={isEditing ? 'primary' : 'secondary'}
-          size="icon"
-          aria-pressed={isEditing}
-          aria-label={isEditing ? t('doneEditing') : t('editLayout')}
-          title={isEditing ? t('doneEditing') : t('editLayout')}
-          onClick={() => setIsEditing((value) => !value)}
-        >
-          {isEditing ? <Check className="h-4 w-4" /> : <Pencil className="h-4 w-4" />}
-        </Button>
+        <ArrangeToggle
+          editing={isEditing}
+          onToggle={() => setIsEditing((value) => !value)}
+          arrangeLabel={t('editLayout')}
+          doneLabel={t('doneEditing')}
+        />
         {isEditing ? (
           <Button variant="ghost" size="sm" onClick={handleReset}>
             <RotateCcw className="h-4 w-4" />

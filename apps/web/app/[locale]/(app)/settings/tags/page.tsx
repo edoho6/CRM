@@ -38,7 +38,7 @@ export default async function TagsSettingsPage({
 
   return (
     <>
-      <PageHeader title={t('title')} description={t('tags.subtitle')} />
+      <PageHeader title={t('tags.title')} description={t('tags.subtitle')} />
       <SettingsNav />
       <div className="max-w-3xl">
         <TagsManager tags={tags ?? []} usage={usage} />

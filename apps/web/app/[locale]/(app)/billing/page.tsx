@@ -1,6 +1,7 @@
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
-import { Receipt, Settings } from 'lucide-react';
+import { Plus, Receipt, Settings } from 'lucide-react';
 import {
+  Dash,
   Badge,
   Button,
   EmptyState,
@@ -47,12 +48,20 @@ export default async function BillingPage({ params }: { params: Promise<{ locale
       <PageHeader
         title={t('title')}
         actions={
-          <Button asChild variant="secondary">
-            <Link href="/billing/settings">
-              <Settings className="h-4 w-4" />
-              {t('settings.title')}
-            </Link>
-          </Button>
+          <>
+            <Button asChild variant="secondary">
+              <Link href="/billing/settings">
+                <Settings className="h-4 w-4" />
+                {t('settings.title')}
+              </Link>
+            </Button>
+            <Button asChild>
+              <Link href="/billing/new">
+                <Plus className="h-4 w-4" />
+                {t('new')}
+              </Link>
+            </Button>
+          </>
         }
       />
 
@@ -106,7 +115,7 @@ export default async function BillingPage({ params }: { params: Promise<{ locale
                         {invoice.patient.full_name}
                       </Link>
                     ) : (
-                      '—'
+                      <Dash />
                     )}
                   </Td>
                   <Td>

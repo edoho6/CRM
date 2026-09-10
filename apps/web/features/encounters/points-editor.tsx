@@ -11,7 +11,7 @@ import {
   Search,
   X,
 } from 'lucide-react';
-import { FloatingList, useAnchoredPosition } from '@clinic/ui';
+import { FloatingList, inputClasses, useAnchoredPosition } from '@clinic/ui';
 import { cn } from '@clinic/ui/cn';
 import {
   POINT_PLACEMENTS,
@@ -242,7 +242,7 @@ function PointCombobox({
             setOpen(false);
           }
         }}
-        className="h-8 w-full rounded-md border border-ink-200 bg-white ps-7 pe-2 text-sm text-ink-900 shadow-xs placeholder:text-ink-500 focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-focus focus-visible:border-focus disabled:bg-ink-50"
+        className={cn(inputClasses, 'h-8 py-1 ps-7 pe-2')}
       />
 
       {open && matches.length > 0 ? (

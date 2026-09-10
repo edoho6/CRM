@@ -176,7 +176,8 @@ export function EncounterCompare({
             aria-label={t('chooseTreatment')}
             value={selected?.id ?? ''}
             onChange={(event) => setSelectedId(event.target.value)}
-            className="h-8 text-xs"
+            compact
+            className="text-xs"
           >
             {previous.map((entry, index) => (
               <option key={entry.id} value={entry.id}>
@@ -274,7 +275,7 @@ function PointList({
           <span dir="ltr" className="tabular-nums">
             {cell.code}
           </span>
-          <span className="text-[11px] opacity-70">{regionLabel(cell.placement)}</span>
+          <span className="text-xs text-ink-600">{regionLabel(cell.placement)}</span>
         </li>
       ))}
     </ul>
@@ -331,7 +332,7 @@ function HerbList({
             <span className="shrink-0 tabular-nums" dir="ltr">
               {cell.quantity}
               {cell.status === 'changed' && cell.was != null && renderWas ? (
-                <span className="ms-1 text-[11px] opacity-70">{renderWas(cell.was)}</span>
+                <span className="ms-1 text-xs text-ink-600">{renderWas(cell.was)}</span>
               ) : null}
             </span>
           ) : null}

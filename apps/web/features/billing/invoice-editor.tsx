@@ -202,7 +202,8 @@ export function InvoiceEditor({ invoice }: { invoice: InvoiceWithDetails }) {
                               event.target.value,
                             )
                           }
-                          className="h-8 w-24"
+                          compact
+                          className="w-24"
                         />
                       </Td>
                       <Td>

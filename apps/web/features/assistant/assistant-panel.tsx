@@ -4,6 +4,7 @@ import { useRef, useState, useTransition } from 'react';
 import { useTranslations } from 'next-intl';
 import { Send, Sparkles } from 'lucide-react';
 import {
+  Dash,
   Alert,
   Button,
   Card,
@@ -175,7 +176,7 @@ export function AssistantPanel({ examples }: { examples: string[] }) {
                                 >
                                   {/* A dash, not a blank and not a zero — no
                                       value recorded is not a value of nought. */}
-                                  {value === null || value === '' ? '—' : String(value)}
+                                  {value === null || value === '' ? <Dash /> : String(value)}
                                 </Td>
                               );
                             })}

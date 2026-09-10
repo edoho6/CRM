@@ -2,6 +2,8 @@ import { notFound } from 'next/navigation';
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
 import { AlertTriangle, PackagePlus, Pencil } from 'lucide-react';
 import {
+  Dash,
+  Alert,
   Badge,
   Button,
   Card,
@@ -15,8 +17,6 @@ import {
   TableWrapper,
   Td,
   Tr,
-
-  Dash,
 } from '@clinic/ui';
 import { Link } from '@clinic/i18n/navigation';
 import type {
@@ -200,9 +200,9 @@ export default async function HerbDetailPage({
       <ReferenceNav />
 
       {herb.needs_review ? (
-        <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+        <Alert tone="warning" className="mb-4">
           {tReview('hint')}
-        </p>
+        </Alert>
       ) : null}
 
       {/* The three things a practitioner reaches for before anything else: how
@@ -310,7 +310,7 @@ export default async function HerbDetailPage({
               <dl>
                 <DetailRow label={t('fields.category')}>{tCategory(herb.category)}</DetailRow>
                 <DetailRow label={t('fields.pharmaceuticalName')}>
-                  <span dir="ltr">{herb.pharmaceutical_name ?? '—'}</span>
+                  <span dir="ltr">{herb.pharmaceutical_name ?? <Dash />}</span>
                 </DetailRow>
                 {herb.dosage_notes ? (
                   <DetailRow label={t('fields.dosageNotes')}>{herb.dosage_notes}</DetailRow>
@@ -366,7 +366,7 @@ export default async function HerbDetailPage({
                   </DetailRow>
                   <DetailRow label={t('fields.reorderThreshold')}>
                     {herb.reorder_threshold === null
-                      ? '—'
+                      ? <Dash />
                       : format.number(Number(herb.reorder_threshold))}
                   </DetailRow>
                 </dl>
@@ -422,7 +422,7 @@ export default async function HerbDetailPage({
                                 <span className="ms-2 text-ink-600">{formulaChinese}</span>
                               ) : null}
                               {use.notes ? (
-                                <span className="block text-xs text-ink-500">{use.notes}</span>
+                                <span className="block text-sm text-ink-700">{use.notes}</span>
                               ) : null}
                             </Td>
                             <Td>
@@ -494,7 +494,7 @@ export default async function HerbDetailPage({
                                 }}
                               >
                                 <Td>
-                                  <span dir="ltr">{batch.batch_number ?? '—'}</span>
+                                  <span dir="ltr">{batch.batch_number ?? <Dash />}</span>
                                 </Td>
                                 <Td>
                                   <span dir="ltr" className="tabular-nums">
@@ -516,7 +516,7 @@ export default async function HerbDetailPage({
                                     <span className="text-ink-500">{tBatches('noExpiry')}</span>
                                   )}
                                 </Td>
-                                <Td>{batch.supplier?.name ?? '—'}</Td>
+                                <Td>{batch.supplier?.name ?? <Dash />}</Td>
                               </Tr>
                             );
                           })}

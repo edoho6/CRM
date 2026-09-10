@@ -86,7 +86,7 @@ export function TabsList({
   return (
     <TabsPrimitive.List
       className={cn(
-        'flex flex-wrap items-center gap-1 rounded-lg border border-ink-200 bg-white p-1',
+        'flex items-center gap-1 overflow-x-auto rounded-lg border border-ink-200 bg-white p-1 md:flex-wrap',
         className,
       )}
       {...props}

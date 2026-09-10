@@ -1,8 +1,8 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { Link, usePathname } from '@clinic/i18n/navigation';
-import { cn } from '@clinic/ui';
+import { usePathname } from '@clinic/i18n/navigation';
+import { SegmentedLinks } from '@/components/segmented-links';
 
 /**
  * Sub-navigation for the reference library.
@@ -21,23 +21,15 @@ export function ReferenceNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="mb-5 flex flex-wrap items-center gap-1 rounded-lg border border-ink-200 bg-white p-1">
-      {SECTIONS.map((section) => {
-        const isActive = pathname.startsWith(section.href);
-        return (
-          <Link
-            key={section.href}
-            href={section.href}
-            aria-current={isActive ? 'page' : undefined}
-            className={cn(
-              'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
-              isActive ? 'bg-accent text-accent-fg' : 'text-ink-600 hover:bg-ink-50',
-            )}
-          >
-            {t(section.labelKey)}
-          </Link>
-        );
-      })}
-    </nav>
+    <SegmentedLinks
+      as="nav"
+      label={t('reference')}
+      className="mb-5"
+      items={SECTIONS.map((section) => ({
+        href: section.href,
+        label: t(section.labelKey),
+        active: pathname.startsWith(section.href),
+      }))}
+    />
   );
 }

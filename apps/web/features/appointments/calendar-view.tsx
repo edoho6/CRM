@@ -8,7 +8,8 @@ import { ConfirmationDot } from './confirmation-status';
 import { BlockDayDialog } from './block-day-dialog';
 import { DayAddMenu } from './day-add-menu';
 import { NowLine } from './now-line';
-import { Button, SegmentedControl, cn, TIME_INPUT_LANG } from '@clinic/ui';
+import { Button, PageHeader, SegmentedControl, cn } from '@clinic/ui';
+import { DateInput } from '@/components/date-input';
 import type { Locale } from '@clinic/domain';
 import { usePathname, useRouter } from '@clinic/i18n/navigation';
 import type { AppointmentType, AppointmentWithRelations, Patient } from '@clinic/db/types';
@@ -291,6 +292,29 @@ export function CalendarView({
     setDialogOpen(true);
   }
 
+  /**
+   * "New appointment" from the page header, with nothing clicked.
+   *
+   * The day is the one being looked at: today if it is in view, otherwise
+   * the first day shown. The time is the next half hour when that day is
+   * today, or the start of the working day — not a fixed 09:00 on the first
+   * day of the week, which is what this used to draft in every view.
+   */
+  function openNew() {
+    const now = new Date();
+    const day =
+      view === 'day' ? anchor : (days.find((candidate) => isSameDay(candidate, now)) ?? days[0]!);
+    const open = openMinutes.get(toDateKey(day));
+    const dayStart = open && open.length > 0 ? open[0]!.start : DAY_START_HOUR * 60;
+    let minutes = dayStart;
+    if (isSameDay(day, now)) {
+      const next = Math.ceil(minutesSinceMidnight(now) / SLOT_MINUTES) * SLOT_MINUTES;
+      minutes = Math.max(dayStart, next);
+    }
+    const clamped = Math.min(Math.max(minutes, DAY_START_HOUR * 60), DAY_END_HOUR * 60 - SLOT_MINUTES);
+    openSlot(day, (clamped - DAY_START_HOUR * 60) / SLOT_MINUTES);
+  }
+
   function openAppointment(appointment: AppointmentWithRelations) {
     setDraft({
       id: appointment.id,
@@ -322,6 +346,16 @@ export function CalendarView({
   const totalInView = days.reduce((sum, day) => sum + (byDay.get(toDateKey(day))?.length ?? 0), 0);
 
   return (
+    <>
+      <PageHeader
+        title={t('title')}
+        actions={
+          <Button onClick={openNew}>
+            <CalendarPlus className="h-4 w-4" />
+            {t('new')}
+          </Button>
+        }
+      />
     <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-1">
@@ -335,7 +369,7 @@ export function CalendarView({
                 variant="secondary"
                 size="icon"
                 onClick={() => navigate(-1)}
-                aria-label={tc('back')}
+                aria-label={t('previousPeriod')}
               >
                 {isRtl ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
               </Button>
@@ -343,7 +377,7 @@ export function CalendarView({
                 variant="secondary"
                 size="icon"
                 onClick={() => navigate(1)}
-                aria-label={tc('viewAll')}
+                aria-label={t('nextPeriod')}
               >
                 {isRtl ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
               </Button>
@@ -354,26 +388,18 @@ export function CalendarView({
             </>
           ) : (
             <div className="flex flex-wrap items-center gap-1.5">
-              <input
-                type="date"
-                lang={TIME_INPUT_LANG}
-                dir="ltr"
+              <DateInput
                 aria-label={tFilters('from')}
                 value={rangeFrom ?? ''}
                 max={rangeTo ?? undefined}
                 onChange={(event) => setRangeBound('from', event.target.value)}
-                className="h-9 rounded-lg border border-ink-200 bg-white px-2 text-sm text-ink-900 tabular-nums shadow-xs focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-focus focus-visible:border-focus"
               />
               <span className="text-sm text-ink-600">–</span>
-              <input
-                type="date"
-                lang={TIME_INPUT_LANG}
-                dir="ltr"
+              <DateInput
                 aria-label={tFilters('to')}
                 value={rangeTo ?? ''}
                 min={rangeFrom ?? undefined}
                 onChange={(event) => setRangeBound('to', event.target.value)}
-                className="h-9 rounded-lg border border-ink-200 bg-white px-2 text-sm text-ink-900 tabular-nums shadow-xs focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-focus focus-visible:border-focus"
               />
               <span className="ms-1 text-sm text-ink-600">
                 {t('countInView', { count: totalInView })}
@@ -395,14 +421,6 @@ export function CalendarView({
               { value: 'range', label: t('views.range') },
             ]}
           />
-          <Button
-            size="sm"
-            onClick={() => openSlot(view === 'day' ? anchor : days[0]!, 4)}
-            className="ms-2"
-          >
-            <CalendarPlus className="h-4 w-4" />
-            {t('new')}
-          </Button>
         </div>
       </div>
 
@@ -553,7 +571,7 @@ export function CalendarView({
                         <div
                           key={window.id}
                           aria-hidden
-                          className="pointer-events-none absolute inset-x-0 z-[1] overflow-hidden border-y border-ink-300/60 px-1.5 py-0.5 text-[11px] leading-tight text-ink-600"
+                          className="pointer-events-none absolute inset-x-0 z-[1] overflow-hidden border-y border-ink-300/60 px-1.5 py-0.5 text-xs leading-tight text-ink-600"
                           style={{
                             top: (start / SLOT_MINUTES) * SLOT_HEIGHT,
                             height: ((end - start) / SLOT_MINUTES) * SLOT_HEIGHT,
@@ -612,7 +630,7 @@ export function CalendarView({
                             </span>
                             {appointment.room ? (
                               <span
-                                className="ms-auto max-w-[45%] truncate rounded px-1 text-[10px] font-medium leading-4"
+                                className="ms-auto max-w-[45%] truncate rounded px-1 text-xs font-medium leading-4"
                                 style={{
                                   backgroundColor: `${appointment.room.color}33`,
                                   color: 'inherit',
@@ -623,7 +641,7 @@ export function CalendarView({
                               </span>
                             ) : null}
                           </span>
-                          <span className="block truncate text-[13px] leading-tight">
+                          <span className="block truncate text-sm leading-tight">
                             {patientFullName(appointment.patient)}
                           </span>
                           {height > 44 ? (
@@ -662,6 +680,7 @@ export function CalendarView({
         onOpenChange={(open) => !open && setBlockDay(null)}
       />
     </div>
+    </>
   );
 }
 
@@ -823,7 +842,7 @@ function MonthOrRangeView({
                 {dayWindows.length > 0 && !closed ? (
                   <ul className="px-1">
                     {dayWindows.slice(0, 2).map((window) => (
-                      <li key={window.id} className="truncate text-[11px] text-ink-600" dir="auto">
+                      <li key={window.id} className="truncate text-xs text-ink-600" dir="auto">
                         <span dir="ltr" className="tabular-nums">
                           {String(Math.floor(window.start / 60)).padStart(2, '0')}:
                           {String(window.start % 60).padStart(2, '0')}
@@ -835,7 +854,7 @@ function MonthOrRangeView({
                 ) : null}
 
                 {closed ? (
-                  <p className="truncate px-1 text-[11px] text-ink-600">
+                  <p className="truncate px-1 text-xs text-ink-600">
                     {closure?.reason ? closure.reason : t('closedDay')}
                   </p>
                 ) : null}
@@ -859,7 +878,7 @@ function MonthOrRangeView({
                     </li>
                   ))}
                   {dayAppointments.length > 3 ? (
-                    <li className="px-1 text-[11px] text-ink-600">
+                    <li className="px-1 text-xs text-ink-600">
                       {t('moreInDay', { count: dayAppointments.length - 3 })}
                     </li>
                   ) : null}

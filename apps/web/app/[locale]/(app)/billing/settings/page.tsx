@@ -2,6 +2,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { siteUrl } from '@clinic/db';
 import type { ClinicPaymentSettings } from '@clinic/db/types';
 import { PageHeader } from '@/components/app-shell';
+import { SettingsNav } from '@/features/settings/settings-nav';
 import { getClinicScope } from '@/lib/session';
 import { GrowSettingsForm } from '@/features/billing/grow-settings-form';
 
@@ -29,6 +30,7 @@ export default async function BillingSettingsPage({
   return (
     <>
       <PageHeader title={t('title')} />
+      <SettingsNav />
       <GrowSettingsForm
         settings={settings ?? null}
         webhookUrl={`${siteUrl()}/api/billing/grow/webhook`}

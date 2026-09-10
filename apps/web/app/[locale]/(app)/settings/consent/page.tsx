@@ -1,6 +1,6 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { FileText } from 'lucide-react';
-import { Badge, Card, CardBody, CardHeader, CardTitle, EmptyState } from '@clinic/ui';
+import { Alert, Badge, Card, CardBody, CardHeader, CardTitle, EmptyState } from '@clinic/ui';
 import { CONSENT_KINDS } from '@clinic/domain';
 import type { ConsentDocument } from '@clinic/db/types';
 import { PageHeader } from '@/components/app-shell';
@@ -45,9 +45,7 @@ export default async function ConsentDocumentsPage({
       <SettingsNav />
 
       <div className="max-w-3xl space-y-5">
-        <p className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-sm leading-relaxed text-sky-900">
-          {t('immutableNote')}
-        </p>
+        <Alert tone="info">{t('immutableNote')}</Alert>
 
         {CONSENT_KINDS.map((kind) => {
           const versions = documents.filter((doc) => doc.kind === kind);

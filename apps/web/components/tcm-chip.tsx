@@ -30,7 +30,7 @@ export function TcmChip({
 }) {
   const classes = cn(
     'inline-flex items-center gap-1 rounded-full font-medium whitespace-nowrap',
-    size === 'sm' ? 'px-1.5 py-0.5 text-[11px]' : 'px-2 py-0.5 text-xs',
+    size === 'sm' ? 'px-1.5 py-0.5 text-xs' : 'px-2 py-0.5 text-xs',
     tcmStyle(scale, value).chip,
     href && 'transition-all hover:-translate-y-px hover:shadow-xs focus-visible:-translate-y-px',
     className,

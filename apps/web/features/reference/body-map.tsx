@@ -315,7 +315,7 @@ export function BodyMap({
                       cy={cy}
                       r={isActive ? 6.5 : 5}
                       fill="var(--color-jade-700)"
-                      stroke="white"
+                      stroke="var(--color-white)"
                       strokeWidth={1.75}
                       className="transition-all"
                     />
@@ -325,7 +325,7 @@ export function BodyMap({
                         y={cy - 9}
                         textAnchor={cx > W / 2 ? 'start' : 'end'}
                         className="fill-ink-900 text-[12px] font-semibold"
-                        style={{ paintOrder: 'stroke', stroke: 'white', strokeWidth: 3.5 }}
+                        style={{ paintOrder: 'stroke', stroke: 'var(--color-white)', strokeWidth: 3.5 }}
                       >
                         {point.code}
                       </text>
@@ -337,7 +337,7 @@ export function BodyMap({
           </div>
         ))}
       </div>
-      <figcaption className="mt-2 text-center text-[11px] leading-snug text-ink-600">
+      <figcaption className="mt-2 text-center text-xs leading-snug text-ink-600">
         {t('disclaimer')}
       </figcaption>
     </figure>

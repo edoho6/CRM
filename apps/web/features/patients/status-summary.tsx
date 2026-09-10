@@ -240,7 +240,7 @@ function TileRow({ items }: { items: Item[] }) {
             <span className={cn('block text-base leading-none font-semibold tabular-nums', style.text)}>
               {item.value}
             </span>
-            <span className="mt-1 block text-[11px] leading-tight text-ink-600">{item.label}</span>
+            <span className="mt-1 block text-xs leading-tight text-ink-600">{item.label}</span>
           </button>
         );
       })}

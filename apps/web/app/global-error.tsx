@@ -37,7 +37,7 @@ export default function GlobalError({
       <body className="min-h-dvh bg-ink-50 antialiased">
         <main className="grid min-h-dvh place-items-center px-6 py-12">
           <div className="w-full max-w-md rounded-card border border-red-200 bg-white p-6 text-center">
-            <h1 className="text-lg font-semibold text-ink-900">משהו השתבש</h1>
+            <h1 className="text-xl font-semibold text-ink-900">משהו השתבש</h1>
             <p className="mt-1 text-sm text-ink-600">אפשר לנסות שוב. אם זה חוזר, לרענן את הדף.</p>
             <p className="mt-3 text-sm text-ink-500" lang="en" dir="ltr">
               Something went wrong. Try again, or reload the page.

@@ -61,7 +61,7 @@ export default async function NewEncounterPage({ params }: { params: Promise<{ l
   return (
     <>
       <PageHeader title={t('newPicker.title')} description={t('newPicker.subtitle')} />
-      <div className="max-w-2xl">
+      <div className="max-w-3xl">
         <NewEncounterPicker patients={patients ?? []} today={today} />
       </div>
     </>

@@ -1,6 +1,8 @@
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
-import { AlertTriangle, Boxes, PackagePlus, ShoppingCart } from 'lucide-react';
+import { Boxes, PackagePlus, ShoppingCart } from 'lucide-react';
 import {
+  Dash,
+  Alert,
   Badge,
   Button,
   EmptyState,
@@ -10,8 +12,6 @@ import {
   TableWrapper,
   Td,
   Tr,
-
-  Dash,
 } from '@clinic/ui';
 import { Link, redirect } from '@clinic/i18n/navigation';
 import type {
@@ -186,15 +186,11 @@ export default async function StockRoomPage({
     <>
       <PageHeader
         title={t('title')}
-        description={
+        description={t('subtitle')}
+        banner={
           counts.low > 0 ? (
-            <span className="inline-flex items-center gap-1.5 text-amber-700">
-              <AlertTriangle className="h-4 w-4" />
-              {t('lowSummary', { count: counts.low })}
-            </span>
-          ) : (
-            t('subtitle')
-          )
+            <Alert tone="warning">{t('lowSummary', { count: counts.low })}</Alert>
+          ) : undefined
         }
         actions={
           <Button asChild>
@@ -253,7 +249,7 @@ export default async function StockRoomPage({
                           href={href}
                           className="font-medium text-jade-800 underline-offset-2 hover:underline"
                         >
-                          {name || '—'}
+                          {name || <Dash />}
                         </Link>
                       </Td>
                       <Td>
@@ -301,7 +297,7 @@ export default async function StockRoomPage({
         <div className="space-y-6">
           {shownHerbs.length > 0 ? (
             <section>
-              <h2 className="mb-2 text-sm font-semibold text-ink-700">
+              <h2 className="mb-2 text-base font-semibold text-ink-900">
                 {tHerbs('title')}{' '}
                 <span className="font-normal text-ink-500">({shownHerbs.length})</span>
               </h2>
@@ -445,7 +441,7 @@ export default async function StockRoomPage({
 
           {shownFormulas.length > 0 ? (
             <section>
-              <h2 className="mb-2 text-sm font-semibold text-ink-700">
+              <h2 className="mb-2 text-base font-semibold text-ink-900">
                 {tFormulas('title')}{' '}
                 <span className="font-normal text-ink-500">({shownFormulas.length})</span>
               </h2>

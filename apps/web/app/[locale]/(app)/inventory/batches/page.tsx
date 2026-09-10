@@ -1,6 +1,7 @@
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
 import { Package, PackagePlus } from 'lucide-react';
 import {
+  Dash,
   Badge,
   Button,
   EmptyState,
@@ -112,11 +113,11 @@ export default async function BatchesPage({ params }: { params: Promise<{ locale
                           {herbPrimaryName(batch.herb, locale as Locale)}
                         </Link>
                       ) : (
-                        '—'
+                        <Dash />
                       )}
                     </Td>
                     <Td>
-                      <span dir="ltr">{batch.batch_number ?? '—'}</span>
+                      <span dir="ltr">{batch.batch_number ?? <Dash />}</span>
                     </Td>
                     <Td numeric>
                       <span className="tabular-nums">
@@ -139,8 +140,8 @@ export default async function BatchesPage({ params }: { params: Promise<{ locale
                         <span className="text-ink-500">{t('noExpiry')}</span>
                       )}
                     </Td>
-                    <Td>{batch.supplier?.name ?? '—'}</Td>
-                    <Td>{batch.storage_location ?? '—'}</Td>
+                    <Td>{batch.supplier?.name ?? <Dash />}</Td>
+                    <Td>{batch.storage_location ?? <Dash />}</Td>
                   </Tr>
                 );
               })}
