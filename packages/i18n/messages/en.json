@@ -199,6 +199,12 @@
       "invalidEmail": "This email address is not valid"
     },
     "showingOf": "Showing {shown} of {total}",
+    "tableSize": {
+      "title": "Row size",
+      "compact": "Compact rows",
+      "regular": "Regular rows",
+      "large": "Large rows"
+    },
     "appName": "Herbalist",
     "appTagline": "Chinese medicine clinic management",
     "save": "Save",
@@ -574,7 +580,15 @@
         "hidden": "Hidden"
       },
       "notActive": "Not in treatment",
-      "total": "All patients"
+      "total": "All patients",
+      "arrange": "Arrange tiles",
+      "arrangeDone": "Done arranging",
+      "arrangeHint": "Move any tile earlier or later and hide the ones you do not need. The order is kept in this browser.",
+      "moveEarlier": "Move earlier",
+      "moveLater": "Move later",
+      "hideTile": "Hide",
+      "showTile": "Show",
+      "resetOrder": "Restore the default order"
     },
     "singular": "Patient"
   },
@@ -1200,6 +1214,10 @@
       "quantityReceived": "Quantity received",
       "quantityRemaining": "Quantity remaining",
       "unitCost": "Unit cost",
+      "totalCost": "Total cost",
+      "totalCostHint": "What the whole batch cost — the unit cost is worked out from it, and the other way round",
+      "costFor": "What a given amount cost",
+      "costForHint": "For example, what 140 g of this batch cost",
       "expiryDate": "Expiry",
       "storageLocation": "Storage location",
       "receivedDate": "Received on",
@@ -1229,7 +1247,10 @@
       "edit": "Edit supplier",
       "created": "Supplier added",
       "empty": "No suppliers defined",
-      "contactName": "Contact person"
+      "contactName": "Contact person",
+      "paymentTerms": "Payment terms",
+      "paymentTermsHint": "Free text, the way the supplier puts it",
+      "paymentTermsPlaceholder": "Net 30, cash on delivery…"
     },
     "dispensing": {
       "modeLabel": "Formula or single herbs",
@@ -1388,7 +1409,8 @@
     },
     "image": {
       "referenceCredit": "Photo: {author} · {source}",
-      "referenceNote": "A reference photo from the catalogue. Upload your own to replace it.",
+      "referenceMaterialNote": "A reference photo of the dried medicinal material, from the catalogue. Upload your own to replace it.",
+      "referencePlantNote": "A reference photo of the living plant (no freely licensed photo of the dried material was found). Upload your own to replace it.",
       "title": "Image",
       "upload": "Upload image",
       "replace": "Replace image",

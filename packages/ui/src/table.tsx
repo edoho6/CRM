@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { cn } from './cn';
 import { CellLabels } from './cell-labels';
+import { TableSizeControl } from './table-size';
 
 /**
  * Table primitives.
@@ -13,6 +14,9 @@ import { CellLabels } from './cell-labels';
  * the app's stylesheet and `CellLabels`). A six-column table on a 390px
  * screen was a sideways scroll in both directions; a list of cards is read
  * top to bottom like everything else on the phone.
+ *
+ * A responsive table also carries the row-size switch (`TableSizeControl`):
+ * the same three steps on every list, remembered by the browser.
  */
 export function TableWrapper({
   className,
@@ -22,6 +26,7 @@ export function TableWrapper({
 }: React.HTMLAttributes<HTMLDivElement> & { responsive?: boolean }) {
   return (
     <div
+      data-table-wrapper=""
       className={cn(
         'overflow-x-auto rounded-card border border-ink-200 bg-white',
         responsive && 'table-cards',
@@ -30,6 +35,7 @@ export function TableWrapper({
       {...props}
     >
       {responsive ? <CellLabels /> : null}
+      {responsive ? <TableSizeControl /> : null}
       {children}
     </div>
   );

@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server';
 import { getDirection, isLocale, locales } from '@clinic/i18n';
-import { ConfirmProvider, ToastProvider, UiDirectionProvider } from '@clinic/ui';
+import { ConfirmProvider, ToastProvider, UiDirectionProvider, UiLabelsProvider } from '@clinic/ui';
 import { themeInitScript } from '@/lib/theme';
 import '../globals.css';
 
@@ -126,7 +126,21 @@ export default async function LocaleLayout({
                 cancelLabel={t('cancel')}
                 closeLabel={t('close')}
               >
-                {children}
+                {/* Words for controls that live inside shared primitives — the
+                    row-size switch on every list table — so no table has to
+                    pass them itself. */}
+                <UiLabelsProvider
+                  labels={{
+                    tableSize: {
+                      title: t('tableSize.title'),
+                      compact: t('tableSize.compact'),
+                      regular: t('tableSize.regular'),
+                      large: t('tableSize.large'),
+                    },
+                  }}
+                >
+                  {children}
+                </UiLabelsProvider>
               </ConfirmProvider>
             </ToastProvider>
           </UiDirectionProvider>

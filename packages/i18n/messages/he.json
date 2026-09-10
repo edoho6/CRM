@@ -199,6 +199,12 @@
       "invalidEmail": "כתובת האימייל לא תקינה"
     },
     "showingOf": "מוצגים {shown} מתוך {total}",
+    "tableSize": {
+      "title": "גודל השורות בטבלה",
+      "compact": "שורות צפופות",
+      "regular": "שורות רגילות",
+      "large": "שורות גדולות"
+    },
     "appName": "הרבליסט",
     "appTagline": "ניהול קליניקה לרפואה סינית",
     "save": "שמירה",
@@ -574,7 +580,15 @@
         "hidden": "מוסתר"
       },
       "notActive": "לא בטיפול",
-      "total": "סך הכל"
+      "total": "סך הכל",
+      "arrange": "סידור האריחים",
+      "arrangeDone": "סיום הסידור",
+      "arrangeHint": "אפשר להזיז כל אריח קדימה או אחורה ולהסתיר אריחים שלא צריך. הסדר נשמר בדפדפן הזה.",
+      "moveEarlier": "הזזה קדימה",
+      "moveLater": "הזזה אחורה",
+      "hideTile": "הסתרה",
+      "showTile": "הצגה",
+      "resetOrder": "חזרה לסדר המקורי"
     },
     "singular": "מטופל"
   },
@@ -1200,6 +1214,10 @@
       "quantityReceived": "כמות שנקלטה",
       "quantityRemaining": "כמות נותרת",
       "unitCost": "עלות ליחידה",
+      "totalCost": "עלות כוללת",
+      "totalCostHint": "מה שולם על כל האצווה — העלות ליחידה מחושבת ממנה, וגם להפך",
+      "costFor": "כמה עלתה כמות מסוימת",
+      "costForHint": "לדוגמה: כמה עלו 140 גרם מהאצווה הזו",
       "expiryDate": "תוקף",
       "storageLocation": "מיקום אחסון",
       "receivedDate": "תאריך קליטה",
@@ -1229,7 +1247,10 @@
       "edit": "עריכת ספק",
       "created": "הספק נוסף",
       "empty": "לא הוגדרו ספקים",
-      "contactName": "איש קשר"
+      "contactName": "איש קשר",
+      "paymentTerms": "תנאי תשלום",
+      "paymentTermsHint": "טקסט חופשי, כמו שהספק מנסח את זה",
+      "paymentTermsPlaceholder": "שוטף + 30, מזומן במסירה…"
     },
     "dispensing": {
       "modeLabel": "פורמולה או צמחים בודדים",
@@ -1388,7 +1409,8 @@
     },
     "image": {
       "referenceCredit": "צילום: {author} · {source}",
-      "referenceNote": "תמונת ייחוס מהקטלוג. אפשר להעלות תמונה משלכם במקומה.",
+      "referenceMaterialNote": "תמונת ייחוס של חומר המרפא היבש, מהקטלוג. אפשר להעלות תמונה משלכם במקומה.",
+      "referencePlantNote": "תמונת ייחוס של הצמח החי (לא נמצא צילום חופשי של חומר המרפא היבש). אפשר להעלות תמונה משלכם במקומה.",
       "title": "תמונה",
       "upload": "העלאת תמונה",
       "replace": "החלפת תמונה",

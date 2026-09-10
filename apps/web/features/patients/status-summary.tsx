@@ -2,11 +2,29 @@
 
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { ChartColumn, EyeOff, LayoutGrid, Rows3 } from 'lucide-react';
+import {
+  ChartColumn,
+  Check,
+  ChevronLeft,
+  Eye,
+  EyeOff,
+  LayoutGrid,
+  RotateCcw,
+  Rows3,
+  Settings2,
+} from 'lucide-react';
 import { SegmentedControl, cn } from '@clinic/ui';
 import { usePathname, useRouter } from '@clinic/i18n/navigation';
 import { useSearchParams } from 'next/navigation';
 import { TREATMENT_STATUSES, type TreatmentStatus } from '@clinic/domain';
+import {
+  EMPTY_TILE_LAYOUT,
+  arrangeTiles,
+  moveTile,
+  parseTileLayout,
+  toggleTileHidden,
+  type TileLayout,
+} from './tile-layout';
 
 export interface StatusCounts {
   byStatus: Record<TreatmentStatus, number>;
@@ -34,12 +52,15 @@ export interface StatusCounts {
  * Three ways of showing the same numbers, and a fourth that hides them,
  * because a strip of statistics above a list you open forty times a day is
  * either the first thing you want or the thing in the way, depending on the
- * day. The choice is remembered in this browser.
+ * day. The choice is remembered in this browser — and so is the order of the
+ * tiles, and which of them are shown at all: the number one practice watches
+ * is not the number another does, so "arrange" lets each put theirs first.
  */
 
 type Mode = 'tiles' | 'pills' | 'bar' | 'hidden';
 const MODES: readonly Mode[] = ['tiles', 'pills', 'bar', 'hidden'];
 const MODE_STORAGE_KEY = 'herbalist-patient-kpi-mode';
+const LAYOUT_STORAGE_KEY = 'herbalist-patient-kpi-layout';
 const MODE_ICONS = { tiles: LayoutGrid, pills: Rows3, bar: ChartColumn, hidden: EyeOff } as const;
 
 type Tone = 'jade' | 'sky' | 'amber' | 'red' | 'ink';
@@ -78,12 +99,15 @@ export function PatientStatusSummary({ counts }: { counts: StatusCounts }) {
   const searchParams = useSearchParams();
 
   const [mode, setMode] = useState<Mode>('tiles');
+  const [layout, setLayout] = useState<TileLayout>(EMPTY_TILE_LAYOUT);
+  const [arranging, setArranging] = useState(false);
   useEffect(() => {
     try {
       const stored = localStorage.getItem(MODE_STORAGE_KEY);
       if (stored && (MODES as readonly string[]).includes(stored)) setMode(stored as Mode);
+      setLayout(parseTileLayout(localStorage.getItem(LAYOUT_STORAGE_KEY)));
     } catch {
-      // Site data blocked: tiles every time, and that is the whole cost.
+      // Site data blocked: tiles every time, in the default order, and that is the whole cost.
     }
   }, []);
 
@@ -91,6 +115,15 @@ export function PatientStatusSummary({ counts }: { counts: StatusCounts }) {
     setMode(next);
     try {
       localStorage.setItem(MODE_STORAGE_KEY, next);
+    } catch {
+      // As above.
+    }
+  }
+
+  function saveLayout(next: TileLayout) {
+    setLayout(next);
+    try {
+      localStorage.setItem(LAYOUT_STORAGE_KEY, JSON.stringify(next));
     } catch {
       // As above.
     }
@@ -158,8 +191,8 @@ export function PatientStatusSummary({ counts }: { counts: StatusCounts }) {
     },
   ];
 
-  /* Outcomes only. "In treatment" and "not active" are the row above; repeating
-     them here would make the two rows look like one broken total. */
+  /* Outcomes only. "In treatment" and "not active" are the diary; repeating
+     them here would make the two groups look like one broken total. */
   const outcomes: Item[] = TREATMENT_STATUSES.filter(
     (status) => status !== 'active' && status !== 'inactive',
   ).map((status) => ({
@@ -171,90 +204,243 @@ export function PatientStatusSummary({ counts }: { counts: StatusCounts }) {
     onClick: () => go({ status }),
   }));
 
+  const all = [...diary, ...outcomes];
+  const ordered = arrangeTiles(all, layout);
+  const isHidden = (item: Item) => layout.hidden.includes(item.key);
+  const visible = ordered.filter((item) => !isHidden(item));
+  const visibleOutcomes = outcomes.filter((item) => !isHidden(item));
+
   const switcher = (
-    <SegmentedControl
-      iconOnly
-      label={t('kpi.view')}
-      value={mode}
-      onChange={chooseMode}
-      className="shrink-0 self-end sm:self-auto"
-      options={MODES.map((candidate) => {
-        const Icon = MODE_ICONS[candidate];
-        return {
-          value: candidate,
-          label: t(`kpi.modes.${candidate}`),
-          icon: <Icon className="h-4 w-4" aria-hidden />,
-        };
-      })}
-    />
+    <div className="flex shrink-0 items-center gap-1 self-end sm:self-auto">
+      {mode !== 'hidden' ? (
+        <button
+          type="button"
+          aria-pressed={arranging}
+          title={arranging ? t('kpi.arrangeDone') : t('kpi.arrange')}
+          aria-label={arranging ? t('kpi.arrangeDone') : t('kpi.arrange')}
+          onClick={() => setArranging((current) => !current)}
+          className={cn(
+            'rounded-md border p-1.5 transition-colors',
+            arranging
+              ? 'border-jade-500 bg-jade-50 text-jade-800'
+              : 'border-ink-200 bg-white text-ink-600 hover:bg-ink-50 hover:text-ink-900',
+          )}
+        >
+          {arranging ? (
+            <Check className="h-4 w-4" aria-hidden />
+          ) : (
+            <Settings2 className="h-4 w-4" aria-hidden />
+          )}
+        </button>
+      ) : null}
+      <SegmentedControl
+        iconOnly
+        label={t('kpi.view')}
+        value={mode}
+        onChange={chooseMode}
+        options={MODES.map((candidate) => {
+          const Icon = MODE_ICONS[candidate];
+          return {
+            value: candidate,
+            label: t(`kpi.modes.${candidate}`),
+            icon: <Icon className="h-4 w-4" aria-hidden />,
+          };
+        })}
+      />
+    </div>
   );
 
   // On a phone the switcher drops under the tiles: beside them it took half
   // the width and left nine tiles squeezed into the other half.
   return (
-    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
-      <div className="min-w-0 flex-1">
-        {mode === 'tiles' ? (
-          <div className="space-y-1.5">
-            <TileRow items={diary} />
-            <TileRow items={outcomes} />
-          </div>
-        ) : mode === 'pills' ? (
-          <div className="flex flex-wrap items-center gap-1">
-            {diary.map((item) => (
-              <Pill key={item.key} item={item} />
-            ))}
-            <span aria-hidden className="mx-1 h-4 w-px bg-ink-200" />
-            {outcomes.map((item) => (
-              <Pill key={item.key} item={item} />
-            ))}
-          </div>
-        ) : mode === 'bar' ? (
-          <div className="space-y-1.5">
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-              {diary.map((item) => (
-                <TextStat key={item.key} item={item} />
+    <div className="space-y-2">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+        <div className="min-w-0 flex-1">
+          {mode === 'tiles' ? (
+            <TileRow
+              items={arranging ? ordered : visible}
+              arranging={arranging}
+              hidden={layout.hidden}
+              onMove={(key, step) => saveLayout(moveTile(all, layout, key, step))}
+              onToggleHidden={(key) => saveLayout(toggleTileHidden(layout, key))}
+              labels={{
+                earlier: t('kpi.moveEarlier'),
+                later: t('kpi.moveLater'),
+                hide: t('kpi.hideTile'),
+                show: t('kpi.showTile'),
+              }}
+            />
+          ) : mode === 'pills' ? (
+            <div className="flex flex-wrap items-center gap-1">
+              {(arranging ? ordered : visible).map((item) => (
+                <Pill key={item.key} item={item} dimmed={arranging && isHidden(item)} />
               ))}
             </div>
-            <StackedBar items={outcomes} />
-          </div>
-        ) : null}
+          ) : mode === 'bar' ? (
+            <div className="space-y-1.5">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+                {visible
+                  .filter((item) => !outcomes.includes(item))
+                  .map((item) => (
+                    <TextStat key={item.key} item={item} />
+                  ))}
+              </div>
+              <StackedBar items={visibleOutcomes} />
+            </div>
+          ) : null}
+        </div>
+        {switcher}
       </div>
-      {switcher}
+
+      {arranging ? (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-dashed border-jade-300 bg-jade-50/50 px-3 py-1.5 text-xs text-ink-700">
+          <span>{t('kpi.arrangeHint')}</span>
+          <span className="flex items-center gap-2">
+            {layout.order.length > 0 || layout.hidden.length > 0 ? (
+              <button
+                type="button"
+                onClick={() => saveLayout(EMPTY_TILE_LAYOUT)}
+                className="inline-flex items-center gap-1 underline-offset-2 hover:underline"
+              >
+                <RotateCcw className="h-3.5 w-3.5" aria-hidden />
+                {t('kpi.resetOrder')}
+              </button>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => setArranging(false)}
+              className="inline-flex items-center gap-1 font-medium text-jade-800 underline-offset-2 hover:underline"
+            >
+              <Check className="h-3.5 w-3.5" aria-hidden />
+              {t('kpi.arrangeDone')}
+            </button>
+          </span>
+        </div>
+      ) : null}
     </div>
   );
 }
 
-function TileRow({ items }: { items: Item[] }) {
+function TileRow({
+  items,
+  arranging,
+  hidden,
+  onMove,
+  onToggleHidden,
+  labels,
+}: {
+  items: Item[];
+  arranging: boolean;
+  hidden: string[];
+  onMove: (key: string, step: -1 | 1) => void;
+  onToggleHidden: (key: string) => void;
+  labels: { earlier: string; later: string; hide: string; show: string };
+}) {
   // Two even columns on a phone: nine tiles of uneven width wrapping freely
   // left a lone tile on the last row and no pattern to scan.
   return (
     <div className="grid grid-cols-2 gap-1.5 sm:flex sm:flex-wrap">
-      {items.map((item) => {
+      {items.map((item, index) => {
         const style = TONES[item.tone];
-        return (
-          <button
-            key={item.key}
-            type="button"
-            onClick={item.onClick}
-            aria-pressed={item.active}
-            className={cn(
-              'min-w-[5.5rem] rounded-lg border px-2.5 py-1.5 text-start transition-colors',
-              item.active ? style.active : 'border-ink-200 bg-white hover:bg-ink-50',
-            )}
-          >
+        const isHidden = hidden.includes(item.key);
+        const face = (
+          <>
             <span className={cn('block text-base leading-none font-semibold tabular-nums', style.text)}>
               {item.value}
             </span>
             <span className="mt-1 block text-xs leading-tight text-ink-600">{item.label}</span>
-          </button>
+          </>
+        );
+        if (!arranging) {
+          return (
+            <button
+              key={item.key}
+              type="button"
+              onClick={item.onClick}
+              aria-pressed={item.active}
+              className={cn(
+                'min-w-[5.5rem] rounded-lg border px-2.5 py-1.5 text-start transition-colors',
+                item.active ? style.active : 'border-ink-200 bg-white hover:bg-ink-50',
+              )}
+            >
+              {face}
+            </button>
+          );
+        }
+        // While arranging, a tile is a thing to move, not a filter to click:
+        // the arrows and the eye take the clicks, and the face stays put.
+        return (
+          <div
+            key={item.key}
+            className={cn(
+              'min-w-[5.5rem] rounded-lg border border-dashed px-2.5 py-1.5 text-start',
+              isHidden ? 'border-ink-200 bg-ink-50 opacity-60' : 'border-jade-400 bg-white',
+            )}
+          >
+            {face}
+            <span className="mt-1.5 flex items-center gap-0.5">
+              <ArrangeButton
+                label={`${labels.earlier}: ${item.label}`}
+                disabled={index === 0}
+                onClick={() => onMove(item.key, -1)}
+              >
+                <ChevronLeft className="h-3.5 w-3.5 rtl:rotate-180" aria-hidden />
+              </ArrangeButton>
+              <ArrangeButton
+                label={`${labels.later}: ${item.label}`}
+                disabled={index === items.length - 1}
+                onClick={() => onMove(item.key, 1)}
+              >
+                <ChevronLeft className="h-3.5 w-3.5 rotate-180 rtl:rotate-0" aria-hidden />
+              </ArrangeButton>
+              <ArrangeButton
+                label={`${isHidden ? labels.show : labels.hide}: ${item.label}`}
+                pressed={isHidden}
+                onClick={() => onToggleHidden(item.key)}
+              >
+                {isHidden ? (
+                  <EyeOff className="h-3.5 w-3.5" aria-hidden />
+                ) : (
+                  <Eye className="h-3.5 w-3.5" aria-hidden />
+                )}
+              </ArrangeButton>
+            </span>
+          </div>
         );
       })}
     </div>
   );
 }
 
-function Pill({ item }: { item: Item }) {
+function ArrangeButton({
+  label,
+  disabled = false,
+  pressed,
+  onClick,
+  children,
+}: {
+  label: string;
+  disabled?: boolean;
+  pressed?: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      title={label}
+      aria-pressed={pressed}
+      disabled={disabled}
+      onClick={onClick}
+      className="rounded p-0.5 text-ink-600 transition-colors hover:bg-ink-100 hover:text-ink-900 disabled:opacity-30 disabled:hover:bg-transparent"
+    >
+      {children}
+    </button>
+  );
+}
+
+function Pill({ item, dimmed = false }: { item: Item; dimmed?: boolean }) {
   const style = TONES[item.tone];
   return (
     <button
@@ -264,6 +450,7 @@ function Pill({ item }: { item: Item }) {
       className={cn(
         'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs transition-colors',
         item.active ? style.active : 'border-ink-200 bg-white text-ink-700 hover:bg-ink-50',
+        dimmed && 'opacity-50',
       )}
     >
       <span aria-hidden className={cn('h-2 w-2 rounded-full', style.fill)} />

@@ -616,6 +616,25 @@
 }
 
 /*
+   Row size, chosen from the switch above each list table and remembered by
+   the browser (`TableSizeControl` in the shared kit sets the attribute).
+   Element + attribute outranks the cells' own padding utilities.
+*/
+[data-table-size='compact'] th,
+[data-table-size='compact'] td {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.8125rem;
+}
+[data-table-size='large'] th,
+[data-table-size='large'] td {
+  padding: 0.8rem 1rem;
+  font-size: 1rem;
+}
+[data-table-size='large'] th {
+  font-size: 0.875rem;
+}
+
+/*
    Tables as cards on a phone.
 
    A `TableWrapper` marked `responsive` keeps its table on a wide screen and

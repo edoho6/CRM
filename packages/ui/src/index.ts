@@ -66,6 +66,8 @@ export {
   type SignatureValue,
 } from './signature-pad';
 export { TableWrapper, Table, Th, Td, Tr } from './table';
+export { TableSizeControl, type TableSize } from './table-size';
+export { UiLabelsProvider, useUiLabels, type UiLabels } from './ui-labels';
 export { SortableTable, SortTh, SortBody } from './sortable-table';
 export {
   compareSortValues,
