@@ -32,6 +32,7 @@ import {
 } from '@clinic/ui';
 import type { Patient } from '@clinic/db/types';
 import { createPatient, updatePatient } from './actions';
+import { DateInput } from '@/components/date-input';
 
 /**
  * Create/edit form for a patient.
@@ -52,6 +53,8 @@ export function PatientForm({ patient }: { patient?: Patient }) {
   const {
     register,
     handleSubmit,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm<PatientFormValues, unknown, PatientFormData>({
     resolver: zodResolver(patientFormSchema),
@@ -153,7 +156,14 @@ export function PatientForm({ patient }: { patient?: Patient }) {
                 error={fieldError('date_of_birth')}
               >
                 {/* Dates and IDs stay LTR so the digits don't visually reverse in Hebrew. */}
-                <LtrInput id="date_of_birth" type="date" {...register('date_of_birth')} />
+                <DateInput
+                  id="date_of_birth"
+                  value={watch('date_of_birth') ?? ''}
+                  max={new Date().toISOString().slice(0, 10)}
+                  onChange={(event) =>
+                    setValue('date_of_birth', event.target.value, { shouldDirty: true, shouldValidate: true })
+                  }
+                />
               </Field>
               <Field label={t('fields.sex')} htmlFor="sex">
                 <Select id="sex" {...register('sex')}>

@@ -194,8 +194,10 @@ export function Combobox({
           setHighlight(0);
           setOpen(true);
         }}
+        // Focus alone opens nothing: a field that unrolls every name the
+        // moment it is reached hides the form behind it. Typing, or Down
+        // for the keyboard, opens the list.
         onFocus={(event) => {
-          setOpen(true);
           event.currentTarget.select();
         }}
         // The delay lets a click on an option land before the list unmounts.

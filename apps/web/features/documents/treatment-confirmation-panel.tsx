@@ -14,7 +14,6 @@ import {
   Input,
   LtrInput,
   Spinner,
-  TIME_INPUT_LANG,
   useConfirm,
   useToast,
 } from '@clinic/ui';
@@ -25,6 +24,7 @@ import {
   issueTreatmentConfirmation,
 } from './confirmation-actions';
 import { formatDate } from '@clinic/i18n';
+import { DateInput } from '@/components/date-input';
 
 /**
  * The document a patient needs to claim on their health-fund insurance.
@@ -178,10 +178,8 @@ export function TreatmentConfirmationPanel({
           <p className="text-xs text-ink-600">{t('addByHandHint')}</p>
           <div className="flex flex-wrap items-end gap-2">
             <Field label={tc('date')} htmlFor="manual_date" density="compact">
-              <LtrInput
+              <DateInput
                 id="manual_date"
-                type="date"
-                lang={TIME_INPUT_LANG}
                 className="w-44"
                 value={manualDraft}
                 onChange={(event) => setManualDraft(event.target.value)}

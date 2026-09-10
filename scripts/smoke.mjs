@@ -184,7 +184,22 @@ async function inspect(page) {
   }, ERROR_TEXTS);
 }
 
-async function visit(context, { route, locale, width, label = route, expect404 = false, before, after, origin = baseUrl }) {
+async function visit(context, options) {
+  const entry = await visitOnce(context, options);
+  const signedInRoute = context === current.context && !PUBLIC_ROUTES.includes(options.route);
+  if (entry && signedInRoute && /\/login(\?|$)/.test(entry.finalUrl ?? '') && !options.retried) {
+    console.log('        session gone — signing in again');
+    report.pop();
+    current.context = await login(current.browser);
+    return visit(current.context, { ...options, retried: true });
+  }
+  return entry;
+}
+
+/** The signed-in context in use; `visit` swaps it when the session is lost. */
+const current = { browser: null, context: null };
+
+async function visitOnce(context, { route, locale, width, label = route, expect404 = false, before, after, origin = baseUrl }) {
   if (only && !only.some((needle) => route.includes(needle) || label.includes(needle))) return null;
   const page = await context.newPage();
   await page.setViewportSize({ width: width.width, height: width.height });
@@ -812,7 +827,9 @@ async function main() {
       throw new Error('SMOKE_EMAIL and SMOKE_PASSWORD are not set (apps/web/.env.test.local).');
     }
 
-    const context = await login(browser);
+    current.browser = browser;
+    let context = await login(browser);
+    current.context = context;
 
     // Dynamic ids, read off the list pages while signed in.
     const [patientIds, encounterIds, invoiceIds, formIds, herbIds, formulaIds, pointIds] = await Promise.all([
@@ -843,7 +860,11 @@ async function main() {
       await visit(context, { route: '/platform', locale, width, expect404: true });
     }
 
-    // Flows, desktop, Hebrew: what a static read cannot judge.
+    // Flows, desktop, Hebrew: what a static read cannot judge. On a fresh
+    // session — the walk above can outlast the first one.
+    await context.close();
+    context = await login(browser);
+    current.context = context;
     const desktop = widths[0];
     const phone = widths[1];
     await visit(context, { route: '/', locale: 'he', width: desktop, label: 'flow quick-create', after: flows.quickCreate });

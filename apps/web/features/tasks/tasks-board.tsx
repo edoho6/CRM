@@ -2,12 +2,12 @@
 
 import { useEffect, useState, useTransition } from 'react';
 import { useTranslations } from 'next-intl';
-import { AlertTriangle, Bell, BellRing, ListChecks, Plus } from 'lucide-react';
-import { Button, Card, CardBody, CardHeader, CardTitle, Collapsible, EmptyState, cn } from '@clinic/ui';
+import { AlertTriangle, Bell, BellRing, ListChecks, Pencil, Plus, RotateCcw, Trash2 } from 'lucide-react';
+import { Button, Card, CardBody, CardHeader, CardTitle, Collapsible, EmptyState, cn, useConfirm, useToast } from '@clinic/ui';
 import { formatDate, formatDateTime } from '@clinic/i18n';
 import { Link, useRouter } from '@clinic/i18n/navigation';
 import type { ClinicTaskWithPatient } from '@clinic/db/types';
-import { setTaskDone } from './actions';
+import { deleteTask, setTaskDone } from './actions';
 import { TaskDialog } from './task-dialog';
 
 /**
@@ -56,6 +56,9 @@ export function TasksBoard({
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<ClinicTaskWithPatient | null>(null);
   const [permission, setPermission] = useState<'unsupported' | NotificationPermission>('default');
+  const confirm = useConfirm();
+  const { toast } = useToast();
+  const tc = useTranslations('common');
 
   useEffect(() => {
     setPermission(typeof Notification === 'undefined' ? 'unsupported' : Notification.permission);
@@ -84,8 +87,30 @@ export function TasksBoard({
 
   async function enableBrowser() {
     if (typeof Notification === 'undefined') return;
+    if (Notification.permission === 'denied') {
+      toast({ tone: 'warning', title: t('browserDenied') });
+      return;
+    }
     const result = await Notification.requestPermission();
     setPermission(result);
+    if (result === 'granted') toast({ tone: 'success', title: t('browserGranted') });
+    else if (result === 'denied') toast({ tone: 'warning', title: t('browserDenied') });
+    else toast({ tone: 'info', title: t('browserDismissed') });
+  }
+
+  async function remove(task: ClinicTaskWithPatient) {
+    const confirmed = await confirm({
+      title: tc('deleteNamed', { thing: tc('things.task') }),
+      body: t('deleteConfirm'),
+      confirmLabel: tc('delete'),
+      destructive: true,
+    });
+    if (!confirmed) return;
+    startTransition(async () => {
+      await deleteTask(task.id);
+      toast({ tone: 'success', title: t('deleted') });
+      router.refresh();
+    });
   }
 
   const row = (task: ClinicTaskWithPatient, isDone: boolean) => {
@@ -145,6 +170,40 @@ export function TasksBoard({
             ) : null}
           </p>
         </div>
+        <span className="flex shrink-0 items-center gap-0.5">
+          {isDone ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              disabled={isPending}
+              onClick={() => toggle(task, false)}
+            >
+              <RotateCcw className="h-3.5 w-3.5" aria-hidden />
+              {t('reopen')}
+            </Button>
+          ) : null}
+          <button
+            type="button"
+            aria-label={t('editTask')}
+            title={t('editTask')}
+            disabled={isPending}
+            onClick={() => edit(task)}
+            className="rounded-md p-1.5 text-ink-500 transition-colors hover:bg-ink-100 hover:text-ink-800"
+          >
+            <Pencil className="h-4 w-4" aria-hidden />
+          </button>
+          <button
+            type="button"
+            aria-label={tc('delete')}
+            title={tc('delete')}
+            disabled={isPending}
+            onClick={() => remove(task)}
+            className="rounded-md p-1.5 text-ink-500 transition-colors hover:bg-red-50 hover:text-red-700"
+          >
+            <Trash2 className="h-4 w-4" aria-hidden />
+          </button>
+        </span>
       </li>
     );
   };

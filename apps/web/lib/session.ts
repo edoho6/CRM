@@ -19,6 +19,30 @@ export const getMembershipContext = cache(async (): Promise<MembershipContext | 
   const supabase = await tryCreateServerSupabase();
   if (!supabase) return null;
 
+  // One round trip. The function reads through the caller's own token, which
+  // PostgREST has already verified, so there is nothing to ask the auth
+  // service first; a signed-out visitor simply gets nothing back. Three trips
+  // in a row — user, membership, then clinic and profile — cost close to half
+  // a second before a page could ask for its own data.
+  const single = await supabase.rpc('current_membership_context');
+  if (!single.error) {
+    const row = single.data as {
+      membership: Membership;
+      clinic: Clinic;
+      profile: Profile | null;
+      is_platform_admin: boolean;
+    } | null;
+    if (!row?.membership || !row.clinic) return null;
+    return {
+      membership: row.membership,
+      clinic: row.clinic,
+      profile: row.profile ?? null,
+      isPlatformAdmin: row.is_platform_admin === true,
+    };
+  }
+  // The function is not installed yet (a database that has not run the
+  // latest migration): the older three-trip path still answers.
+
   const user = await getCurrentUser();
   if (!user) return null;
 

@@ -169,7 +169,12 @@ export const clinicTaskSchema = z.object({
     .optional()
     .transform((value) => (value ? new Date(value).toISOString() : null)),
   remind_via: z.enum(REMIND_CHANNELS).default('app'),
+  /** How long before `due_at` the alert fires. */
+  remind_offset_minutes: z.coerce.number().int().min(0).max(20160).default(0),
 });
+
+/** The offsets the dialog offers, in minutes; the labels live in i18n under `tasks.offsets`. */
+export const REMIND_OFFSETS = [0, 5, 10, 15, 30, 60, 120, 1440, 2880, 10080] as const;
 
 export type ClinicTaskValues = z.input<typeof clinicTaskSchema>;
 

@@ -1108,8 +1108,10 @@ export interface ClinicTask {
   /** Null is the whole of "still to do". */
   done_at: string | null;
   patient_id: string | null;
-  /** The instant the alert fires, when the task has one. */
+  /** The task's own moment, when it has one; the alert fires `remind_offset_minutes` earlier. */
   due_at: string | null;
+  /** Minutes before `due_at` at which the alert fires; 0 is at the time. */
+  remind_offset_minutes: number;
   remind_via: RemindChannel;
   /** Set once the alert has fired, so it fires once. */
   reminded_at: string | null;

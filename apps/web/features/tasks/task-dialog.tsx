@@ -14,7 +14,7 @@ import {
   Field,
   FieldGrid,
   Input,
-  LtrInput,
+  Select,
   Spinner,
   Textarea,
   TimeSelect,
@@ -23,7 +23,8 @@ import {
   type ComboboxOption,
   type ComboboxValue,
 } from '@clinic/ui';
-import { REMIND_CHANNELS, type RemindChannel } from '@clinic/domain';
+import { REMIND_CHANNELS, REMIND_OFFSETS, type RemindChannel } from '@clinic/domain';
+import { DateInput } from '@/components/date-input';
 import { useRouter } from '@clinic/i18n/navigation';
 import { describeActionError } from '@/lib/action-error';
 import type { ClinicTaskWithPatient } from '@clinic/db/types';
@@ -43,11 +44,14 @@ export function TaskDialog({
   open,
   task,
   patients,
+  defaultPatient,
   onOpenChange,
 }: {
   open: boolean;
   task: ClinicTaskWithPatient | null;
   patients: { id: string; full_name: string }[];
+  /** Preselected for a task opened from a patient's file. */
+  defaultPatient?: { id: string; full_name: string } | null;
   onOpenChange: (open: boolean) => void;
 }) {
   const t = useTranslations('tasks');
@@ -66,6 +70,7 @@ export function TaskDialog({
   const [time, setTime] = useState('');
   const [urgent, setUrgent] = useState(false);
   const [channel, setChannel] = useState<RemindChannel>('app');
+  const [offset, setOffset] = useState<number>(0);
   const [patientChoice, setPatientChoice] = useState<ComboboxValue | null>(null);
 
   const patientOptions: ComboboxOption[] = useMemo(
@@ -88,11 +93,16 @@ export function TaskDialog({
     }
     setUrgent(task?.is_urgent ?? false);
     setChannel(task?.remind_via ?? 'app');
+    setOffset(task?.remind_offset_minutes ?? 0);
     setPatientChoice(
-      task?.patient ? { id: task.patient.id, label: task.patient.full_name } : null,
+      task?.patient
+        ? { id: task.patient.id, label: task.patient.full_name }
+        : defaultPatient
+          ? { id: defaultPatient.id, label: defaultPatient.full_name }
+          : null,
     );
     setError(null);
-  }, [open, task]);
+  }, [open, task, defaultPatient]);
 
   function save() {
     if (!title.trim()) {
@@ -109,6 +119,7 @@ export function TaskDialog({
       is_urgent: urgent,
       patient_id: patientChoice?.id ?? '',
       remind_via: channel,
+      remind_offset_minutes: time ? offset : 0,
     };
     startTransition(async () => {
       const result = task ? await updateTask(task.id, payload) : await createTask(payload);
@@ -167,9 +178,8 @@ export function TaskDialog({
 
           <FieldGrid>
             <Field label={t('dueDate')} htmlFor="task_date">
-              <LtrInput
+              <DateInput
                 id="task_date"
-                type="date"
                 value={date}
                 onChange={(event) => {
                   setDate(event.target.value);
@@ -178,31 +188,16 @@ export function TaskDialog({
               />
             </Field>
             <Field label={t('dueTime')} htmlFor="task_time" hint={!date ? t('noTime') : undefined}>
-              <div className="flex items-center gap-2">
-                <TimeSelect
-                  value={time || '09:00'}
-                  onChange={setTime}
-                  label={t('dueTime')}
-                  disabled={!date}
-                  hourLabel={tSchedule('hour')}
-                  minuteLabel={tSchedule('minute')}
-                />
-                {time ? (
-                  <Button type="button" size="sm" variant="ghost" onClick={() => setTime('')}>
-                    {t('noTime')}
-                  </Button>
-                ) : (
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    disabled={!date}
-                    onClick={() => setTime('09:00')}
-                  >
-                    {t('dueTime')}
-                  </Button>
-                )}
-              </div>
+              <TimeSelect
+                value={time}
+                onChange={setTime}
+                label={t('dueTime')}
+                disabled={!date}
+                allowEmpty
+                emptyLabel={t('noTime')}
+                hourLabel={tSchedule('hour')}
+                minuteLabel={tSchedule('minute')}
+              />
             </Field>
           </FieldGrid>
 
@@ -229,7 +224,23 @@ export function TaskDialog({
           <label className="flex items-center gap-2 text-sm text-ink-800">
             <Checkbox checked={urgent} onChange={(event) => setUrgent(event.target.checked)} />
             {t('urgent')}
+            <span className="text-xs text-ink-500">· {t('urgentHint')}</span>
           </label>
+
+          <Field label={t('remindWhen')} htmlFor="task_offset" hint={!time ? t('noTime') : undefined}>
+            <Select
+              id="task_offset"
+              value={String(offset)}
+              disabled={!time}
+              onChange={(event) => setOffset(Number(event.target.value))}
+            >
+              {REMIND_OFFSETS.map((minutes) => (
+                <option key={minutes} value={minutes}>
+                  {t(`offsets.${minutes}`)}
+                </option>
+              ))}
+            </Select>
+          </Field>
 
           <fieldset className="space-y-1.5">
             <legend className="text-sm font-medium text-ink-700">{t('remindVia')}</legend>

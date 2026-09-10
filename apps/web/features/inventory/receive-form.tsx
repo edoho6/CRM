@@ -24,6 +24,7 @@ import { Link, useRouter } from '@clinic/i18n/navigation';
 import type { Herb, Supplier } from '@clinic/db/types';
 import { herbPrimaryName, herbSecondaryName } from '@/lib/display';
 import { receiveBatch } from './actions';
+import { DateInput } from '@/components/date-input';
 
 type ReceiveInput = z.input<typeof receiveBatchSchema>;
 type ReceiveOutput = z.output<typeof receiveBatchSchema>;
@@ -59,6 +60,8 @@ export function ReceiveForm({
     register,
     handleSubmit,
     reset,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm<ReceiveInput, unknown, ReceiveOutput>({
     resolver: zodResolver(receiveBatchSchema),
@@ -182,11 +185,19 @@ export function ReceiveForm({
             </Field>
 
             <Field label={t('expiryDate')} htmlFor="expiry_date">
-              <LtrInput id="expiry_date" type="date" {...register('expiry_date')} />
+              <DateInput
+                id="expiry_date"
+                value={watch('expiry_date') ?? ''}
+                onChange={(event) => setValue('expiry_date', event.target.value, { shouldDirty: true })}
+              />
             </Field>
 
             <Field label={t('receivedDate')} htmlFor="received_date" required>
-              <LtrInput id="received_date" type="date" {...register('received_date')} />
+              <DateInput
+                id="received_date"
+                value={watch('received_date') ?? ''}
+                onChange={(event) => setValue('received_date', event.target.value, { shouldDirty: true })}
+              />
             </Field>
 
             <Field label={t('storageLocation')} htmlFor="storage_location">

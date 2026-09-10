@@ -8,6 +8,7 @@ import { HERB_PREPARATIONS, preparationUnit, type HerbPreparation } from '@clini
 import { Link, useRouter } from '@clinic/i18n/navigation';
 import { receiveBatch, setHerbThreshold } from './actions';
 import { formatDate } from '@clinic/i18n';
+import { DateInput } from '@/components/date-input';
 
 export interface StockBatchSummary {
   id: string;
@@ -201,10 +202,8 @@ export function StockEditor({
               density="compact"
               className="mt-1.5"
             >
-              <Input
+              <DateInput
                 id={`ex-${herbId}`}
-                type="date"
-                dir="ltr"
                 value={addExpiry}
                 onChange={(event) => setAddExpiry(event.target.value)}
               />

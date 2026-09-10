@@ -35,6 +35,7 @@ import type {
   PatientDocument,
   PatientMedicalHistory,
   PatientTag,
+  ClinicTaskWithPatient,
 } from '@clinic/db/types';
 import {
   APPOINTMENT_STATUS_TONES,
@@ -51,6 +52,7 @@ import { logRecordAccess } from '@/lib/access-log';
 import { ageFromDateOfBirth, appointmentTypeName, patientStatusTone } from '@/lib/display';
 import { RegisterOpenFile } from '@/features/workspace/register-open-file';
 import { PatientTabs } from '@/features/patients/patient-tabs';
+import { PatientTasksPanel } from '@/features/tasks/patient-tasks-panel';
 import { PatientFormsPanel } from '@/features/forms/patient-forms-panel';
 import { TreatmentConfirmationPanel } from '@/features/documents/treatment-confirmation-panel';
 import { PackagesPanel } from '@/features/billing/packages-panel';
@@ -118,6 +120,7 @@ export default async function PatientDetailPage({
     packagesResult,
     tagLinksResult,
     allTagsResult,
+    tasksResult,
   ] = await Promise.all([
     scope.supabase
       .from('patient_medical_history')
@@ -213,6 +216,16 @@ export default async function PatientDetailPage({
       .order('name', { ascending: true })
       .limit(500)
       .returns<Pick<PatientTag, 'id' | 'name' | 'color'>[]>(),
+    scope.supabase
+      .from('clinic_tasks')
+      .select('*, patient:patients(id, full_name)')
+      .eq('patient_id', id)
+      .is('done_at', null)
+      .order('due_at', { ascending: true, nullsFirst: false })
+      .order('due_on', { ascending: true, nullsFirst: false })
+      .order('is_urgent', { ascending: false })
+      .limit(50)
+      .returns<ClinicTaskWithPatient[]>()
   ]);
 
   // Only this patient's cards. The table has no patient column, and a
@@ -261,6 +274,7 @@ export default async function PatientDetailPage({
   const age = ageFromDateOfBirth(patient.date_of_birth);
 
   const overview = (
+    <div className="space-y-5">
     <Card>
       <CardBody>
         <dl className="grid grid-cols-1 gap-x-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -319,6 +333,11 @@ export default async function PatientDetailPage({
         ) : null}
       </CardBody>
     </Card>
+    <PatientTasksPanel
+      patient={{ id: patient.id, full_name: patient.full_name }}
+      tasks={tasksResult.data ?? []}
+    />
+    </div>
   );
 
   const encountersPanel =

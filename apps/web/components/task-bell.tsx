@@ -38,7 +38,7 @@ export function TaskBell() {
 
     const now = Date.now();
     for (const task of result.data) {
-      if (new Date(task.due_at).getTime() > now) continue;
+      if (new Date(task.due_at).getTime() - (task.remind_offset_minutes ?? 0) * 60_000 > now) continue;
       if (task.reminded_at || announced.current.has(task.id)) continue;
       announced.current.add(task.id);
 

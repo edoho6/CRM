@@ -55,8 +55,10 @@ export function TimeSelect({
   hourLabel,
   minuteLabel,
   className,
+  allowEmpty = false,
+  emptyLabel = '—',
 }: {
-  /** `HH:MM`. */
+  /** `HH:MM`, or `''` for no time when `allowEmpty` is set. */
   value: string;
   onChange: (value: string) => void;
   disabled?: boolean;
@@ -65,8 +67,12 @@ export function TimeSelect({
   hourLabel: string;
   minuteLabel: string;
   className?: string;
+  /** The hour list starts with a blank choice that clears the time. */
+  allowEmpty?: boolean;
+  emptyLabel?: string;
 }) {
-  const { hour, minute } = split(value);
+  const empty = allowEmpty && value === '';
+  const { hour, minute } = empty ? { hour: '', minute: '' } : split(value);
 
   return (
     <span
@@ -79,9 +85,12 @@ export function TimeSelect({
         aria-label={`${label} · ${hourLabel}`}
         disabled={disabled}
         value={hour}
-        onChange={(event) => onChange(`${event.target.value}:${minute}`)}
+        onChange={(event) =>
+          onChange(event.target.value === '' ? '' : `${event.target.value}:${minute || '00'}`)
+        }
         className={cn(SELECT_WIDTH, "tabular-nums")}
       >
+        {allowEmpty ? <option value="">{emptyLabel}</option> : null}
         {HOURS.map((option) => (
           <option key={option} value={option}>
             {option}
@@ -93,9 +102,9 @@ export function TimeSelect({
       </span>
       <Select
         aria-label={`${label} · ${minuteLabel}`}
-        disabled={disabled}
+        disabled={disabled || empty}
         value={minute}
-        onChange={(event) => onChange(`${hour}:${event.target.value}`)}
+        onChange={(event) => onChange(`${hour || '09'}:${event.target.value}`)}
         className={cn(SELECT_WIDTH, "tabular-nums")}
       >
         {MINUTES.map((option) => (

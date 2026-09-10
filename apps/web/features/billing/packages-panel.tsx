@@ -16,7 +16,6 @@ import {
   Input,
   LtrInput,
   Spinner,
-  TIME_INPUT_LANG,
   useConfirm,
   useToast,
 } from '@clinic/ui';
@@ -30,6 +29,7 @@ import {
   undoRedemption,
 } from './package-actions';
 import { formatDate } from '@clinic/i18n';
+import { DateInput } from '@/components/date-input';
 
 /**
  * Punch cards, on the patient's file.
@@ -294,19 +294,15 @@ export function PackagesPanel({
                 />
               </Field>
               <Field label={t('purchasedOn')} htmlFor="package_purchased">
-                <LtrInput
+                <DateInput
                   id="package_purchased"
-                  type="date"
-                  lang={TIME_INPUT_LANG}
                   value={purchased}
                   onChange={(event) => setPurchased(event.target.value)}
                 />
               </Field>
               <Field label={t('expiresOn')} htmlFor="package_expires" hint={t('expiresHint')}>
-                <LtrInput
+                <DateInput
                   id="package_expires"
-                  type="date"
-                  lang={TIME_INPUT_LANG}
                   value={expires}
                   onChange={(event) => setExpires(event.target.value)}
                 />

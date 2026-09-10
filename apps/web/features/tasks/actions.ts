@@ -5,6 +5,22 @@ import { getClinicScope } from '@/lib/session';
 import { actionError, actionOk, type ActionResult } from '@/lib/errors';
 
 /**
+ * The reminder offset is a column added in September 2026. A database that
+ * has not run that migration yet rejects the whole write for the one column
+ * it does not know (42703), and the person just sees "something went wrong"
+ * over a task they typed. Until the migration is in, the write is repeated
+ * without the column — a task saved without its offset beats no task at all.
+ */
+function unknownColumn(error: { code?: string; message?: string } | null): boolean {
+  return error?.code === '42703' || /remind_offset_minutes/.test(error?.message ?? '');
+}
+
+function withoutOffset<T extends { remind_offset_minutes?: number }>(row: T): Omit<T, 'remind_offset_minutes'> {
+  const { remind_offset_minutes: _dropped, ...rest } = row;
+  return rest;
+}
+
+/**
  * The to-do list.
  *
  * Four verbs and nothing else: add, tick, untick, remove. Every feature beyond
@@ -19,18 +35,17 @@ export async function createTask(input: unknown): Promise<ActionResult<{ id: str
   const parsed = clinicTaskSchema.safeParse(input);
   if (!parsed.success) return actionError(new Error('validation'));
 
-  const { data, error } = await scope.supabase
-    .from('clinic_tasks')
-    .insert({
-      ...parsed.data,
-      clinic_id: scope.context.clinic.id,
-      created_by: scope.context.membership.user_id,
-    })
-    .select('id')
-    .single<{ id: string }>();
-
-  if (error) return actionError(error);
-  return actionOk({ id: data.id });
+  const row = {
+    ...parsed.data,
+    clinic_id: scope.context.clinic.id,
+    created_by: scope.context.membership.user_id,
+  };
+  let result = await scope.supabase.from('clinic_tasks').insert(row).select('id').single<{ id: string }>();
+  if (result.error && unknownColumn(result.error)) {
+    result = await scope.supabase.from('clinic_tasks').insert(withoutOffset(row)).select('id').single<{ id: string }>();
+  }
+  if (result.error) return actionError(result.error);
+  return actionOk({ id: result.data.id });
 }
 
 /**
@@ -60,7 +75,10 @@ export async function updateTask(id: string, input: unknown): Promise<ActionResu
   const parsed = clinicTaskSchema.safeParse(input);
   if (!parsed.success) return actionError(new Error('validation'));
 
-  const { error } = await scope.supabase.from('clinic_tasks').update(parsed.data).eq('id', id);
+  let { error } = await scope.supabase.from('clinic_tasks').update(parsed.data).eq('id', id);
+  if (error && unknownColumn(error)) {
+    ({ error } = await scope.supabase.from('clinic_tasks').update(withoutOffset(parsed.data)).eq('id', id));
+  }
   if (error) return actionError(error);
   return actionOk();
 }
@@ -79,6 +97,7 @@ export interface DueTask {
   id: string;
   title: string;
   due_at: string;
+  remind_offset_minutes: number;
   is_urgent: boolean;
   remind_via: string;
   reminded_at: string | null;
@@ -97,18 +116,23 @@ export async function dueTasks(): Promise<ActionResult<DueTask[]>> {
   if (!scope) return actionError(new Error('unauthorized'));
 
   const horizon = new Date(Date.now() + 60 * 60 * 1000).toISOString();
-  const { data, error } = await scope.supabase
-    .from('clinic_tasks')
-    .select('id, title, due_at, is_urgent, remind_via, reminded_at, patient:patients(id, full_name)')
+  const columns = 'id, title, due_at, is_urgent, remind_via, reminded_at, patient:patients(id, full_name)';
+  const ask = (withOffset: boolean) =>
+    scope.supabase
+      .from('clinic_tasks')
+      .select(withOffset ? columns.replace('due_at,', 'due_at, remind_offset_minutes,') : columns)
     .is('done_at', null)
     .not('due_at', 'is', null)
     .lte('due_at', horizon)
     .order('due_at', { ascending: true })
     .limit(20)
     .returns<DueTask[]>();
+  let { data, error } = await ask(true);
+  // Before the offset migration the column is unknown; the bell must still ring.
+  if (error && unknownColumn(error)) ({ data, error } = await ask(false));
 
   if (error) return actionError(error);
-  return actionOk(data ?? []);
+  return actionOk((data ?? []).map((task) => ({ ...task, remind_offset_minutes: task.remind_offset_minutes ?? 0 })));
 }
 
 /**

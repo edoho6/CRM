@@ -10,7 +10,6 @@ import {
   Input,
   LtrInput,
   Spinner,
-  TIME_INPUT_LANG,
   TimeSelect,
   Toggle,
   useToast,
@@ -20,6 +19,7 @@ import { useRouter } from '@clinic/i18n/navigation';
 import type { PractitionerSchedule, ScheduleException } from '@clinic/db/types';
 import { closeDiaryPeriod, reopenDiaryPeriod, saveWorkingHours } from './actions';
 import { groupClosures } from './closure-periods';
+import { DateInput } from '@/components/date-input';
 
 /**
  * When the practitioner works, and when the diary is shut.
@@ -350,10 +350,8 @@ export function ScheduleForm({
 
         <div className="grid gap-3 sm:grid-cols-3">
           <Field label={t('closeFrom')} htmlFor="closure_from" density="compact">
-            <LtrInput
+            <DateInput
               id="closure_from"
-              type="date"
-              lang={TIME_INPUT_LANG}
               value={from}
               onChange={(event) => {
                 const next = event.target.value;
@@ -365,10 +363,8 @@ export function ScheduleForm({
             />
           </Field>
           <Field label={t('closeTo')} htmlFor="closure_to" density="compact">
-            <LtrInput
+            <DateInput
               id="closure_to"
-              type="date"
-              lang={TIME_INPUT_LANG}
               min={from}
               value={to}
               onChange={(event) => setTo(event.target.value)}

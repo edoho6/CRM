@@ -93,6 +93,28 @@
     "changeLater": "You can come back to this link and change your answer."
   },
   "tasks": {
+    "remindWhen": "Remind",
+    "offsets": {
+      "0": "At the time",
+      "5": "5 minutes before",
+      "10": "10 minutes before",
+      "15": "15 minutes before",
+      "30": "30 minutes before",
+      "60": "An hour before",
+      "120": "Two hours before",
+      "1440": "A day before",
+      "2880": "Two days before",
+      "10080": "A week before"
+    },
+    "urgentHint": "Marked and listed first",
+    "reopen": "Reopen",
+    "editTask": "Edit task",
+    "browserGranted": "Browser notifications are on. You will be told even when this tab is not in front of you.",
+    "browserDenied": "The browser blocked notifications for this site. To allow: the lock icon by the address → Notifications → Allow.",
+    "browserDismissed": "The request was dismissed. Press again to allow.",
+    "forPatient": "Tasks",
+    "forPatientEmpty": "No open tasks for this patient.",
+    "openList": "All tasks",
     "title": "Tasks",
     "subtitle": "What needs doing, when — and a reminder when the time comes.",
     "new": "New task",
@@ -118,7 +140,7 @@
       "undated": "No date",
       "done": "Done"
     },
-    "empty": "Nothing outstanding. Well done.",
+    "empty": "No open tasks.",
     "markDone": "Mark “{title}” as done",
     "markOpen": "Put “{title}” back",
     "created": "Task added",
@@ -138,6 +160,11 @@
     "openAll": "All tasks"
   },
   "common": {
+    "dateInput": {
+      "placeholder": "dd/mm/yyyy",
+      "openCalendar": "Open calendar",
+      "invalid": "Not a date — day/month/year"
+    },
     "deleteNamed": "Delete {thing}?",
     "things": {
       "appointment": "this appointment",
