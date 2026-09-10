@@ -176,6 +176,7 @@ export function EncounterForm({
 
   // Saving this treatment as a protocol.
   const [protocolOpen, setProtocolOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const [protocolName, setProtocolName] = useState('');
   const [protocolDescription, setProtocolDescription] = useState('');
 
@@ -684,7 +685,10 @@ export function EncounterForm({
                 Save is the primary: it is pressed twenty times a visit, while
                 signing happens once and locks the record, so it must never be
                 the button the hand reaches for by habit. */}
-            <DropdownMenu>
+            {/* Not modal, and closed by hand when its item opens the dialog. A
+                modal menu left open under the dialog kept the page unclickable
+                after the dialog was dismissed, until a second Escape. */}
+            <DropdownMenu open={moreOpen} onOpenChange={setMoreOpen} modal={false}>
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
@@ -697,12 +701,14 @@ export function EncounterForm({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent>
-                {/* preventDefault keeps the menu from closing in the same tick the
-                    dialog opens — the Radix race that leaves the page unclickable. */}
+                {/* preventDefault keeps Radix from closing the menu in the same tick
+                    the dialog opens (a race that left the page unclickable); the
+                    menu is closed here instead, once the dialog is on its way. */}
                 <DropdownMenuItem
                   onSelect={(event) => {
                     event.preventDefault();
                     setProtocolOpen(true);
+                    setMoreOpen(false);
                   }}
                 >
                   <BookmarkPlus className="h-4 w-4" />

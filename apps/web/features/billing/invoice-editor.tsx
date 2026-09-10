@@ -198,6 +198,7 @@ export function InvoiceEditor({ invoice }: { invoice: InvoiceWithDetails }) {
                           type="number"
                           min={0}
                           step="0.01"
+                          aria-label={`${t('unitPrice')} · ${item.description}`}
                           defaultValue={Number(item.unit_price)}
                           disabled={locked || isPending}
                           onBlur={(event) =>

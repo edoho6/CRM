@@ -44,6 +44,7 @@ const only = [...args].find((arg) => arg.startsWith('--only='))?.slice(7).split(
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const env = readEnv(path.join(root, 'apps', 'web', '.env.test.local'));
 const baseUrl = (env.SMOKE_BASE_URL || process.env.SMOKE_BASE_URL || 'http://localhost:3000').replace(/\/$/, '');
+const portalUrl = (env.SMOKE_PORTAL_URL || process.env.SMOKE_PORTAL_URL || 'http://localhost:3001').replace(/\/$/, '');
 const email = env.SMOKE_EMAIL || process.env.SMOKE_EMAIL;
 const password = env.SMOKE_PASSWORD || process.env.SMOKE_PASSWORD;
 
@@ -183,12 +184,12 @@ async function inspect(page) {
   }, ERROR_TEXTS);
 }
 
-async function visit(context, { route, locale, width, label = route, expect404 = false, before, after }) {
+async function visit(context, { route, locale, width, label = route, expect404 = false, before, after, origin = baseUrl }) {
   if (only && !only.some((needle) => route.includes(needle) || label.includes(needle))) return null;
   const page = await context.newPage();
   await page.setViewportSize({ width: width.width, height: width.height });
   const bag = observe(page);
-  const url = `${baseUrl}/${locale}${route}`;
+  const url = `${origin}/${locale}${route}`;
   const started = Date.now();
   let httpStatus = null;
   let finalUrl = url;
@@ -352,8 +353,12 @@ const flows = {
     await page.locator('[role="menuitem"]').first().click();
     const dialog = page.locator('[role="dialog"]').first();
     await dialog.waitFor({ timeout: 5_000 });
+    // An Escape in the same frame the dialog mounts lands before it listens;
+    // no hand is that fast.
+    await page.waitForTimeout(400);
     await page.keyboard.press('Escape');
-    await page.waitForTimeout(500);
+    await dialog.waitFor({ state: 'detached', timeout: 3_000 }).catch(() => {});
+    await page.waitForTimeout(300);
     const clickable = await page.evaluate(() => getComputedStyle(document.body).pointerEvents !== 'none');
     const dialogsLeft = await page.locator('[role="dialog"]').count();
     return { ok: clickable && dialogsLeft === 0, detail: `clickable ${clickable}, dialogs left ${dialogsLeft}` };
@@ -790,6 +795,15 @@ async function main() {
     const anonymous = await browser.newContext({ locale: 'he-IL' });
     for (const locale of locales) for (const width of widths) for (const route of PUBLIC_ROUTES) {
       await visit(anonymous, { route, locale, width });
+    }
+    // The portal's public face, if a portal is running beside the app.
+    const portalUp = await fetch(`${portalUrl}/he/login`, { redirect: 'manual' }).then((r) => r.status < 500).catch(() => false);
+    if (portalUp) {
+      for (const locale of locales) for (const width of widths) {
+        await visit(anonymous, { route: '/login', locale, width, label: 'portal /login', origin: portalUrl });
+      }
+    } else {
+      console.log(`portal not running at ${portalUrl} — its login page was not opened`);
     }
     await anonymous.close();
 
