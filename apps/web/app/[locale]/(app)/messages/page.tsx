@@ -1,4 +1,5 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
+import { PageBody } from '@clinic/ui';
 import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
 import { MessageQueue, type QueueRow } from '@/features/messages/message-queue';
@@ -46,9 +47,9 @@ export default async function MessagesPage({ params }: { params: Promise<{ local
   return (
     <>
       <PageHeader title={t('title')} description={t('subtitle')} />
-      <div className="max-w-3xl">
+      <PageBody width="narrow">
         <MessageQueue queued={queuedResult.data ?? []} history={historyResult.data ?? []} />
-      </div>
+      </PageBody>
     </>
   );
 }

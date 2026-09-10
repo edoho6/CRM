@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server';
 import { getDirection, isLocale, locales } from '@clinic/i18n';
+import type { Viewport } from 'next';
 import { ConfirmProvider, ToastProvider, UiDirectionProvider, UiLabelsProvider } from '@clinic/ui';
 import '../globals.css';
 
@@ -31,6 +32,15 @@ export async function generateMetadata({
   const t = await getTranslations({ locale, namespace: 'portal' });
   return { title: t('title') };
 }
+
+/** Same reasons as the staff app; the portal has one theme, so one colour. */
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+  interactiveWidget: 'resizes-content',
+  themeColor: '#f7f8f8',
+};
 
 export default async function PortalLocaleLayout({
   children,

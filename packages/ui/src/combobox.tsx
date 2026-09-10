@@ -234,7 +234,7 @@ export function Combobox({
           }
         }}
         className={cn(
-          'h-10 w-full rounded-lg border border-ink-200 bg-white ps-8 pe-8 text-sm text-ink-900',
+          'h-10 w-full rounded-lg border border-ink-200 bg-white ps-8 pe-8 text-base sm:text-sm text-ink-900',
           'shadow-xs placeholder:text-ink-500',
           focusField,
           'disabled:bg-ink-50 disabled:text-ink-600',
@@ -246,7 +246,7 @@ export function Combobox({
           type="button"
           onClick={clear}
           aria-label={`${label} — ✕`}
-          className="absolute inset-y-0 end-1 my-auto h-7 w-7 rounded-md text-ink-500 transition-colors hover:bg-ink-100 hover:text-ink-800"
+          className="absolute inset-y-0 end-1 my-auto h-8 w-8 rounded-md text-ink-500 transition-colors hover:bg-ink-100 hover:text-ink-800 active:bg-ink-200"
         >
           <X className="mx-auto h-4 w-4" aria-hidden />
         </button>

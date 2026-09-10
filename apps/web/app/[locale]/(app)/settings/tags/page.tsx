@@ -1,5 +1,6 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import type { PatientTag } from '@clinic/db/types';
+import { PageBody } from '@clinic/ui';
 import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
 import { SettingsNav } from '@/features/settings/settings-nav';
@@ -38,11 +39,10 @@ export default async function TagsSettingsPage({
 
   return (
     <>
-      <PageHeader title={t('tags.title')} description={t('tags.subtitle')} />
-      <SettingsNav />
-      <div className="max-w-3xl">
+      <PageHeader title={t('tags.title')} description={t('tags.subtitle')} below={<SettingsNav />} />
+      <PageBody width="narrow">
         <TagsManager tags={tags ?? []} usage={usage} />
-      </div>
+      </PageBody>
     </>
   );
 }

@@ -1,6 +1,6 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Sparkles } from 'lucide-react';
-import { Alert, EmptyState } from '@clinic/ui';
+import { Alert, EmptyState, PageBody } from '@clinic/ui';
 import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
 import { assistantAvailable } from '@/features/assistant/actions';
@@ -37,7 +37,7 @@ export default async function AssistantPage({
       <PageHeader title={t('title')} description={t('subtitle')} />
 
       {available ? (
-        <div className="max-w-3xl space-y-4">
+        <PageBody width="narrow" className="space-y-4">
           {/* Said once, plainly, on the screen where it applies: asking a
               question sends the result of a query to an external service. The
               practitioner decided that; they should not have to remember it. */}
@@ -48,7 +48,7 @@ export default async function AssistantPage({
           <AssistantPanel
             examples={[t('examples.busy'), t('examples.inactive'), t('examples.herbs'), t('examples.owed')]}
           />
-        </div>
+        </PageBody>
       ) : (
         <EmptyState
           icon={<Sparkles className="h-8 w-8" />}

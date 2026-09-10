@@ -4,8 +4,9 @@ import { notFound } from 'next/navigation';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server';
 import { getDirection, isLocale, locales } from '@clinic/i18n';
+import type { Viewport } from 'next';
 import { ConfirmProvider, ToastProvider, UiDirectionProvider, UiLabelsProvider } from '@clinic/ui';
-import { themeInitScript } from '@/lib/theme';
+import { THEME_COLORS, themeInitScript } from '@/lib/theme';
 import '../globals.css';
 
 /**
@@ -47,6 +48,21 @@ const assistant = Assistant({
 export function generateStaticParams() {
   return locales.map((locale) => ({ locale }));
 }
+
+/**
+ * `viewportFit: 'cover'` is what makes `env(safe-area-inset-*)` non-zero on
+ * an iPhone — without it every bottom sheet sat under the home indicator.
+ * `resizes-content` makes the software keyboard shrink the page instead of
+ * covering the field being typed in. The theme colour is the page background;
+ * the script below and the theme switch move it with the theme.
+ */
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+  interactiveWidget: 'resizes-content',
+  themeColor: THEME_COLORS.light,
+};
 
 export async function generateMetadata({
   params,

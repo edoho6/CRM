@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useLayoutEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { CalendarClock, Check, Stethoscope, UserPlus, X } from 'lucide-react';
 import { Button, Card, CardBody, cn } from '@clinic/ui';
 import { Link } from '@clinic/i18n/navigation';
+import { PREF_KEYS } from '@/lib/prefs';
 
-const STORAGE_KEY = 'herbalist-getting-started-hidden';
+const STORAGE_KEY = PREF_KEYS.gettingStartedHidden;
 
 /**
  * The first thing a new clinic sees.
@@ -27,14 +28,13 @@ export function GettingStarted({
   hasPatients: boolean;
 }) {
   const t = useTranslations('dashboard.gettingStarted');
-  const [hidden, setHidden] = useState(true);
+  // Shown by default, and hidden before paint when this browser has
+  // dismissed it — the stylesheet hides it first, from the attribute the
+  // pre-paint script wrote, so the card never appears and then vanishes.
+  const [hidden, setHidden] = useState(false);
 
-  useEffect(() => {
-    try {
-      setHidden(localStorage.getItem(STORAGE_KEY) === '1');
-    } catch {
-      setHidden(false);
-    }
+  useLayoutEffect(() => {
+    setHidden(document.documentElement.dataset.gettingStarted === 'hidden');
   }, []);
 
   if (hidden || hasPatients) return null;
@@ -46,19 +46,20 @@ export function GettingStarted({
   ] as const;
 
   return (
-    <Card className="mb-5 border-jade-200 bg-jade-50/60">
+    <Card data-getting-started className="mb-5 border-jade-200 bg-jade-50/60">
       <CardBody className="space-y-3">
         <div className="flex items-start justify-between gap-3">
           <h2 className="text-base font-semibold text-ink-900">{t('title')}</h2>
           <Button
             type="button"
             variant="ghost"
-            size="icon"
-            className="h-8 w-8 shrink-0"
+            size="icon-sm"
+            className="shrink-0"
             aria-label={t('dismiss')}
             title={t('dismiss')}
             onClick={() => {
               setHidden(true);
+              document.documentElement.dataset.gettingStarted = 'hidden';
               try {
                 localStorage.setItem(STORAGE_KEY, '1');
               } catch {

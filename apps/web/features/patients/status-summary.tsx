@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import {
   ChartColumn,
@@ -17,6 +17,7 @@ import { SegmentedControl, cn } from '@clinic/ui';
 import { usePathname, useRouter } from '@clinic/i18n/navigation';
 import { useSearchParams } from 'next/navigation';
 import { TREATMENT_STATUSES, type TreatmentStatus } from '@clinic/domain';
+import { PREF_KEYS } from '@/lib/prefs';
 import {
   EMPTY_TILE_LAYOUT,
   arrangeTiles,
@@ -59,8 +60,8 @@ export interface StatusCounts {
 
 type Mode = 'tiles' | 'pills' | 'bar' | 'hidden';
 const MODES: readonly Mode[] = ['tiles', 'pills', 'bar', 'hidden'];
-const MODE_STORAGE_KEY = 'herbalist-patient-kpi-mode';
-const LAYOUT_STORAGE_KEY = 'herbalist-patient-kpi-layout';
+const MODE_STORAGE_KEY = PREF_KEYS.kpiMode;
+const LAYOUT_STORAGE_KEY = PREF_KEYS.kpiLayout;
 const MODE_ICONS = { tiles: LayoutGrid, pills: Rows3, bar: ChartColumn, hidden: EyeOff } as const;
 
 type Tone = 'jade' | 'sky' | 'amber' | 'red' | 'ink';
@@ -101,18 +102,21 @@ export function PatientStatusSummary({ counts }: { counts: StatusCounts }) {
   const [mode, setMode] = useState<Mode>('tiles');
   const [layout, setLayout] = useState<TileLayout>(EMPTY_TILE_LAYOUT);
   const [arranging, setArranging] = useState(false);
-  useEffect(() => {
+  // Before paint, from the attribute the pre-paint script wrote (so a hidden
+  // strip is hidden by the stylesheet from the first frame), then the order.
+  useLayoutEffect(() => {
+    const stored = document.documentElement.dataset.kpiMode;
+    if (stored && (MODES as readonly string[]).includes(stored)) setMode(stored as Mode);
     try {
-      const stored = localStorage.getItem(MODE_STORAGE_KEY);
-      if (stored && (MODES as readonly string[]).includes(stored)) setMode(stored as Mode);
       setLayout(parseTileLayout(localStorage.getItem(LAYOUT_STORAGE_KEY)));
     } catch {
-      // Site data blocked: tiles every time, in the default order, and that is the whole cost.
+      // Site data blocked: the default order, and that is the whole cost.
     }
   }, []);
 
   function chooseMode(next: Mode) {
     setMode(next);
+    document.documentElement.dataset.kpiMode = next;
     try {
       localStorage.setItem(MODE_STORAGE_KEY, next);
     } catch {
@@ -257,7 +261,8 @@ export function PatientStatusSummary({ counts }: { counts: StatusCounts }) {
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
         <div className="min-w-0 flex-1">
           {mode === 'tiles' ? (
-            <TileRow
+            <div data-kpi-tiles>
+              <TileRow
               items={arranging ? ordered : visible}
               arranging={arranging}
               hidden={layout.hidden}
@@ -270,6 +275,7 @@ export function PatientStatusSummary({ counts }: { counts: StatusCounts }) {
                 show: t('kpi.showTile'),
               }}
             />
+            </div>
           ) : mode === 'pills' ? (
             <div className="flex flex-wrap items-center gap-1">
               {(arranging ? ordered : visible).map((item) => (

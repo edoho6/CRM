@@ -33,7 +33,16 @@ export function OpenFilesBar() {
   const [files, setFiles] = useState<OpenFile[]>([]);
 
   useEffect(() => {
-    const sync = () => setFiles(readOpenFiles());
+    const sync = () => {
+      const next = readOpenFiles();
+      setFiles(next);
+      // The stylesheet reserves this bar's height from the attribute before
+      // React runs (the pre-paint script sets it from the same storage), so
+      // the page does not drop by a row once the bar appears. Kept in step
+      // here so closing the last file lets the page back up.
+      if (next.length > 0) document.documentElement.dataset.openFiles = '1';
+      else delete document.documentElement.dataset.openFiles;
+    };
     sync();
 
     window.addEventListener(OPEN_FILES_EVENT, sync);
@@ -53,6 +62,7 @@ export function OpenFilesBar() {
     closeFile(file.kind, file.id);
     const remaining = readOpenFiles();
     setFiles(remaining);
+    if (remaining.length === 0) delete document.documentElement.dataset.openFiles;
 
     // Closing the file you are looking at has to take you somewhere. The next
     // open one, if there is one; otherwise the list this file came from —
@@ -107,6 +117,7 @@ export function OpenFilesBar() {
           onClick={() => {
             closeAllFiles();
             setFiles([]);
+            delete document.documentElement.dataset.openFiles;
           }}
           className="shrink-0 rounded-md px-2 py-1 text-xs text-ink-600 transition-colors hover:bg-ink-100 hover:text-ink-900"
         >

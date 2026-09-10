@@ -8,7 +8,8 @@ import { focusField, focusRing } from './focus';
  * markup lays out correctly in Hebrew and English without a mirrored stylesheet. */
 
 export const inputClasses =
-  'w-full rounded-lg border border-ink-200 bg-white px-3 py-2 text-sm text-ink-900 ' +
+  // 16px on a phone: below that iOS zooms the page in on focus and never zooms back.
+  'w-full rounded-lg border border-ink-200 bg-white px-3 py-2 text-base sm:text-sm text-ink-900 ' +
   'placeholder:text-ink-500 shadow-xs transition-colors text-start ' +
   `${focusField} ` +
   'disabled:cursor-not-allowed disabled:bg-ink-50 disabled:text-ink-500 ' +
@@ -115,7 +116,8 @@ export const Select = React.forwardRef<
     className={cn(
       inputClasses,
       compact ? compactClasses : 'h-10',
-      'cursor-pointer pe-9 text-ellipsis',
+      // `ui-select` draws the one arrow (see base.css) instead of the platform's.
+      'ui-select cursor-pointer pe-9 text-ellipsis',
       className,
     )}
     {...props}
@@ -133,7 +135,7 @@ export const Checkbox = React.forwardRef<
     ref={ref}
     type="checkbox"
     className={cn(
-      'h-4 w-4 shrink-0 rounded border-ink-300 text-jade-600 accent-jade-600',
+      'h-5 w-5 shrink-0 rounded-sm border-ink-300 accent-accent pointer-coarse:h-6 pointer-coarse:w-6',
       focusRing,
       className,
     )}

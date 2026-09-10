@@ -96,7 +96,7 @@ export function TaskBell() {
       }
       triggerLabel={ringing > 0 ? `${t('bell')} · ${ringing}` : t('bell')}
       triggerTitle={t('bell')}
-      triggerClassName="relative inline-flex h-9 w-9 items-center justify-center rounded-md text-ink-700 transition-colors hover:bg-ink-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+      triggerClassName="relative inline-flex h-10 w-10 items-center justify-center rounded-lg border border-ink-200 bg-white text-ink-600 shadow-xs transition-colors hover:bg-ink-50 hover:text-ink-900 active:bg-ink-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
       panelLabel={t('bell')}
       align="end"
       width={320}

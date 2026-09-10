@@ -189,8 +189,8 @@ export default async function StockRoomPage({
             </Link>
           </Button>
         }
+        below={<InventoryNav counts={counts} />}
       />
-      <InventoryNav counts={counts} />
 
       {tab === 'to_order' ? (
         orders.length === 0 ? (

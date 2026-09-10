@@ -9,6 +9,10 @@
    all, which is a bug that shows as an unstyled button rather than as an error. */
 @source '../../../packages/ui/src';
 
+/* Element defaults, focus, cursors, phone tables, folding sections, paper —
+   everything that is not a token, written once for both apps. */
+@import '../../../packages/ui/src/base.css';
+
 /* ==========================================================================
    Design tokens
    ==========================================================================
@@ -110,10 +114,17 @@
   --shadow-raised: 0 1px 2px rgb(0 0 0 / 0.04), 0 1px 3px rgb(0 0 0 / 0.06);
   --shadow-floating: 0 4px 12px rgb(0 0 0 / 0.08), 0 1px 3px rgb(0 0 0 / 0.06);
   --shadow-overlay: 0 16px 40px rgb(0 0 0 / 0.18), 0 2px 6px rgb(0 0 0 / 0.08);
-  --shadow-xs: var(--shadow-raised);
+  /* `xs` is the pressed state: a button that has settled onto the page
+     casts less than one resting on it. */
+  --shadow-xs: 0 1px 1px rgb(0 0 0 / 0.04);
   --shadow-sm: var(--shadow-raised);
   --shadow-md: var(--shadow-floating);
   --shadow-lg: var(--shadow-overlay);
+
+  /* The two hairlines: the outer edge of a card, and the divider inside one.
+     Translucent, so they sit correctly on any surface; dark mode lightens them. */
+  --color-hairline: rgb(0 0 0 / 0.08);
+  --color-hairline-soft: rgb(0 0 0 / 0.05);
 
   /* The row-hover tint, as a colour rather than a hard-coded black.
      It was `rgb(0 0 0 / 0.015)`, which is a sound choice on a white table and
@@ -139,9 +150,29 @@
   --duration-fast: 120ms;
   --duration-base: 180ms;
   --duration-slow: 260ms;
+  --duration-spring: 420ms;
   --ease-standard: cubic-bezier(0.2, 0, 0, 1);
   --ease-emphasized: cubic-bezier(0.05, 0.7, 0.1, 1);
   --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  /* A real spring, as a `linear()` curve: overshoots by under two percent and
+     settles. For the things that arrive with weight — a sheet, a drawer, a
+     switch's knob — and never for exits. */
+  --ease-spring: linear(
+    0,
+    0.006,
+    0.025 2.8%,
+    0.101 6.1%,
+    0.539 18.9%,
+    0.721 25.3%,
+    0.849 31.5%,
+    0.937 38.1%,
+    0.968 41.8%,
+    0.991 45.7%,
+    1.006 50.1%,
+    1.015 55%,
+    1.017 63.9%,
+    1.001
+  );
 
   /* Entrances take longer than exits: a thing arriving should be seen to
      arrive; a thing dismissed should be gone. Radix only removes an overlay
@@ -150,11 +181,11 @@
   --animate-fade-out: fade-out var(--duration-fast) var(--ease-exit) both;
   --animate-dialog-in: dialog-in var(--duration-base) var(--ease-emphasized) both;
   --animate-dialog-out: dialog-out var(--duration-fast) var(--ease-exit) both;
-  --animate-drawer-in: drawer-in var(--duration-slow) var(--ease-emphasized) both;
+  --animate-drawer-in: drawer-in var(--duration-spring) var(--ease-spring) both;
   --animate-drawer-out: drawer-out var(--duration-base) var(--ease-exit) both;
   --animate-menu-in: menu-in var(--duration-fast) var(--ease-standard) both;
   --animate-menu-out: fade-out var(--duration-fast) var(--ease-exit) both;
-  --animate-sheet-in: sheet-in var(--duration-slow) var(--ease-emphasized) both;
+  --animate-sheet-in: sheet-in var(--duration-spring) var(--ease-spring) both;
   --animate-sheet-out: sheet-out var(--duration-base) var(--ease-exit) both;
   --animate-toast-in: toast-in var(--duration-base) var(--ease-emphasized) both;
   --animate-toast-out: fade-out var(--duration-fast) var(--ease-exit) both;
@@ -333,108 +364,13 @@
 
   /* Light, not dark: on a dark surface a hovered row has to come forward. */
   --color-row-hover: rgb(255 255 255 / 0.05);
+  --color-hairline: rgb(255 255 255 / 0.1);
+  --color-hairline-soft: rgb(255 255 255 / 0.06);
 
   /* Focus, measured against the dark surfaces: 6.8–8.6:1 on all of them. The
      light value is 2.8:1 on dark ink-100 — a ring you would lose. */
   --color-focus: #4ec98d;
   --color-focus-ring: #4ec98d;
-}
-
-/* ==========================================================================
-   Base
-   ========================================================================== */
-
-@layer base {
-  html {
-    -webkit-text-size-adjust: 100%;
-  }
-
-  body {
-    background-color: var(--color-ink-50);
-    color: var(--color-ink-900);
-    font-family: var(--font-sans);
-    font-feature-settings: 'kern';
-  }
-
-  /* Hebrew has no upper case; letter-spacing tricks meant for Latin headings
-     just make it look broken. */
-  :lang(he) h1,
-  :lang(he) h2,
-  :lang(he) h3 {
-    letter-spacing: 0;
-  }
-
-  /* Phone numbers, IDs and emails must stay left-to-right even inside a Hebrew
-     page, otherwise the digits visually reverse. Applied via `dir="ltr"` on the
-     input; this keeps the text hugging the correct edge. */
-  [dir='ltr'].field-ltr,
-  .field-ltr[dir='ltr'] {
-    text-align: start;
-  }
-
-  /* One focus ring, on everything that can take focus. Links used to get only
-     the browser's default; the shared components carry the same colour through
-     `focusRing` / `focusField`, and this rule catches whatever they do not.
-     Anything with an `outline-none` of its own still wins — `:where()` has no
-     specificity — which is what the skip target and the rich-text editor rely
-     on. */
-  :where(a, button, input, textarea, select, summary, [role='button'], [tabindex]):focus-visible {
-    outline: 2px solid var(--color-focus);
-    outline-offset: 2px;
-  }
-
-  ::placeholder {
-    color: var(--color-ink-400);
-  }
-
-  /* Anything genuinely clickable says so on hover. Native elements are covered
-     here so a plain link or a table action never feels dead compared with the
-     Button component, which has its own lift-and-shadow treatment. */
-  a:not([class*='btn']):hover {
-    cursor: pointer;
-  }
-
-  button:not(:disabled),
-  [role='button']:not([aria-disabled='true']),
-  summary,
-  label:has(input[type='checkbox']:not(:disabled)),
-  select:not(:disabled) {
-    cursor: pointer;
-  }
-
-  button:disabled,
-  [aria-disabled='true'] {
-    cursor: not-allowed;
-  }
-
-  /* Rows that lead somewhere get a quiet tint and a nudge, so the whole row
-     reads as one target rather than only the link inside it. */
-  tbody tr:hover {
-    box-shadow: inset 0 0 0 9999px var(--color-row-hover);
-  }
-
-  /* Hover is not a state a keyboard or a touch screen can reach, so the same
-     tint follows focus into the row. Without it, tabbing through a patient list
-     highlights the link and leaves the row it belongs to unmarked. */
-  tbody tr:focus-within {
-    box-shadow: inset 0 0 0 9999px var(--color-row-hover);
-  }
-
-  /* Motion is decoration here — every transition in this app is a convenience,
-     none of them carry meaning — so an operating-system request to stop it is
-     honoured rather than negotiated. Not removed outright: 1ms keeps
-     transition- and animation-end handlers firing, which some libraries
-     (react-grid-layout among them) rely on to settle their layout. */
-  @media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-      animation-duration: 1ms !important;
-      animation-iteration-count: 1 !important;
-      transition-duration: 1ms !important;
-      scroll-behavior: auto !important;
-    }
-  }
 }
 
 /* ==========================================================================
@@ -556,14 +492,62 @@
 }
 
 /* ==========================================================================
+   Layout the stylesheet draws before React runs
+   ==========================================================================
+   The pre-paint script in lib/theme.ts copies every remembered layout choice
+   onto <html> as a data attribute. These rules paint that state on the very
+   first frame — the folded sidebar, the hidden tiles, the row the open-files
+   bar will take — so hydration never moves anything. React then reads the
+   same attributes and takes over: when a choice changes it rewrites the
+   attribute, and the rule lets go. Outside any layer on purpose — unlayered
+   rules beat utilities, whatever their specificity.
+   ========================================================================== */
+
+/* The phone's tab bar. The page, the toasts and every sticky footer keep
+   clear of it through this one variable, which is zero wherever the bar is
+   not rendered — the portal, print, a desk. */
+:root {
+  --bottom-bar: 0px;
+}
+
+@media (width < 64rem) {
+  :root:has([data-tab-bar]) {
+    --bottom-bar: 3.5rem;
+  }
+}
+
+@media (width >= 64rem) {
+  :root[data-sidebar='collapsed'] [data-sidebar-panel] {
+    width: 3.5rem;
+  }
+
+  :root[data-sidebar='collapsed'] [data-sidebar-expanded-only] {
+    display: none;
+  }
+
+  :root[data-sidebar='collapsed'] [data-sidebar-row] {
+    justify-content: center;
+    padding-inline: 0;
+  }
+}
+
+:root[data-kpi-mode]:not([data-kpi-mode='tiles']) [data-kpi-tiles] {
+  display: none;
+}
+
+:root[data-getting-started='hidden'] [data-getting-started] {
+  display: none;
+}
+
+:root[data-open-files] [data-open-files-slot] {
+  min-height: 2.625rem;
+}
+
+/* ==========================================================================
    Print — a clinical record should print cleanly for a patient file
    ========================================================================== */
 
 @media print {
-  .no-print {
-    display: none !important;
-  }
-
   /* Paper is light, whatever the screen is.
 
      `body { background: white }` alone was not enough and was in fact the
@@ -601,135 +585,13 @@
     box-shadow: none !important;
   }
 
-  /* A record that breaks across a page in the middle of a row is hard to read
-     back, and a heading stranded at the foot of a page is worse. */
-  tr,
-  img {
-    break-inside: avoid;
-  }
-
-  h1,
-  h2,
-  h3 {
-    break-after: avoid;
-  }
 }
 
-/*
-   Row size, chosen from the switch above each list table and remembered by
-   the browser (`TableSizeControl` in the shared kit sets the attribute).
-   Element + attribute outranks the cells' own padding utilities.
-*/
-[data-table-size='compact'] th,
-[data-table-size='compact'] td {
-  padding: 0.25rem 0.5rem;
-  font-size: 0.8125rem;
-}
-[data-table-size='large'] th,
-[data-table-size='large'] td {
-  padding: 0.8rem 1rem;
-  font-size: 1rem;
-}
-[data-table-size='large'] th {
-  font-size: 0.875rem;
-}
 
-/*
-   Tables as cards on a phone.
 
-   A `TableWrapper` marked `responsive` keeps its table on a wide screen and
-   turns each row into a stacked card below `md`. The column headings are
-   copied onto every cell as `data-label` (see `CellLabels` in the shared
-   kit), and shown here before the value. The heading row itself is hidden:
-   on a phone the list is read top to bottom, and sorting waits for a desk.
-*/
-@media (max-width: 767px) {
-  .table-cards {
-    overflow-x: visible;
-    border: 0;
-    background: transparent;
-  }
-  .table-cards table,
-  .table-cards tbody,
-  .table-cards tr,
-  .table-cards td {
-    display: block;
-    width: 100%;
-  }
-  .table-cards thead {
-    display: none;
-  }
-  .table-cards tr {
-    margin-bottom: 0.75rem;
-    padding: 0.5rem 0.75rem;
-    border: 1px solid var(--color-ink-200);
-    border-radius: var(--radius-card, 0.75rem);
-    background: var(--color-white);
-  }
-  .table-cards td {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    gap: 0.75rem;
-    padding: 0.35rem 0;
-    border: 0;
-    text-align: end;
-  }
-  .table-cards td[data-label]::before {
-    content: attr(data-label);
-    flex: 0 0 auto;
-    max-width: 45%;
-    font-size: 0.75rem;
-    line-height: 1.25;
-    color: var(--color-ink-600);
-    text-align: start;
-  }
-  .table-cards td:not([data-label]) {
-    justify-content: flex-start;
-    text-align: start;
-  }
-  .table-cards td + td {
-    border-top: 1px solid var(--color-ink-100);
-  }
-  /* The cell marked as the card's title reads as one — no column label,
-     heavier type — and a cell whose whole content is a dash is a row that
-     says "nothing"; on a phone that is space, not information. */
-  .table-cards td[data-card-title] {
-    justify-content: flex-start;
-    font-weight: 600;
-    font-size: 0.9375rem;
-  }
-  .table-cards td[data-card-title]::before {
-    display: none;
-  }
-  .table-cards td:has(> [data-dash]:only-child) {
-    display: none;
-  }
-}
-
-/*
-   Folding sections open smoothly.
-
-   `Collapsible` is a native `<details>`, which snaps open by default. With
-   `interpolate-size` the browser can animate to and from `auto`, and the
-   `::details-content` box gets the same easing as every other reveal in the
-   app. Browsers without either simply keep snapping; nothing breaks.
-*/
-:root {
-  interpolate-size: allow-keywords;
-}
-details::details-content {
-  block-size: 0;
-  overflow-y: clip;
-  transition:
-    block-size var(--duration-base) var(--ease-standard),
-    content-visibility var(--duration-base) allow-discrete;
-}
-details[open]::details-content {
-  block-size: auto;
-}
-@media (prefers-reduced-motion: reduce) {
-  details::details-content {
-    transition: none;
-  }
+/* The select arrow in the dark theme's ink. Here rather than in base.css so
+   the dark palette block above stays the first `[data-theme=dark]` rule the
+   contrast check meets. */
+:root[data-theme='dark'] select.ui-select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a2abb1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
 }

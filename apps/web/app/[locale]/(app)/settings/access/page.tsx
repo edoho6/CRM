@@ -102,8 +102,7 @@ export default async function AccessLogPage({
 
   return (
     <>
-      <PageHeader title={t('title')} description={t('subtitle')} />
-      <SettingsNav />
+      <PageHeader title={t('title')} description={t('subtitle')} below={<SettingsNav />} />
 
       <Card className="mb-5">
         <CardHeader>

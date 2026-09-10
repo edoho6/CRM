@@ -89,12 +89,20 @@ export function ConfirmProvider({
             }}
           >
             {options.body ? <p className="text-sm text-ink-700">{options.body}</p> : null}
-            <DialogFooter>
-              <Button ref={cancelRef} variant="secondary" onClick={() => settle(false)}>
+            {/* On a phone: stacked, full-width, the answer on top and Cancel
+                under it — the shape of an action sheet. From `sm`: a row. */}
+            <DialogFooter className="flex-col-reverse sm:flex-row">
+              <Button
+                ref={cancelRef}
+                variant="secondary"
+                className="h-11 w-full sm:h-10 sm:w-auto"
+                onClick={() => settle(false)}
+              >
                 {options.cancelLabel ?? cancelLabel}
               </Button>
               <Button
                 variant={options.destructive ? 'danger' : 'primary'}
+                className="h-11 w-full sm:h-10 sm:w-auto"
                 onClick={() => settle(true)}
               >
                 {options.confirmLabel ?? confirmLabel}

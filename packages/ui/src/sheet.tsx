@@ -46,7 +46,8 @@ export function SheetContent({
       <DialogPrimitive.Overlay className="fixed inset-0 z-overlay bg-ink-900/40 backdrop-blur-[1px] data-[state=open]:animate-fade-in data-[state=closed]:animate-fade-out" />
       <DialogPrimitive.Content
         className={cn(
-          'fixed inset-y-0 z-overlay flex w-72 max-w-[85vw] flex-col overflow-y-auto bg-white shadow-lg',
+          'fixed inset-y-0 z-overlay flex w-72 max-w-[85vw] flex-col overflow-y-auto overscroll-contain bg-white shadow-lg',
+          'pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]',
           side === 'start'
             ? 'start-0 border-e border-ink-200 rtl:[--sheet-offset:100%]'
             : 'end-0 border-s border-ink-200 [--sheet-offset:100%] rtl:[--sheet-offset:-100%]',
@@ -61,6 +62,7 @@ export function SheetContent({
           if (isInsideFloatingPanel(event.detail.originalEvent)) event.preventDefault();
           onFocusOutside?.(event);
         }}
+        data-scroll-panel
         {...props}
       >
         <div className="flex items-center justify-between gap-4 border-b border-ink-100 px-4 py-3">
@@ -73,7 +75,7 @@ export function SheetContent({
           <DialogPrimitive.Close
             aria-label={closeLabel}
             className={cn(
-              'rounded-md p-1 text-ink-500 transition-colors hover:bg-ink-100 hover:text-ink-800',
+              '-my-2 -me-2 flex h-10 w-10 items-center justify-center rounded-md text-ink-500 transition-colors hover:bg-ink-100 hover:text-ink-800 active:bg-ink-200',
               focusRing,
             )}
           >

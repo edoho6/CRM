@@ -24,7 +24,7 @@ export function InventoryNav({ counts }: { counts?: Partial<Record<StockTab, num
   const activeTab = (searchParams.get('tab') ?? 'in_stock') as StockTab;
 
   return (
-    <div className="mb-5 flex flex-wrap items-center gap-2">
+    <div className="flex flex-wrap items-center gap-2">
       <SegmentedLinks
         as="nav"
         label={t('inventory')}

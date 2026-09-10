@@ -45,7 +45,7 @@ export function Toggle({
       disabled={disabled}
       onClick={() => onChange(!checked)}
       className={cn(
-        'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors',
+        'relative inline-flex h-8 w-13 shrink-0 items-center rounded-full transition-colors duration-(--duration-base)',
         focusRing,
         'disabled:cursor-not-allowed disabled:opacity-50',
         checked ? 'bg-accent' : 'bg-ink-300',
@@ -58,7 +58,9 @@ export function Toggle({
       <span
         aria-hidden
         className={cn(
-          'absolute left-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform',
+          // `bg-accent-fg`, not `bg-white`: the knob must stay white in the
+          // dark theme, where `--color-white` is the card surface.
+          'absolute left-0.5 h-7 w-7 rounded-full bg-accent-fg shadow-sm transition-transform duration-(--duration-spring) ease-(--ease-spring)',
           checked && 'translate-x-5',
         )}
       />

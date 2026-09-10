@@ -38,8 +38,7 @@ export default async function ReceiveStockPage({
 
   return (
     <>
-      <PageHeader title={t('receive')} />
-      <InventoryNav />
+      <PageHeader title={t('receive')} below={<InventoryNav />} />
       <ReceiveForm herbs={herbs ?? []} suppliers={suppliers ?? []} defaultHerbId={herb} />
     </>
   );

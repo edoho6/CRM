@@ -20,6 +20,9 @@ export { Combobox, type ComboboxOption, type ComboboxValue } from './combobox';
 export { Card, CardHeader, CardTitle, CardBody, CardFooter, Section } from './card';
 export { PageHeader } from './page-header';
 export { PageBody } from './page-body';
+export { List, ListRow } from './list';
+export { Stat } from './stat';
+export { FormActionBar } from './form-action-bar';
 export { ArrangeToggle } from './arrange-toggle';
 export {
   Badge,
@@ -35,6 +38,8 @@ export { Skeleton, SkeletonText, SkeletonCard, SkeletonTable, SkeletonPage } fro
 export { ToastProvider, useToast, type ToastOptions, type ToastApi } from './toast';
 export { ConfirmProvider, useConfirm, type ConfirmOptions } from './confirm-dialog';
 export { Dialog, DialogTrigger, DialogClose, DialogContent, DialogFooter } from './dialog';
+export { useSwipeDismiss } from './use-swipe-dismiss';
+export { shouldDismiss, dragOffset, type SwipeSample } from './swipe-math';
 export { Sheet, SheetTrigger, SheetClose, SheetContent } from './sheet';
 export {
   UiDirectionProvider,

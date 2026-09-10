@@ -46,10 +46,14 @@ export function PageHeader({
         )}
       >
         <div className="min-w-0">
+          {/* Large on a phone, where it is the screen's own title and folds
+              into the top bar as it scrolls (the bar watches
+              `data-page-title`); the size the app has always had from `sm`. */}
           <h1
+            data-page-title={size === 'page' ? '' : undefined}
             className={cn(
               'font-semibold text-ink-900',
-              size === 'print' ? 'text-2xl' : 'text-xl',
+              size === 'print' ? 'text-2xl' : size === 'page' ? 'text-2xl sm:text-xl' : 'text-xl',
             )}
           >
             {title}

@@ -61,8 +61,8 @@ export default async function BatchesPage({ params }: { params: Promise<{ locale
             </Link>
           </Button>
         }
+        below={<InventoryNav />}
       />
-      <InventoryNav />
 
       {batches.length === 0 ? (
         <EmptyState

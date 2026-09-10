@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import {
   DndContext,
@@ -36,7 +36,6 @@ import {
   Building2,
   Leaf,
   LogOut,
-  Menu,
   Receipt,
   Settings,
   Sparkles,
@@ -53,6 +52,9 @@ import { LinkPending } from './link-pending';
 import { GlobalSearch } from '@/features/quick-bar/global-search';
 import { QuickCreateMenu } from '@/features/quick-bar/quick-create-menu';
 import { BackButton } from './back-button';
+import { BottomTabBar } from './bottom-tab-bar';
+import { CollapsingTitle } from './collapsing-title';
+import { PREF_KEYS } from '@/lib/prefs';
 import { OpenFilesBar } from '@/features/workspace/open-files-bar';
 import { clearOpenFiles } from '@/features/workspace/open-files';
 
@@ -61,9 +63,9 @@ import { clearOpenFiles } from '@/features/workspace/open-files';
  * they answer different questions: "what is this herb" versus "have I got any".
  * A clinic that holds no stock never sees the second one.
  */
-const SIDEBAR_STORAGE_KEY = 'herbalist-sidebar-collapsed';
+const SIDEBAR_STORAGE_KEY = PREF_KEYS.sidebarCollapsed;
 /** The order of the menu, as this browser's user last arranged it. */
-const NAV_ORDER_STORAGE_KEY = 'herbalist-nav-order';
+const NAV_ORDER_STORAGE_KEY = PREF_KEYS.navOrder;
 
 type NavHref = (typeof NAV_ITEMS)[number]['href'];
 
@@ -156,26 +158,34 @@ export function AppShell({
 
   // Whether the sidebar is collapsed belongs to this browser, not to the
   // account: the same practitioner wants it open on a laptop and folded away on
-  // a small screen where the herb table needs every pixel. Starts expanded and
-  // corrects itself after mount, so the server and the first client render agree.
+  // a small screen where the herb table needs every pixel.
+  //
+  // The server renders it open, and the first client render must agree. The
+  // stored choice is read from the attribute the pre-paint script wrote on
+  // <html> (see lib/theme.ts) — in a layout effect, before paint — and the
+  // stylesheet has already drawn the folded panel from that same attribute, so
+  // the page never opens wide and then slams shut. Toggling writes the
+  // attribute back, which is what lets the stylesheet let go.
   const [collapsed, setCollapsed] = useState(false);
 
-  useEffect(() => {
-    try {
-      if (localStorage.getItem(SIDEBAR_STORAGE_KEY) === '1') setCollapsed(true);
-    } catch {
-      // Site data blocked. The sidebar simply opens expanded every time.
-    }
+  useLayoutEffect(() => {
+    setCollapsed(document.documentElement.dataset.sidebar === 'collapsed');
   }, []);
 
-  useEffect(() => {
-    try {
-      if (collapsed) localStorage.setItem(SIDEBAR_STORAGE_KEY, '1');
-      else localStorage.removeItem(SIDEBAR_STORAGE_KEY);
-    } catch {
-      // As above — not remembering is the whole of the failure.
-    }
-  }, [collapsed]);
+  const toggleCollapsed = useCallback(() => {
+    setCollapsed((current) => {
+      const next = !current;
+      if (next) document.documentElement.dataset.sidebar = 'collapsed';
+      else delete document.documentElement.dataset.sidebar;
+      try {
+        if (next) localStorage.setItem(SIDEBAR_STORAGE_KEY, '1');
+        else localStorage.removeItem(SIDEBAR_STORAGE_KEY);
+      } catch {
+        // Site data blocked — not remembering is the whole of the failure.
+      }
+      return next;
+    });
+  }, []);
 
   /*
    * The menu in the order this person keeps it.
@@ -284,16 +294,19 @@ export function AppShell({
               onClick={() => setMobileOpen(false)}
               aria-current={isActive ? 'page' : undefined}
               title={iconOnly ? label : undefined}
+              data-sidebar-row
               className={cn(
-                'flex items-center rounded-lg py-2 text-sm font-medium transition-colors',
+                'flex min-h-10 items-center rounded-lg py-2 text-sm font-medium transition-colors active:bg-ink-200',
                 iconOnly ? 'justify-center px-0' : 'gap-2.5 px-3',
-                isActive ? 'bg-accent text-accent-fg' : 'text-ink-700 hover:bg-ink-100',
+                isActive ? 'bg-accent text-accent-fg active:bg-accent-strong' : 'text-ink-700 hover:bg-ink-100',
               )}
             >
               <item.icon className="h-4 w-4 shrink-0" aria-hidden />
               {/* The label stays in the accessibility tree when collapsed —
                   a rail of unlabelled icons is unusable with a screen reader. */}
-              <span className={iconOnly ? 'sr-only' : 'truncate'}>{label}</span>
+              <span data-sidebar-expanded-only className={iconOnly ? 'sr-only' : 'truncate'}>
+                {label}
+              </span>
               {/* A dot that appears when this link is the one being waited
                   on. Hidden in the icon rail, where there is no room. */}
               {!iconOnly ? <LinkPending className="ms-auto" /> : null}
@@ -333,6 +346,7 @@ export function AppShell({
           and the navigation scrolls inside it, so the foot is always at the
           foot. */}
       <aside
+        data-sidebar-panel
         className={cn(
           // `sticky` is a positioned value, so it already establishes the
           // containing block the collapse handle is placed against.
@@ -342,6 +356,7 @@ export function AppShell({
         aria-label={t('sidebar')}
       >
         <div
+          data-sidebar-row
           className={cn(
             'flex items-center gap-2.5 border-b border-ink-100 py-3.5',
             collapsed ? 'justify-center px-2' : 'px-4',
@@ -355,19 +370,23 @@ export function AppShell({
               putting the name in both places said it twice. */}
           {!collapsed ? (
             <>
-              <span className="min-w-0 truncate text-sm font-semibold text-ink-900">
+              <span
+                data-sidebar-expanded-only
+                className="min-w-0 truncate text-sm font-semibold text-ink-900"
+              >
                 {clinicName}
               </span>
               {/* Beside the menu it arranges. A switch, not a mode buried in
                   settings: press it, drag, press it again. */}
-              <ArrangeToggle
-                iconOnly
-                editing={navEditing}
-                onToggle={() => setNavEditing((value) => !value)}
-                arrangeLabel={t('arrangeMenu')}
-                doneLabel={t('doneArranging')}
-                className="ms-auto shrink-0"
-              />
+              <span data-sidebar-expanded-only className="ms-auto flex shrink-0">
+                <ArrangeToggle
+                  iconOnly
+                  editing={navEditing}
+                  onToggle={() => setNavEditing((value) => !value)}
+                  arrangeLabel={t('arrangeMenu')}
+                  doneLabel={t('doneArranging')}
+                />
+              </span>
             </>
           ) : null}
         </div>
@@ -397,11 +416,16 @@ export function AppShell({
               asChild
               variant="ghost"
               size="sm"
+              data-sidebar-row
               className={cn('w-full', collapsed ? 'justify-center px-0' : 'justify-start')}
             >
               <Link href="/platform" title={collapsed ? t('platform') : undefined}>
                 <Building2 className="h-4 w-4" />
-                {!collapsed ? t('platform') : <span className="sr-only">{t('platform')}</span>}
+                {!collapsed ? (
+                  <span data-sidebar-expanded-only>{t('platform')}</span>
+                ) : (
+                  <span className="sr-only">{t('platform')}</span>
+                )}
               </Link>
             </Button>
           ) : null}
@@ -410,11 +434,16 @@ export function AppShell({
             asChild
             variant="ghost"
             size="sm"
+            data-sidebar-row
             className={cn('w-full', collapsed ? 'justify-center px-0' : 'justify-start')}
           >
             <Link href="/settings" title={collapsed ? t('settings') : undefined}>
               <Settings className="h-4 w-4" />
-              {!collapsed ? t('settings') : <span className="sr-only">{t('settings')}</span>}
+              {!collapsed ? (
+                <span data-sidebar-expanded-only>{t('settings')}</span>
+              ) : (
+                <span className="sr-only">{t('settings')}</span>
+              )}
             </Link>
           </Button>
 
@@ -424,11 +453,16 @@ export function AppShell({
             asChild
             variant="ghost"
             size="sm"
+            data-sidebar-row
             className={cn('w-full', collapsed ? 'justify-center px-0' : 'justify-start')}
           >
             <Link href="/account" title={collapsed ? t('account') : undefined}>
               <UserCog className="h-4 w-4" />
-              {!collapsed ? t('account') : <span className="sr-only">{t('account')}</span>}
+              {!collapsed ? (
+                <span data-sidebar-expanded-only>{t('account')}</span>
+              ) : (
+                <span className="sr-only">{t('account')}</span>
+              )}
             </Link>
           </Button>
 
@@ -436,12 +470,13 @@ export function AppShell({
             asChild
             variant="ghost"
             size="sm"
+            data-sidebar-row
             className={cn('w-full', collapsed ? 'justify-center px-0' : 'justify-start')}
           >
             <Link href="/accessibility" title={collapsed ? t('accessibility') : undefined}>
               <Accessibility className="h-4 w-4" />
               {!collapsed ? (
-                t('accessibility')
+                <span data-sidebar-expanded-only>{t('accessibility')}</span>
               ) : (
                 <span className="sr-only">{t('accessibility')}</span>
               )}
@@ -464,7 +499,7 @@ export function AppShell({
             for a screen reader and on hover for everyone else. */}
         <button
           type="button"
-          onClick={() => setCollapsed((value) => !value)}
+          onClick={toggleCollapsed}
           aria-expanded={!collapsed}
           aria-controls="sidebar-nav"
           aria-label={collapsed ? t('expandSidebar') : t('collapseSidebar')}
@@ -497,25 +532,22 @@ export function AppShell({
         ) : null}
 
         {/* Top bar, on every screen and every size: the quick-create "+" and the
-            global search live here so they are never more than one click away. */}
-        <header className="sticky top-0 z-sticky flex h-15 items-center justify-between gap-2 border-b border-ink-200 bg-white px-4">
-          <div className="flex min-w-0 items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="lg:hidden"
-              onClick={() => setMobileOpen((open) => !open)}
-              aria-expanded={mobileOpen}
-              aria-label={t('mainMenu')}
-            >
-              <Menu className="h-5 w-5" />
-            </Button>
-            <span className="truncate text-sm font-semibold text-ink-900 lg:hidden">
-              {clinicName}
-            </span>
-            {/* Beside the menu rather than in the page: every screen has one,
+            global search live here so they are never more than one click away.
+            On a phone the page's title folds into it once the large title
+            has scrolled away; until then it names the clinic. `relative` is
+            for the search, which opens across the whole bar there. */}
+        <header
+          data-top-bar
+          className="relative sticky top-0 z-sticky flex h-15 items-center justify-between gap-2 border-b border-ink-200 bg-white/90 px-3 backdrop-blur-md sm:px-4"
+        >
+          <div className="flex min-w-0 flex-1 items-center gap-1 sm:gap-2">
+            {/* Beside the title rather than in the page: every screen has one,
                 and a control that moves about is a control you hunt for. */}
             <BackButton />
+            <CollapsingTitle
+              className="flex-1"
+              fallback={<span className="lg:hidden">{clinicName}</span>}
+            />
           </div>
           <div className="flex shrink-0 items-center gap-1.5">
             <GlobalSearch />
@@ -534,7 +566,7 @@ export function AppShell({
             hand-written 52px, so the strip stuck nine pixels *under* the
             header and was clipped on every scroll. A fixed header height is
             the honest fix: one number, used twice. */}
-        <div className="sticky top-15 z-20">
+        <div data-open-files-slot className="sticky top-15 z-sticky">
           <OpenFilesBar />
         </div>
 
@@ -584,14 +616,21 @@ export function AppShell({
               </Button>
             </form>
           </SheetContent>
+          {/* The phone's tab bar, inside the Sheet so its "more" is the
+              drawer's trigger and gets focus back when the drawer closes.
+              Fixed to the window's foot, so its place in the tree is only
+              its place in the reading order: after the header, before the
+              page, like any navigation. */}
+          <BottomTabBar />
         </Sheet>
 
         {/* `tabIndex={-1}` so the skip link can move focus here, not merely
-            scroll to it — otherwise the next Tab would resume from the top. */}
+            scroll to it — otherwise the next Tab would resume from the top.
+            The bottom padding clears the phone's tab bar and home indicator. */}
         <main
           id="main-content"
           tabIndex={-1}
-          className="min-w-0 flex-1 p-4 sm:p-6 focus:outline-none"
+          className="min-w-0 flex-1 p-4 pb-[calc(var(--bottom-bar,0px)+env(safe-area-inset-bottom)+1rem)] sm:p-6 sm:pb-[calc(var(--bottom-bar,0px)+env(safe-area-inset-bottom)+1.5rem)] focus:outline-none"
         >
           {children}
         </main>

@@ -156,7 +156,9 @@ export function ToastProvider({
       <div
         role="status"
         aria-live="polite"
-        className="pointer-events-none fixed bottom-20 end-4 z-toast flex w-[min(24rem,calc(100vw-2rem))] flex-col gap-2"
+        // Clear of a phone's tab bar (`--bottom-bar`, set by the app that has
+        // one) and of the home indicator; otherwise a rem above the edge.
+        className="pointer-events-none fixed end-4 bottom-[calc(var(--bottom-bar,0px)+env(safe-area-inset-bottom)+1rem)] z-toast flex w-[min(24rem,calc(100dvw-2rem))] flex-col gap-2"
       >
         {items.map((item) => (
           <ToastItem
@@ -228,7 +230,7 @@ function ToastItem({
         aria-label={closeLabel}
         onClick={onDismiss}
         className={cn(
-          '-me-1 -mt-0.5 shrink-0 rounded-md p-1 opacity-70 transition-opacity hover:opacity-100',
+          '-me-2 -my-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-md opacity-70 transition-opacity hover:opacity-100',
           focusRing,
         )}
       >

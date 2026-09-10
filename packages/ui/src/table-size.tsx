@@ -11,8 +11,8 @@ import { useUiLabels } from './ui-labels';
  *
  * Three steps: tight rows for scanning two hundred patients, the default,
  * and roomy rows for a screen read at arm's length or with larger type. The
- * choice is an attribute on the table's wrapper; the stylesheet does the
- * rest (see `[data-table-size]` in the app's globals). One preference, not
+ * choice is an attribute on `<html>`; the stylesheet does the rest (see
+ * `[data-table-size]` in base.css). One preference, not
  * one per table: a person who wants bigger rows wants them everywhere, and a
  * setting to rediscover on each screen would be a setting never used.
  */
@@ -35,15 +35,16 @@ function storedSize(): TableSize {
 
 export function TableSizeControl({ className }: { className?: string }) {
   const labels = useUiLabels().tableSize;
-  const anchor = React.useRef<HTMLDivElement>(null);
   const [size, setSize] = React.useState<TableSize>('regular');
 
   React.useEffect(() => {
     const apply = () => {
       const next = storedSize();
       setSize(next);
-      // The wrapper carries the attribute, so the rule reaches the table's cells.
-      anchor.current?.closest('[data-table-wrapper]')?.setAttribute('data-table-size', next);
+      // One attribute on <html> reaches every table; the app's pre-paint
+      // script writes the same attribute before React runs, so the first
+      // paint already has the remembered rows.
+      document.documentElement.dataset.tableSize = next;
     };
     apply();
     window.addEventListener(CHANGE_EVENT, apply);
@@ -67,7 +68,6 @@ export function TableSizeControl({ className }: { className?: string }) {
 
   return (
     <div
-      ref={anchor}
       role="group"
       aria-label={labels.title}
       className={cn(
@@ -87,7 +87,7 @@ export function TableSizeControl({ className }: { className?: string }) {
             title={labels[candidate]}
             onClick={() => choose(candidate)}
             className={cn(
-              'rounded p-1 transition-colors',
+              'flex h-8 w-8 items-center justify-center rounded-md transition-colors pointer-coarse:h-11 pointer-coarse:w-11',
               selected
                 ? 'bg-ink-100 text-ink-900'
                 : 'text-ink-500 hover:bg-ink-100 hover:text-ink-800',

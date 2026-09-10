@@ -91,7 +91,7 @@ export function PatientTabs({
             {encounterCount > 0 ? (
               <span
                 aria-hidden
-                className="inline-flex min-w-5 items-center justify-center rounded-full bg-ink-100 px-1.5 text-xs font-semibold text-ink-700 tabular-nums group-data-[state=active]:bg-white/25 data-[state=active]:bg-white/25"
+                className="inline-flex min-w-5 items-center justify-center rounded-full bg-ink-100 px-1.5 text-xs font-semibold text-ink-700 tabular-nums group-data-[state=active]:bg-accent-fg/25 data-[state=active]:bg-accent-fg/25"
               >
                 {encounterCount}
               </span>

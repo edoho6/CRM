@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { ChevronRight } from 'lucide-react';
 import { cn } from '@clinic/ui';
-import { useRouter } from '@clinic/i18n/navigation';
+import { usePathname, useRouter } from '@clinic/i18n/navigation';
+import { TAB_ROOTS } from './bottom-tab-bar';
 
 /**
  * Back, without reaching for the browser's own.
@@ -28,6 +29,9 @@ import { useRouter } from '@clinic/i18n/navigation';
 export function BackButton({ className }: { className?: string }) {
   const t = useTranslations('common');
   const router = useRouter();
+  const pathname = usePathname();
+  // A tab's own screen has a tab bar under it; "back" there is the bar.
+  const onTabRoot = (TAB_ROOTS as readonly string[]).includes(pathname);
 
   // Rendered only after mount: the server has no history, and drawing the
   // button and then removing it is a flash of a control that was never real.
@@ -44,15 +48,16 @@ export function BackButton({ className }: { className?: string }) {
       aria-hidden={!canGoBack}
       tabIndex={canGoBack ? undefined : -1}
       className={cn(
-        'no-print inline-flex items-center gap-1 rounded-md px-2 py-1 text-sm font-medium',
-        'text-ink-600 transition-colors hover:bg-ink-100 hover:text-ink-900',
+        'no-print inline-flex min-h-10 shrink-0 items-center gap-1 rounded-md px-2 py-1 text-sm font-medium',
+        'text-ink-600 transition-colors hover:bg-ink-100 hover:text-ink-900 active:bg-ink-200',
         'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus',
         !canGoBack && 'invisible',
+        onTabRoot && 'max-lg:hidden',
         className,
       )}
     >
       <ChevronRight aria-hidden className="h-4 w-4 shrink-0 ltr:rotate-180" />
-      {t('back')}
+      <span className="max-sm:sr-only">{t('back')}</span>
     </button>
   );
 }

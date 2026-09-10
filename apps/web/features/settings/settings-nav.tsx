@@ -31,7 +31,6 @@ export function SettingsNav() {
     <SegmentedLinks
       as="nav"
       label={t('label')}
-      className="mb-5"
       items={SECTIONS.map((section) => ({
         href: section.href,
         label: t(section.labelKey),

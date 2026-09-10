@@ -8,7 +8,7 @@ import {
   MapPin,
   Palette,
 } from 'lucide-react';
-import { Collapsible } from '@clinic/ui';
+import { Collapsible, PageBody } from '@clinic/ui';
 import { Link } from '@clinic/i18n/navigation';
 import type {
   AppointmentType,
@@ -111,13 +111,12 @@ export default async function AccountPage({ params }: { params: Promise<{ locale
 
   return (
     <>
-      <PageHeader title={t('title')} description={t('subtitle')} />
-      <SettingsNav />
+      <PageHeader title={t('title')} description={t('subtitle')} below={<SettingsNav />} />
 
       {/* Collapsed by default, except the one that gates a printed document.
           Six open panels made a page that had to be scrolled to find anything;
           six headings make a page you read in one glance and open one of. */}
-      <div className="max-w-5xl space-y-3">
+      <PageBody width="wide" className="space-y-3">
         <p className="text-xs text-ink-600">{tSections('hint')}</p>
 
         {/* Open on arrival, because everything printed for a patient carries
@@ -215,7 +214,7 @@ export default async function AccountPage({ params }: { params: Promise<{ locale
             {t('toSettings')}
           </Link>
         </Collapsible>
-      </div>
+      </PageBody>
     </>
   );
 }

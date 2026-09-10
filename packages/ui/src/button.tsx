@@ -5,15 +5,21 @@ import { cn } from './cn';
 import { focusRing } from './focus';
 
 /**
- * Every enabled button lifts slightly and casts a shadow on hover, and settles
- * back on press. That is the affordance: the movement answers "can I click
- * this?" before the click, and a disabled button stays flat so the answer is
- * visibly no.
+ * Every enabled button lifts slightly and casts a shadow on hover, and
+ * settles — a touch smaller — on press. That is the affordance: the movement
+ * answers "can I click this?" before the click, the press answers "you did",
+ * and a disabled button stays flat so the answer is visibly no. Tailwind
+ * wraps `hover:` in `@media (hover: hover)`, so a finger never leaves a
+ * button stuck in its hovered state.
+ *
+ * `icon` is 40px like the default button beside it; `icon-sm` is the 32px
+ * one for a table row. On a coarse pointer every size grows to the 44px a
+ * finger needs.
  */
 const buttonVariants = cva(
   'inline-flex items-center justify-center gap-2 rounded-lg font-medium select-none ' +
-    'transition-all duration-150 ease-out cursor-pointer ' +
-    'hover:-translate-y-px hover:shadow-md active:translate-y-0 active:shadow-sm ' +
+    'transition-all duration-(--duration-fast) ease-(--ease-standard) cursor-pointer ' +
+    'hover:-translate-y-px hover:shadow-md active:translate-y-0 active:scale-[0.98] active:shadow-xs ' +
     `${focusRing} ` +
     'disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none disabled:translate-y-0 ' +
     'disabled:cursor-not-allowed ' +
@@ -28,13 +34,14 @@ const buttonVariants = cva(
           'bg-white text-ink-800 border border-ink-200 hover:bg-ink-50 hover:border-ink-300 active:bg-ink-100 shadow-xs',
         ghost: 'text-ink-700 hover:bg-ink-100 hover:shadow-sm active:bg-ink-200',
         danger: 'bg-danger text-accent-fg hover:bg-danger-strong active:bg-danger-strong shadow-xs',
-        link: 'text-jade-700 underline-offset-4 hover:underline hover:translate-y-0 hover:shadow-none',
+        link: 'text-jade-700 underline-offset-4 hover:underline hover:translate-y-0 hover:shadow-none active:scale-100',
       },
       size: {
-        sm: 'h-8 px-3 text-sm',
-        md: 'h-10 px-4 text-sm',
+        sm: 'h-8 px-3 text-sm pointer-coarse:min-h-11',
+        md: 'h-10 px-4 text-sm pointer-coarse:min-h-11',
         lg: 'h-11 px-5 text-base',
-        icon: 'h-9 w-9',
+        icon: 'h-10 w-10 pointer-coarse:min-h-11 pointer-coarse:min-w-11',
+        'icon-sm': 'h-8 w-8 pointer-coarse:min-h-11 pointer-coarse:min-w-11',
       },
     },
     defaultVariants: {

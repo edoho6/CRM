@@ -38,8 +38,7 @@ export default async function SuppliersPage({ params }: { params: Promise<{ loca
 
   return (
     <>
-      <PageHeader title={t('title')} actions={<NewSupplierDialog />} />
-      <InventoryNav />
+      <PageHeader title={t('title')} actions={<NewSupplierDialog />} below={<InventoryNav />} />
 
       {suppliers.length === 0 ? (
         <EmptyState

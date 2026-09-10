@@ -31,9 +31,9 @@ export const segmentGroupClasses =
 /** One segment. Shared with the link-based variant so the two match. */
 export function segmentClasses(selected: boolean, size: SegmentedSize, iconOnly = false) {
   return cn(
-    'inline-flex items-center justify-center gap-1.5 rounded-md font-medium whitespace-nowrap transition-colors',
-    size === 'sm' ? 'h-8 px-2.5 text-xs' : 'h-9 px-3 text-sm',
-    iconOnly && (size === 'sm' ? 'w-8 px-0' : 'w-9 px-0'),
+    'inline-flex items-center justify-center gap-1.5 rounded-md font-medium whitespace-nowrap transition-[color,background-color,scale] duration-(--duration-fast) active:scale-[0.98]',
+    size === 'sm' ? 'h-8 px-2.5 text-xs' : 'h-10 px-3 text-sm',
+    iconOnly && (size === 'sm' ? 'w-8 px-0' : 'w-10 px-0'),
     selected ? 'bg-accent text-accent-fg' : 'text-ink-600 hover:bg-ink-50',
     focusRing,
   );
@@ -45,7 +45,7 @@ export function SegmentCount({ value, selected }: { value: number; selected: boo
     <span
       className={cn(
         'rounded-full px-1.5 text-xs tabular-nums',
-        selected ? 'bg-white/20' : 'bg-ink-100 text-ink-600',
+        selected ? 'bg-accent-fg/20' : 'bg-ink-100 text-ink-600',
       )}
     >
       {value}

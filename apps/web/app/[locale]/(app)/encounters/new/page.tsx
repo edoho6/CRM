@@ -1,4 +1,5 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
+import { PageBody } from '@clinic/ui';
 import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
 import { NewEncounterPicker, type TodayVisit } from '@/features/encounters/new-encounter-picker';
@@ -61,9 +62,9 @@ export default async function NewEncounterPage({ params }: { params: Promise<{ l
   return (
     <>
       <PageHeader title={t('newPicker.title')} description={t('newPicker.subtitle')} />
-      <div className="max-w-3xl">
+      <PageBody width="narrow">
         <NewEncounterPicker patients={patients ?? []} today={today} />
-      </div>
+      </PageBody>
     </>
   );
 }

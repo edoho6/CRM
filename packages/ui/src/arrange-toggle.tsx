@@ -36,12 +36,12 @@ export function ArrangeToggle({
     <Button
       type="button"
       variant={editing ? 'primary' : 'secondary'}
-      size={iconOnly ? 'icon' : 'sm'}
+      size={iconOnly ? 'icon-sm' : 'sm'}
       aria-pressed={editing}
       aria-label={iconOnly ? label : undefined}
       title={iconOnly ? label : undefined}
       onClick={onToggle}
-      className={cn(iconOnly && 'h-8 w-8', className)}
+      className={className}
     >
       <Icon className="h-4 w-4" aria-hidden />
       {iconOnly ? null : label}

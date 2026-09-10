@@ -135,7 +135,7 @@ export function FormFields({
                       return (
                         <label
                           key={option}
-                          className="flex items-center gap-2 text-sm text-ink-800"
+                          className="flex min-h-10 items-center gap-2.5 py-1 text-sm text-ink-800"
                         >
                           <input
                             type={multi ? 'checkbox' : 'radio'}
@@ -155,7 +155,7 @@ export function FormFields({
                                   : current.filter((entry) => entry !== option),
                               );
                             }}
-                            className="h-5 w-5 border-ink-300"
+                            className="h-5 w-5 shrink-0 accent-accent"
                           />
                           {option}
                         </label>
@@ -168,7 +168,7 @@ export function FormFields({
                     {[true, false].map((option) => (
                       <label
                         key={String(option)}
-                        className="flex items-center gap-2 text-sm text-ink-800"
+                        className="flex min-h-10 items-center gap-2.5 py-1 text-sm text-ink-800"
                       >
                         <input
                           type="radio"
@@ -176,7 +176,7 @@ export function FormFields({
                           disabled={readOnly}
                           checked={value === option}
                           onChange={() => set(field.id, option)}
-                          className="h-5 w-5 border-ink-300"
+                          className="h-5 w-5 shrink-0 accent-accent"
                         />
                         {option ? labels.yes : labels.no}
                       </label>

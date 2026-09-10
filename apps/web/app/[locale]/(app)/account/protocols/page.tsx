@@ -1,5 +1,6 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import type { TreatmentProtocol } from '@clinic/db/types';
+import { PageBody } from '@clinic/ui';
 import { PageHeader } from '@/components/app-shell';
 import { SettingsNav } from '@/features/settings/settings-nav';
 import { getClinicScope } from '@/lib/session';
@@ -36,11 +37,10 @@ export default async function ProtocolsPage({
 
   return (
     <>
-      <PageHeader title={t('title')} description={t('subtitle')} />
-      <SettingsNav />
-      <div className="max-w-3xl">
+      <PageHeader title={t('title')} description={t('subtitle')} below={<SettingsNav />} />
+      <PageBody width="narrow">
         <ProtocolsManager protocols={data ?? []} />
-      </div>
+      </PageBody>
     </>
   );
 }

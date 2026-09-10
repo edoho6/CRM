@@ -354,6 +354,23 @@ const flows = {
     await page.keyboard.press('Escape');
     return { ok: focused === 'INPUT', detail: `focus on ${focused}` };
   },
+  // On a phone a dialog is a sheet; pulling its handle down closes it.
+  async drawerSwipe(page) {
+    const dialog = page.locator('[role="dialog"]').first();
+    await dialog.waitFor({ timeout: 5_000 });
+    const handle = page.locator('[data-drawer-handle]').first();
+    const box = await handle.boundingBox();
+    if (!box) return { ok: false, detail: 'no drawer handle on the sheet' };
+    const x = box.x + box.width / 2;
+    const y = box.y + box.height / 2;
+    await page.mouse.move(x, y);
+    await page.mouse.down();
+    await page.mouse.move(x, y + 40, { steps: 4 });
+    await page.mouse.move(x, y + 240, { steps: 8 });
+    await page.mouse.up();
+    const gone = await dialog.waitFor({ state: 'detached', timeout: 3_000 }).then(() => true).catch(() => false);
+    return { ok: gone, detail: gone ? 'pulled the sheet closed' : 'sheet still open after the pull' };
+  },
   async newAppointmentDialog(page) {
     const dialog = page.locator('[role="dialog"]');
     await dialog.first().waitFor({ timeout: 5_000 });
@@ -789,6 +806,74 @@ const flows = {
     const theme = await page.evaluate(() => document.documentElement.dataset.theme);
     return { ok: theme === 'dark', detail: `data-theme=${theme}` };
   },
+  async phoneTabBar(page) {
+    // Four tabs and "more" at the bottom of a phone's screen; "more" opens
+    // the drawer, Escape closes it and hands focus back to the button.
+    const bar = page.locator('[data-tab-bar]');
+    if ((await bar.count()) !== 1) return { ok: false, detail: 'no tab bar' };
+    const box = await bar.boundingBox();
+    const viewport = page.viewportSize();
+    const atBottom = Boolean(box && viewport && Math.abs(box.y + box.height - viewport.height) < 2);
+    const links = await bar.locator('a').count();
+    const more = bar.locator('button[aria-haspopup="dialog"]');
+    await more.click();
+    const dialog = page.locator('[role="dialog"]').first();
+    await dialog.waitFor({ timeout: 5_000 });
+    await page.waitForTimeout(400);
+    await page.keyboard.press('Escape');
+    const gone = await dialog.waitFor({ state: 'detached', timeout: 3_000 }).then(() => true).catch(() => false);
+    await page.waitForTimeout(200);
+    const focusBack = await page.evaluate(() => document.activeElement?.getAttribute('aria-haspopup') === 'dialog');
+    const ok = atBottom && links === 4 && gone && focusBack;
+    return { ok, detail: `at bottom ${atBottom}, tabs ${links}, drawer closed ${gone}, focus back ${focusBack}` };
+  },
+  async largeTitleCollapses(page) {
+    // Scrolled down, the page's title shows in the top bar; scrolled back, it
+    // does not. The heading itself stays the page's one h1 throughout.
+    const heading = await page.locator('[data-page-title]').first().textContent().catch(() => null);
+    const before = await page.locator('[data-collapsing-title][data-collapsed]').count();
+    await page.evaluate(() => window.scrollTo(0, 800));
+    await page.waitForTimeout(500);
+    const scrolled = await page.evaluate(() => window.scrollY);
+    if (scrolled < 200) return { ok: true, detail: `page too short to scroll (${scrolled}px)` };
+    const shown = page.locator('[data-collapsing-title][data-collapsed]');
+    const after = await shown.count();
+    const text = after ? (await shown.first().textContent()) ?? '' : '';
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.waitForTimeout(500);
+    const again = await page.locator('[data-collapsing-title][data-collapsed]').count();
+    const ok = before === 0 && after === 1 && again === 0 && text.trim() === (heading ?? '').trim();
+    return { ok, detail: `collapsed before ${before}, after ${after}, back ${again}; "${text.trim()}" vs "${(heading ?? '').trim()}"` };
+  },
+  async sidebarNoShift(page) {
+    // The folded sidebar is folded before React runs (the width was measured
+    // at domcontentloaded, in `before`), and stays folded after.
+    const early = page.__sidebarEarly ?? null;
+    const late = await page.evaluate(() => {
+      const panel = document.querySelector('[data-sidebar-panel]');
+      return { width: panel ? Math.round(panel.getBoundingClientRect().width) : null, attr: document.documentElement.dataset.sidebar ?? null };
+    });
+    const ok = early?.width === 56 && late.width === 56 && late.attr === 'collapsed';
+    return { ok, detail: `width at domcontentloaded ${early?.width ?? '?'} (attr ${early?.attr ?? '?'}), after load ${late.width} (attr ${late.attr})` };
+  },
+  async phoneSearchOverlay(page) {
+    // On a phone the search takes the whole top bar while it is open.
+    const trigger = page.locator('[data-top-bar] button[aria-label="חיפוש מהיר"], [data-top-bar] button[aria-label="Quick search"]').first();
+    if ((await trigger.count()) === 0) return { ok: false, detail: 'no search button in the top bar' };
+    await trigger.click();
+    const input = page.locator('[data-top-bar] input[type="search"], [data-top-bar] input').first();
+    await input.waitFor({ timeout: 3_000 });
+    await page.waitForTimeout(400);
+    const box = await input.boundingBox();
+    const bar = await page.locator('[data-top-bar]').boundingBox();
+    const viewport = page.viewportSize();
+    const wide = Boolean(box && viewport && box.width >= viewport.width * 0.6);
+    const inBar = Boolean(box && bar && box.y >= bar.y && box.y + box.height <= bar.y + bar.height + 1);
+    const focused = await page.evaluate(() => document.activeElement?.tagName === 'INPUT');
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(300);
+    return { ok: wide && inBar && focused, detail: `input width ${Math.round(box?.width ?? 0)} of ${viewport?.width}, inside bar ${inBar}, focused ${focused}` };
+  },
 };
 
 /* ---- main ---------------------------------------------------------------- */
@@ -877,10 +962,33 @@ async function main() {
     await visit(context, { route: '/', locale: 'he', width: desktop, label: 'flow quick-create', after: flows.quickCreate });
     await visit(context, { route: '/', locale: 'he', width: desktop, label: 'flow global-search', after: flows.globalSearch });
     await visit(context, { route: '/calendar?new=1', locale: 'he', width: desktop, label: 'flow new-appointment', after: flows.newAppointmentDialog });
+    await visit(context, { route: '/calendar?new=1', locale: 'he', width: phone, label: 'flow drawer-swipe', after: flows.drawerSwipe });
     await visit(context, { route: '/calendar?view=week', locale: 'he', width: desktop, label: 'flow block-day-escape', after: flows.blockDayThenEscape });
     await visit(context, { route: '/patients', locale: 'he', width: desktop, label: 'flow status-tile-filter', after: flows.statusTileKeepsFilter });
     await visit(context, { route: '/patients', locale: 'he', width: desktop, label: 'flow filters-remembered', after: flows.filtersRemembered });
     if (phone) await visit(context, { route: '/calendar?new=1', locale: 'he', width: phone, label: 'flow phone-dialog-drawer', after: flows.phoneDrawer });
+    if (phone) {
+      await visit(context, { route: '/', locale: 'he', width: phone, label: 'flow phone-tab-bar', after: flows.phoneTabBar });
+      await visit(context, { route: '/patients', locale: 'en', width: phone, label: 'flow phone-tab-bar', after: flows.phoneTabBar });
+      await visit(context, { route: '/reference/herbs', locale: 'he', width: phone, label: 'flow large-title-collapses', after: flows.largeTitleCollapses });
+      await visit(context, { route: '/patients', locale: 'he', width: phone, label: 'flow phone-search-overlay', after: flows.phoneSearchOverlay });
+    }
+    await visit(context, {
+      route: '/patients', locale: 'he', width: desktop, label: 'flow sidebar-no-shift',
+      before: async (page) => {
+        await page.addInitScript(() => localStorage.setItem('herbalist-sidebar-collapsed', '1'));
+        page.once('domcontentloaded', () => {
+          page
+            .evaluate(() => {
+              const panel = document.querySelector('[data-sidebar-panel]');
+              return { width: panel ? Math.round(panel.getBoundingClientRect().width) : null, attr: document.documentElement.dataset.sidebar ?? null };
+            })
+            .then((early) => { page.__sidebarEarly = early; })
+            .catch(() => {});
+        });
+      },
+      after: flows.sidebarNoShift,
+    });
     await visit(context, { route: '/reference/herbs?page=2', locale: 'he', width: desktop, label: 'catalogue page 2' });
     if (patientIds[0]) {
       await visit(context, { route: `/patients/${patientIds[0]}?tab=encounters`, locale: 'he', width: desktop, label: 'flow patient-tab', after: flows.patientTab });

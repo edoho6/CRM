@@ -1,4 +1,5 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
+import { PageBody } from '@clinic/ui';
 import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
 import { SettingsNav } from '@/features/settings/settings-nav';
@@ -15,13 +16,12 @@ export default async function SettingsPage({ params }: { params: Promise<{ local
 
   return (
     <>
-      <PageHeader title={t('title')} description={t('subtitle')} />
-      <SettingsNav />
+      <PageHeader title={t('title')} description={t('subtitle')} below={<SettingsNav />} />
       <ClinicSettingsForm
         name={scope.context.clinic.name}
         tracksInventory={scope.context.clinic.tracks_inventory !== false}
       />
-      <div className="mt-6 max-w-3xl">
+      <PageBody width="narrow" className="mt-6">
         <ReminderTemplateForm
           template={scope.context.clinic.reminder_template ?? null}
           enabled={scope.context.clinic.reminders_enabled !== false}
@@ -29,7 +29,7 @@ export default async function SettingsPage({ params }: { params: Promise<{ local
           channel={scope.context.clinic.reminder_channel ?? 'whatsapp'}
           clinicName={scope.context.clinic.name}
         />
-      </div>
+      </PageBody>
     </>
   );
 }

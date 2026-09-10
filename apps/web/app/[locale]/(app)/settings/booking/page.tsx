@@ -1,4 +1,5 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
+import { PageBody } from '@clinic/ui';
 import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
 import { SettingsNav } from '@/features/settings/settings-nav';
@@ -26,9 +27,8 @@ export default async function BookingSettingsPage({
 
   return (
     <>
-      <PageHeader title={t('booking.title')} description={t('booking.subtitle')} />
-      <SettingsNav />
-      <div className="max-w-3xl">
+      <PageHeader title={t('booking.title')} description={t('booking.subtitle')} below={<SettingsNav />} />
+      <PageBody width="narrow">
         <BookingSettingsForm
           enabled={clinic.booking_enabled === true}
           slug={clinic.booking_slug ?? clinic.slug}
@@ -38,7 +38,7 @@ export default async function BookingSettingsPage({
           verifySms={clinic.booking_verify_sms === true}
           bookableTypes={count ?? 0}
         />
-      </div>
+      </PageBody>
     </>
   );
 }

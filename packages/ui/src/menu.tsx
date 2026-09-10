@@ -58,8 +58,11 @@ export function DropdownMenuItem({
   return (
     <DropdownMenuPrimitive.Item
       className={cn(
-        'flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none',
-        'data-highlighted:bg-ink-100 data-disabled:pointer-events-none data-disabled:opacity-50',
+        'flex min-h-9 cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none',
+        'data-highlighted:bg-ink-100 active:bg-ink-200 data-disabled:pointer-events-none data-disabled:opacity-50',
+        // Radix moves real focus along the rows; the highlight alone is too
+        // faint to be the only sign of it.
+        'focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus',
         destructive ? 'text-red-700 data-highlighted:bg-red-50' : 'text-ink-800',
         className,
       )}
@@ -101,7 +104,7 @@ export function TabsTrigger({
   return (
     <TabsPrimitive.Trigger
       className={cn(
-        'rounded-md px-3 py-1.5 text-sm font-medium text-ink-600 transition-colors',
+        'inline-flex h-9 items-center rounded-md px-3 text-sm font-medium text-ink-600 transition-[color,background-color,scale] duration-(--duration-fast) active:scale-[0.98]',
         'hover:bg-ink-50 data-[state=active]:bg-accent data-[state=active]:text-accent-fg',
         focusRing,
         className,
@@ -115,5 +118,5 @@ export function TabsContent({
   className,
   ...props
 }: React.ComponentPropsWithoutRef<typeof TabsPrimitive.Content>) {
-  return <TabsPrimitive.Content className={cn('mt-4 outline-none', className)} {...props} />;
+  return <TabsPrimitive.Content className={cn('mt-4', focusRing, className)} {...props} />;
 }

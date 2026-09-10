@@ -66,9 +66,9 @@ export function QuickCreateMenu() {
           aria-label={t('create')}
           title={t('create')}
           className={cn(
-            'flex h-11 w-11 items-center justify-center rounded-xl bg-accent text-accent-fg',
-            'transition-all duration-150 ease-out',
-            'hover:-translate-y-px hover:bg-accent hover:shadow-md',
+            'flex h-10 w-10 items-center justify-center rounded-lg bg-accent text-accent-fg',
+            'transition-all duration-(--duration-fast) ease-(--ease-standard)',
+            'hover:-translate-y-px hover:bg-accent hover:shadow-md active:translate-y-0 active:scale-[0.98]',
             'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus',
             open && 'bg-accent shadow-md',
           )}

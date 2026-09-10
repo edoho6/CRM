@@ -1,0 +1,282 @@
+/*
+   Base rules shared by both apps.
+
+   The tokens (`@theme`) stay in each app's own globals.css — Tailwind only
+   emits a utility whose token exists in the app being built, and
+   `pnpm check:tokens` keeps the two blocks identical. Everything in this file
+   has no token to drift: element defaults, focus, cursors, the phone card
+   layout of tables, the row-size switch, folding sections, scroll panels and
+   paper. Written once, imported by both, so the portal can never again lack a
+   rule the shared kit relies on (`.field-ltr` was a silent no-op there).
+*/
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    /* The grey flash iOS paints on every tap says "web page"; the controls
+       carry their own pressed state instead. */
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    background-color: var(--color-ink-50);
+    color: var(--color-ink-900);
+    font-family: var(--font-sans);
+    font-feature-settings: 'kern';
+  }
+
+  /* Hebrew has no upper case; letter-spacing tricks meant for Latin headings
+     just make it look broken. */
+  :lang(he) h1,
+  :lang(he) h2,
+  :lang(he) h3 {
+    letter-spacing: 0;
+  }
+
+  /* Phone numbers, IDs and emails must stay left-to-right even inside a Hebrew
+     page, otherwise the digits visually reverse. Applied via `dir="ltr"` on the
+     input; this keeps the text hugging the correct edge. */
+  [dir='ltr'].field-ltr,
+  .field-ltr[dir='ltr'] {
+    text-align: start;
+  }
+
+  /* One focus ring, on everything that can take focus. The shared components
+     carry the same colour through `focusRing` / `focusField`, and this rule
+     catches whatever they do not. Anything with an `outline-none` of its own
+     still wins — `:where()` has no specificity — which is what the skip target
+     and the rich-text editor rely on. */
+  :where(a, button, input, textarea, select, summary, [role='button'], [tabindex]):focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+
+  /* ink-500, not 400: the lighter step measures 3.8:1 on white, under the 4.5:1
+     a placeholder still has to clear — people do read them. */
+  ::placeholder {
+    color: var(--color-ink-500);
+  }
+
+  /* A native select draws its own arrow, differently on every platform and
+     as a system glyph on iOS. This is the one arrow, in the ink colour of
+     each theme, on the trailing edge in either direction. */
+  select.ui-select {
+    appearance: none;
+    background-repeat: no-repeat;
+    background-size: 1rem 1rem;
+    background-position: right 0.75rem center;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235d686f' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  }
+  [dir='rtl'] select.ui-select {
+    background-position: left 0.75rem center;
+  }
+  /* The dark theme's arrow lives beside the dark palette in the staff app's
+     globals: `check:contrast` reads the palette from the first
+     `[data-theme=dark]` rule in the stylesheet, and this file is imported first. */
+
+  /* Anything genuinely clickable says so on hover. Native elements are covered
+     here so a plain link or a table action never feels dead compared with the
+     Button component, which has its own lift-and-shadow treatment. */
+  a:not([class*='btn']):hover {
+    cursor: pointer;
+  }
+
+  button:not(:disabled),
+  [role='button']:not([aria-disabled='true']),
+  summary,
+  label:has(input[type='checkbox']:not(:disabled)),
+  label:has(input[type='radio']:not(:disabled)),
+  select:not(:disabled) {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  [aria-disabled='true'] {
+    cursor: not-allowed;
+  }
+
+  /* Rows that lead somewhere get a quiet tint, so the whole row reads as one
+     target rather than only the link inside it. Hover is not a state a
+     keyboard or a touch screen can reach, so the same tint follows focus into
+     the row. */
+  tbody tr:hover,
+  tbody tr:focus-within {
+    box-shadow: inset 0 0 0 9999px var(--color-row-hover, rgb(0 0 0 / 0.02));
+  }
+
+  /* The wrapper already draws the frame; a border under the last row drew a
+     second line against it. */
+  [data-table-wrapper] tbody tr:last-child > td {
+    border-bottom-width: 0;
+  }
+
+  /* Scrolling panels — a dialog body, a floating list, a sheet — keep their
+     gutter so content never shifts sideways when a scrollbar appears, and
+     wear a thin scrollbar that reads as part of the panel. */
+  [data-scroll-panel] {
+    scrollbar-width: thin;
+    scrollbar-gutter: stable;
+    scrollbar-color: var(--color-ink-300) transparent;
+  }
+
+  /* Motion is decoration here — every transition in this app is a convenience,
+     none of them carry meaning — so an operating-system request to stop it is
+     honoured rather than negotiated. Not removed outright: 1ms keeps
+     transition- and animation-end handlers firing, which Radix relies on to
+     unmount an overlay. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 1ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 1ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/*
+   Row size, chosen from the switch above each list table and remembered by
+   the browser (`TableSizeControl` in the shared kit sets the attribute).
+   Element + attribute outranks the cells' own padding utilities.
+*/
+[data-table-size='compact'] th,
+[data-table-size='compact'] td {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.8125rem;
+}
+[data-table-size='large'] th,
+[data-table-size='large'] td {
+  padding: 0.8rem 1rem;
+  font-size: 1rem;
+}
+[data-table-size='large'] th {
+  font-size: 0.875rem;
+}
+
+/*
+   Tables as cards on a phone.
+
+   A `TableWrapper` marked `responsive` keeps its table on a wide screen and
+   turns each row into a stacked card below `md`. The column headings are
+   copied onto every cell as `data-label` (see `CellLabels` in the shared
+   kit), and shown here before the value. The heading row itself is hidden:
+   on a phone the list is read top to bottom, and sorting waits for a desk.
+   `screen` only — paper gets the table.
+*/
+@media screen and (max-width: 767px) {
+  .table-cards {
+    overflow-x: visible;
+    border: 0;
+    background: transparent;
+  }
+  .table-cards table,
+  .table-cards tbody,
+  .table-cards tr,
+  .table-cards td {
+    display: block;
+    width: 100%;
+  }
+  .table-cards thead {
+    display: none;
+  }
+  .table-cards tr {
+    margin-bottom: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--color-ink-200);
+    border-radius: var(--radius-card, 0.875rem);
+    background: var(--color-white);
+  }
+  .table-cards td {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 0.75rem;
+    padding: 0.35rem 0;
+    border: 0;
+    text-align: end;
+  }
+  .table-cards td[data-label]::before {
+    content: attr(data-label);
+    flex: 0 0 auto;
+    max-width: 45%;
+    font-size: 0.75rem;
+    line-height: 1.25;
+    color: var(--color-ink-600);
+    text-align: start;
+  }
+  .table-cards td:not([data-label]) {
+    justify-content: flex-start;
+    text-align: start;
+  }
+  .table-cards td + td {
+    border-top: 1px solid var(--color-ink-100);
+  }
+  /* The cell marked as the card's title reads as one — no column label,
+     heavier type — and a cell whose whole content is a dash is a row that
+     says "nothing"; on a phone that is space, not information. */
+  .table-cards td[data-card-title] {
+    justify-content: flex-start;
+    font-weight: 600;
+    font-size: 0.9375rem;
+  }
+  .table-cards td[data-card-title]::before {
+    display: none;
+  }
+  .table-cards td:has(> [data-dash]:only-child) {
+    display: none;
+  }
+}
+
+/*
+   Folding sections open smoothly.
+
+   `Collapsible` is a native `<details>`, which snaps open by default. With
+   `interpolate-size` the browser can animate to and from `auto`, and the
+   `::details-content` box gets the same easing as every other reveal in the
+   app. Browsers without either simply keep snapping; nothing breaks.
+*/
+:root {
+  interpolate-size: allow-keywords;
+}
+details::details-content {
+  block-size: 0;
+  overflow-y: clip;
+  transition:
+    block-size var(--duration-base) var(--ease-standard),
+    content-visibility var(--duration-base) allow-discrete;
+}
+details[open]::details-content {
+  block-size: auto;
+}
+@media (prefers-reduced-motion: reduce) {
+  details::details-content {
+    transition: none;
+  }
+}
+
+/*
+   Paper. Real margins, no browser header on a clinical document, and the
+   furniture of the screen — action bars, the tab bar, toasts — left off.
+*/
+@page {
+  size: A4;
+  margin: 14mm;
+}
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  /* A record that breaks across a page in the middle of a row is hard to read
+     back, and a heading stranded at the foot of a page is worse. */
+  tr,
+  img {
+    break-inside: avoid;
+  }
+  h1,
+  h2,
+  h3 {
+    break-after: avoid;
+  }
+}

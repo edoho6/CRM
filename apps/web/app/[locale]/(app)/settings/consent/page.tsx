@@ -1,5 +1,5 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { Alert, Badge, Card, CardBody, CardHeader, CardTitle } from '@clinic/ui';
+import { Alert, Badge, Card, CardBody, CardHeader, CardTitle, PageBody } from '@clinic/ui';
 import { CONSENT_KINDS } from '@clinic/domain';
 import type { ConsentDocument } from '@clinic/db/types';
 import { PageHeader } from '@/components/app-shell';
@@ -40,10 +40,9 @@ export default async function ConsentDocumentsPage({
 
   return (
     <>
-      <PageHeader title={t('documentsTitle')} description={t('documentsSubtitle')} />
-      <SettingsNav />
+      <PageHeader title={t('documentsTitle')} description={t('documentsSubtitle')} below={<SettingsNav />} />
 
-      <div className="max-w-3xl space-y-5">
+      <PageBody width="narrow">
         <Alert tone="info">{t('immutableNote')}</Alert>
 
         {CONSENT_KINDS.map((kind) => {
@@ -87,7 +86,7 @@ export default async function ConsentDocumentsPage({
             </Card>
           );
         })}
-      </div>
+      </PageBody>
     </>
   );
 }

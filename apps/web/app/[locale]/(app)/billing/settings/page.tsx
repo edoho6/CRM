@@ -29,8 +29,7 @@ export default async function BillingSettingsPage({
 
   return (
     <>
-      <PageHeader title={t('title')} />
-      <SettingsNav />
+      <PageHeader title={t('title')} below={<SettingsNav />} />
       <GrowSettingsForm
         settings={settings ?? null}
         webhookUrl={`${siteUrl()}/api/billing/grow/webhook`}

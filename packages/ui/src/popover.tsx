@@ -28,6 +28,8 @@ import { cn } from './cn';
  */
 
 const VIEWPORT_MARGIN = 8;
+/** How long a closing panel is kept for its exit; matches `--duration-fast` with a little slack. */
+const EXIT_MS = 160;
 
 export interface PopoverRenderProps {
   close: () => void;
@@ -68,6 +70,28 @@ export function Popover({
   } | null>(null);
   const triggerRef = React.useRef<HTMLButtonElement>(null);
   const panelRef = React.useRef<HTMLDivElement>(null);
+
+  // The panel stays mounted for one short beat after closing so it can fade
+  // and settle out the way it came in; a panel that vanishes mid-blur is the
+  // one abrupt moment in an otherwise animated kit.
+  const [mounted, setMounted] = React.useState(false);
+  const [leaving, setLeaving] = React.useState(false);
+  React.useEffect(() => {
+    if (open) {
+      setMounted(true);
+      setLeaving(false);
+      return;
+    }
+    if (!mounted) return;
+    setLeaving(true);
+    const timer = window.setTimeout(() => {
+      setMounted(false);
+      setLeaving(false);
+      setPosition(null);
+    }, EXIT_MS);
+    return () => window.clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   const close = React.useCallback(() => setOpen(false), []);
 
@@ -152,7 +176,7 @@ export function Popover({
   }, [open, place]);
 
   const panel =
-    open && typeof document !== 'undefined'
+    mounted && typeof document !== 'undefined'
       ? createPortal(
           <div
             ref={panelRef}
@@ -172,13 +196,18 @@ export function Popover({
               // Hidden until measured, so it never appears in the corner first.
               visibility: position ? 'visible' : 'hidden',
             }}
+            data-leaving={leaving || undefined}
             // Fades and settles on arrival. `starting:` is the entrance for an
             // element that is conditionally rendered — there is no "closed"
             // state to animate from, and a panel should simply be gone when
             // dismissed. It works with the measure-then-show trick above
             // because the position is set in a layout effect, before the first
             // paint; the transition begins on that same first frame.
-            className="z-popover overflow-y-auto overscroll-contain rounded-lg border border-ink-200 bg-white p-3 shadow-lg transition-[opacity,translate] duration-(--duration-fast) ease-standard starting:translate-y-1 starting:opacity-0"
+            className={cn(
+              'z-popover overflow-y-auto overscroll-contain rounded-lg border border-ink-200 bg-white p-3 shadow-lg transition-[opacity,translate] duration-(--duration-fast) ease-standard starting:translate-y-1 starting:opacity-0',
+              leaving && 'pointer-events-none translate-y-1 opacity-0',
+            )}
+            data-scroll-panel
           >
             {typeof children === 'function' ? children({ close }) : children}
           </div>,
@@ -322,18 +351,39 @@ export const FloatingList = React.forwardRef<
   HTMLUListElement,
   Omit<React.HTMLAttributes<HTMLUListElement>, 'style'> & { style: React.CSSProperties | null }
 >(function FloatingList({ children, style, ...props }, ref) {
-  if (typeof document === 'undefined' || !style) return null;
+  // The last measured position is kept for one beat after the list closes,
+  // so it can fade out in place instead of disappearing.
+  const [shown, setShown] = React.useState<React.CSSProperties | null>(style);
+  const [leaving, setLeaving] = React.useState(false);
+  React.useLayoutEffect(() => {
+    if (style) {
+      setShown(style);
+      setLeaving(false);
+      return;
+    }
+    setLeaving(true);
+    const timer = window.setTimeout(() => {
+      setShown(null);
+      setLeaving(false);
+    }, EXIT_MS);
+    return () => window.clearTimeout(timer);
+  }, [style]);
+
+  if (typeof document === 'undefined' || !shown) return null;
   return createPortal(
     <ul
       {...props}
       ref={ref}
       data-floating
+      data-scroll-panel
+      data-leaving={leaving || undefined}
       // See the Popover panel: inside a modal dialog the body has no pointer
       // events, and a list nobody can click is a list that only works by keyboard.
-      style={{ ...style, pointerEvents: 'auto' }}
+      style={{ ...shown, pointerEvents: leaving ? 'none' : 'auto' }}
       className={cn(
         'z-popover overflow-y-auto overscroll-contain rounded-lg border border-ink-200 bg-white py-1 shadow-lg',
         'transition-[opacity,translate] duration-(--duration-fast) ease-standard starting:translate-y-1 starting:opacity-0',
+        leaving && 'translate-y-1 opacity-0',
         props.className,
       )}
     >

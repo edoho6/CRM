@@ -1,5 +1,6 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import type { PractitionerSchedule, ScheduleException } from '@clinic/db/types';
+import { PageBody } from '@clinic/ui';
 import { PageHeader } from '@/components/app-shell';
 import { SettingsNav } from '@/features/settings/settings-nav';
 import { getClinicScope } from '@/lib/session';
@@ -62,9 +63,8 @@ export default async function SchedulePage({
 
   return (
     <>
-      <PageHeader title={t('title')} description={t('subtitle')} />
-      <SettingsNav />
-      <div className="max-w-3xl space-y-5">
+      <PageHeader title={t('title')} description={t('subtitle')} below={<SettingsNav />} />
+      <PageBody width="narrow">
         <ScheduleForm
           schedules={schedulesResult.data ?? []}
           exceptions={exceptionsResult.data ?? []}
@@ -73,7 +73,7 @@ export default async function SchedulePage({
           token={feedResult.data?.token ?? null}
           lastFetchedAt={feedResult.data?.last_fetched_at ?? null}
         />
-      </div>
+      </PageBody>
     </>
   );
 }

@@ -167,7 +167,7 @@ export function DateInput({
         title={labels.openCalendar}
         disabled={disabled}
         onClick={openPicker}
-        className="absolute inset-y-0 end-1.5 my-auto flex h-7 w-7 items-center justify-center rounded-md text-ink-500 hover:bg-ink-100 hover:text-ink-800 disabled:opacity-50"
+        className="absolute inset-y-0 end-1 my-auto flex h-8 w-8 items-center justify-center rounded-md text-ink-500 hover:bg-ink-100 hover:text-ink-800 active:bg-ink-200 disabled:opacity-50"
       >
         <CalendarDays className="h-4 w-4" aria-hidden />
       </button>

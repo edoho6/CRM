@@ -226,8 +226,28 @@
   (`components/remember-query.tsx`) כדי שהמסננים יחזרו בביקור הבא באותה לשונית; טבלת רשימה מקבלת
   `<TableWrapper responsive>` כדי להפוך לכרטיסים בטלפון, והתא שמזהה את השורה מסומן
   `<Td data-card-title>` (כותרת הכרטיס; תא שכולו `<Dash/>` נעלם בטלפון); שדה קטן בתוך שורה הוא
-  `compact`, לא `h-7` ידני. סולם טקסט: h1 `text-xl`, כותרת כרטיס `text-base`, גוף
-  `text-sm`, כיתוב `text-xs` — **אין `text-[Npx]`**
+  `compact`, לא `h-7` ידני. גוף העמוד ב-`PageBody width="narrow|wide"` ולא `max-w-3xl`
+  ידני; פס ניווט משנה (`SettingsNav`, `InventoryNav`) בחריץ `below` של הכותרת, לא כאח
+  שלה. סולם טקסט: h1 רק דרך `PageHeader` (גדול בטלפון, `text-xl` מ-`sm`), כותרת כרטיס
+  `text-base`, גוף `text-sm`, כיתוב `text-xs` — **אין `text-[Npx]`**
+- **נקודות שבירה — שלוש בלבד:** `sm` (640): מתחתיו `Dialog` הוא מגירה מלמטה עם ידית
+  והחלקה לסגירה, `ConfirmDialog` הוא action sheet, הפוטר של הדיאלוג דביק; `md` (768):
+  מתחתיו טבלה `responsive` הופכת לכרטיסים; `lg` (1024): מתחתיו אין סרגל צד אלא סרגל
+  טאבים תחתון (`components/bottom-tab-bar.tsx` — בית, מטופלים, יומן, משימות, "עוד" שפותח
+  את המגירה). גובה הסרגל הוא `--bottom-bar` (0 כשאין סרגל: פורטל, הדפסה, מסך רחב), וכל מה
+  שנצמד לתחתית המסך — טוסט, `FormActionBar`, מגש ההשוואה — יושב על
+  `bottom-[var(--bottom-bar,0px)]` ומוסיף `env(safe-area-inset-bottom)`
+- **בלי קפיצות אחרי הטעינה:** העדפת פריסה שנשמרת בדפדפן (סרגל מכווץ, גודל שורות, מצב
+  KPI, כרטיס הפתיחה, קבצים פתוחים) נכתבת כ-`data-*` על `<html>` על ידי הסקריפט
+  ב-`lib/theme.ts` לפני הציור הראשון; ה-CSS ב-`globals.css` ("Layout the stylesheet draws
+  before React runs") מצייר לפיה, ו-React מאתחל ממנה ב-`useLayoutEffect` — לא
+  מ-localStorage ב-`useEffect`, שמצייר פעמיים. מפתחות האחסון רק ב-`lib/prefs.ts`. העדפה
+  חדשה = מפתח שם, שורה בסקריפט, כלל CSS, ומקרה ב-`theme.test.ts`
+- **כותרת גדולה:** `PageHeader` מסמן את ה-h1 ב-`data-page-title`, ו-`collapsing-title.tsx`
+  בשורת הכותרת מציג את הטקסט שלה משנגללה החוצה. אין h1 מחוץ ל-`PageHeader`
+- **CSS משותף:** כללים שאינם טוקנים (מיקוד, placeholder, `select.ui-select`, `.table-cards`,
+  `[data-table-size]`, הדפסה בסיסית) ב-`packages/ui/src/base.css`, מיובא בשני
+  ה-`globals.css`; ה-`@theme` נשאר לכל אפליקציה בנפרד
 
 ## לפני commit
 

@@ -4,6 +4,10 @@
    and the shared component package is reached through a symlink inside it. */
 @source '../../../packages/ui/src';
 
+/* Element defaults, focus, cursors, phone tables, folding sections, paper —
+   everything that is not a token, written once for both apps. */
+@import '../../../packages/ui/src/base.css';
+
 /* The portal shares the clinic's palette so it feels like the same practice,
    but ships none of the staff app's grid, editor or calendar CSS — patients are
    mostly on phones and should not download what they cannot use. */
@@ -53,6 +57,11 @@
   --color-ink-800: #3b4146;
   --color-ink-900: #23272a;
 
+  /* The two hairlines: the outer edge of a card, and the divider inside one.
+     Translucent, so they sit correctly on any surface. */
+  --color-hairline: rgb(0 0 0 / 0.08);
+  --color-hairline-soft: rgb(0 0 0 / 0.05);
+
   /* Same as the staff app: the shipped file via its variable, then the stack a
      browser uses until it arrives. */
   --font-sans:
@@ -66,7 +75,8 @@
      card; the three shadows name what a surface is doing — sitting on the
      page, floating over it, or covering it — and the Tailwind names map onto
      them so `shadow-md` in an old file means the same as `shadow-floating`
-     in a new one. */
+     in a new one. `xs` is the pressed state: a button that has settled onto
+     the page casts less than one resting on it. */
   --radius-sm: 0.375rem;
   --radius-md: 0.5rem;
   --radius-lg: 0.625rem;
@@ -74,10 +84,12 @@
   --shadow-raised: 0 1px 2px rgb(0 0 0 / 0.04), 0 1px 3px rgb(0 0 0 / 0.06);
   --shadow-floating: 0 4px 12px rgb(0 0 0 / 0.08), 0 1px 3px rgb(0 0 0 / 0.06);
   --shadow-overlay: 0 16px 40px rgb(0 0 0 / 0.18), 0 2px 6px rgb(0 0 0 / 0.08);
-  --shadow-xs: var(--shadow-raised);
+  --shadow-xs: 0 1px 1px rgb(0 0 0 / 0.04);
   --shadow-sm: var(--shadow-raised);
   --shadow-md: var(--shadow-floating);
   --shadow-lg: var(--shadow-overlay);
+
+  --color-row-hover: rgb(0 0 0 / 0.02);
 }
 
 /* Motion, focus and layering — identical to the staff app's block, and kept
@@ -86,19 +98,39 @@
   --duration-fast: 120ms;
   --duration-base: 180ms;
   --duration-slow: 260ms;
+  --duration-spring: 420ms;
   --ease-standard: cubic-bezier(0.2, 0, 0, 1);
   --ease-emphasized: cubic-bezier(0.05, 0.7, 0.1, 1);
   --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  /* A real spring, as a `linear()` curve: overshoots by under two percent and
+     settles. For the things that arrive with weight — a sheet, a drawer, a
+     switch's knob — and never for exits. */
+  --ease-spring: linear(
+    0,
+    0.006,
+    0.025 2.8%,
+    0.101 6.1%,
+    0.539 18.9%,
+    0.721 25.3%,
+    0.849 31.5%,
+    0.937 38.1%,
+    0.968 41.8%,
+    0.991 45.7%,
+    1.006 50.1%,
+    1.015 55%,
+    1.017 63.9%,
+    1.001
+  );
 
   --animate-fade-in: fade-in var(--duration-base) var(--ease-standard) both;
   --animate-fade-out: fade-out var(--duration-fast) var(--ease-exit) both;
   --animate-dialog-in: dialog-in var(--duration-base) var(--ease-emphasized) both;
   --animate-dialog-out: dialog-out var(--duration-fast) var(--ease-exit) both;
-  --animate-drawer-in: drawer-in var(--duration-slow) var(--ease-emphasized) both;
+  --animate-drawer-in: drawer-in var(--duration-spring) var(--ease-spring) both;
   --animate-drawer-out: drawer-out var(--duration-base) var(--ease-exit) both;
   --animate-menu-in: menu-in var(--duration-fast) var(--ease-standard) both;
   --animate-menu-out: fade-out var(--duration-fast) var(--ease-exit) both;
-  --animate-sheet-in: sheet-in var(--duration-slow) var(--ease-emphasized) both;
+  --animate-sheet-in: sheet-in var(--duration-spring) var(--ease-spring) both;
   --animate-sheet-out: sheet-out var(--duration-base) var(--ease-exit) both;
   --animate-toast-in: toast-in var(--duration-base) var(--ease-emphasized) both;
   --animate-toast-out: fade-out var(--duration-fast) var(--ease-exit) both;
@@ -170,51 +202,11 @@
   --z-index-toast: 60;
 }
 
-@layer base {
-  body {
-    background-color: var(--color-ink-50);
-    color: var(--color-ink-900);
-    font-family: var(--font-sans);
-  }
-
-  /* One focus ring on everything focusable — same rule as the staff app. */
-  :where(a, button, input, textarea, select, summary, [role='button'], [tabindex]):focus-visible {
-    outline: 2px solid var(--color-focus);
-    outline-offset: 2px;
-  }
-
-  ::placeholder {
-    color: var(--color-ink-400);
-  }
-
-  /* Same reasoning as the staff app: the motion here is all convenience, so an
-     operating-system request to stop it is honoured. 1ms rather than 0 keeps
-     transition-end handlers firing. */
-  @media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-      animation-duration: 1ms !important;
-      animation-iteration-count: 1 !important;
-      transition-duration: 1ms !important;
-      scroll-behavior: auto !important;
-    }
-  }
-}
-
 /* A patient printing their own consent form or intake answers is a normal thing
-   to do, and the portal had no print rules at all. */
+   to do. The shared print rules (no-print, page breaks, A4 margins) come from
+   base.css; the portal has one theme, so only the page ground needs saying. */
 @media print {
-  .no-print {
-    display: none !important;
-  }
-
   body {
     background: white;
-  }
-
-  tr,
-  img {
-    break-inside: avoid;
   }
 }

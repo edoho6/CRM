@@ -261,8 +261,16 @@ export function GlobalSearch() {
   }
 
   return (
-    <div ref={rootRef} className="relative">
-      <div className="flex items-center gap-1.5">
+    <div
+      ref={rootRef}
+      className={cn(
+        'relative',
+        // On a phone the bar has no room beside the buttons: the search takes
+        // the whole bar while it is open, the way a phone's mail search does.
+        open && 'max-sm:absolute max-sm:inset-x-3 max-sm:top-2.5 max-sm:bottom-2.5 max-sm:z-10 max-sm:flex max-sm:items-center max-sm:bg-white',
+      )}
+    >
+      <div className="flex items-center gap-1.5 max-sm:w-full">
         <button
           type="button"
           aria-label={t('search')}
@@ -270,9 +278,9 @@ export function GlobalSearch() {
           aria-keyshortcuts="Control+K"
           onClick={() => (open ? inputRef.current?.focus() : reveal())}
           className={cn(
-            'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-ink-200 bg-white text-ink-600',
-            'transition-all duration-150 ease-out',
-            'hover:-translate-y-px hover:border-jade-300 hover:bg-jade-50 hover:text-jade-800 hover:shadow-md',
+            'flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-ink-200 bg-white text-ink-600 shadow-xs',
+            'transition-all duration-(--duration-fast) ease-(--ease-standard)',
+            'hover:-translate-y-px hover:border-jade-300 hover:bg-jade-50 hover:text-jade-800 hover:shadow-md active:translate-y-0 active:scale-[0.98]',
             'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus',
             open && 'border-jade-300 bg-jade-50 text-jade-800',
           )}
@@ -285,7 +293,7 @@ export function GlobalSearch() {
         <div
           className={cn(
             'relative overflow-hidden transition-all duration-200 ease-out',
-            open ? 'w-56 opacity-100 sm:w-72' : 'w-0 opacity-0',
+            open ? 'w-56 opacity-100 max-sm:w-auto max-sm:flex-1 sm:w-72' : 'w-0 opacity-0',
           )}
         >
           <input
@@ -303,7 +311,7 @@ export function GlobalSearch() {
             aria-activedescendant={showPanel && flat[highlight] ? optionId(flat[highlight]) : undefined}
             tabIndex={open ? 0 : -1}
             className={cn(
-              'h-11 w-full rounded-xl border border-ink-200 bg-white px-3 pe-8 text-sm text-ink-900',
+              'h-10 w-full rounded-lg border border-ink-200 bg-white px-3 pe-8 text-base sm:text-sm text-ink-900',
               'placeholder:text-ink-500 shadow-xs transition-colors text-start',
               'focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-focus focus-visible:border-focus',
             )}
@@ -325,8 +333,8 @@ export function GlobalSearch() {
         <div
           id="global-search-results"
           role="listbox"
-          className="absolute top-full z-popover mt-1.5 max-h-96 w-80 overflow-y-auto rounded-xl border border-ink-200 bg-white p-1.5 shadow-lg transition-[opacity,translate] duration-(--duration-fast) ease-standard starting:translate-y-1 starting:opacity-0 sm:w-96"
-          style={{ insetInlineEnd: 0 }}
+          data-scroll-panel
+          className="absolute end-0 top-full z-popover mt-1.5 max-h-96 w-80 overflow-y-auto overscroll-contain rounded-xl border border-ink-200 bg-white p-1.5 shadow-lg transition-[opacity,translate] duration-(--duration-fast) ease-standard starting:translate-y-1 starting:opacity-0 max-sm:inset-x-0 max-sm:top-[calc(100%+0.875rem)] max-sm:mt-0 max-sm:max-h-[60dvh] max-sm:w-auto sm:w-96"
         >
           {loading && results.length === 0 ? (
             <p className="flex items-center justify-center gap-2 py-6 text-sm text-ink-500">

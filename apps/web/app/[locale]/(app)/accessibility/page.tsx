@@ -1,6 +1,6 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Accessibility, AlertTriangle, Check } from 'lucide-react';
-import { Card, CardBody, CardHeader, CardTitle } from '@clinic/ui';
+import { Card, CardBody, CardHeader, CardTitle, PageBody } from '@clinic/ui';
 import { PageHeader } from '@/components/app-shell';
 import { formatDate } from '@clinic/i18n';
 
@@ -44,7 +44,7 @@ export default async function AccessibilityPage({
     <>
       <PageHeader title={t('title')} description={t('subtitle')} />
 
-      <div className="max-w-3xl space-y-5">
+      <PageBody width="narrow">
         <Card>
           <CardBody>
             <p className="text-sm leading-relaxed text-ink-800">{t('intro')}</p>
@@ -123,7 +123,7 @@ export default async function AccessibilityPage({
         <p className="text-xs text-ink-600">
           {t('updated', { date: formatDate(new Date('2026-09-07')) })}
         </p>
-      </div>
+      </PageBody>
     </>
   );
 }

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Monitor, Moon, Sun } from 'lucide-react';
 import { cn } from '@clinic/ui';
-import { THEME_STORAGE_KEY, type ThemeChoice } from '@/lib/theme';
+import { THEME_STORAGE_KEY, applyThemeColor, type ThemeChoice } from '@/lib/theme';
 
 /**
  * Light / dark / follow-the-system, as a three-position switch.
@@ -25,6 +25,7 @@ function apply(choice: ThemeChoice) {
     choice === 'dark' ||
     (choice === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
   document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  applyThemeColor(dark);
 }
 
 const OPTIONS: { value: ThemeChoice; icon: typeof Sun; labelKey: 'light' | 'dark' | 'system' }[] = [
