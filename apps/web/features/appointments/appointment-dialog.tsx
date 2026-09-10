@@ -22,6 +22,7 @@ import {
   useToast,
   type ComboboxOption,
   type ComboboxValue,
+  TimeSelect,
 } from '@clinic/ui';
 import { APPOINTMENT_STATUSES, type AppointmentStatus, type Locale } from '@clinic/domain';
 import { useRouter } from '@clinic/i18n/navigation';
@@ -50,7 +51,8 @@ import {
   isWithinWorkingHours,
   type Availability,
 } from './availability';
-import { addMinutes, differenceInMinutes, toDateTimeLocalValue } from './date-utils';
+import { addMinutes, differenceInMinutes, toDateKey, toDateTimeLocalValue } from './date-utils';
+import { DateInput } from '@/components/date-input';
 import { confirmationPath, fillReminderTemplate } from './confirmation';
 import { ConfirmationBadge } from './confirmation-status';
 import { formatDate, formatDateTime, formatTime } from '@clinic/i18n';
@@ -91,18 +93,13 @@ export interface AppointmentDraft {
  * rather than under them.
  */
 /**
- * Opens the browser's own date-and-time picker for the field that was clicked.
- * The native control opens it only from the small icon at its end; a click
- * anywhere in the box is what people try first.
+ * The two halves of a `datetime-local` value, which is still what the state
+ * holds: the day for the shared date field, the time for the two lists.
+ * Empty stays empty — a half-filled value is not a time.
  */
-function openNativePicker(event: React.MouseEvent<HTMLInputElement>) {
-  const input = event.currentTarget as HTMLInputElement & { showPicker?: () => void };
-  try {
-    input.showPicker?.();
-  } catch {
-    // Not every browser offers one; the field still takes typed input.
-  }
-}
+const dayOf = (value: string) => value.slice(0, 10);
+const timeOf = (value: string) => value.slice(11, 16);
+const joinDayTime = (day: string, time: string) => (day && time ? `${day}T${time}` : '');
 
 export function AppointmentDialog({
   open,
@@ -134,6 +131,7 @@ export function AppointmentDialog({
   const t = useTranslations('appointments');
   const tc = useTranslations('common');
   const tErrors = useTranslations('errors');
+  const tSchedule = useTranslations('schedule');
   const format = useFormatter();
   const locale = useLocale() as Locale;
   const router = useRouter();
@@ -545,28 +543,45 @@ export function AppointmentDialog({
               </Select>
             </Field>
 
-            <Field label={t('startAt')} htmlFor="start_at" required>
-              {/* A click anywhere in the box opens the date-and-time picker, not
-                  only the small icon at its end; Tab still lands in the field
-                  for typing. */}
-              <LtrInput
-                id="start_at"
-                type="datetime-local"
-                value={start}
-                onChange={(event) => handleStartChange(event.target.value)}
-                onClick={openNativePicker}
-                required
-              />
+            {/* Day and time as the app writes them everywhere else — the day
+                in the shared date field, the time as two lists — instead of
+                the browser's own control, whose calendar and clock follow the
+                browser's language rather than the page's. A time picked
+                before a day lands on today; the end keeps to the start's
+                day, so it is only a time. */}
+            <Field label={t('startAt')} htmlFor="start_at" required className="sm:col-span-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <DateInput
+                  id="start_at"
+                  compact={false}
+                  value={dayOf(start)}
+                  onChange={(event) =>
+                    handleStartChange(joinDayTime(event.target.value, timeOf(start) || '09:00'))
+                  }
+                  required
+                  className="w-40"
+                />
+                <TimeSelect
+                  label={t('startAt')}
+                  hourLabel={tSchedule('hour')}
+                  minuteLabel={tSchedule('minute')}
+                  value={timeOf(start)}
+                  allowEmpty
+                  onChange={(time) =>
+                    handleStartChange(joinDayTime(dayOf(start) || toDateKey(new Date()), time))
+                  }
+                />
+              </div>
             </Field>
 
             <Field label={t('endAt')} htmlFor="end_at" required>
-              <LtrInput
-                id="end_at"
-                type="datetime-local"
-                value={end}
-                onChange={(event) => setEnd(event.target.value)}
-                onClick={openNativePicker}
-                required
+              <TimeSelect
+                label={t('endAt')}
+                hourLabel={tSchedule('hour')}
+                minuteLabel={tSchedule('minute')}
+                value={timeOf(end)}
+                allowEmpty
+                onChange={(time) => setEnd(joinDayTime(dayOf(start) || toDateKey(new Date()), time))}
               />
             </Field>
 

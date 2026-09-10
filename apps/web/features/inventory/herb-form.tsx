@@ -24,6 +24,7 @@ import {
   Checkbox,
   Field,
   FieldGrid,
+  FormActionBar,
   Input,
   LtrInput,
   Section,
@@ -274,7 +275,7 @@ export function HerbForm({ herb }: { herb?: Herb }) {
         </CardBody>
       </Card>
 
-      <div className="flex justify-end gap-2">
+      <FormActionBar>
         <Button
           type="button"
           variant="secondary"
@@ -287,7 +288,7 @@ export function HerbForm({ herb }: { herb?: Herb }) {
           {isPending ? <Spinner /> : null}
           {isPending ? tc('saving') : tc('save')}
         </Button>
-      </div>
+      </FormActionBar>
     </form>
   );
 }

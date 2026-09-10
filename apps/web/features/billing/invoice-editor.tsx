@@ -163,7 +163,7 @@ export function InvoiceEditor({ invoice }: { invoice: InvoiceWithDetails }) {
             </Badge>
           </CardHeader>
           <CardBody className="p-0">
-            <TableWrapper className="rounded-none border-0">
+            <TableWrapper inset responsive>
               <Table>
                 <thead>
                   <tr>
@@ -187,7 +187,7 @@ export function InvoiceEditor({ invoice }: { invoice: InvoiceWithDetails }) {
                   ) : null}
                   {invoice.items.map((item) => (
                     <Tr key={item.id}>
-                      <Td>{item.description}</Td>
+                      <Td data-card-title>{item.description}</Td>
                       <Td>
                         <span dir="ltr" className="tabular-nums">
                           {format.number(Number(item.quantity))}

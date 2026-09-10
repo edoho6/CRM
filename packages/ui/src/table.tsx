@@ -17,18 +17,26 @@ import { TableSizeControl } from './table-size';
  *
  * A responsive table also carries the row-size switch (`TableSizeControl`):
  * the same three steps on every list, remembered by the browser.
+ *
+ * `inset` is for a table that fills a card's body: the card already draws
+ * the frame, so the wrapper draws none — one prop instead of five pages
+ * each undoing the border and the radius by hand. On a phone its cards get
+ * a little room from the card's edge (`.table-cards[data-inset]`).
  */
 export function TableWrapper({
   className,
   responsive = false,
+  inset = false,
   children,
   ...props
-}: React.HTMLAttributes<HTMLDivElement> & { responsive?: boolean }) {
+}: React.HTMLAttributes<HTMLDivElement> & { responsive?: boolean; inset?: boolean }) {
   return (
     <div
       data-table-wrapper=""
+      data-inset={inset ? '' : undefined}
       className={cn(
         'overflow-x-auto rounded-card border border-ink-200 bg-white',
+        inset && 'rounded-none border-0',
         responsive && 'table-cards',
         className,
       )}
@@ -71,8 +79,14 @@ export function Th({
 export function Td({
   className,
   numeric = false,
+  children,
   ...props
 }: React.TdHTMLAttributes<HTMLTableCellElement> & { numeric?: boolean }) {
+  // The cell that names the row (`data-card-title`) carries the card's
+  // chevron on a phone; the stylesheet shows it only when the cell holds a
+  // link, and never on a desk. An element rather than a pseudo-element on
+  // the row, so it sits beside the title and not in the card's corner.
+  const isCardTitle = (props as Record<string, unknown>)['data-card-title'] !== undefined;
   return (
     <td
       className={cn(
@@ -81,7 +95,10 @@ export function Td({
         className,
       )}
       {...props}
-    />
+    >
+      {children}
+      {isCardTitle ? <span className="card-chevron" aria-hidden /> : null}
+    </td>
   );
 }
 

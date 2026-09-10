@@ -740,9 +740,19 @@ const flows = {
     const row = page.locator('main li', { hasText: title }).first();
     const appeared = await row.waitFor({ timeout: 10_000 }).then(() => true).catch(() => false);
     if (!appeared) return { ok: false, detail: 'task never appeared in the widget' };
+    // Deleting is optimistic: the row must be gone from the list at once,
+    // long before the widget has re-read its tasks, and the other rows must
+    // stay usable while it is written.
+    const others = page.locator('main li input[type="checkbox"]:not([disabled])');
+    const usableBefore = await others.count();
     await row.locator('button[aria-label="מחיקה"]').first().click();
-    const gone = await row.waitFor({ state: 'detached', timeout: 10_000 }).then(() => true).catch(() => false);
-    return { ok: gone, detail: gone ? 'task created and deleted' : 'task still listed after delete' };
+    const goneAtOnce = await row.waitFor({ state: 'detached', timeout: 150 }).then(() => true).catch(() => false);
+    const usableDuring = await others.count();
+    const gone = goneAtOnce || (await row.waitFor({ state: 'detached', timeout: 10_000 }).then(() => true).catch(() => false));
+    await page.waitForTimeout(1500);
+    const stillGone = (await page.locator('main li', { hasText: title }).count()) === 0;
+    const ok = gone && stillGone && (usableBefore === 0 || usableDuring >= usableBefore - 1);
+    return { ok, detail: `gone at once ${goneAtOnce}, gone ${gone}, still gone after the re-read ${stillGone}, other rows usable ${usableDuring}/${usableBefore}` };
   },
   async writeAppointment(page) {
     // Books tomorrow 10:00 for the first patient the list offers, sees it
@@ -775,8 +785,15 @@ const flows = {
     await option.waitFor({ timeout: 5_000 });
     const chosen = ((await option.textContent()) ?? '').trim();
     await option.click();
+    // The day in the shared date field (typed as dd/mm/yyyy), the hour and
+    // the minute from the two lists beside it; the end follows the start.
     const day = new URL(page.url()).searchParams.get('date');
-    await page.fill('#start_at', `${day}T10:00`);
+    const [year, month, date] = day.split('-');
+    await page.fill('#start_at', `${date}/${month}/${year}`);
+    await page.locator('#start_at').press('Tab');
+    const startTime = dialog.locator('[role="group"][aria-label="התחלה"], [role="group"][aria-label="Starts"]').first();
+    await startTime.locator('select').nth(0).selectOption('10');
+    await startTime.locator('select').nth(1).selectOption('00');
     await dialog.locator('button[type="submit"]').click();
     if (!(await toast(/התור נקבע/))) return { ok: false, detail: 'no "booked" toast; dialogs open: ' + (await page.locator('[role="dialog"]').count()) };
 
@@ -855,6 +872,36 @@ const flows = {
     });
     const ok = early?.width === 56 && late.width === 56 && late.attr === 'collapsed';
     return { ok, detail: `width at domcontentloaded ${early?.width ?? '?'} (attr ${early?.attr ?? '?'}), after load ${late.width} (attr ${late.attr})` };
+  },
+  async cardRowTap(page) {
+    // On a phone a list row is a card, and the whole card is the link — a
+    // tap on the label of a value, well away from the name, opens the file.
+    const card = page.locator('.table-cards tbody tr').first();
+    if ((await card.count()) === 0) return { ok: false, detail: 'no card rows' };
+    const cell = card.locator('td').nth(1);
+    const box = await cell.boundingBox();
+    if (!box) return { ok: false, detail: 'second cell has no box' };
+    const rtl = (await page.evaluate(() => document.documentElement.dir)) === 'rtl';
+    // The label sits at the inline start of the cell: the right in Hebrew.
+    await page.mouse.click(rtl ? box.x + box.width - 16 : box.x + 16, box.y + box.height / 2);
+    const opened = await page.waitForURL(/\/patients\/[0-9a-f-]{36}/, { timeout: 10_000 }).then(() => true).catch(() => false);
+    return { ok: opened, detail: opened ? 'the card opened the file' : `still at ${page.url()}` };
+  },
+  async phoneFilterSheet(page) {
+    // The catalogue's filters are a drawer on a phone, opened from one button.
+    // The button replaces the desk's <details> after hydration; give a busy
+    // machine a moment for that.
+    const button = page.locator('main button[aria-haspopup="dialog"]', { hasText: /סינון|Filter/ }).first();
+    const present = await button.waitFor({ timeout: 8_000 }).then(() => true).catch(() => false);
+    if (!present) return { ok: false, detail: 'no filter button on the phone layout' };
+    await button.click();
+    const dialog = page.locator('[role="dialog"]').first();
+    await dialog.waitFor({ timeout: 5_000 });
+    const fieldsets = await dialog.locator('fieldset').count();
+    await page.waitForTimeout(400);
+    await page.keyboard.press('Escape');
+    const gone = await dialog.waitFor({ state: 'detached', timeout: 3_000 }).then(() => true).catch(() => false);
+    return { ok: fieldsets > 0 && gone, detail: `${fieldsets} filter groups in the drawer, closed ${gone}` };
   },
   async phoneSearchOverlay(page) {
     // On a phone the search takes the whole top bar while it is open.
@@ -972,6 +1019,8 @@ async function main() {
       await visit(context, { route: '/patients', locale: 'en', width: phone, label: 'flow phone-tab-bar', after: flows.phoneTabBar });
       await visit(context, { route: '/reference/herbs', locale: 'he', width: phone, label: 'flow large-title-collapses', after: flows.largeTitleCollapses });
       await visit(context, { route: '/patients', locale: 'he', width: phone, label: 'flow phone-search-overlay', after: flows.phoneSearchOverlay });
+      await visit(context, { route: '/patients', locale: 'he', width: phone, label: 'flow card-row-tap', after: flows.cardRowTap });
+      await visit(context, { route: '/reference/herbs', locale: 'he', width: phone, label: 'flow phone-filter-sheet', after: flows.phoneFilterSheet });
     }
     await visit(context, {
       route: '/patients', locale: 'he', width: desktop, label: 'flow sidebar-no-shift',

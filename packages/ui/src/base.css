@@ -165,6 +165,12 @@
    on a phone the list is read top to bottom, and sorting waits for a desk.
    `screen` only — paper gets the table.
 */
+/* The card chevron exists in the markup at every size and shows only in the
+   phone layout below. */
+.card-chevron {
+  display: none;
+}
+
 @media screen and (max-width: 767px) {
   .table-cards {
     overflow-x: visible;
@@ -226,6 +232,49 @@
   }
   .table-cards td:has(> [data-dash]:only-child) {
     display: none;
+  }
+  /* A card whose title is a link is one tap target: the link stretches over
+     the whole card, controls inside the card stay above it, and a chevron
+     on the trailing edge says the card leads somewhere. */
+  .table-cards tr {
+    position: relative;
+  }
+  .table-cards tr:has(td[data-card-title] a):active {
+    background: var(--color-ink-50);
+  }
+  .table-cards td :is(a, button, input, select, textarea, label, summary, [role='button']) {
+    position: relative;
+    z-index: 1;
+  }
+  .table-cards td[data-card-title] a:first-of-type {
+    position: static;
+  }
+  .table-cards td[data-card-title] a:first-of-type::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+  }
+  /* The chevron beside the title, shown only when the title is a link. */
+  .table-cards td[data-card-title] {
+    justify-content: space-between;
+  }
+  .table-cards td[data-card-title]:has(a) > .card-chevron {
+    display: block;
+    flex: 0 0 auto;
+    width: 1rem;
+    height: 1rem;
+    margin-inline-start: 0.5rem;
+    background: var(--color-ink-400);
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m15 18-6-6 6-6'/%3E%3C/svg%3E")
+      center / contain no-repeat;
+  }
+  /* It points the way the row leads: forward in reading order. */
+  [dir='ltr'] .table-cards td[data-card-title]:has(a) > .card-chevron {
+    scale: -1 1;
+  }
+  /* Inside a card's body the cards need a little room from its edge. */
+  .table-cards[data-inset] {
+    padding: 0.75rem 0.75rem 0;
   }
 }
 

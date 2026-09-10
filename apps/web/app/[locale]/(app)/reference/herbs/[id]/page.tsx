@@ -391,7 +391,7 @@ export default async function HerbDetailPage({
               {uses.length === 0 ? (
                 <p className="px-4 py-6 text-center text-sm text-ink-500">{t('usedInEmpty')}</p>
               ) : (
-                <TableWrapper className="rounded-none border-0">
+                <TableWrapper inset responsive>
                   <SortableTable defaultSortKey="name">
                     <thead>
                       <tr>
@@ -413,7 +413,7 @@ export default async function HerbDetailPage({
                               dose: Number(use.dosage),
                             }}
                           >
-                            <Td>
+                            <Td data-card-title>
                               <Link
                                 href={`/reference/formulas/${formula.id}`}
                                 className="font-medium text-jade-800 underline-offset-2 hover:underline"
@@ -469,7 +469,7 @@ export default async function HerbDetailPage({
                       {tBatches('empty')}
                     </p>
                   ) : (
-                    <TableWrapper className="rounded-none border-0">
+                    <TableWrapper inset responsive>
                       <SortableTable defaultSortKey="expiry">
                         <thead>
                           <tr>
@@ -495,7 +495,7 @@ export default async function HerbDetailPage({
                                   supplier: batch.supplier?.name ?? null,
                                 }}
                               >
-                                <Td>
+                                <Td data-card-title>
                                   <span dir="ltr">{batch.batch_number ?? <Dash />}</span>
                                 </Td>
                                 <Td>
@@ -539,7 +539,7 @@ export default async function HerbDetailPage({
                       {tMovements('empty')}
                     </p>
                   ) : (
-                    <TableWrapper className="rounded-none border-0">
+                    <TableWrapper inset responsive>
                       <SortableTable defaultSortKey="date" defaultSortDirection="desc">
                         <thead>
                           <tr>
@@ -560,7 +560,7 @@ export default async function HerbDetailPage({
                                   quantity,
                                 }}
                               >
-                                <Td>
+                                <Td data-card-title>
                                   <span dir="ltr" className="tabular-nums">
                                     {formatDate(new Date(movement.created_at))}
                                   </span>

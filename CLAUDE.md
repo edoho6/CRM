@@ -224,7 +224,8 @@
   בלחיצה דרך `SegmentedControl`; רשימה ארוכה מדפדפת עם `components/pagination.tsx`
   (`pageFrom`/`pageRange` + `count: 'exact'`), לא `limit` שקט, ומקבלת `RememberQuery`
   (`components/remember-query.tsx`) כדי שהמסננים יחזרו בביקור הבא באותה לשונית; טבלת רשימה מקבלת
-  `<TableWrapper responsive>` כדי להפוך לכרטיסים בטלפון, והתא שמזהה את השורה מסומן
+  `<TableWrapper responsive>` כדי להפוך לכרטיסים בטלפון (`inset` כשהיא ממלאת גוף כרטיס — לא
+  `rounded-none border-0` ידני; בטלפון כל הכרטיס לחיץ דרך הקישור שבתא הכותרת, עם chevron), והתא שמזהה את השורה מסומן
   `<Td data-card-title>` (כותרת הכרטיס; תא שכולו `<Dash/>` נעלם בטלפון); שדה קטן בתוך שורה הוא
   `compact`, לא `h-7` ידני. גוף העמוד ב-`PageBody width="narrow|wide"` ולא `max-w-3xl`
   ידני; פס ניווט משנה (`SettingsNav`, `InventoryNav`) בחריץ `below` של הכותרת, לא כאח
@@ -245,6 +246,15 @@
   חדשה = מפתח שם, שורה בסקריפט, כלל CSS, ומקרה ב-`theme.test.ts`
 - **כותרת גדולה:** `PageHeader` מסמן את ה-h1 ב-`data-page-title`, ו-`collapsing-title.tsx`
   בשורת הכותרת מציג את הטקסט שלה משנגללה החוצה. אין h1 מחוץ ל-`PageHeader`
+- **טופס ארוך:** הכפתורים שלו ב-`FormActionBar` מ-`@clinic/ui` (דביק לתחתית החלון, מעל
+  הסרגל התחתון; חריץ `status` ל"נשמר לפני רגע") — לא `<div className="flex justify-end">`
+  בסוף העמוד
+- **כתיבה אופטימית:** שינוי קטן משורה (סימון משימה, סטטוס, סף) מוצג מיד ומתגלגל חזרה
+  עם טוסט `errorGeneric` אם הכתיבה נכשלה; `pending` לפי מזהה השורה, לא דגל אחד לכל
+  הלוח (`features/tasks/optimistic.ts` הוא הדפוס, עם בדיקות). ספינר/✓ בתא קבוע-רוחב
+  כדי שהכפתורים לידו לא יזוזו
+- **מסננים בטלפון:** `FilterDisclosure` הוא `<details>` על שולחן ומגירה מתחת ל-`md`;
+  הילדים הם קישורים, ולכן הבחירה מנווטת והמגירה פשוט נסגרת
 - **CSS משותף:** כללים שאינם טוקנים (מיקוד, placeholder, `select.ui-select`, `.table-cards`,
   `[data-table-size]`, הדפסה בסיסית) ב-`packages/ui/src/base.css`, מיובא בשני
   ה-`globals.css`; ה-`@theme` נשאר לכל אפליקציה בנפרד

@@ -16,6 +16,7 @@ import { Link } from '@clinic/i18n/navigation';
 import type { HerbBatchWithHerb } from '@clinic/db/types';
 import type { Locale } from '@clinic/domain';
 import { PageHeader } from '@/components/app-shell';
+import { Pagination, pageFrom, pageRange } from '@/components/pagination';
 import { getClinicScope } from '@/lib/session';
 import { herbPrimaryName } from '@/lib/display';
 import { InventoryNav } from '@/features/inventory/inventory-nav';
@@ -24,8 +25,16 @@ import { formatDate } from '@clinic/i18n';
 /** Batches expiring within this window are flagged so they get used first. */
 const EXPIRY_WARNING_DAYS = 60;
 
-export default async function BatchesPage({ params }: { params: Promise<{ locale: string }> }) {
+export default async function BatchesPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ locale: string }>;
+  searchParams: Promise<{ page?: string }>;
+}) {
   const { locale } = await params;
+  const { page: pageParam } = await searchParams;
+  const page = pageFrom(pageParam);
   setRequestLocale(locale);
 
   const t = await getTranslations('inventory.batches');
@@ -36,13 +45,14 @@ export default async function BatchesPage({ params }: { params: Promise<{ locale
   const scope = await getClinicScope();
   if (!scope) return null;
 
-  const { data } = await scope.supabase
+  const { data, count } = await scope.supabase
     .from('herb_batches')
     .select(
       '*, herb:herbs(id, pinyin_name, chinese_name, english_name, hebrew_name), supplier:suppliers(id, name)',
+      { count: 'exact' },
     )
     .order('expiry_date', { ascending: true, nullsFirst: false })
-    .limit(500)
+    .range(...pageRange(page))
     .returns<HerbBatchWithHerb[]>();
 
   const batches = data ?? [];
@@ -149,6 +159,7 @@ export default async function BatchesPage({ params }: { params: Promise<{ locale
           </SortableTable>
         </TableWrapper>
       )}
+      <Pagination page={page} total={count ?? null} shown={batches.length} pathname="/inventory/batches" query={{}} />
     </>
   );
 }

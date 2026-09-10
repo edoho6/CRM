@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useTranslations } from 'next-intl';
 import { Boxes, Check } from 'lucide-react';
-import { Alert, Button, Card, CardBody, Field, Input, Section, Spinner, useToast } from '@clinic/ui';
+import { Alert, Button, Card, CardBody, Field, FormActionBar, Input, Section, Spinner, useToast } from '@clinic/ui';
 import { cn } from '@clinic/ui/cn';
 import { useRouter } from '@clinic/i18n/navigation';
 import { saveClinicSettings } from '@/features/inventory/actions';
@@ -104,12 +104,12 @@ export function ClinicSettingsForm({
         </CardBody>
       </Card>
 
-      <div className="flex justify-end">
+      <FormActionBar>
         <Button type="submit" disabled={isPending}>
           {isPending ? <Spinner /> : null}
           {isPending ? tc('saving') : tc('save')}
         </Button>
-      </div>
+      </FormActionBar>
     </form>
   );
 }

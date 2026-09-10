@@ -22,6 +22,7 @@ import {
   CardBody,
   Field,
   FieldGrid,
+  FormActionBar,
   Input,
   LtrInput,
   Section,
@@ -260,7 +261,7 @@ export function PatientForm({ patient }: { patient?: Patient }) {
         </CardBody>
       </Card>
 
-      <div className="flex items-center justify-end gap-2">
+      <FormActionBar>
         <Button
           type="button"
           variant="secondary"
@@ -273,7 +274,7 @@ export function PatientForm({ patient }: { patient?: Patient }) {
           {isPending ? <Spinner /> : null}
           {isPending ? tc('saving') : tc('save')}
         </Button>
-      </div>
+      </FormActionBar>
     </form>
   );
 }

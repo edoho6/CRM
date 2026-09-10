@@ -14,6 +14,7 @@ import {
 import { Link } from '@clinic/i18n/navigation';
 import type { FormTemplate } from '@clinic/db/types';
 import { PageHeader } from '@/components/app-shell';
+import { Pagination, pageFrom, pageRange } from '@/components/pagination';
 import { FORM_LIBRARY } from '@/features/forms/library';
 import { LibraryPicker } from '@/features/forms/library-picker';
 import { getClinicScope } from '@/lib/session';
@@ -26,8 +27,16 @@ import { formatDate } from '@clinic/i18n';
  * is retired the moment it has been filled in and is no longer wanted, and its
  * submissions are still read through it.
  */
-export default async function FormsPage({ params }: { params: Promise<{ locale: string }> }) {
+export default async function FormsPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ locale: string }>;
+  searchParams: Promise<{ page?: string }>;
+}) {
   const { locale } = await params;
+  const { page: pageParam } = await searchParams;
+  const page = pageFrom(pageParam);
   setRequestLocale(locale);
 
   const t = await getTranslations('forms');
@@ -36,11 +45,12 @@ export default async function FormsPage({ params }: { params: Promise<{ locale: 
   const scope = await getClinicScope();
   if (!scope) return null;
 
-  const { data } = await scope.supabase
+  const { data, count } = await scope.supabase
     .from('form_templates')
-    .select('*')
+    .select('*', { count: 'exact' })
     .order('is_active', { ascending: false })
     .order('title', { ascending: true })
+    .range(...pageRange(page))
     .returns<FormTemplate[]>();
 
   const templates = data ?? [];
@@ -149,6 +159,7 @@ export default async function FormsPage({ params }: { params: Promise<{ locale: 
           </SortableTable>
         </TableWrapper>
       )}
+      <Pagination page={page} total={count ?? null} shown={templates.length} pathname="/forms" query={{}} />
     </>
   );
 }

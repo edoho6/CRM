@@ -11,6 +11,7 @@ import {
   Checkbox,
   Field,
   FieldGrid,
+  FormActionBar,
   Input,
   LtrInput,
   Section,
@@ -347,7 +348,7 @@ export function FormulaForm({ formula, herbs }: { formula?: HerbFormulaWithItems
         </CardBody>
       </Card>
 
-      <div className="flex justify-end gap-2">
+      <FormActionBar>
         <Button
           type="button"
           variant="secondary"
@@ -360,7 +361,7 @@ export function FormulaForm({ formula, herbs }: { formula?: HerbFormulaWithItems
           {isPending ? <Spinner /> : null}
           {isPending ? tc('saving') : tc('save')}
         </Button>
-      </div>
+      </FormActionBar>
     </form>
   );
 }

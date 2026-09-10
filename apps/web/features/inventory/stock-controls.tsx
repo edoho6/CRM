@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useTranslations } from 'next-intl';
 import { Check, Plus, ShoppingCart } from 'lucide-react';
-import { LtrInput, Spinner } from '@clinic/ui';
+import { LtrInput, Spinner, useToast } from '@clinic/ui';
 import { cn } from '@clinic/ui/cn';
 import { useRouter } from '@clinic/i18n/navigation';
 import { addToOrderList, setFormulaThreshold, setHerbThreshold } from './actions';
@@ -31,7 +31,9 @@ export function ThresholdCell({
   reorderQuantity?: number | null;
 }) {
   const t = useTranslations('inventory.stock');
+  const tc = useTranslations('common');
   const router = useRouter();
+  const { toast } = useToast();
   const [draft, setDraft] = useState(value === null ? '' : String(value));
   const [saved, setSaved] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -50,11 +52,15 @@ export function ThresholdCell({
               reorder_quantity: reorderQuantity === null ? '' : String(reorderQuantity),
             })
           : await setFormulaThreshold(id, { reorder_threshold_doses: trimmed });
-      if (result.ok) {
-        setSaved(true);
-        window.setTimeout(() => setSaved(false), 1500);
-        router.refresh();
+      if (!result.ok) {
+        // The number the server still has, and a word about it.
+        setDraft(value === null ? '' : String(value));
+        toast({ tone: 'danger', title: tc('errorGeneric') });
+        return;
       }
+      setSaved(true);
+      window.setTimeout(() => setSaved(false), 1500);
+      router.refresh();
     });
   }
 
@@ -80,8 +86,14 @@ export function ThresholdCell({
         className="w-20 tabular-nums"
       />
       <span className="text-xs text-ink-600">{suffix}</span>
-      {isPending ? <Spinner className="h-3 w-3 text-ink-500" /> : null}
-      {saved ? <Check className="h-3.5 w-3.5 text-jade-700" /> : null}
+      {/* A fixed slot: the cell must not widen and narrow while it saves. */}
+      <span className="inline-flex h-4 w-4 items-center justify-center" aria-hidden>
+        {isPending ? (
+          <Spinner className="h-3 w-3 text-ink-500" />
+        ) : saved ? (
+          <Check className="h-3.5 w-3.5 text-jade-700" />
+        ) : null}
+      </span>
     </span>
   );
 }
@@ -101,11 +113,15 @@ export function AddToOrderButton({
   alreadyListed?: boolean;
 }) {
   const t = useTranslations('inventory.order');
+  const tc = useTranslations('common');
   const router = useRouter();
+  const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [done, setDone] = useState(false);
 
   function add() {
+    // Listed at once; unlisted again only if the write fails.
+    setDone(true);
     startTransition(async () => {
       const result = await addToOrderList({
         herb_id: herbId ?? null,
@@ -116,10 +132,12 @@ export function AddToOrderButton({
         status: 'pending',
         notes: null,
       });
-      if (result.ok) {
-        setDone(true);
-        router.refresh();
+      if (!result.ok) {
+        setDone(false);
+        toast({ tone: 'danger', title: tc('errorGeneric') });
+        return;
       }
+      router.refresh();
     });
   }
 
@@ -132,7 +150,7 @@ export function AddToOrderButton({
       disabled={isPending || listed}
       title={listed ? t('alreadyListed') : t('add')}
       className={cn(
-        'inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition-colors',
+        'inline-flex min-h-8 items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition-colors pointer-coarse:min-h-10',
         listed
           ? 'cursor-default bg-jade-50 text-jade-700'
           : 'bg-ink-100 text-ink-700 hover:bg-jade-100 hover:text-jade-800',

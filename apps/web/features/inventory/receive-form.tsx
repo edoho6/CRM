@@ -13,12 +13,13 @@ import {
   Combobox,
   Field,
   FieldGrid,
+  FormActionBar,
   Input,
   LtrInput,
   Select,
   Spinner,
-  useToast,
   type ComboboxOption,
+  useToast,
 } from '@clinic/ui';
 import {
   HERB_PREPARATIONS,
@@ -372,7 +373,7 @@ export function ReceiveForm({
         </CardBody>
       </Card>
 
-      <div className="flex justify-end gap-2">
+      <FormActionBar>
         <Button
           type="button"
           variant="secondary"
@@ -385,7 +386,7 @@ export function ReceiveForm({
           {isPending ? <Spinner /> : <PackagePlus className="h-4 w-4" />}
           {t('receive')}
         </Button>
-      </div>
+      </FormActionBar>
     </form>
   );
 }

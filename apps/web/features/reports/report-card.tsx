@@ -90,7 +90,7 @@ export function ReportCard({
             button to press and no colour to rely on. */}
         {!empty ? (
           <div className={showTable ? undefined : 'hidden print:block'}>
-            <TableWrapper>
+            <TableWrapper responsive>
               <Table>
                 <thead>
                   <tr>
@@ -108,6 +108,7 @@ export function ReportCard({
                         return (
                           <Td
                             key={column}
+                            data-card-title={column === table.columns[0] ? '' : undefined}
                             dir={isNumber ? 'ltr' : 'auto'}
                             className={isNumber ? 'tabular-nums' : undefined}
                           >

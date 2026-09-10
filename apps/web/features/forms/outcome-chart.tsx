@@ -235,7 +235,7 @@ export function OutcomeChart({ series }: { series: OutcomeSeries[] }) {
           {showTable ? t('hideTable') : t('showTable')}
         </button>
         {showTable ? (
-          <TableWrapper className="mt-2">
+          <TableWrapper responsive className="mt-2">
             <Table>
             <thead>
               <Tr>
@@ -246,7 +246,7 @@ export function OutcomeChart({ series }: { series: OutcomeSeries[] }) {
             <tbody>
               {active.points.map((point, index) => (
                 <Tr key={`${point.date}:${index}`}>
-                  <Td dir="ltr" className="tabular-nums">
+                  <Td data-card-title dir="ltr" className="tabular-nums">
                     {formatDate(new Date(point.date))}
                   </Td>
                   <Td className="tabular-nums">{point.value}</Td>

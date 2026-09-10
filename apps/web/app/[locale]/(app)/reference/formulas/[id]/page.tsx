@@ -230,7 +230,7 @@ export default async function FormulaDetailPage({
               {items.length === 0 ? (
                 <p className="px-4 py-6 text-center text-sm text-ink-500">{t('needsHerb')}</p>
               ) : (
-                <TableWrapper className="rounded-none border-0">
+                <TableWrapper inset responsive>
                   <SortableTable defaultSortKey="order">
                     <thead>
                       <tr>
@@ -263,7 +263,7 @@ export default async function FormulaDetailPage({
                             <Td>
                               <span className="text-xs tabular-nums text-ink-500">{index + 1}</span>
                             </Td>
-                            <Td>
+                            <Td data-card-title>
                               {herb ? (
                                 <>
                                   {/* Every ingredient is a door back into the

@@ -9,6 +9,7 @@ import {
   Card,
   CardBody,
   Field,
+  FormActionBar,
   Input,
   LtrInput,
   Select,
@@ -361,16 +362,14 @@ export function FormBuilder({
           {t('addSection')}
         </Button>
 
-        <Button
-          type="button"
-          className="ms-auto"
-          onClick={save}
-          disabled={isPending || !title.trim()}
-        >
+      </div>
+
+      <FormActionBar>
+        <Button type="button" onClick={save} disabled={isPending || !title.trim()}>
           {isPending ? <Spinner /> : null}
           {tc('save')}
         </Button>
-      </div>
+      </FormActionBar>
     </div>
   );
 }

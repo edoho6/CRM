@@ -1,6 +1,7 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { PageBody } from '@clinic/ui';
 import { PageHeader } from '@/components/app-shell';
+import { Pagination, pageFrom, pageRange } from '@/components/pagination';
 import { getClinicScope } from '@/lib/session';
 import { MessageQueue, type QueueRow } from '@/features/messages/message-queue';
 
@@ -15,8 +16,16 @@ const SELECT =
  * sending service takes it over — and the history is the answer to "did she
  * get the reminder".
  */
-export default async function MessagesPage({ params }: { params: Promise<{ locale: string }> }) {
+export default async function MessagesPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ locale: string }>;
+  searchParams: Promise<{ page?: string }>;
+}) {
   const { locale } = await params;
+  const { page: pageParam } = await searchParams;
+  const page = pageFrom(pageParam);
   setRequestLocale(locale);
   const t = await getTranslations('messages');
 
@@ -36,11 +45,11 @@ export default async function MessagesPage({ params }: { params: Promise<{ local
       .returns<QueueRow[]>(),
     scope.supabase
       .from('message_log')
-      .select(SELECT)
+      .select(SELECT, { count: 'exact' })
       .neq('status', 'queued')
       .gte('created_at', monthAgo.toISOString())
       .order('created_at', { ascending: false })
-      .limit(200)
+      .range(...pageRange(page))
       .returns<QueueRow[]>(),
   ]);
 
@@ -49,6 +58,13 @@ export default async function MessagesPage({ params }: { params: Promise<{ local
       <PageHeader title={t('title')} description={t('subtitle')} />
       <PageBody width="narrow">
         <MessageQueue queued={queuedResult.data ?? []} history={historyResult.data ?? []} />
+        <Pagination
+          page={page}
+          total={historyResult.count ?? null}
+          shown={historyResult.data?.length ?? 0}
+          pathname="/messages"
+          query={{}}
+        />
       </PageBody>
     </>
   );

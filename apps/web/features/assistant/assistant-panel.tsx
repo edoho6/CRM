@@ -153,7 +153,7 @@ export function AssistantPanel({ examples }: { examples: string[] }) {
                 {table.result.rows.length === 0 ? (
                   <p className="text-sm text-ink-600">{t('noRows')}</p>
                 ) : (
-                  <TableWrapper>
+                  <TableWrapper responsive>
                     <Table>
                       <thead>
                         <tr>
@@ -171,6 +171,7 @@ export function AssistantPanel({ examples }: { examples: string[] }) {
                               return (
                                 <Td
                                   key={column}
+                                  data-card-title={column === table.result.columns[0] ? '' : undefined}
                                   dir={isNumber ? 'ltr' : 'auto'}
                                   className={isNumber ? 'tabular-nums' : undefined}
                                 >

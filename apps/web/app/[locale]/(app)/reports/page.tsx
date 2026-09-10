@@ -494,7 +494,7 @@ function ListCard({
         ) : rows.length === 0 ? (
           <p className="py-4 text-sm text-ink-600">{emptyLabel}</p>
         ) : (
-          <TableWrapper>
+          <TableWrapper responsive>
             <Table>
               <thead>
                 <tr>
@@ -512,6 +512,7 @@ function ListCard({
                       return (
                         <Td
                           key={column}
+                          data-card-title={column === columns[0] ? '' : undefined}
                           dir={isNumber ? 'ltr' : 'auto'}
                           className={isNumber ? 'tabular-nums' : undefined}
                         >

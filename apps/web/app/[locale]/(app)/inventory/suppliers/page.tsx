@@ -13,12 +13,21 @@ import {
 } from '@clinic/ui';
 import type { Supplier } from '@clinic/db/types';
 import { PageHeader } from '@/components/app-shell';
+import { Pagination, pageFrom, pageRange } from '@/components/pagination';
 import { getClinicScope } from '@/lib/session';
 import { InventoryNav } from '@/features/inventory/inventory-nav';
 import { NewSupplierDialog } from '@/features/inventory/supplier-form';
 
-export default async function SuppliersPage({ params }: { params: Promise<{ locale: string }> }) {
+export default async function SuppliersPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ locale: string }>;
+  searchParams: Promise<{ page?: string }>;
+}) {
   const { locale } = await params;
+  const { page: pageParam } = await searchParams;
+  const page = pageFrom(pageParam);
   setRequestLocale(locale);
 
   const t = await getTranslations('inventory.suppliers');
@@ -28,10 +37,11 @@ export default async function SuppliersPage({ params }: { params: Promise<{ loca
   const scope = await getClinicScope();
   if (!scope) return null;
 
-  const { data } = await scope.supabase
+  const { data, count } = await scope.supabase
     .from('suppliers')
-    .select('*')
+    .select('*', { count: 'exact' })
     .order('name', { ascending: true })
+    .range(...pageRange(page))
     .returns<Supplier[]>();
 
   const suppliers = data ?? [];
@@ -96,6 +106,7 @@ export default async function SuppliersPage({ params }: { params: Promise<{ loca
           </SortableTable>
         </TableWrapper>
       )}
+      <Pagination page={page} total={count ?? null} shown={suppliers.length} pathname="/inventory/suppliers" query={{}} />
     </>
   );
 }

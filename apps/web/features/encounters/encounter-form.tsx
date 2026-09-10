@@ -17,6 +17,7 @@ import {
   DropdownMenuTrigger,
   Field,
   FieldGrid,
+  FormActionBar,
   Input,
   Section,
   Spinner,
@@ -666,12 +667,12 @@ export function EncounterForm({
              app, and the buttons that save and sign it were at the foot of a
              column that ended below a 3D body and a dispensing table — a
              consultation's worth of scrolling away from where the typing is. */
-          <div className="sticky bottom-0 z-sticky -mx-4 flex flex-wrap items-center justify-end gap-2 border-t border-ink-200 bg-white px-4 py-3 sm:-mx-6 sm:px-6 xl:mx-0 xl:rounded-t-lg xl:border-x xl:px-4">
-            {/* What the autosave is doing, stated rather than assumed. A form that
-              saves itself silently is indistinguishable from one that does not,
-              and the whole reassurance is in being able to see the last time. */}
-            <p className="me-auto text-xs text-ink-600" role="status" aria-live="polite">
-              {autosave.state === 'saving'
+          <FormActionBar
+            // What the autosave is doing, stated rather than assumed. A form
+            // that saves itself silently is indistinguishable from one that
+            // does not, and the whole reassurance is in seeing the last time.
+            status={
+              autosave.state === 'saving'
                 ? tc('saving')
                 : autosave.state === 'error'
                   ? t('autosaveFailed')
@@ -679,8 +680,9 @@ export function EncounterForm({
                     ? t('autosavedAt', {
                         time: format.dateTime(autosave.lastSavedAt, 'time'),
                       })
-                    : t('autosaveOn')}
-            </p>
+                    : t('autosaveOn')
+            }
+          >
             {/* The rare action behind a menu; the two everyday ones as buttons.
                 Save is the primary: it is pressed twenty times a visit, while
                 signing happens once and locks the record, so it must never be
@@ -724,7 +726,7 @@ export function EncounterForm({
               {isPending ? <Spinner /> : <Save className="h-4 w-4" />}
               {isPending ? tc('saving') : tc('save')}
             </Button>
-          </div>
+          </FormActionBar>
         ) : null}
       </div>
 

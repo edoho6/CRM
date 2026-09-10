@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { useTranslations } from 'next-intl';
 import { AlertTriangle, Plus, Trash2 } from 'lucide-react';
 import { Button, Input, Spinner, useToast } from '@clinic/ui';
@@ -11,6 +11,7 @@ import { Link } from '@clinic/i18n/navigation';
 import type { ClinicTaskWithPatient } from '@clinic/db/types';
 import { useAsyncData } from '@/lib/use-supabase';
 import { createTask, deleteTask, setTaskDone } from '@/features/tasks/actions';
+import { withPending } from '@/features/tasks/optimistic';
 import { registerWidget } from '../registry';
 import { WidgetEmpty, WidgetLoading } from '../widget-frame';
 
@@ -77,7 +78,32 @@ function TasksWidget() {
     });
   }
 
-  const rows = data ?? [];
+  // Rows this widget has already ticked or deleted: gone from the list at
+  // once rather than after the re-read, and back if the write fails.
+  const [hiddenIds, setHiddenIds] = useState<ReadonlySet<string>>(() => new Set());
+  const [busyIds, setBusyIds] = useState<ReadonlySet<string>>(() => new Set());
+  const rows = (data ?? []).filter((task) => !hiddenIds.has(task.id));
+  useEffect(() => {
+    // The re-read no longer has them: nothing left to hide.
+    if (!data) return;
+    const present = new Set(data.map((task) => task.id));
+    setHiddenIds((current) =>
+      current.size === 0 ? current : new Set([...current].filter((id) => present.has(id))),
+    );
+  }, [data]);
+
+  async function settle(id: string, write: () => Promise<{ ok: boolean }>) {
+    setHiddenIds((current) => withPending(current, id, true));
+    setBusyIds((current) => withPending(current, id, true));
+    const result = await write();
+    setBusyIds((current) => withPending(current, id, false));
+    if (!result.ok) {
+      setHiddenIds((current) => withPending(current, id, false));
+      toast({ tone: 'danger', title: tc('errorGeneric') });
+      return;
+    }
+    refresh();
+  }
   const today = new Date().toISOString().slice(0, 10);
 
   return (
@@ -119,14 +145,9 @@ function TasksWidget() {
                   type="checkbox"
                   checked={false}
                   aria-label={t('markDone', { title: task.title })}
-                  disabled={isPending}
-                  onChange={() =>
-                    startTransition(async () => {
-                      await setTaskDone(task.id, true);
-                      refresh();
-                    })
-                  }
-                  className="mt-0.5 h-4 w-4 shrink-0 rounded border-ink-300 accent-jade-700"
+                  disabled={busyIds.has(task.id)}
+                  onChange={() => settle(task.id, () => setTaskDone(task.id, true))}
+                  className="mt-0.5 h-5 w-5 shrink-0 rounded border-ink-300 accent-accent"
                 />
 
                 <span className="min-w-0 flex-1">
@@ -177,14 +198,9 @@ function TasksWidget() {
                 <button
                   type="button"
                   aria-label={tc('delete')}
-                  disabled={isPending}
-                  onClick={() =>
-                    startTransition(async () => {
-                      await deleteTask(task.id);
-                      refresh();
-                    })
-                  }
-                  className="shrink-0 rounded p-1 text-ink-500 transition-colors hover:bg-red-50 hover:text-red-700"
+                  disabled={busyIds.has(task.id)}
+                  onClick={() => settle(task.id, () => deleteTask(task.id))}
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-ink-500 transition-colors hover:bg-red-50 hover:text-red-700 active:bg-red-100"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>

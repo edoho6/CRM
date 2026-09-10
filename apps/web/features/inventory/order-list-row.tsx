@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { useTranslations } from 'next-intl';
 import { Check, Trash2, Undo2 } from 'lucide-react';
-import { Input, LtrInput, Select, Spinner, Td } from '@clinic/ui';
+import { Input, LtrInput, Select, Spinner, Td, useToast } from '@clinic/ui';
 import { useRouter } from '@clinic/i18n/navigation';
 import { ORDER_LIST_STATUSES, type OrderListStatus } from '@clinic/domain';
 import { removeFromOrderList, updateOrderListEntry } from './actions';
@@ -41,8 +41,13 @@ export function OrderListRowControls({
   const [quantity, setQuantity] = useState(entry.quantity === null ? '' : String(entry.quantity));
   const [notes, setNotes] = useState(entry.notes ?? '');
   const [supplierId, setSupplierId] = useState(entry.supplier_id ?? '');
+  // Shown at once, put back if the write fails: the row must never sit on
+  // the old value until the whole page has been re-read.
+  const [status, setStatus] = useState<OrderListStatus>(entry.status);
+  useEffect(() => setStatus(entry.status), [entry.status]);
   const [isPending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
+  const { toast } = useToast();
 
   function save(patch: {
     quantity?: string;
@@ -50,6 +55,8 @@ export function OrderListRowControls({
     status?: OrderListStatus;
     supplier_id?: string;
   }) {
+    const previous = { status, supplierId };
+    if (patch.status) setStatus(patch.status);
     startTransition(async () => {
       // Every field goes back, edited or not: this used to send the supplier
       // as null, so changing the status of a line forgot who it was from.
@@ -60,14 +67,18 @@ export function OrderListRowControls({
         unit: entry.unit,
         preparation: entry.preparation ?? null,
         supplier_id: (patch.supplier_id ?? supplierId) || null,
-        status: patch.status ?? entry.status,
+        status: patch.status ?? status,
         notes: patch.notes ?? notes,
       });
-      if (result.ok) {
-        setSaved(true);
-        window.setTimeout(() => setSaved(false), 1500);
-        router.refresh();
+      if (!result.ok) {
+        setStatus(previous.status);
+        setSupplierId(previous.supplierId);
+        toast({ tone: 'danger', title: tc('errorGeneric') });
+        return;
       }
+      setSaved(true);
+      window.setTimeout(() => setSaved(false), 1500);
+      router.refresh();
     });
   }
 
@@ -136,7 +147,7 @@ export function OrderListRowControls({
       <Td>
         <Select
           aria-label={tc('status')}
-          value={entry.status}
+          value={status}
           compact
           className="min-w-28"
           onChange={(event) => save({ status: event.target.value as OrderListStatus })}
@@ -150,14 +161,20 @@ export function OrderListRowControls({
       </Td>
       <Td className="text-end">
         <span className="inline-flex items-center gap-1">
-          {isPending ? <Spinner className="h-3 w-3 text-ink-500" /> : null}
-          {saved ? <Check className="h-3.5 w-3.5 text-jade-600" /> : null}
-          {entry.status === 'received' ? (
+          {/* A fixed slot, so the buttons beside it do not shift while it thinks. */}
+          <span className="inline-flex h-4 w-4 items-center justify-center" aria-hidden>
+            {isPending ? (
+              <Spinner className="h-3 w-3 text-ink-500" />
+            ) : saved ? (
+              <Check className="h-3.5 w-3.5 text-jade-600" />
+            ) : null}
+          </span>
+          {status === 'received' ? (
             <button
               type="button"
               onClick={() => save({ status: 'pending' })}
               aria-label={t('status.pending')}
-              className="rounded p-1 text-ink-500 transition-colors hover:bg-ink-100 hover:text-ink-700"
+              className="flex h-8 w-8 items-center justify-center rounded-md text-ink-500 transition-colors hover:bg-ink-100 hover:text-ink-700 active:bg-ink-200"
             >
               <Undo2 className="h-4 w-4" />
             </button>
@@ -166,7 +183,7 @@ export function OrderListRowControls({
             type="button"
             onClick={remove}
             aria-label={tc('delete')}
-            className="rounded p-1 text-ink-500 transition-colors hover:bg-red-50 hover:text-red-700"
+            className="flex h-8 w-8 items-center justify-center rounded-md text-ink-500 transition-colors hover:bg-red-50 hover:text-red-700 active:bg-red-100"
           >
             <Trash2 className="h-4 w-4" />
           </button>

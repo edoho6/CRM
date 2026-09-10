@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useTransition } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { AlertTriangle, Bell, BellRing, ListChecks, Pencil, Plus, RotateCcw, Trash2 } from 'lucide-react';
 import { Button, Card, CardBody, CardHeader, CardTitle, Collapsible, EmptyState, cn, useConfirm, useToast } from '@clinic/ui';
@@ -9,6 +9,7 @@ import { Link, useRouter } from '@clinic/i18n/navigation';
 import type { ClinicTaskWithPatient } from '@clinic/db/types';
 import { deleteTask, setTaskDone } from './actions';
 import { TaskDialog } from './task-dialog';
+import { applyOverrides, reconcile, withOverride, withPending, type Overrides } from './optimistic';
 
 /**
  * The to-do list, in full.
@@ -52,7 +53,11 @@ export function TasksBoard({
 }) {
   const t = useTranslations('tasks');
   const router = useRouter();
-  const [isPending, startTransition] = useTransition();
+  // What this board has been told and the server has not yet shown, and
+  // which rows are mid-write. Per row: ticking one task must not grey out
+  // the other thirty, and must not wait for the page to be re-read.
+  const [overrides, setOverrides] = useState<Overrides>(() => new Map());
+  const [pendingIds, setPendingIds] = useState<ReadonlySet<string>>(() => new Set());
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<ClinicTaskWithPatient | null>(null);
   const [permission, setPermission] = useState<'unsupported' | NotificationPermission>('default');
@@ -64,6 +69,12 @@ export function TasksBoard({
     setPermission(typeof Notification === 'undefined' ? 'unsupported' : Notification.permission);
   }, []);
 
+  // The server's lists have arrived (a refresh): forget what they now show.
+  useEffect(() => {
+    setOverrides((current) => (current.size === 0 ? current : reconcile(open, done, current)));
+  }, [open, done]);
+
+  const shown = applyOverrides(open, done, overrides);
   const now = new Date();
   const groups: Record<Group, ClinicTaskWithPatient[]> = {
     overdue: [],
@@ -71,13 +82,20 @@ export function TasksBoard({
     later: [],
     undated: [],
   };
-  for (const task of open) groups[groupOf(task, now)].push(task);
+  for (const task of shown.open) groups[groupOf(task, now)].push(task);
 
-  function toggle(task: ClinicTaskWithPatient, isDone: boolean) {
-    startTransition(async () => {
-      await setTaskDone(task.id, isDone);
-      router.refresh();
-    });
+  async function toggle(task: ClinicTaskWithPatient, isDone: boolean) {
+    setOverrides((current) => withOverride(current, task.id, isDone ? 'done' : 'open'));
+    setPendingIds((current) => withPending(current, task.id, true));
+    const result = await setTaskDone(task.id, isDone);
+    setPendingIds((current) => withPending(current, task.id, false));
+    if (!result.ok) {
+      // Back where the server has it, and said out loud.
+      setOverrides((current) => withOverride(current, task.id, null));
+      toast({ tone: 'danger', title: tc('errorGeneric') });
+      return;
+    }
+    router.refresh();
   }
 
   function edit(task: ClinicTaskWithPatient | null) {
@@ -106,11 +124,17 @@ export function TasksBoard({
       destructive: true,
     });
     if (!confirmed) return;
-    startTransition(async () => {
-      await deleteTask(task.id);
-      toast({ tone: 'success', title: t('deleted') });
-      router.refresh();
-    });
+    setOverrides((current) => withOverride(current, task.id, 'removed'));
+    setPendingIds((current) => withPending(current, task.id, true));
+    const result = await deleteTask(task.id);
+    setPendingIds((current) => withPending(current, task.id, false));
+    if (!result.ok) {
+      setOverrides((current) => withOverride(current, task.id, null));
+      toast({ tone: 'danger', title: tc('errorGeneric') });
+      return;
+    }
+    toast({ tone: 'success', title: t('deleted') });
+    router.refresh();
   }
 
   const row = (task: ClinicTaskWithPatient, isDone: boolean) => {
@@ -121,9 +145,9 @@ export function TasksBoard({
           type="checkbox"
           checked={isDone}
           aria-label={t(isDone ? 'markOpen' : 'markDone', { title: task.title })}
-          disabled={isPending}
+          disabled={pendingIds.has(task.id)}
           onChange={() => toggle(task, !isDone)}
-          className="mt-1 h-4 w-4 shrink-0 rounded border-ink-300 accent-jade-700"
+          className="mt-0.5 h-5 w-5 shrink-0 rounded border-ink-300 accent-accent"
         />
         <div className="min-w-0 flex-1">
           <button
@@ -176,7 +200,7 @@ export function TasksBoard({
               type="button"
               size="sm"
               variant="ghost"
-              disabled={isPending}
+              disabled={pendingIds.has(task.id)}
               onClick={() => toggle(task, false)}
             >
               <RotateCcw className="h-3.5 w-3.5" aria-hidden />
@@ -187,9 +211,9 @@ export function TasksBoard({
             type="button"
             aria-label={t('editTask')}
             title={t('editTask')}
-            disabled={isPending}
+            disabled={pendingIds.has(task.id)}
             onClick={() => edit(task)}
-            className="rounded-md p-1.5 text-ink-500 transition-colors hover:bg-ink-100 hover:text-ink-800"
+            className="flex h-8 w-8 items-center justify-center rounded-md text-ink-500 transition-colors hover:bg-ink-100 hover:text-ink-800 active:bg-ink-200 pointer-coarse:h-10 pointer-coarse:w-10"
           >
             <Pencil className="h-4 w-4" aria-hidden />
           </button>
@@ -197,9 +221,9 @@ export function TasksBoard({
             type="button"
             aria-label={tc('delete')}
             title={tc('delete')}
-            disabled={isPending}
+            disabled={pendingIds.has(task.id)}
             onClick={() => remove(task)}
-            className="rounded-md p-1.5 text-ink-500 transition-colors hover:bg-red-50 hover:text-red-700"
+            className="flex h-8 w-8 items-center justify-center rounded-md text-ink-500 transition-colors hover:bg-red-50 hover:text-red-700 active:bg-red-100 pointer-coarse:h-10 pointer-coarse:w-10"
           >
             <Trash2 className="h-4 w-4" aria-hidden />
           </button>
@@ -255,7 +279,7 @@ export function TasksBoard({
         </div>
       </div>
 
-      {open.length === 0 ? (
+      {shown.open.length === 0 ? (
         <EmptyState
           icon={<ListChecks className="h-8 w-8" />}
           title={t('empty')}
@@ -275,9 +299,9 @@ export function TasksBoard({
         </>
       )}
 
-      {done.length > 0 ? (
-        <Collapsible title={`${t('sections.done')} · ${done.length}`}>
-          <ul className="divide-y divide-ink-100">{done.map((task) => row(task, true))}</ul>
+      {shown.done.length > 0 ? (
+        <Collapsible title={`${t('sections.done')} · ${shown.done.length}`}>
+          <ul className="divide-y divide-ink-100">{shown.done.map((task) => row(task, true))}</ul>
         </Collapsible>
       ) : null}
 

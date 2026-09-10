@@ -16,14 +16,23 @@ import { Link } from '@clinic/i18n/navigation';
 import type { Invoice, Patient } from '@clinic/db/types';
 import { INVOICE_STATUS_TONES, statusTone } from '@clinic/domain';
 import { PageHeader } from '@/components/app-shell';
+import { Pagination, pageFrom, pageRange } from '@/components/pagination';
 import { getClinicScope } from '@/lib/session';
 import { formatDate } from '@clinic/i18n';
 
 type InvoiceRow = Invoice & { patient: Pick<Patient, 'id' | 'full_name'> | null };
 
 
-export default async function BillingPage({ params }: { params: Promise<{ locale: string }> }) {
+export default async function BillingPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ locale: string }>;
+  searchParams: Promise<{ page?: string }>;
+}) {
   const { locale } = await params;
+  const { page: pageParam } = await searchParams;
+  const page = pageFrom(pageParam);
   setRequestLocale(locale);
 
   const t = await getTranslations('billing');
@@ -34,11 +43,13 @@ export default async function BillingPage({ params }: { params: Promise<{ locale
   const scope = await getClinicScope();
   if (!scope) return null;
 
-  const { data } = await scope.supabase
+  // Fifty a page, newest first, with the count so the foot can say how many
+  // there are in all — it used to stop at two hundred without a word.
+  const { data, count } = await scope.supabase
     .from('invoices')
-    .select('*, patient:patients(id, full_name)')
+    .select('*, patient:patients(id, full_name)', { count: 'exact' })
     .order('created_at', { ascending: false })
-    .limit(200)
+    .range(...pageRange(page))
     .returns<InvoiceRow[]>();
 
   const invoices = data ?? [];
@@ -147,6 +158,7 @@ export default async function BillingPage({ params }: { params: Promise<{ locale
           </SortableTable>
         </TableWrapper>
       )}
+      <Pagination page={page} total={count ?? null} shown={invoices.length} pathname="/billing" query={{}} />
     </>
   );
 }
