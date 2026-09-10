@@ -107,7 +107,7 @@ export function WidgetFrame({
             onClick={onRemove}
             onPointerDown={(event) => event.stopPropagation()}
             aria-label={t('removeWidget')}
-            className="rounded-md p-1 text-ink-500 transition-colors hover:bg-red-50 hover:text-red-600"
+            className="rounded-md p-1 text-ink-500 transition-colors hover:bg-red-50 hover:text-red-700"
           >
             <X className="h-3.5 w-3.5" />
           </button>

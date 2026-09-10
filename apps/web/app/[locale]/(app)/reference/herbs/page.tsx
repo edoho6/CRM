@@ -296,7 +296,7 @@ export default async function HerbsPage({
                             dir="ltr"
                             className={
                               stock.remaining <= 0
-                                ? 'font-semibold tabular-nums text-red-600'
+                                ? 'font-semibold tabular-nums text-red-700'
                                 : stock.low
                                   ? 'font-semibold tabular-nums text-amber-700'
                                   : 'font-semibold tabular-nums text-jade-700'

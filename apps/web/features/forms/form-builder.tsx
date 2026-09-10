@@ -223,7 +223,7 @@ export function FormBuilder({
                     setFields((current) => current.filter((_, position) => position !== index))
                   }
                   aria-label={tc('delete')}
-                  className="rounded p-1.5 text-ink-500 hover:bg-red-50 hover:text-red-600"
+                  className="rounded p-1.5 text-ink-500 hover:bg-red-50 hover:text-red-700"
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
@@ -274,7 +274,7 @@ export function FormBuilder({
                         })
                       }
                       aria-label={tc('delete')}
-                      className="rounded p-1.5 text-ink-500 hover:bg-red-50 hover:text-red-600"
+                      className="rounded p-1.5 text-ink-500 hover:bg-red-50 hover:text-red-700"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>

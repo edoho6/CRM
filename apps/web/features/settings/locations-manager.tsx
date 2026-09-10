@@ -161,7 +161,7 @@ export function LocationsManager({ locations }: { locations: Location[] }) {
                   type="button"
                   size="icon"
                   variant="ghost"
-                  className="text-ink-500 hover:bg-red-50 hover:text-red-600"
+                  className="text-ink-500 hover:bg-red-50 hover:text-red-700"
                   aria-label={tc('delete')}
                   title={tc('delete')}
                   disabled={isPending}

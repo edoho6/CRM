@@ -246,7 +246,7 @@ export function TonguePhotos({
                 type="button"
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 text-ink-500 hover:bg-red-50 hover:text-red-600"
+                className="h-8 w-8 text-ink-500 hover:bg-red-50 hover:text-red-700"
                 disabled={isPending}
                 aria-label={t('remove')}
                 title={t('remove')}

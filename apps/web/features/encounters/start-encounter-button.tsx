@@ -57,7 +57,7 @@ export function StartEncounterButton({
           is locked" and "the server is down" is the difference between
           knowing what to do next and not. */}
       {errorKey ? (
-        <span role="alert" className="text-xs text-red-600">
+        <span role="alert" className="text-xs text-red-700">
           {tAll.has(errorKey) ? tAll(errorKey) : tAll('common.errorGeneric')}
         </span>
       ) : null}

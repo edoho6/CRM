@@ -11,7 +11,7 @@ export default function GlobalNotFound() {
     <html lang={defaultLocale} dir={getDirection(defaultLocale)}>
       <body className="grid min-h-dvh place-items-center bg-ink-50 p-6">
         <div className="text-center">
-          <p className="text-5xl font-semibold text-ink-300">404</p>
+          <p className="text-5xl font-semibold text-ink-500">404</p>
           <p className="mt-2 text-sm text-ink-600">הדף לא נמצא · Page not found</p>
           <Link
             href={`/${defaultLocale}`}

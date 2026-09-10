@@ -246,7 +246,7 @@ export function ScheduleForm({
                                 current.filter((entry) => entry.key !== block.key),
                               )
                             }
-                            className="rounded-md p-2 text-ink-500 transition-colors hover:bg-red-50 hover:text-red-600"
+                            className="rounded-md p-2 text-ink-500 transition-colors hover:bg-red-50 hover:text-red-700"
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
@@ -337,7 +337,7 @@ export function ScheduleForm({
                       router.refresh();
                     })
                   }
-                  className="ms-auto rounded-md p-1.5 text-ink-500 transition-colors hover:bg-red-50 hover:text-red-600"
+                  className="ms-auto rounded-md p-1.5 text-ink-500 transition-colors hover:bg-red-50 hover:text-red-700"
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>

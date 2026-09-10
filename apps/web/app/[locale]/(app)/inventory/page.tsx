@@ -490,7 +490,7 @@ export default async function StockRoomPage({
                               dir="ltr"
                               className={
                                 doses <= 0
-                                  ? 'font-semibold tabular-nums text-red-600'
+                                  ? 'font-semibold tabular-nums text-red-700'
                                   : level.is_below_threshold
                                     ? 'font-semibold tabular-nums text-amber-700'
                                     : 'font-semibold tabular-nums text-ink-800'

@@ -184,7 +184,7 @@ function TasksWidget() {
                       refresh();
                     })
                   }
-                  className="shrink-0 rounded p-1 text-ink-500 transition-colors hover:bg-red-50 hover:text-red-600"
+                  className="shrink-0 rounded p-1 text-ink-500 transition-colors hover:bg-red-50 hover:text-red-700"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>

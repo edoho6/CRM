@@ -554,7 +554,7 @@ export function DispensePanel({
                         type="button"
                         aria-label={tc('delete')}
                         onClick={() => setRows(rows.filter((_, position) => position !== index))}
-                        className="mb-1 rounded-md p-2 text-ink-500 transition-colors hover:bg-red-50 hover:text-red-600"
+                        className="mb-1 rounded-md p-2 text-ink-500 transition-colors hover:bg-red-50 hover:text-red-700"
                       >
                         <X className="h-4 w-4" />
                       </button>

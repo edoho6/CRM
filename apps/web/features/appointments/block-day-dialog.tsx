@@ -232,7 +232,7 @@ export function BlockDayDialog({
                         type="button"
                         size="icon"
                         variant="ghost"
-                        className="h-8 w-8 text-ink-500 hover:bg-red-50 hover:text-red-600"
+                        className="h-8 w-8 text-ink-500 hover:bg-red-50 hover:text-red-700"
                         aria-label={t('removeWindow')}
                         title={t('removeWindow')}
                         disabled={isPending}

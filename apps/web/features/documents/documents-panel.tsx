@@ -267,7 +267,7 @@ export function DocumentsPanel({
                           size="icon"
                           onClick={() => handleDelete(document)}
                           disabled={isRowPending}
-                          className="text-red-600 hover:bg-red-50"
+                          className="text-red-700 hover:bg-red-50"
                           title={t('delete')}
                         >
                           {isRowPending ? <Spinner /> : <Trash2 className="h-4 w-4" />}

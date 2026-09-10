@@ -74,6 +74,8 @@ const IGNORED_CONSOLE = [
  */
 const axeSource = fs.readFileSync(createRequire(import.meta.url).resolve('axe-core'), 'utf8');
 const AXE_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
+/** --dark opens every screen in dark mode — the two dark visits at the end are not a dark-mode audit. */
+const darkAll = args.has('--dark');
 /** --no-axe skips the audit, for a quick run. */
 const skipAxe = args.has('--no-axe');
 
@@ -99,7 +101,7 @@ async function auditAccessibility(page) {
 }
 
 const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-const outDir = path.join(root, 'test-results', 'smoke', stamp);
+const outDir = path.join(root, 'test-results', 'smoke', stamp + (darkAll ? '-dark' : ''));
 const shotDir = path.join(outDir, 'screenshots');
 fs.mkdirSync(shotDir, { recursive: true });
 
@@ -193,6 +195,7 @@ async function visit(context, { route, locale, width, label = route, expect404 =
   let inspection = null;
   let flow = null;
   try {
+    if (darkAll) await page.addInitScript(() => localStorage.setItem('herbalist-theme', 'dark'));
     if (before) await before(page);
     // The dev server compiles a route the first time it is asked for, and
     // under load that can outlast the timeout. One retry tells a slow compile
@@ -208,7 +211,11 @@ async function visit(context, { route, locale, width, label = route, expect404 =
     // Client-side widgets fetch after hydration; give them a moment so the
     // screenshot shows data rather than a spinner.
     await page.waitForTimeout(900);
-    if (after) flow = await after(page);
+    try {
+      if (after) flow = await after(page);
+    } catch (error) {
+      bag.pageErrors.push(`harness: ${String(error?.message ?? error).slice(0, 300)}`);
+    }
     finalUrl = page.url();
     inspection = await inspect(page);
     if (!skipAxe) inspection.axe = await auditAccessibility(page).catch((error) => [{ id: 'axe-failed', impact: 'serious', help: String(error?.message ?? error).slice(0, 120), count: 1, example: '' }]);
@@ -304,6 +311,9 @@ async function login(browser) {
 }
 
 /* ---- the flows a static read cannot judge ------------------------------- */
+
+/** What one write flow learns for a later one (the booking handle). */
+const sandbox = { bookingSlug: null };
 
 const flows = {
   async quickCreate(page) {
@@ -418,7 +428,8 @@ const flows = {
      the next plain run then opens billing/[id], forms/[id], herbs/[id]. */
   async writeHerb(page) {
     const name = 'בדיקה אוטומטית';
-    const existing = page.locator('main a[href*="/reference/herbs/"]', { hasText: name }).first();
+    // The list is already filtered by the search term; any herb row means it exists.
+    const existing = page.locator('main a[href*="/reference/herbs/"]:not([href$="/new"])').first();
     if ((await existing.count()) > 0) return { ok: true, detail: 'standing test herb already there' };
     await page.goto(new URL('/he/reference/herbs/new', page.url()).href, { waitUntil: 'domcontentloaded' });
     await page.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => {});
@@ -456,6 +467,198 @@ const flows = {
     const created = await page.waitForURL(/\/billing\/[0-9a-f-]{36}$/, { timeout: 15_000 }).then(() => true).catch(() => false);
     const editor = created ? await page.locator('main h1').first().textContent().catch(() => '') : '';
     return { ok: created, detail: created ? 'opened a blank invoice: ' + (editor ?? '').trim() : 'stayed on ' + page.url() };
+  },
+  async writeSchedule(page) {
+    // Sunday to Thursday, nine to five. The sandbox had no working hours, so
+    // the diary hinted at it on every screen and the public page had nothing
+    // to offer. Idempotent: a day already open is left as it is.
+    const toast = (pattern) => page.locator('[role="status"], [role="alert"]', { hasText: pattern }).first().waitFor({ timeout: 10_000 }).then(() => true).catch(() => false);
+    let opened = 0;
+    for (const day of ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי']) {
+      const toggle = page.locator(`main button[role="switch"][aria-label="${day}"]`).first();
+      if ((await toggle.count()) === 0) return { ok: false, detail: 'no switch for ' + day };
+      if ((await toggle.getAttribute('aria-checked')) === 'true') continue;
+      await toggle.click();
+      opened += 1;
+      // Its hour selects appear once the day is on.
+      // (`has` is resolved inside the row, so the inner locator must not start at <main>.)
+      const row = page.locator('main li', { has: page.locator(`button[role="switch"][aria-label="${day}"]`) });
+      await row.locator('select[aria-label^="משעה"]').first().waitFor({ timeout: 5_000 });
+      await row.locator('select[aria-label^="משעה"]').nth(0).selectOption('09');
+      await row.locator('select[aria-label^="משעה"]').nth(1).selectOption('00');
+      await row.locator('select[aria-label^="עד שעה"]').nth(0).selectOption('17');
+      await row.locator('select[aria-label^="עד שעה"]').nth(1).selectOption('00');
+    }
+    if (opened === 0) return { ok: true, detail: 'working week already set' };
+    await page.locator('main button', { hasText: /^שמירה$/ }).first().click();
+    const saved = await toast(/נשמר/);
+    return { ok: saved, detail: saved ? `opened ${opened} days, 09:00–17:00` : 'no "saved" toast after setting hours' };
+  },
+  async writeBookingSettings(page) {
+    const toast = (pattern) => page.locator('[role="status"], [role="alert"]', { hasText: pattern }).first().waitFor({ timeout: 10_000 }).then(() => true).catch(() => false);
+    const slug = await page.locator('#booking_slug').inputValue().catch(() => '');
+    if (!slug) return { ok: false, detail: 'no booking handle on the page' };
+    sandbox.bookingSlug = slug;
+    const toggle = page.locator('main button[role="switch"][aria-label="הדף פעיל"]').first();
+    if ((await toggle.getAttribute('aria-checked')) === 'true') return { ok: true, detail: 'public page already on: /book/' + slug };
+    await toggle.click();
+    await page.locator('main button', { hasText: /^שמירה$/ }).last().click();
+    const saved = await toast(/נשמר/);
+    return { ok: saved, detail: saved ? 'public page switched on: /book/' + slug : 'no "saved" toast after switching the page on' };
+  },
+  async writeBookableType(page) {
+    // The public page offers only treatment types opened for online booking;
+    // the sandbox had none, so it greeted patients with "nothing to book yet".
+    const toast = (pattern) => page.locator('[role="status"], [role="alert"]', { hasText: pattern }).first().waitFor({ timeout: 10_000 }).then(() => true).catch(() => false);
+    // The section is folded by default; its summary opens it.
+    const summary = page.locator('main summary', { hasText: /סוגי טיפולים/ }).first();
+    if ((await summary.count()) > 0 && !(await summary.locator('xpath=..').getAttribute('open'))) await summary.click();
+    const label = page.locator('main label', { hasText: /פתוח לזימון אונליין/ }).first();
+    await label.waitFor({ timeout: 5_000 }).catch(() => {});
+    if ((await label.count()) === 0) return { ok: false, detail: 'no treatment type on the page to open for booking' };
+    const box = label.locator('input[type="checkbox"]');
+    if (await box.isChecked()) return { ok: true, detail: 'first treatment type already open for online booking' };
+    await box.check();
+    // The nearest box around that label that also holds a save button is its row.
+    const row = label.locator('xpath=ancestor::*[.//button[normalize-space()="שמירה"]][1]');
+    await row.locator('button', { hasText: /^שמירה$/ }).first().click();
+    const saved = await toast(/נשמר/);
+    return { ok: saved, detail: saved ? 'first treatment type opened for online booking' : 'no toast after saving the type' };
+  },
+  async writeBooking(page) {
+    // The patient's side: pick a treatment, a day with free hours, an hour,
+    // leave details, land on the confirmation page and say "I will come".
+    const first = page.locator('main button', { hasText: /טיפול|דיקור|ייעוץ|פגישה|Treatment/ }).first();
+    if ((await page.locator('#book-what').count()) > 0 && (await first.count()) > 0) await first.click();
+    const tabs = page.locator('main [role="tab"]');
+    await tabs.first().waitFor({ timeout: 10_000 });
+    let slot = null;
+    for (let index = 0; index < Math.min(await tabs.count(), 10); index += 1) {
+      await tabs.nth(index).click();
+      // Either the grid of hours or the "no free hours" line settles the day.
+      const grid = page.locator('main ul li button[dir="ltr"]');
+      const none = page.locator('main', { hasText: /אין שעות פנויות/ });
+      await Promise.race([grid.first().waitFor({ timeout: 8_000 }), none.waitFor({ timeout: 8_000 })]).catch(() => {});
+      if ((await grid.count()) > 0) { slot = grid.first(); break; }
+    }
+    if (!slot) return { ok: false, detail: 'no free hour in the first ten days although the working week is set' };
+    const hour = ((await slot.textContent()) ?? '').trim();
+    await slot.click();
+    await page.fill('#first_name', 'בדיקה');
+    await page.fill('#last_name', 'זימון');
+    await page.fill('#phone', '050-0000098');
+    await page.locator('main button[type="submit"]').first().click();
+    const landed = await page.waitForURL(/\/confirm\/[0-9a-f-]{36}/, { timeout: 20_000 }).then(() => true).catch(() => false);
+    if (!landed) {
+      const error = await page.locator('main [role="alert"]').first().textContent().catch(() => '');
+      return { ok: false, detail: 'booking did not reach the confirmation page: ' + (error ?? '').trim() + ' @ ' + page.url() };
+    }
+    await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {});
+    const bookedNote = (await page.locator('main', { hasText: /התור נקבע/ }).count()) > 0;
+    await page.locator('main button', { hasText: /^אגיע$/ }).first().click();
+    const thanked = await page.locator('main', { hasText: /ההגעה אושרה/ }).waitFor({ timeout: 10_000 }).then(() => true).catch(() => false);
+    return { ok: bookedNote && thanked, detail: `booked ${hour}, confirmation page ${bookedNote ? 'showed the booking' : 'missing the booked note'}, arrival ${thanked ? 'confirmed' : 'not acknowledged'}` };
+  },
+  async writeEncounter(page) {
+    const toast = (pattern) => page.locator('[role="status"], [role="alert"]', { hasText: pattern }).first().waitFor({ timeout: 10_000 }).then(() => true).catch(() => false);
+    await page.locator('main [role="combobox"]').first().fill('בדיקה');
+    const option = page.locator('[role="option"]', { hasText: 'בדיקה' }).first();
+    await option.waitFor({ timeout: 5_000 });
+    await option.click();
+    await page.locator('main button', { hasText: /פתיחת טיפול/ }).first().click();
+    const opened = await page.waitForURL(/\/encounters\/[0-9a-f-]{36}$/, { timeout: 20_000 }).then(() => true).catch(() => false);
+    if (!opened) return { ok: false, detail: 'new treatment did not open: ' + page.url() };
+    await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {});
+    const text = 'תלונה לבדיקה ' + Date.now();
+    await page.fill('#chief_complaint', text);
+    await page.locator('main button', { hasText: /^שמירה$/ }).first().click();
+    if (!(await toast(/הטיפול נשמר/))) return { ok: false, detail: 'no "saved" toast after manual save' };
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {});
+    const kept = (await page.locator('#chief_complaint').inputValue().catch(() => '')) === text;
+    if (!kept) return { ok: false, detail: 'chief complaint did not survive a reload' };
+    // Autosave: type, then wait for the interval (45 s) to write it.
+    await page.fill('#chief_complaint', text + ' — עריכה');
+    const auto = await page.locator('main', { hasText: /נשמר אוטומטית ב-/ }).waitFor({ timeout: 60_000 }).then(() => true).catch(() => false);
+    return { ok: auto, detail: auto ? 'saved, survived a reload, autosaved within a minute' : 'saved and reloaded, but no autosave line within 60 s' };
+  },
+  async writeInvoiceLine(page) {
+    const toast = (pattern) => page.locator('[role="status"], [role="alert"]', { hasText: pattern }).first().waitFor({ timeout: 10_000 }).then(() => true).catch(() => false);
+    // A fresh invoice each run: a paid one locks, and a locked one has nothing to test.
+    await page.locator('main [role="combobox"]').first().fill('בדיקה');
+    const option = page.locator('[role="option"]', { hasText: 'בדיקה' }).first();
+    await option.waitFor({ timeout: 5_000 });
+    await option.click();
+    await page.locator('main button[type="submit"]').first().click();
+    const opened = await page.waitForURL(/\/billing\/[0-9a-f-]{36}$/, { timeout: 20_000 }).then(() => true).catch(() => false);
+    if (!opened) return { ok: false, detail: 'blank invoice did not open: ' + page.url() };
+    await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {});
+    const row = page.locator('main div.border-t', { has: page.locator('input[type="number"]') }).first();
+    await row.locator('input:not([type="number"])').first().fill('בדיקה אוטומטית');
+    await row.locator('input[type="number"]').nth(0).fill('2');
+    await row.locator('input[type="number"]').nth(1).fill('75');
+    await row.locator('button', { hasText: /הוספת שורה/ }).click();
+    if (!(await toast(/נשמר/))) return { ok: false, detail: 'no toast after adding a line' };
+    const total = await page.locator('main', { hasText: /150/ }).waitFor({ timeout: 10_000 }).then(() => true).catch(() => false);
+    if (!total) return { ok: false, detail: '2 × 75 did not show a total of 150 within 10 s' };
+    await page.fill('#payment_amount', '50');
+    // The innermost box that holds both the amount field and its save button.
+    const collect = page
+      .locator('main div', { has: page.locator('#payment_amount') })
+      .filter({ has: page.locator('button', { hasText: /^שמירה$/ }) })
+      .last();
+    await collect.locator('button', { hasText: /^שמירה$/ }).first().click();
+    if (!(await toast(/נשמר/))) return { ok: false, detail: 'no toast after recording a payment' };
+    const outstanding = await page.locator('main', { hasText: /100/ }).waitFor({ timeout: 10_000 }).then(() => true).catch(() => false);
+    return { ok: outstanding, detail: outstanding ? 'line 2 × 75 = 150, paid 50, 100 outstanding' : 'after paying 50 of 150 the page shows no 100' };
+  },
+  /* ---- the three routes under /api that a browser reaches through a link -- */
+  async writeFeed(page) {
+    // The private calendar address: made from the button if there is none,
+    // then fetched as Google Calendar or an iPhone would fetch it.
+    const field = page.locator('main input[aria-label="כתובת היומן"]').first();
+    if ((await field.count()) === 0 || !(await field.inputValue())) {
+      await page.locator('main button', { hasText: /יצירת כתובת ליומן/ }).first().click();
+      await field.waitFor({ timeout: 10_000 });
+      await page.waitForFunction(() => Boolean(document.querySelector('main input[aria-label="כתובת היומן"]')?.value), null, { timeout: 10_000 }).catch(() => {});
+    }
+    const url = await field.inputValue();
+    if (!url) return { ok: false, detail: 'no calendar address after pressing the button' };
+    const response = await page.request.get(url);
+    const type = response.headers()['content-type'] ?? '';
+    const body = await response.text();
+    const ok = response.status() === 200 && type.includes('text/calendar') && body.includes('BEGIN:VCALENDAR');
+    return { ok, detail: `feed ${response.status()} ${type} ${body.includes('BEGIN:VEVENT') ? 'with events' : 'without events'}` };
+  },
+  async writeDocument(page) {
+    const toast = (pattern) => page.locator('[role="status"], [role="alert"]', { hasText: pattern }).first().waitFor({ timeout: 10_000 }).then(() => true).catch(() => false);
+    await page.locator('[role="tab"]', { hasText: /מסמכים/ }).first().click();
+    const input = page.locator('main input[type="file"]').first();
+    await input.waitFor({ timeout: 10_000 });
+    // A one-pixel PNG, generated here: nothing on disk, nothing to clean up.
+    const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64');
+    await input.setInputFiles({ name: 'smoke-pixel.png', mimeType: 'image/png', buffer: png });
+    await page.locator('#doc_category').selectOption('other').catch(() => {});
+    await page.locator('main form:has(input[type="file"]) button[type="submit"]').first().click();
+    if (!(await toast(/המסמך הועלה/))) return { ok: false, detail: 'no "uploaded" toast' };
+    const link = page.locator('main a[href^="/api/documents/"]').first();
+    await link.waitFor({ timeout: 10_000 });
+    const href = await link.getAttribute('href');
+    const response = await page.request.get(new URL(href, page.url()).href);
+    const type = response.headers()['content-type'] ?? '';
+    const ok = response.status() === 200 && type.startsWith('image/png');
+    return { ok, detail: `uploaded a PNG; download answered ${response.status()} ${type}` };
+  },
+  async exportPatientFile(page) {
+    await page.locator('[role="tab"]', { hasText: /הסכמות/ }).first().click();
+    const link = page.locator('main a[href$="/export"]').first();
+    await link.waitFor({ timeout: 10_000 });
+    const href = await link.getAttribute('href');
+    const response = await page.request.get(new URL(href, page.url()).href);
+    const type = response.headers()['content-type'] ?? '';
+    const body = await response.text();
+    const ok = response.status() === 200 && type.includes('application/json') && body.includes('בדיקה');
+    return { ok, detail: `export answered ${response.status()} ${type}, ${Math.round(body.length / 1024)} KB${ok ? ', names the patient' : ''}` };
   },
   async writePatient(page) {
     // One standing test patient, edited on every run rather than a new one
@@ -671,6 +874,19 @@ async function main() {
       await visit(context, { route: '/reference/herbs?q=%D7%91%D7%93%D7%99%D7%A7%D7%94', locale: 'he', width: desktop, label: 'flow write-herb', after: flows.writeHerb });
       await visit(context, { route: '/forms', locale: 'he', width: desktop, label: 'flow write-form', after: flows.writeForm });
       await visit(context, { route: '/billing', locale: 'he', width: desktop, label: 'flow write-invoice', after: flows.writeInvoice });
+      await visit(context, { route: '/account/schedule', locale: 'he', width: desktop, label: 'flow write-schedule', after: flows.writeSchedule });
+      await visit(context, { route: '/settings/booking', locale: 'he', width: desktop, label: 'flow write-booking-settings', after: flows.writeBookingSettings });
+      await visit(context, { route: '/account', locale: 'he', width: desktop, label: 'flow write-bookable-type', after: flows.writeBookableType });
+      if (sandbox.bookingSlug) await visit(context, { route: `/book/${sandbox.bookingSlug}`, locale: 'he', width: desktop, label: 'flow write-booking', after: flows.writeBooking });
+      await visit(context, { route: '/encounters/new', locale: 'he', width: desktop, label: 'flow write-encounter', after: flows.writeEncounter });
+      await visit(context, { route: '/billing/new', locale: 'he', width: desktop, label: 'flow write-invoice-line', after: flows.writeInvoiceLine });
+      await visit(context, { route: '/account/schedule', locale: 'he', width: desktop, label: 'flow write-feed', after: flows.writeFeed });
+      // The standing test patient, by search: its id is not known up front.
+      const testPatient = await collectIds(context, '/patients?q=%D7%91%D7%93%D7%99%D7%A7%D7%94&inactive=1', '/patients/([0-9a-f-]{36})$', 1);
+      if (testPatient[0]) {
+        await visit(context, { route: `/patients/${testPatient[0]}`, locale: 'he', width: desktop, label: 'flow write-document', after: flows.writeDocument });
+        await visit(context, { route: `/patients/${testPatient[0]}`, locale: 'he', width: desktop, label: 'flow export-file', after: flows.exportPatientFile });
+      }
     }
 
     if (skipped.length) console.log(`\nskipped (no rows to open): ${skipped.join(', ')}`);

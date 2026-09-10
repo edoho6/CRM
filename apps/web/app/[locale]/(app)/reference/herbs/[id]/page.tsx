@@ -507,7 +507,7 @@ export default async function HerbDetailPage({
                                     <span
                                       dir="ltr"
                                       className={
-                                        expired ? 'tabular-nums text-red-600' : 'tabular-nums'
+                                        expired ? 'tabular-nums text-red-700' : 'tabular-nums'
                                       }
                                     >
                                       {formatDate(new Date(batch.expiry_date))}
@@ -569,7 +569,7 @@ export default async function HerbDetailPage({
                                     dir="ltr"
                                     className={
                                       quantity < 0
-                                        ? 'tabular-nums text-red-600'
+                                        ? 'tabular-nums text-red-700'
                                         : 'tabular-nums text-jade-700'
                                     }
                                   >

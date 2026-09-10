@@ -132,7 +132,7 @@ export function OrderListRowControls({
             type="button"
             onClick={remove}
             aria-label={tc('delete')}
-            className="rounded p-1 text-ink-500 transition-colors hover:bg-red-50 hover:text-red-600"
+            className="rounded p-1 text-ink-500 transition-colors hover:bg-red-50 hover:text-red-700"
           >
             <Trash2 className="h-4 w-4" />
           </button>

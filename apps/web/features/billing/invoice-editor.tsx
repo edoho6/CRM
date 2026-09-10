@@ -235,7 +235,7 @@ export function InvoiceEditor({ invoice }: { invoice: InvoiceWithDetails }) {
                               if (!confirmed) return;
                               run(() => deleteInvoiceItem(item.id), t('lineRemoved'));
                             }}
-                            className="rounded-md p-1.5 text-ink-500 transition-colors hover:bg-red-50 hover:text-red-600"
+                            className="rounded-md p-1.5 text-ink-500 transition-colors hover:bg-red-50 hover:text-red-700"
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
@@ -249,15 +249,15 @@ export function InvoiceEditor({ invoice }: { invoice: InvoiceWithDetails }) {
 
             {!locked ? (
               <div className="flex flex-wrap items-end gap-2 border-t border-ink-100 p-3">
-                <Field label={t('description')} className="min-w-48 flex-1">
-                  <Input
+                <Field label={t('description')} htmlFor="new_description" className="min-w-48 flex-1">
+                  <Input id="new_description"
                     value={newDescription}
                     onChange={(event) => setNewDescription(event.target.value)}
                     disabled={isPending}
                   />
                 </Field>
-                <Field label={t('quantity')}>
-                  <LtrInput
+                <Field label={t('quantity')} htmlFor="new_quantity">
+                  <LtrInput id="new_quantity"
                     type="number"
                     min={0}
                     step="0.5"
@@ -267,8 +267,8 @@ export function InvoiceEditor({ invoice }: { invoice: InvoiceWithDetails }) {
                     disabled={isPending}
                   />
                 </Field>
-                <Field label={t('unitPrice')}>
-                  <LtrInput
+                <Field label={t('unitPrice')} htmlFor="new_unit_price">
+                  <LtrInput id="new_unit_price"
                     type="number"
                     min={0}
                     step="0.01"
@@ -347,8 +347,8 @@ export function InvoiceEditor({ invoice }: { invoice: InvoiceWithDetails }) {
               <div className="space-y-2 border-t border-ink-100 pt-3">
                 <p className="text-xs font-medium text-ink-600">{t('payment.recordManual')}</p>
                 <div className="flex items-end gap-2">
-                  <Field label={t('payment.amount')} className="flex-1">
-                    <LtrInput
+                  <Field label={t('payment.amount')} htmlFor="payment_amount" className="flex-1">
+                    <LtrInput id="payment_amount"
                       type="number"
                       min={0}
                       step="0.01"
@@ -357,8 +357,8 @@ export function InvoiceEditor({ invoice }: { invoice: InvoiceWithDetails }) {
                       disabled={isPending}
                     />
                   </Field>
-                  <Field label={t('payment.method')}>
-                    <Select
+                  <Field label={t('payment.method')} htmlFor="payment_method">
+                    <Select id="payment_method"
                       value={manualMethod}
                       onChange={(event) =>
                         setManualMethod(event.target.value as Exclude<PaymentMethod, 'card'>)
@@ -424,7 +424,7 @@ export function InvoiceEditor({ invoice }: { invoice: InvoiceWithDetails }) {
         {!locked ? (
           <Button
             variant="ghost"
-            className="w-full text-red-600 hover:bg-red-50"
+            className="w-full text-red-700 hover:bg-red-50"
             disabled={isPending}
             onClick={async () => {
               // "Keep the invoice" rather than "cancel", or the dialog shows

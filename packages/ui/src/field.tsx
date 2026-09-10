@@ -151,7 +151,7 @@ export function Label({
   return (
     <label className={cn('block text-sm font-medium text-ink-700', className)} {...props}>
       {children}
-      {required ? <span className="text-red-600"> *</span> : null}
+      {required ? <span className="text-red-700"> *</span> : null}
     </label>
   );
 }

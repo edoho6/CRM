@@ -60,7 +60,7 @@ export function DropdownMenuItem({
       className={cn(
         'flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none',
         'data-highlighted:bg-ink-100 data-disabled:pointer-events-none data-disabled:opacity-50',
-        destructive ? 'text-red-600 data-highlighted:bg-red-50' : 'text-ink-800',
+        destructive ? 'text-red-700 data-highlighted:bg-red-50' : 'text-ink-800',
         className,
       )}
       {...props}

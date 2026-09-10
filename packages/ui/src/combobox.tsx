@@ -253,19 +253,19 @@ export function Combobox({
       {listVisible ? (
         <FloatingList ref={listRef} id={listId} role="listbox" aria-label={label} style={listStyle}>
           {matches.map((option, index) => (
-            <li key={option.id}>
-              <button
-                type="button"
-                role="option"
-                aria-selected={index === highlight}
-                onMouseEnter={() => setHighlight(index)}
-                onMouseDown={(event) => event.preventDefault()}
-                onClick={() => choose(option)}
-                className={cn(
-                  'flex w-full items-baseline gap-2 px-2.5 py-1.5 text-start text-sm',
-                  index === highlight ? 'bg-jade-50' : 'hover:bg-ink-50',
-                )}
-              >
+            <li
+              key={option.id}
+              role="option"
+              aria-selected={index === highlight}
+              onMouseEnter={() => setHighlight(index)}
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => choose(option)}
+              className={cn(
+                'flex w-full cursor-pointer items-baseline gap-2 px-2.5 py-1.5 text-start text-sm',
+                index === highlight ? 'bg-jade-50' : 'hover:bg-ink-50',
+              )}
+            >
+              <>
                 <span
                   dir={option.ltr ? 'ltr' : undefined}
                   className="shrink-0 font-medium text-ink-900"
@@ -280,23 +280,24 @@ export function Combobox({
                     {option.tertiary}
                   </span>
                 ) : null}
-              </button>
+              </>
             </li>
           ))}
 
           {showCustomHint ? (
-            <li>
-              <button
-                type="button"
-                onMouseDown={(event) => event.preventDefault()}
-                onClick={takeTyped}
-                className="flex w-full items-baseline gap-2 px-2.5 py-1.5 text-start text-sm hover:bg-ink-50"
-              >
+            <li
+              role="option"
+              aria-selected={false}
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={takeTyped}
+              className="flex w-full cursor-pointer items-baseline gap-2 px-2.5 py-1.5 text-start text-sm hover:bg-ink-50"
+            >
+              <>
                 <span className="font-medium text-jade-800">{term.trim()}</span>
                 {emptyCustomHint ? (
                   <span className="text-xs text-ink-600">{emptyCustomHint}</span>
                 ) : null}
-              </button>
+              </>
             </li>
           ) : null}
         </FloatingList>

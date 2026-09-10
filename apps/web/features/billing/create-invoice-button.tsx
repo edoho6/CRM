@@ -39,7 +39,7 @@ export function CreateInvoiceButton({ encounterId }: { encounterId: string }) {
         {isPending ? <Spinner /> : <Receipt className="h-4 w-4" />}
         {t('createFromEncounter')}
       </Button>
-      {error ? <span className="text-xs text-red-600">{tc('errorGeneric')}</span> : null}
+      {error ? <span className="text-xs text-red-700">{tc('errorGeneric')}</span> : null}
     </span>
   );
 }

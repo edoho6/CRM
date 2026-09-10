@@ -56,8 +56,10 @@ export function QuickCreateMenu() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
 
+  // Not modal: Radix would mark everything else aria-hidden while a five-item
+  // menu is open, and the skip link stays focusable inside it.
   return (
-    <DropdownMenu open={open} onOpenChange={setOpen}>
+    <DropdownMenu open={open} onOpenChange={setOpen} modal={false}>
       <DropdownMenuTrigger asChild>
         <button
           type="button"

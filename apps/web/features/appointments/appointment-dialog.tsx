@@ -778,7 +778,7 @@ export function AppointmentDialog({
                 variant="ghost"
                 onClick={handleDelete}
                 disabled={isPending}
-                className="order-last ms-3 text-red-600 hover:bg-red-50"
+                className="order-last ms-3 text-red-700 hover:bg-red-50"
               >
                 <Trash2 className="h-4 w-4" />
                 {tc('delete')}
