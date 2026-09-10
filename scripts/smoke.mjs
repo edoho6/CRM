@@ -29,6 +29,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createRequire } from 'node:module';
 import { chromium } from 'playwright-core';
 
 const args = new Set(process.argv.slice(2));
@@ -63,6 +64,39 @@ const IGNORED_CONSOLE = [
   /Warning: Extra attributes from the server/, // theme attribute set by the init script
   /GroupMarkerNotSet|SwiftShader|GPU stall|WebGL/i, // headless graphics, expected
 ];
+
+/**
+ * axe, in a real browser.
+ *
+ * check-a11y.mjs runs axe under jsdom, which has no layout — so it can only
+ * reach the public pages and has to switch colour-contrast off. Here every
+ * screen behind the login is audited with real geometry and real colours.
+ */
+const axeSource = fs.readFileSync(createRequire(import.meta.url).resolve('axe-core'), 'utf8');
+const AXE_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
+/** --no-axe skips the audit, for a quick run. */
+const skipAxe = args.has('--no-axe');
+
+async function auditAccessibility(page) {
+  await page.evaluate(axeSource);
+  return page.evaluate(
+    async ({ tags }) =>
+      (
+        await window.axe.run(document, {
+          runOnly: { type: 'tag', values: tags },
+          resultTypes: ['violations'],
+        })
+      ).violations.map((violation) => ({
+        id: violation.id,
+        impact: violation.impact,
+        help: violation.help,
+        count: violation.nodes.length,
+        // One example is enough to find it; the full list is noise in a report.
+        example: violation.nodes[0]?.target?.join(' ')?.slice(0, 160) ?? '',
+      })),
+    { tags: AXE_TAGS },
+  );
+}
 
 const stamp = new Date().toISOString().replace(/[:.]/g, '-');
 const outDir = path.join(root, 'test-results', 'smoke', stamp);
@@ -177,6 +211,7 @@ async function visit(context, { route, locale, width, label = route, expect404 =
     if (after) flow = await after(page);
     finalUrl = page.url();
     inspection = await inspect(page);
+    if (!skipAxe) inspection.axe = await auditAccessibility(page).catch((error) => [{ id: 'axe-failed', impact: 'serious', help: String(error?.message ?? error).slice(0, 120), count: 1, example: '' }]);
     const file = `${locale}__${label.replace(/[^a-z0-9]+/gi, '_').replace(/^_|_$/g, '') || 'home'}__${width.name}.png`;
     // `caret: 'initial'`: the default hides the caret by writing a style onto the
     // focused input, which React then reports as a hydration mismatch.
@@ -210,6 +245,9 @@ async function visit(context, { route, locale, width, label = route, expect404 =
     inspection?.errorText && !(expect404 && notFound) ? `error text: ${inspection.errorText}` : null,
     inspection?.devError ? `boundary: ${inspection.devError}` : null,
     flow && flow.ok === false ? `flow: ${flow.detail}` : null,
+    ...(inspection?.axe ?? [])
+      .filter((violation) => violation.impact === 'critical' || violation.impact === 'serious')
+      .map((violation) => `a11y ${violation.impact}: ${violation.id} × ${violation.count} — ${violation.help} (${violation.example})`),
   ].filter(Boolean);
   report.push(entry);
   const mark = entry.failures.length ? 'FAIL' : ' ok ';
