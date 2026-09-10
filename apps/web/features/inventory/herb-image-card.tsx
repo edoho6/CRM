@@ -139,7 +139,9 @@ export function HerbImageCard({
               <a href={reference.licenceUrl} target="_blank" rel="noreferrer" className="underline-offset-2 hover:underline" dir="ltr">
                 {reference.licence}
               </a>
-              <span className="block text-ink-500">{t('referenceNote')}</span>
+              <span className="block text-ink-500">
+                {t(reference.form === 'material' ? 'referenceMaterialNote' : 'referencePlantNote')}
+              </span>
             </figcaption>
           </figure>
         ) : (
