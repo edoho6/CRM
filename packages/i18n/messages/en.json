@@ -1592,6 +1592,88 @@
     "moreAppointments": "More appointments"
   },
   "prices": {
+    "stores": {
+      "title": "The shops",
+      "subtitle": "Which shop was read, when, and what came of it. One list for every clinic on the service.",
+      "backToList": "Back to the prices",
+      "permissionReminder": "A shop awaiting permission is read only after it has agreed in writing. Activating it asks who agreed and when.",
+      "noKnock": "Reading on demand is not connected yet, so \"Read now\" only records a request; it runs on the next round, within ten minutes.",
+      "columns": {
+        "store": "Shop",
+        "status": "Status",
+        "catalogue": "In the catalogue",
+        "lastRead": "Last read",
+        "lastError": "Last failure",
+        "actions": "Actions"
+      },
+      "platform": {
+        "woocommerce": "Public catalogue (WooCommerce)",
+        "shopify": "Public catalogue (Shopify)",
+        "html_cashcow": "Product pages (CashCow)",
+        "html_kala": "Product pages (Kala)",
+        "html_magento1": "Product pages (Magento)",
+        "unsupported": "Cannot be read"
+      },
+      "status": {
+        "active": "Active",
+        "paused": "Paused",
+        "awaiting_permission": "Awaiting the shop's permission",
+        "unsupported": "Not supported"
+      },
+      "catalogue": "{products, plural, =0 {No products} one {One product} other {# products}} · {available, plural, =0 {no prices} one {one price} other {# prices}}",
+      "never": "Never read",
+      "inProgress": "Being read now",
+      "failures": "{count, plural, one {One failure in a row} other {# failures in a row}}",
+      "refresh": "Read now",
+      "pause": "Pause",
+      "activate": "Activate",
+      "refreshRequested": "Request recorded. The shop is read on the next round.",
+      "refreshStarted": "Reading has started. Prices update within a minute or two.",
+      "statusSaved": "Status updated",
+      "noteTitle": "Change status — {store}",
+      "noteLabel": "Note",
+      "noteHint": "For example: who at the shop agreed, and when. The note is kept beside the status.",
+      "noteRequired": "To activate a shop awaiting permission, write who agreed and when.",
+      "confirmActivate": "Activate",
+      "confirmPause": "Pause",
+      "runs": {
+        "title": "Recent reads",
+        "empty": "No read has happened yet.",
+        "columns": {
+          "when": "When",
+          "store": "Shop",
+          "trigger": "Started",
+          "result": "Result",
+          "pages": "Requests",
+          "fetched": "Read",
+          "inScope": "Relevant",
+          "newProducts": "New products",
+          "newOffers": "New prices",
+          "changes": "Price changes",
+          "gone": "Gone from the shelf"
+        },
+        "trigger": {
+          "cron": "On schedule",
+          "manual": "By hand"
+        },
+        "result": {
+          "complete": "Complete",
+          "partial": "Paused midway, continues",
+          "failed": "Failed"
+        }
+      },
+      "errorCodes": {
+        "timeout": "The shop did not answer in time",
+        "network": "The shop could not be reached",
+        "robots_disallow": "The shop asks that these pages not be read",
+        "robots_unavailable": "The shop was unavailable",
+        "bad_json": "The catalogue came back in an unexpected form",
+        "no_adapter": "There is no way to read this shop",
+        "no_category_urls": "No category pages are configured for the shop",
+        "http": "The shop answered with error {code}",
+        "error": "Unidentified failure"
+      }
+    },
     "title": "Price comparison",
     "subtitle": "{count, plural, =0 {No products yet} one {One product} other {# products}}",
     "provenance": "Prices are read from the shops' product pages about once a day and may change. Purchases are made on the shop's site.",

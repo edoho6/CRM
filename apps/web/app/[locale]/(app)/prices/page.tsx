@@ -1,6 +1,7 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { Tags } from 'lucide-react';
-import { EmptyState } from '@clinic/ui';
+import { Store, Tags } from 'lucide-react';
+import { Button, EmptyState } from '@clinic/ui';
+import { Link } from '@clinic/i18n/navigation';
 import { PageHeader } from '@/components/app-shell';
 import { Pagination, pageFrom } from '@/components/pagination';
 import { RememberQuery } from '@/components/remember-query';
@@ -61,6 +62,16 @@ export default async function PricesPage({
         title={t('title')}
         description={t('subtitle', { count: count ?? rows.length })}
         below={<p className="text-xs text-ink-600">{t('provenance')}</p>}
+        actions={
+          scope.context.isPlatformAdmin ? (
+            <Button asChild variant="secondary">
+              <Link href="/prices/stores">
+                <Store className="h-4 w-4" aria-hidden />
+                {t('stores.title')}
+              </Link>
+            </Button>
+          ) : undefined
+        }
       />
 
       <div className="mb-4 space-y-3">

@@ -1,4 +1,4 @@
-import type { AppointmentStatus, TreatmentStatus } from './enums';
+import type { AppointmentStatus, ShopStoreStatus, TreatmentStatus } from './enums';
 
 /**
  * One colour per meaning, for the whole product.
@@ -25,6 +25,14 @@ export const APPOINTMENT_STATUS_TONES: Record<AppointmentStatus, StatusTone> = {
   completed: 'muted',
   cancelled: 'danger',
   no_show: 'warning',
+};
+
+/** A shop in the price comparison: read, stopped by an admin, waiting for the shop's word, or unreadable. */
+export const SHOP_STORE_STATUS_TONES: Record<ShopStoreStatus, StatusTone> = {
+  active: 'success',
+  paused: 'warning',
+  awaiting_permission: 'neutral',
+  unsupported: 'muted',
 };
 
 export const TREATMENT_STATUS_TONES: Record<TreatmentStatus, StatusTone> = {

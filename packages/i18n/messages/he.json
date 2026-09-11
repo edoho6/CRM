@@ -1592,6 +1592,88 @@
     "moreAppointments": "תורים נוספים"
   },
   "prices": {
+    "stores": {
+      "title": "החנויות",
+      "subtitle": "מי נקראת, מתי, ומה יצא מזה. הרשימה משותפת לכל הקליניקות במערכת.",
+      "backToList": "לרשימת המחירים",
+      "permissionReminder": "חנות שממתינה לאישור נקראת רק אחרי שהחנות הסכימה לכך בכתב. ההפעלה מבקשת לרשום מי אישר ומתי.",
+      "noKnock": "הקריאה המיידית עוד לא חוברה, ולכן \"קריאה עכשיו\" רק מסמנת בקשה; היא תתבצע בסיבוב הקרוב, תוך עשר דקות לכל היותר.",
+      "columns": {
+        "store": "חנות",
+        "status": "מצב",
+        "catalogue": "בקטלוג",
+        "lastRead": "נקראה לאחרונה",
+        "lastError": "תקלה אחרונה",
+        "actions": "פעולות"
+      },
+      "platform": {
+        "woocommerce": "קטלוג ציבורי (WooCommerce)",
+        "shopify": "קטלוג ציבורי (Shopify)",
+        "html_cashcow": "דפי מוצר (CashCow)",
+        "html_kala": "דפי מוצר (Kala)",
+        "html_magento1": "דפי מוצר (Magento)",
+        "unsupported": "לא ניתן לקרוא"
+      },
+      "status": {
+        "active": "פעילה",
+        "paused": "מושהית",
+        "awaiting_permission": "ממתינה לאישור החנות",
+        "unsupported": "לא נתמכת"
+      },
+      "catalogue": "{products, plural, =0 {אין מוצרים} one {מוצר אחד} two {שני מוצרים} other {# מוצרים}} · {available, plural, =0 {אין מחירים} one {מחיר אחד} two {שני מחירים} other {# מחירים}}",
+      "never": "עדיין לא נקראה",
+      "inProgress": "נקראת עכשיו",
+      "failures": "{count, plural, one {כישלון אחד ברצף} two {שני כישלונות ברצף} other {# כישלונות ברצף}}",
+      "refresh": "קריאה עכשיו",
+      "pause": "השהיה",
+      "activate": "הפעלה",
+      "refreshRequested": "הבקשה נרשמה. הקריאה תתבצע בסיבוב הקרוב.",
+      "refreshStarted": "הקריאה התחילה. המחירים יתעדכנו תוך דקה-שתיים.",
+      "statusSaved": "המצב עודכן",
+      "noteTitle": "שינוי מצב — {store}",
+      "noteLabel": "הערה",
+      "noteHint": "למשל: מי בחנות אישר, ומתי. ההערה נשמרת ליד המצב.",
+      "noteRequired": "כדי להפעיל חנות שממתינה לאישור צריך לכתוב מי אישר ומתי.",
+      "confirmActivate": "הפעלה",
+      "confirmPause": "השהיה",
+      "runs": {
+        "title": "קריאות אחרונות",
+        "empty": "עדיין לא הייתה קריאה.",
+        "columns": {
+          "when": "מתי",
+          "store": "חנות",
+          "trigger": "הופעלה",
+          "result": "תוצאה",
+          "pages": "בקשות",
+          "fetched": "נקראו",
+          "inScope": "רלוונטיים",
+          "newProducts": "מוצרים חדשים",
+          "newOffers": "מחירים חדשים",
+          "changes": "שינויי מחיר",
+          "gone": "ירדו מהמדף"
+        },
+        "trigger": {
+          "cron": "לפי הלו\"ז",
+          "manual": "ידנית"
+        },
+        "result": {
+          "complete": "הושלמה",
+          "partial": "נעצרה באמצע, תימשך",
+          "failed": "נכשלה"
+        }
+      },
+      "errorCodes": {
+        "timeout": "החנות לא ענתה בזמן",
+        "network": "לא הייתה גישה לחנות",
+        "robots_disallow": "החנות מבקשת שלא לקרוא את הדפים האלה",
+        "robots_unavailable": "החנות לא הייתה זמינה",
+        "bad_json": "הקטלוג חזר בצורה לא צפויה",
+        "no_adapter": "אין דרך לקרוא את החנות הזו",
+        "no_category_urls": "לא הוגדרו דפי קטגוריה לחנות",
+        "http": "החנות החזירה שגיאה {code}",
+        "error": "תקלה לא מזוהה"
+      }
+    },
     "title": "השוואת מחירים",
     "subtitle": "{count, plural, =0 {אין עדיין מוצרים} one {מוצר אחד} two {שני מוצרים} other {# מוצרים}}",
     "provenance": "המחירים נקראים מדפי המוצר של החנויות פעם ביום בערך, ועלולים להשתנות. הרכישה נעשית באתר החנות.",
