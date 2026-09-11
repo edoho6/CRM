@@ -1613,7 +1613,8 @@
     },
     "cta": {
       "login": "Sign in",
-      "signup": "Create an account"
+      "signup": "Create an account",
+      "dashboard": "To the dashboard"
     },
     "features": {
       "title": "What the system does",
@@ -1657,7 +1658,10 @@
       "storage": "Data is stored in Europe and encrypted, in transit and at rest."
     },
     "footer": {
-      "note": "Herbalist · clinic management for Chinese medicine"
+      "note": "Herbalist · clinic management for Chinese medicine",
+      "nav": "Links",
+      "about": "About the system",
+      "accessibility": "Accessibility statement"
     }
   },
   "prices": {

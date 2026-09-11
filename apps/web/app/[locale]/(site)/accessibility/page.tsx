@@ -1,8 +1,9 @@
+import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Accessibility, AlertTriangle, Check } from 'lucide-react';
-import { Card, CardBody, CardHeader, CardTitle, PageBody } from '@clinic/ui';
-import { PageHeader } from '@/components/app-shell';
+import { Card, CardBody, CardHeader, CardTitle } from '@clinic/ui';
 import { formatDate } from '@clinic/i18n';
+import { SiteFrame } from '../site-frame';
 
 /**
  * The accessibility statement.
@@ -13,38 +14,43 @@ import { formatDate } from '@clinic/i18n';
  * that claims full conformance and is wrong is worse than one that names its
  * own limits.
  *
+ * Public, on purpose: a statement behind a sign-in is read only by people who
+ * already got in. It is linked from the product's page, from the booking
+ * page and from the staff menu, and search engines may index it.
+ *
  * The clinic's own contact details are filled in from the settings screen. The
  * placeholders below are visible on purpose: a statement with an unfilled
  * contact is not a statement, and it should look unfinished until it is.
  */
 
-export default async function AccessibilityPage({
-  params,
-}: {
-  params: Promise<{ locale: string }>;
-}) {
+const DONE = ['keyboard', 'contrast', 'landmarks', 'labels', 'rtl', 'zoom', 'motion', 'automated'] as const;
+const GAPS = ['screenReaderAudit', 'automatedScope', 'bodyMap', 'calendar', 'pdf'] as const;
+const UPDATED = new Date('2026-09-11');
+
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: 'accessibility' });
+  return {
+    title: t('title'),
+    description: t('subtitle'),
+    robots: { index: true, follow: true },
+    alternates: { languages: { he: '/he/accessibility', en: '/en/accessibility' } },
+  };
+}
+
+export default async function AccessibilityPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   setRequestLocale(locale);
-
   const t = await getTranslations('accessibility');
 
-  const done = [
-    'keyboard',
-    'contrast',
-    'landmarks',
-    'labels',
-    'rtl',
-    'zoom',
-    'motion',
-    'automated',
-  ] as const;
-  const gaps = ['screenReaderAudit', 'automatedScope', 'bodyMap', 'calendar', 'pdf'] as const;
-
   return (
-    <>
-      <PageHeader title={t('title')} description={t('subtitle')} />
+    <SiteFrame>
+      <div className="mx-auto max-w-3xl space-y-5 py-6 sm:py-10">
+        <div>
+          <h1 className="text-2xl font-semibold text-ink-900 sm:text-3xl">{t('title')}</h1>
+          <p className="mt-1 text-sm text-ink-600">{t('subtitle')}</p>
+        </div>
 
-      <PageBody width="narrow">
         <Card>
           <CardBody>
             <p className="text-sm leading-relaxed text-ink-800">{t('intro')}</p>
@@ -61,7 +67,7 @@ export default async function AccessibilityPage({
           </CardHeader>
           <CardBody>
             <ul className="space-y-2">
-              {done.map((key) => (
+              {DONE.map((key) => (
                 <li key={key} className="flex items-start gap-2 text-sm text-ink-800">
                   <Check className="mt-0.5 h-4 w-4 shrink-0 text-jade-700" aria-hidden />
                   <span>{t(`done.${key}`)}</span>
@@ -81,12 +87,9 @@ export default async function AccessibilityPage({
           <CardBody>
             <p className="mb-3 text-sm text-ink-700">{t('gapsIntro')}</p>
             <ul className="space-y-2">
-              {gaps.map((key) => (
+              {GAPS.map((key) => (
                 <li key={key} className="flex items-start gap-2 text-sm text-ink-800">
-                  <span
-                    aria-hidden
-                    className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-600"
-                  />
+                  <span aria-hidden className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-600" />
                   <span>{t(`gaps.${key}`)}</span>
                 </li>
               ))}
@@ -120,10 +123,8 @@ export default async function AccessibilityPage({
           </CardBody>
         </Card>
 
-        <p className="text-xs text-ink-600">
-          {t('updated', { date: formatDate(new Date('2026-09-07')) })}
-        </p>
-      </PageBody>
-    </>
+        <p className="text-xs text-ink-600">{t('updated', { date: formatDate(UPDATED) })}</p>
+      </div>
+    </SiteFrame>
   );
 }

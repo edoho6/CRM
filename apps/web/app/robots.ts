@@ -13,13 +13,17 @@ import type { MetadataRoute } from 'next';
  * a crawler needs to render them properly.
  */
 export default function robots(): MetadataRoute.Robots {
+  const base = (process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000').replace(/\/$/, '');
   return {
+    sitemap: `${base}/sitemap.xml`,
     rules: [
       {
         userAgent: '*',
         allow: [
           '/he/about',
           '/en/about',
+          '/he/accessibility',
+          '/en/accessibility',
           '/he/book/',
           '/en/book/',
           '/_next/static/',

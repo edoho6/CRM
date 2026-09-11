@@ -1,6 +1,7 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Leaf } from 'lucide-react';
 import { Card, CardBody } from '@clinic/ui';
+import { Link } from '@clinic/i18n/navigation';
 import { tryCreateServerSupabase } from '@clinic/db/server';
 import {
   BookingFlow,
@@ -35,6 +36,7 @@ export default async function BookingPage({
   setRequestLocale(locale);
   const t = await getTranslations('booking');
   const tc = await getTranslations('common');
+  const tSite = await getTranslations('site');
 
   const supabase = SLUG.test(slug) ? await tryCreateServerSupabase() : null;
   const { data } = supabase ? await supabase.rpc('booking_clinic', { p_slug: slug }) : { data: null };
@@ -88,6 +90,12 @@ export default async function BookingPage({
           ) : null}
         </p>
       ) : null}
+      {/* A public page owes its reader the accessibility statement. */}
+      <p className="text-center text-xs">
+        <Link href="/accessibility" className="text-ink-600 underline-offset-2 hover:text-ink-900 hover:underline">
+          {tSite('footer.accessibility')}
+        </Link>
+      </p>
     </div>
   );
 }

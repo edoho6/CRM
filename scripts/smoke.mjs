@@ -1128,7 +1128,7 @@ const STATIC_ROUTES = [
   '/settings', '/settings/access', '/settings/booking', '/settings/consent', '/settings/tags',
   '/account', '/account/protocols', '/account/schedule', '/accessibility',
 ];
-const PUBLIC_ROUTES = ['/about', '/login', '/signup', '/setup'];
+const PUBLIC_ROUTES = ['/about', '/accessibility', '/login', '/signup', '/setup'];
 
 async function main() {
   await waitForServer();
@@ -1158,6 +1158,8 @@ async function main() {
     await checkText('robots.txt', `${baseUrl}/robots.txt`, (text) => [
       /^Disallow:\s*\/\s*$/m.test(text) ? null : 'no "Disallow: /" line',
       /^Allow:\s*\/he\/about/m.test(text) ? null : 'the public home page is not allowed',
+      /^Allow:\s*\/he\/accessibility/m.test(text) ? null : 'the accessibility statement is not allowed',
+      /^Sitemap:\s*\S+\/sitemap\.xml/m.test(text) ? null : 'no sitemap line',
       /^Allow:\s*\/he\/book\//m.test(text) ? null : 'the booking page is not allowed',
     ]);
     await checkText('confirm page noindex', `${baseUrl}/he/confirm/00000000-0000-4000-8000-000000000000`, (html) => [

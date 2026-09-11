@@ -72,6 +72,8 @@ export async function generateMetadata({
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'common' });
   return {
+    // Absolute addresses for the share images and alternates come from here.
+    metadataBase: new URL((process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000').replace(/\/$/, '')),
     title: {
       default: t('appName'),
       template: `%s · ${t('appName')}`,

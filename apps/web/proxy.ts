@@ -1,9 +1,12 @@
 import createIntlMiddleware from 'next-intl/middleware';
-import type { NextRequest } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 import { routing } from '@clinic/i18n/routing';
 import { refreshSession } from '@clinic/db/middleware';
 
 const intlMiddleware = createIntlMiddleware(routing);
+
+/** `/`, `/he`, `/en`, with or without a trailing slash — the front door and nothing deeper. */
+const ROOT = /^\/(he|en)?\/?$/;
 
 /**
  * Locale routing and Supabase session refresh, in that order and on one response.
@@ -17,7 +20,18 @@ const intlMiddleware = createIntlMiddleware(routing);
  */
 export default async function proxy(request: NextRequest) {
   const response = intlMiddleware(request);
-  await refreshSession(request, response);
+  const { userId } = await refreshSession(request, response);
+
+  // Someone who types the address and is not signed in sees what this is,
+  // not a sign-in form. Only the front door: a deep link still goes to
+  // sign-in and back to where it pointed, as before.
+  const root = request.nextUrl.pathname.match(ROOT);
+  if (!userId && root) {
+    const locale = root[1] ?? routing.defaultLocale;
+    const redirect = NextResponse.redirect(new URL(`/${locale}/about`, request.url));
+    for (const cookie of response.cookies.getAll()) redirect.cookies.set(cookie);
+    return redirect;
+  }
   return response;
 }
 
