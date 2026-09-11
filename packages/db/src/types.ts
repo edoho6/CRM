@@ -2,6 +2,10 @@ import type {
   AppointmentStatus,
   ConfirmationResponse,
   RemindChannel,
+  ShopCategory,
+  ShopSizeKind,
+  ShopStorePlatform,
+  ShopStoreStatus,
   TagColor,
   AuditAction,
   BodyView,
@@ -1185,4 +1189,107 @@ export interface PatientTagLink {
   tag_id: string;
   created_by: string | null;
   created_at: string;
+}
+
+/**
+ * Price comparison. These four rows belong to no clinic — a shop's price is the
+ * same fact for everyone — so none of them carries a clinic_id, every clinic
+ * member reads them, and only the fetch job writes them.
+ */
+export interface ShopStore {
+  id: string;
+  slug: string;
+  name: string;
+  name_en: string | null;
+  base_url: string;
+  platform: ShopStorePlatform;
+  status: ShopStoreStatus;
+  status_note: string | null;
+  config: Record<string, unknown>;
+  crawl_delay_ms: number;
+  /** The job's place inside an unfinished pass; null between passes. */
+  bookmark: Record<string, unknown> | null;
+  refresh_requested_at: string | null;
+  last_started_at: string | null;
+  last_completed_at: string | null;
+  last_success_at: string | null;
+  last_error: string | null;
+  last_error_at: string | null;
+  consecutive_failures: number;
+  last_run_stats: Record<string, unknown> | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** One product across shops, keyed by barcode or by a fingerprint of brand, item, size and pack. */
+export interface ShopProduct {
+  id: string;
+  fingerprint: string;
+  gtin: string | null;
+  brand: string | null;
+  display_item: string;
+  item_key: string;
+  size_kind: ShopSizeKind | null;
+  size_a: number | null;
+  size_b: number | null;
+  size_unit: string | null;
+  pack_count: number | null;
+  canonical_name: string;
+  search_text: string | null;
+  category: ShopCategory;
+  created_at: string;
+  updated_at: string;
+}
+
+/** One shop's price for one product, with the link to buy it there. */
+export interface ShopOffer {
+  id: string;
+  store_id: string;
+  product_id: string;
+  external_id: string;
+  raw_name: string;
+  url: string;
+  sku: string | null;
+  gtin: string | null;
+  fingerprint: string;
+  price: number;
+  currency: string;
+  previous_price: number | null;
+  price_changed_at: string | null;
+  is_available: boolean;
+  unavailable_since: string | null;
+  etag: string | null;
+  last_modified: string | null;
+  run_id: string | null;
+  first_seen_at: string;
+  last_seen_at: string;
+}
+
+/** What one pass of the fetch job did to one shop. */
+export interface ShopFetchRun {
+  id: string;
+  store_id: string;
+  run_id: string;
+  triggered_by: 'cron' | 'manual';
+  started_at: string;
+  finished_at: string;
+  ok: boolean;
+  partial: boolean;
+  pages: number | null;
+  fetched: number | null;
+  in_scope: number | null;
+  new_products: number | null;
+  new_offers: number | null;
+  price_changes: number | null;
+  marked_unavailable: number | null;
+  error: string | null;
+}
+
+/** A row of the shop_product_prices view: the product with its cheapest offer from an active shop. */
+export interface ShopProductPrice extends ShopProduct {
+  store_count: number;
+  min_price: number | null;
+  min_price_store_id: string | null;
+  max_price: number | null;
+  last_seen_at: string | null;
 }

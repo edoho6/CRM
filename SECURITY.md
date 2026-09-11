@@ -26,6 +26,19 @@ Views used by the app (`herb_stock_levels`, `formula_stock_levels`,
 they run with the caller's rights and inherit the same policies. A view created
 the default way would have bypassed them.
 
+**Shared tables.** The price comparison's four tables (`shop_stores`,
+`shop_products`, `shop_offers`, `shop_fetch_runs`) are the one exception to
+`clinic_id`: a shop's price is the same fact for every clinic, and reading it
+once for the whole service is a courtesy to the shops that reading it once per
+clinic would not be. They hold no patient data. Their only policy is `SELECT`
+for a caller with a clinic membership, so a portal patient or an anonymous
+caller sees nothing, and no policy allows a write from the app. Rows are
+written by the `fetch-shop-prices` function, which runs inside Supabase with
+the service role, through `SECURITY DEFINER` functions granted to
+`service_role` alone; a platform admin may change a shop's status or ask for a
+refresh through two functions that check `is_platform_admin()`. The view
+`shop_product_prices` is `security_invoker` like the others.
+
 Isolation is tested, not merely inspected. `supabase/tests/tenant_isolation.sql`
 builds two throwaway clinics plus a portal patient inside a transaction,
 impersonates each identity in turn, and asserts what each one cannot reach:
@@ -37,7 +50,9 @@ button: that a signature cannot be edited, and that a punch card cannot be
 overdrawn. It then checks the
 portal patient — an auth user with no membership — sees their own file and their
 shared documents and nothing clinical, and that an anonymous caller sees nothing
-at all. Everything is rolled back, so it is safe to run against the live project
+at all. For the shared price tables it proves the opposite shape: the same rows
+for both clinics, none for the patient or the stranger, and every write — and
+every call to the job's or the admin's functions — refused. Everything is rolled back, so it is safe to run against the live project
 and should be re-run after any migration that adds a table or touches a policy.
 
 **Gap:** it is run by hand in the SQL editor. Wiring it into CI needs a database

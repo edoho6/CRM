@@ -564,3 +564,50 @@ export type TagColor = (typeof TAG_COLORS)[number];
  */
 export const REMIND_CHANNELS = ['app', 'email', 'sms'] as const;
 export type RemindChannel = (typeof REMIND_CHANNELS)[number];
+
+/**
+ * Price comparison — the shops whose prices are compared.
+ *
+ * A store's status is the whole of the fetch job's permission: only `active`
+ * is read. `awaiting_permission` is a shop whose pages could be read but whose
+ * terms ask for its agreement first; `unsupported` serves nothing to anything
+ * but a browser.
+ */
+export const SHOP_STORE_STATUSES = ['active', 'paused', 'awaiting_permission', 'unsupported'] as const;
+export type ShopStoreStatus = (typeof SHOP_STORE_STATUSES)[number];
+
+/** How a shop's catalogue is read: a public product feed, or its own pages. */
+export const SHOP_STORE_PLATFORMS = [
+  'woocommerce',
+  'shopify',
+  'html_cashcow',
+  'html_kala',
+  'html_magento1',
+  'unsupported',
+] as const;
+export type ShopStorePlatform = (typeof SHOP_STORE_PLATFORMS)[number];
+
+/**
+ * What a Chinese-medicine clinic buys. A product the classifier cannot place
+ * here is not kept — cosmetics, spa furniture and massage chairs are the shops'
+ * business, not the comparison's.
+ */
+export const SHOP_CATEGORIES = [
+  'needles',
+  'moxa',
+  'cupping',
+  'guasha',
+  'ear_seeds',
+  'tdp_lamps',
+  'electro',
+  'granules',
+  'formulas',
+  'raw_herbs',
+  'consumables',
+  'accessories',
+] as const;
+export type ShopCategory = (typeof SHOP_CATEGORIES)[number];
+
+/** The kind of measurement in a product's size: 0.25×40 mm, 50 g, 250 ml, 30 mm, 5 %. */
+export const SHOP_SIZE_KINDS = ['dims', 'mass', 'vol', 'len', 'pct'] as const;
+export type ShopSizeKind = (typeof SHOP_SIZE_KINDS)[number];

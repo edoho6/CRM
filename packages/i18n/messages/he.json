@@ -1602,7 +1602,10 @@
     "formulaOrItemsRequired": "יש לבחור פורמולה או להוסיף צמחים",
     "quantityCannotBeZero": "הכמות לא יכולה להיות אפס",
     "endMustBeAfterStart": "שעת הסיום חייבת להיות אחרי שעת ההתחלה",
-    "roomOverlap": "החדר הזה כבר תפוס בשעה הזו"
+    "roomOverlap": "החדר הזה כבר תפוס בשעה הזו",
+    "forbidden": "אין הרשאה לפעולה הזו.",
+    "tooSoon": "ביקשתם את זה ממש עכשיו. אפשר לנסות שוב בעוד שתי דקות.",
+    "storeNotActive": "החנות הזו לא פעילה כרגע, ולכן אין מה לרענן."
   },
   "settings": {
     "booking": {

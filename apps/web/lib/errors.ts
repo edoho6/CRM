@@ -88,6 +88,18 @@ export function mapDatabaseError(error: PostgrestError | Error | null | undefine
     return { key: 'errors.serverError' };
   }
 
+  // The price comparison's admin functions raise these; 42501 is also what
+  // a policy answers when a member writes where they may only read.
+  if (message.includes('too_soon')) {
+    return { key: 'errors.tooSoon' };
+  }
+  if (message.includes('store_not_active')) {
+    return { key: 'errors.storeNotActive' };
+  }
+  if (code === '42501' || message.includes('forbidden')) {
+    return { key: 'errors.forbidden' };
+  }
+
   return { key: 'errors.serverError' };
 }
 

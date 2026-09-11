@@ -1602,7 +1602,10 @@
     "formulaOrItemsRequired": "Pick a formula or add herbs",
     "quantityCannotBeZero": "Quantity cannot be zero",
     "endMustBeAfterStart": "The end time must be after the start time",
-    "roomOverlap": "That room is already booked at this hour"
+    "roomOverlap": "That room is already booked at this hour",
+    "forbidden": "You are not allowed to do this.",
+    "tooSoon": "You just asked for this. Try again in two minutes.",
+    "storeNotActive": "This shop is not active right now, so there is nothing to refresh."
   },
   "settings": {
     "booking": {

@@ -44,6 +44,8 @@ declare
   v_feed_b    uuid;
   v_confirm_a uuid;
   v_confirm_b uuid;
+  v_shop_store uuid;
+  v_shop_product uuid;
   v_count      integer;
 begin
   -- ==========================================================================
@@ -217,6 +219,19 @@ begin
   insert into public.appointments (clinic_id, patient_id, practitioner_id, room_id, start_at, end_at)
   values (v_clinic_b, v_patient_b, v_user_b, v_room_b, now() + interval '2 days', now() + interval '2 days 1 hour')
   returning confirmation_token into v_confirm_b;
+
+  -- The price comparison's tables belong to no clinic: one shop, one product
+  -- and one price, which every clinic member should see and no one may write.
+  insert into public.shop_stores (slug, name, base_url, platform, status)
+  values ('iso-shop-' || gen_random_uuid(), 'Iso Shop', 'https://example.test', 'woocommerce', 'active')
+  returning id into v_shop_store;
+
+  insert into public.shop_products (fingerprint, display_item, item_key, canonical_name, category)
+  values ('iso|' || gen_random_uuid(), 'Needle', 'needle', 'Iso · Needle · 0.25×40 mm (100)', 'needles')
+  returning id into v_shop_product;
+
+  insert into public.shop_offers (store_id, product_id, external_id, raw_name, url, price)
+  values (v_shop_store, v_shop_product, 'iso-1', 'Iso needle', 'https://example.test/p/1', 42);
 
   raise notice 'clinic A = %', v_clinic_a;
   raise notice 'clinic B = %', v_clinic_b;
@@ -416,6 +431,45 @@ begin
   if v_count <> 1 then raise exception 'FAIL: patients_with_diary hid clinic A''s own patient'; end if;
   raise notice 'ok   patients_with_diary reads as the caller';
 
+  -- The price comparison is shared: a clinic member reads the shops, the
+  -- products and the prices — through the tables and through the view — but
+  -- writes nothing, cannot call the job's own functions, and cannot do what is
+  -- reserved for a platform admin.
+  select count(*) into v_count from public.shop_stores where id = v_shop_store;
+  if v_count <> 1 then raise exception 'FAIL: a clinic member cannot read the shared shop list'; end if;
+  select count(*) into v_count from public.shop_product_prices where id = v_shop_product and min_price = 42;
+  if v_count <> 1 then raise exception 'FAIL: shop_product_prices hid the shared price from a clinic member'; end if;
+  begin
+    insert into public.shop_stores (slug, name, base_url, platform)
+    values ('iso-injected', 'Injected', 'https://example.test', 'woocommerce');
+    raise exception 'FAIL: a clinic member inserted a shop';
+  exception
+    when insufficient_privilege then null;
+  end;
+  update public.shop_offers set price = 1 where store_id = v_shop_store;
+  if found then raise exception 'FAIL: a clinic member changed a price'; end if;
+  delete from public.shop_products where id = v_shop_product;
+  if found then raise exception 'FAIL: a clinic member deleted a product'; end if;
+  begin
+    perform public.shop_upsert_offers(v_shop_store, gen_random_uuid(), '[]'::jsonb);
+    raise exception 'FAIL: a clinic member ran the price job''s function';
+  exception
+    when insufficient_privilege then null;
+  end;
+  begin
+    perform public.shop_set_store_status(v_shop_store, 'paused', null);
+    raise exception 'FAIL: a plain owner paused a shop';
+  exception
+    when insufficient_privilege then null;
+  end;
+  begin
+    perform public.shop_request_refresh(v_shop_store);
+    raise exception 'FAIL: a plain owner asked for a refresh';
+  exception
+    when insufficient_privilege then null;
+  end;
+  raise notice 'ok   shop prices are readable by every member and writable by none';
+
   -- The service overview is empty for a clinic owner who is not on the
   -- platform list, and the clinic-making function refuses someone who already
   -- belongs somewhere — a second clinic is never one click away.
@@ -498,6 +552,11 @@ begin
   if v_count <> 0 then raise exception 'FAIL: clinic B read % clinical note(s)', v_count; end if;
   raise notice 'ok   isolation holds in both directions';
 
+  -- The shop list is the same list for clinic B: shared, not per clinic.
+  select count(*) into v_count from public.shop_offers where store_id = v_shop_store;
+  if v_count <> 1 then raise exception 'FAIL: clinic B did not see the shared shop price'; end if;
+  raise notice 'ok   shop prices are one list for every clinic';
+
   -- ==========================================================================
   -- Identity 3 · the portal patient
   -- ==========================================================================
@@ -528,6 +587,11 @@ begin
   select count(*) into v_count from public.patients where id = v_patient_b;
   if v_count <> 0 then raise exception 'FAIL: the portal patient read another patient''s file'; end if;
   raise notice 'ok   the portal patient sees only their own record';
+
+  -- The price comparison is the clinic's tool, not the patient's.
+  select count(*) into v_count from public.shop_stores;
+  if v_count <> 0 then raise exception 'FAIL: the portal patient read % shop row(s)', v_count; end if;
+  raise notice 'ok   shop prices are hidden from the portal';
 
   -- The headline safety property: no policy on tcm_notes mentions patients at all.
   select count(*) into v_count from public.tcm_notes;
@@ -594,6 +658,8 @@ begin
 
   select count(*) into v_count from public.clinics;
   if v_count <> 0 then raise exception 'FAIL: anonymous read returned % clinic row(s)', v_count; end if;
+  select count(*) into v_count from public.shop_offers;
+  if v_count <> 0 then raise exception 'FAIL: anonymous read returned % shop price(s)', v_count; end if;
   raise notice 'ok   anonymous callers see nothing';
 
   -- The token functions are the only doors without a session. A guessed
