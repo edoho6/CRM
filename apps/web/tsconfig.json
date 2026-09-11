@@ -3,8 +3,10 @@
   "compilerOptions": {
     "plugins": [{ "name": "next" }],
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@shop/*": ["../../supabase/functions/_shared/shop-prices/*"]
     },
+    "allowImportingTsExtensions": true,
     "types": ["node"]
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],

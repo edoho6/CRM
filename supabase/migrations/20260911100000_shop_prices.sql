@@ -46,7 +46,8 @@ create table if not exists public.shop_stores (
   status text not null default 'awaiting_permission'
     check (status in ('active', 'paused', 'awaiting_permission', 'unsupported')),
   status_note text,
-  -- Adapter settings: which collections, which sitemap, which category pages.
+  -- Adapter settings: which collections, which sitemap, which category pages;
+  -- dims_order = length_first for a shop that writes needle sizes as 40*25.
   config jsonb not null default '{}'::jsonb,
   crawl_delay_ms integer not null default 2000 check (crawl_delay_ms between 500 and 60000),
   -- The job's bookmark inside one pass: null between passes.
@@ -549,7 +550,8 @@ grant execute on function public.shop_store_stats() to authenticated;
 insert into public.shop_stores (slug, name, name_en, base_url, platform, status, status_note, config)
 values
   ('medicinebom', 'מדיסין בום', 'Medicine Bom', 'https://medicinebom.co.il', 'woocommerce', 'active', null, '{}'::jsonb),
-  ('tevadirect', 'המילניום', 'HaMillennium', 'https://www.tevadirect.com', 'woocommerce', 'active', null, '{}'::jsonb),
+  ('tevadirect', 'המילניום', 'HaMillennium', 'https://www.tevadirect.com', 'woocommerce', 'active', null,
+    '{"dims_order": "length_first"}'::jsonb),
   ('dryang', 'ד"ר יאנג', 'Dr Yang', 'https://dryang.co.il', 'woocommerce', 'active', null, '{}'::jsonb),
   ('rosamix', 'רוזמיקס', 'Rosamix', 'https://www.rosamix.co.il', 'shopify', 'active', null,
     '{"collections": ["ציוד-למטפלים"]}'::jsonb),

@@ -7,6 +7,8 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./', import.meta.url)),
+      // The price job's logic lives with the Edge Function; its tests live here.
+      '@shop': fileURLToPath(new URL('../../supabase/functions/_shared/shop-prices', import.meta.url)),
     },
   },
   test: {
