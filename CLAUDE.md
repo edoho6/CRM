@@ -299,7 +299,12 @@
   `brand|item|size|pack`; בלי מותג מוכר — מיזוג רק על מילים זהות (שמרני בכוונה). כיוונון = להריץ
   `node scripts/shop-prices-dry-run.mjs --store=<slug> --offline` ולקרוא את `test-results/prices/dryrun-*.txt`;
   השמות האמיתיים ב-`__fixtures__` הם הבדיקות. בממשק: `components/external-link.tsx` לכל קישור
-  שיוצא מהאפליקציה (חלון חדש, noopener, מוכרז לקורא מסך), והכיתוב "המחירים נקראים מדפי המוצר…" מופיע בראש הרשימה
+  שיוצא מהאפליקציה (חלון חדש, noopener, מוכרז לקורא מסך), והכיתוב "המחירים נקראים מדפי המוצר…" מופיע בראש הרשימה.
+  **תמונות:** לעולם לא מהחנויות. `scripts/fetch-shop-images.mjs` מביא מ-Commons (דרך `scripts/lib/commons.mjs`,
+  אותם שלושה רישיונות כמו הצמחים) תמונה לפי מוצר רק כשהמקור מזכיר את המותג, ואחרת לפי קטגוריה; manifest
+  ב-`features/prices/shop-images.json`, `shopImageFor()` בוחר, הקרדיט המלא ב-`/prices/credits`. כל תמונה
+  נבדקת בעין לפני commit — חיפוש לפי מילה מביא גם קטלוג זרעים מ-1901, מיצג על תעלה בשם "tdp" ואיור של אוזן;
+  קטגוריה בלי תמונה ראויה נשארת בלי תמונה
 - **CSS משותף:** כללים שאינם טוקנים (מיקוד, placeholder, `select.ui-select`, `.table-cards`,
   `[data-table-size]`, הדפסה בסיסית) ב-`packages/ui/src/base.css`, מיובא בשני
   ה-`globals.css`; ה-`@theme` נשאר לכל אפליקציה בנפרד

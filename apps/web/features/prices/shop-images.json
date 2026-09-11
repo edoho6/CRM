@@ -1,0 +1,70 @@
+{
+  "categories": {
+    "needles": {
+      "file": "cat-needles.jpg",
+      "title": "Korean acupuncture needle set.jpg",
+      "source": "Wikimedia Commons",
+      "author": "국립국어원",
+      "page": "https://commons.wikimedia.org/wiki/File:Korean_acupuncture_needle_set.jpg",
+      "licence": "CC BY-SA",
+      "licenceRaw": "CC BY-SA 2.0 kr",
+      "licenceUrl": "https://creativecommons.org/licenses/by-sa/2.0/kr/deed.en",
+      "creditRequired": true,
+      "bytes": 36455,
+      "checkedAt": "2026-09-11T07:44:59.352Z"
+    },
+    "moxa": {
+      "file": "cat-moxa.jpg",
+      "title": "Moxa-samples-from-Japan.jpg",
+      "source": "Wikimedia Commons",
+      "author": "WolfgangMichel",
+      "page": "https://commons.wikimedia.org/wiki/File:Moxa-samples-from-Japan.jpg",
+      "licence": "CC0",
+      "licenceRaw": "CC0",
+      "licenceUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+      "creditRequired": false,
+      "bytes": 14986,
+      "checkedAt": "2026-09-11T07:38:03.864Z"
+    },
+    "consumables": {
+      "file": "cat-consumables.jpg",
+      "title": "A white cotton swab!.jpg",
+      "source": "Wikimedia Commons",
+      "author": "Suntuniustin",
+      "page": "https://commons.wikimedia.org/wiki/File:A_white_cotton_swab!.jpg",
+      "licence": "CC0",
+      "licenceRaw": "Public domain",
+      "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "creditRequired": false,
+      "bytes": 18121,
+      "checkedAt": "2026-09-11T07:41:50.766Z"
+    },
+    "formulas": {
+      "file": "cat-formulas.jpg",
+      "title": "XINHUANG Tablet.jpg",
+      "source": "Wikimedia Commons",
+      "author": "HualinXMN",
+      "page": "https://commons.wikimedia.org/wiki/File:XINHUANG_Tablet.jpg",
+      "licence": "CC BY-SA",
+      "licenceRaw": "CC BY-SA 4.0",
+      "licenceUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "creditRequired": true,
+      "bytes": 39823,
+      "checkedAt": "2026-09-11T07:49:59.564Z"
+    },
+    "raw_herbs": {
+      "file": "cat-raw_herbs.jpg",
+      "title": "HK Chinese herbal medicines 金銀花 涼茶 Chinese herb teas September 2025 R12S 01.jpg",
+      "source": "Wikimedia Commons",
+      "author": "GPAMWKM Woodsz ABA",
+      "page": "https://commons.wikimedia.org/wiki/File:HK_Chinese_herbal_medicines_%E9%87%91%E9%8A%80%E8%8A%B1_%E6%B6%BC%E8%8C%B6_Chinese_herb_teas_September_2025_R12S_01.jpg",
+      "licence": "CC0",
+      "licenceRaw": "CC0",
+      "licenceUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+      "creditRequired": false,
+      "bytes": 70736,
+      "checkedAt": "2026-09-11T07:51:31.376Z"
+    }
+  },
+  "products": {}
+}

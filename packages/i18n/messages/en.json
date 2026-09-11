@@ -1592,6 +1592,16 @@
     "moreAppointments": "More appointments"
   },
   "prices": {
+    "imageCredits": "Picture credits",
+    "credits": {
+      "title": "Picture credits",
+      "subtitle": "The pictures in the price list are not the shops'. They come from open sources, under licences that allow the use, and are shown as received.",
+      "backToList": "Back to the prices",
+      "none": "No pictures yet.",
+      "category": "Category",
+      "product": "Product",
+      "sourcePage": "Source page"
+    },
     "stores": {
       "title": "The shops",
       "subtitle": "Which shop was read, when, and what came of it. One list for every clinic on the service.",

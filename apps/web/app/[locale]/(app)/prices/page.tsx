@@ -61,7 +61,14 @@ export default async function PricesPage({
       <PageHeader
         title={t('title')}
         description={t('subtitle', { count: count ?? rows.length })}
-        below={<p className="text-xs text-ink-600">{t('provenance')}</p>}
+        below={
+          <p className="text-xs text-ink-600">
+            {t('provenance')}{' '}
+            <Link href="/prices/credits" className="underline underline-offset-2 hover:text-ink-900">
+              {t('imageCredits')}
+            </Link>
+          </p>
+        }
         actions={
           scope.context.isPlatformAdmin ? (
             <Button asChild variant="secondary">

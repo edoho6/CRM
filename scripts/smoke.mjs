@@ -1072,7 +1072,7 @@ const STATIC_ROUTES = [
   '/calendar?view=range', '/tasks', '/messages', '/encounters', '/encounters/new', '/forms',
   '/forms/new', '/reference/herbs', '/reference/formulas', '/reference/points', '/reference/compare',
   '/inventory', '/inventory?tab=low', '/inventory/batches', '/inventory/batches/receive',
-  '/inventory/suppliers', '/prices', '/prices?cat=needles&min=2', '/billing', '/billing/new',
+  '/inventory/suppliers', '/prices', '/prices?cat=needles&min=2', '/prices/credits', '/billing', '/billing/new',
   '/billing/settings', '/reports', '/assistant',
   '/settings', '/settings/access', '/settings/booking', '/settings/consent', '/settings/tags',
   '/account', '/account/protocols', '/account/schedule', '/accessibility',

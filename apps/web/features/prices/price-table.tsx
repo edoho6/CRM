@@ -1,4 +1,5 @@
 import { getFormatter, getTranslations } from 'next-intl/server';
+import { Tags } from 'lucide-react';
 import { Badge, Dash, Table, TableWrapper, Td, Th, Tr } from '@clinic/ui';
 import type { ShopOffer, ShopProductPrice } from '@clinic/db/types';
 import { SortLinkTh } from '@/components/sort-link-th';
@@ -6,6 +7,7 @@ import type { SortState } from '@/lib/sort-params';
 import { PriceChip } from './price-chip';
 import { PRICE_DEFAULT_SORT, type PriceSortKey } from './price-filter-params';
 import type { StoreSummary } from './queries';
+import { shopImageFor } from './shop-image';
 
 /** A price older than this is shown with a warning: the shop may have moved on. */
 export const STALE_AFTER_MS = 48 * 60 * 60_000;
@@ -63,21 +65,44 @@ export async function PriceTable({
             const available = list.filter((offer) => offer.is_available);
             const cheapest = available[0] ?? null;
             const cheapestStore = cheapest ? stores.get(cheapest.store_id) : undefined;
+            const image = shopImageFor(product);
             const seen = product.last_seen_at ? Date.parse(product.last_seen_at) : null;
             const stale = seen !== null && now - seen > STALE_AFTER_MS;
             return (
               <Tr key={product.id}>
                 <Td data-card-title>
-                  <div className="flex flex-col gap-1">
-                    <span className="font-medium text-ink-900">{product.canonical_name}</span>
-                    <span className="flex flex-wrap items-center gap-1.5">
-                      <Badge tone="muted">{t(`categories.${product.category}`)}</Badge>
-                      {product.brand ? (
-                        <span className="text-xs text-ink-600" dir="ltr">
-                          {product.brand}
-                        </span>
-                      ) : null}
-                    </span>
+                  <div className="flex items-start gap-3">
+                    {image ? (
+                      // Decorative beside the name; the credit rides on the
+                      // picture as its title and in full on /prices/credits.
+                      <img
+                        src={image.src}
+                        alt=""
+                        width={48}
+                        height={48}
+                        loading="lazy"
+                        title={image.creditRequired ? `${image.author} · ${image.licence}` : undefined}
+                        className="h-12 w-12 shrink-0 rounded-lg border border-ink-200 object-cover"
+                      />
+                    ) : (
+                      <span
+                        aria-hidden
+                        className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-dashed border-ink-200 text-ink-400"
+                      >
+                        <Tags className="h-5 w-5" />
+                      </span>
+                    )}
+                    <div className="flex min-w-0 flex-col gap-1">
+                      <span className="font-medium text-ink-900">{product.canonical_name}</span>
+                      <span className="flex flex-wrap items-center gap-1.5">
+                        <Badge tone="muted">{t(`categories.${product.category}`)}</Badge>
+                        {product.brand ? (
+                          <span className="text-xs text-ink-600" dir="ltr">
+                            {product.brand}
+                          </span>
+                        ) : null}
+                      </span>
+                    </div>
                   </div>
                 </Td>
                 <Td>
