@@ -46,6 +46,7 @@ declare
   v_confirm_b uuid;
   v_shop_store uuid;
   v_shop_product uuid;
+  v_shop_fp    text := 'iso|' || gen_random_uuid();  -- the product's fingerprint, shared with its offer
   v_count      integer;
 begin
   -- ==========================================================================
@@ -227,11 +228,11 @@ begin
   returning id into v_shop_store;
 
   insert into public.shop_products (fingerprint, display_item, item_key, canonical_name, category)
-  values ('iso|' || gen_random_uuid(), 'Needle', 'needle', 'Iso · Needle · 0.25×40 mm (100)', 'needles')
+  values (v_shop_fp, 'Needle', 'needle', 'Iso · Needle · 0.25×40 mm (100)', 'needles')
   returning id into v_shop_product;
 
-  insert into public.shop_offers (store_id, product_id, external_id, raw_name, url, price)
-  values (v_shop_store, v_shop_product, 'iso-1', 'Iso needle', 'https://example.test/p/1', 42);
+  insert into public.shop_offers (store_id, product_id, external_id, raw_name, url, fingerprint, price)
+  values (v_shop_store, v_shop_product, 'iso-1', 'Iso needle', 'https://example.test/p/1', v_shop_fp, 42);
 
   raise notice 'clinic A = %', v_clinic_a;
   raise notice 'clinic B = %', v_clinic_b;
