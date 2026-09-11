@@ -169,6 +169,7 @@
     "openAll": "All tasks"
   },
   "common": {
+    "opensInNewTab": "opens in a new tab",
     "dateInput": {
       "placeholder": "dd/mm/yyyy",
       "openCalendar": "Open calendar",
@@ -274,6 +275,7 @@
     "duplicate": "Duplicate"
   },
   "nav": {
+    "prices": "Price comparison",
     "messages": "Messages",
     "platform": "All clinics",
     "tasks": "Tasks",
@@ -1588,6 +1590,47 @@
     "nextAppointment": "Your next appointment",
     "addToCalendar": "Add to calendar",
     "moreAppointments": "More appointments"
+  },
+  "prices": {
+    "title": "Price comparison",
+    "subtitle": "{count, plural, =0 {No products yet} one {One product} other {# products}}",
+    "provenance": "Prices are read from the shops' product pages about once a day and may change. Purchases are made on the shop's site.",
+    "search": "Search products",
+    "filters": {
+      "category": "Category",
+      "compared": "How many shops",
+      "comparedOnly": "In at least two shops"
+    },
+    "columns": {
+      "product": "Product",
+      "cheapest": "Cheapest",
+      "offers": "Prices",
+      "stores": "Shops",
+      "updated": "Updated"
+    },
+    "cheapestAt": "at {store}",
+    "buyAt": "Buy at {store}",
+    "unavailable": "unavailable",
+    "was": "was {price}",
+    "stale": "{days, plural, one {Not updated for a day} other {Not updated for # days}}",
+    "storeCount": "{count, plural, one {One shop} other {# shops}}",
+    "empty": "No prices to show yet",
+    "emptyBody": "Prices are read from the shops once a day. If everything is new, look again tomorrow.",
+    "emptyFiltered": "No products match these filters",
+    "categories": {
+      "needles": "Needles",
+      "moxa": "Moxa",
+      "cupping": "Cupping",
+      "guasha": "Gua sha",
+      "ear_seeds": "Ear seeds & magnets",
+      "tdp_lamps": "TDP lamps",
+      "electro": "Devices",
+      "granules": "Granules",
+      "formulas": "Formulas",
+      "raw_herbs": "Raw herbs",
+      "consumables": "Consumables",
+      "accessories": "Accessories"
+    }
   },
   "errors": {
     "slugTaken": "That address is already taken.",

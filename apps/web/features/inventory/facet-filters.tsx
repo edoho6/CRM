@@ -56,7 +56,9 @@ export async function FacetFilters({
                   key={option.value}
                   href={option.href}
                   scroll={false}
-                  aria-pressed={option.selected}
+                  // A link may not carry aria-pressed (axe: aria-allowed-attr);
+                  // "current" is the state a link is allowed to announce.
+                  aria-current={option.selected ? 'true' : undefined}
                   className={cn(
                     'inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium whitespace-nowrap transition-all hover:-translate-y-px hover:shadow-xs',
                     option.className ??

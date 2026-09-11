@@ -169,6 +169,7 @@
     "openAll": "לכל המשימות"
   },
   "common": {
+    "opensInNewTab": "נפתח בחלון חדש",
     "dateInput": {
       "placeholder": "dd/mm/yyyy",
       "openCalendar": "פתיחת לוח שנה",
@@ -274,6 +275,7 @@
     "duplicate": "שכפול"
   },
   "nav": {
+    "prices": "השוואת מחירים",
     "messages": "הודעות",
     "platform": "כל הקליניקות",
     "tasks": "משימות",
@@ -1588,6 +1590,47 @@
     "nextAppointment": "התור הבא שלך",
     "addToCalendar": "הוספה ליומן",
     "moreAppointments": "תורים נוספים"
+  },
+  "prices": {
+    "title": "השוואת מחירים",
+    "subtitle": "{count, plural, =0 {אין עדיין מוצרים} one {מוצר אחד} two {שני מוצרים} other {# מוצרים}}",
+    "provenance": "המחירים נקראים מדפי המוצר של החנויות פעם ביום בערך, ועלולים להשתנות. הרכישה נעשית באתר החנות.",
+    "search": "חיפוש מוצר",
+    "filters": {
+      "category": "קטגוריה",
+      "compared": "בכמה חנויות",
+      "comparedOnly": "בשתי חנויות לפחות"
+    },
+    "columns": {
+      "product": "מוצר",
+      "cheapest": "הכי זול",
+      "offers": "מחירים",
+      "stores": "חנויות",
+      "updated": "עודכן"
+    },
+    "cheapestAt": "ב{store}",
+    "buyAt": "לרכישה ב{store}",
+    "unavailable": "לא זמין",
+    "was": "היה {price}",
+    "stale": "{days, plural, one {לא עודכן יום} two {לא עודכן יומיים} other {לא עודכן # ימים}}",
+    "storeCount": "{count, plural, one {חנות אחת} two {שתי חנויות} other {# חנויות}}",
+    "empty": "עוד אין מחירים להצגה",
+    "emptyBody": "המחירים נקראים מהחנויות פעם ביום. אם הכול חדש, כדאי להציץ שוב מחר.",
+    "emptyFiltered": "לא נמצאו מוצרים לסינון הזה",
+    "categories": {
+      "needles": "מחטים",
+      "moxa": "מוקסה",
+      "cupping": "כוסות רוח",
+      "guasha": "גואה שה",
+      "ear_seeds": "זרעי אוזן ומגנטים",
+      "tdp_lamps": "מנורות TDP",
+      "electro": "מכשירים",
+      "granules": "גרנולות",
+      "formulas": "פורמולות",
+      "raw_herbs": "צמחי מרפא",
+      "consumables": "מתכלים",
+      "accessories": "אביזרים"
+    }
   },
   "errors": {
     "slugTaken": "הכתובת הזו כבר תפוסה.",

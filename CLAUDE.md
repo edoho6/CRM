@@ -286,6 +286,20 @@
   `monthStartIn`, `dateKeyIn`, `startOfWeekIn`…) בשרת ובדפדפן כאחד — "היום" הוא של
   הקליניקה (`clinics.timezone`), לא של השרת, אחרת ה-HTML מהשרת וההידרציה חולקים על
   המספר. `computeStats` ב-`dashboard/kpi-stats.ts` מקבל `timeZone` ונבדק על יום קבוע
+- **השוואת מחירים:** הטבלאות `shop_*` הן היחידות **בלי `clinic_id`** — מחיר של חנות הוא אותה עובדה
+  לכל קליניקה, ולכן נקרא פעם אחת לכל השירות. RLS: `select` לחבר קליניקה בלבד; כתיבה רק מהפונקציות
+  של המיגרציה (service_role) ומשתי פונקציות אדמין שבודקות `is_platform_admin()`. הקורא הוא
+  `supabase/functions/fetch-shop-prices`; הלוגיקה כולה ב-`_shared/shop-prices/` — TypeScript נקי (בלי
+  Deno/Node, ייבוא עם `.ts`, תחביר "ניתן למחיקה" בלבד) שנבדק מ-`apps/web` דרך ה-alias `@shop/*` ורץ
+  ב-`scripts/shop-prices-dry-run.mjs` תחת Node. **נקראים רק שם, מחיר, קישור ומזהים** — לא תיאור ולא תמונה.
+  נימוס בקוד, לא בהגדרה: `fetcher.ts` (השהיה לכל host, User-Agent עם כתובת קשר, בקשות מותנות, 429/503)
+  ו-`robots.ts` (נקרא בכל ריצה). חנות נקראת רק כש-`status = active`; שלוש חנויות ה-HTML נשארות
+  `awaiting_permission` עד אישור בכתב. סיווג (`taxonomy.ts` → `classify.ts`): הרחקה לפי השם גוברת
+  על הכול, אחריה כללי השם, ורק אז הקטגוריה של החנות. איחוד (`match.ts`): טביעת-אצבע
+  `brand|item|size|pack`; בלי מותג מוכר — מיזוג רק על מילים זהות (שמרני בכוונה). כיוונון = להריץ
+  `node scripts/shop-prices-dry-run.mjs --store=<slug> --offline` ולקרוא את `test-results/prices/dryrun-*.txt`;
+  השמות האמיתיים ב-`__fixtures__` הם הבדיקות. בממשק: `components/external-link.tsx` לכל קישור
+  שיוצא מהאפליקציה (חלון חדש, noopener, מוכרז לקורא מסך), והכיתוב "המחירים נקראים מדפי המוצר…" מופיע בראש הרשימה
 - **CSS משותף:** כללים שאינם טוקנים (מיקוד, placeholder, `select.ui-select`, `.table-cards`,
   `[data-table-size]`, הדפסה בסיסית) ב-`packages/ui/src/base.css`, מיובא בשני
   ה-`globals.css`; ה-`@theme` נשאר לכל אפליקציה בנפרד

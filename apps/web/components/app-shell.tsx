@@ -39,6 +39,7 @@ import {
   Receipt,
   Settings,
   Sparkles,
+  Tags,
   UserCog,
   Users,
 } from 'lucide-react';
@@ -127,6 +128,7 @@ const NAV_ITEMS = [
   { href: '/forms', labelKey: 'forms', icon: FileText, exact: false, stockOnly: false },
   { href: '/reference', labelKey: 'reference', icon: BookOpen, exact: false, stockOnly: false },
   { href: '/inventory', labelKey: 'inventory', icon: Boxes, exact: false, stockOnly: true },
+  { href: '/prices', labelKey: 'prices', icon: Tags, exact: false, stockOnly: false },
   { href: '/billing', labelKey: 'billing', icon: Receipt, exact: false, stockOnly: false },
   { href: '/reports', labelKey: 'reports', icon: ChartColumn, exact: false, stockOnly: false },
   { href: '/assistant', labelKey: 'assistant', icon: Sparkles, exact: false, stockOnly: false },

@@ -1014,6 +1014,37 @@ const flows = {
     const ok = one === 1 && two === 2 && gone;
     return { ok, detail: `frames ${one} then ${two}, option offered ${offered}, closed ${gone}` };
   },
+  async pricesCheapest(page) {
+    // Each row's green chip must be the lowest price among the row's live
+    // chips, and every chip must leave the app safely (new tab, no opener).
+    // An empty list is fine: the price tables fill only once the reader runs.
+    const rows = page.locator('main tbody tr');
+    const count = await rows.count();
+    if (count === 0) {
+      const empty = await page.locator('main').getByText(/עוד אין מחירים|לא נמצאו מוצרים/).count();
+      return { ok: empty > 0, detail: `no products yet; empty state shown: ${empty > 0}` };
+    }
+    const problems = [];
+    for (let i = 0; i < Math.min(count, 20); i++) {
+      const chips = rows.nth(i).locator('a[target="_blank"]');
+      const prices = [];
+      for (let j = 0; j < (await chips.count()); j++) {
+        const chip = chips.nth(j);
+        const text = await chip.innerText();
+        const struck = await chip.locator('.line-through').count();
+        const value = Number((text.match(/[\d,.]+/) || [''])[0].replace(/,/g, ''));
+        if (!struck && Number.isFinite(value) && value > 0) {
+          prices.push({ value, cheapest: (await chip.getAttribute('data-cheapest')) !== null, rel: await chip.getAttribute('rel') });
+        }
+      }
+      if (prices.length === 0) continue;
+      const min = Math.min(...prices.map((p) => p.value));
+      const marked = prices.filter((p) => p.cheapest);
+      if (marked.length !== 1 || marked[0].value !== min) problems.push(`row ${i + 1}: cheapest mark ${marked.map((m) => m.value).join('/')} vs min ${min}`);
+      if (prices.some((p) => !/noopener/.test(p.rel || ''))) problems.push(`row ${i + 1}: a shop link without noopener`);
+    }
+    return { ok: problems.length === 0, detail: problems.length ? problems.join('; ') : `${count} rows checked` };
+  },
   async phoneSearchOverlay(page) {
     // On a phone the search takes the whole top bar while it is open.
     const trigger = page.locator('[data-top-bar] button[aria-label="חיפוש מהיר"], [data-top-bar] button[aria-label="Quick search"]').first();
@@ -1041,7 +1072,8 @@ const STATIC_ROUTES = [
   '/calendar?view=range', '/tasks', '/messages', '/encounters', '/encounters/new', '/forms',
   '/forms/new', '/reference/herbs', '/reference/formulas', '/reference/points', '/reference/compare',
   '/inventory', '/inventory?tab=low', '/inventory/batches', '/inventory/batches/receive',
-  '/inventory/suppliers', '/billing', '/billing/new', '/billing/settings', '/reports', '/assistant',
+  '/inventory/suppliers', '/prices', '/prices?cat=needles&min=2', '/billing', '/billing/new',
+  '/billing/settings', '/reports', '/assistant',
   '/settings', '/settings/access', '/settings/booking', '/settings/consent', '/settings/tags',
   '/account', '/account/protocols', '/account/schedule', '/accessibility',
 ];
@@ -1108,6 +1140,7 @@ async function main() {
     for (const locale of locales) for (const width of widths) {
       for (const route of [...STATIC_ROUTES, ...dynamic]) await visit(context, { route, locale, width });
       await visit(context, { route: '/platform', locale, width, expect404: true });
+      await visit(context, { route: '/prices/stores', locale, width, expect404: true });
     }
 
     // Flows, desktop, Hebrew: what a static read cannot judge. On a fresh
@@ -1174,6 +1207,7 @@ async function main() {
     await visit(context, { route: '/reference/herbs?page=2', locale: 'he', width: desktop, label: 'catalogue page 2' });
     await visit(context, { route: '/reference/herbs', locale: 'he', width: desktop, label: 'flow herb-gallery', after: flows.herbGallery });
     if (phone) await visit(context, { route: '/reference/herbs', locale: 'he', width: phone, label: 'flow herb-gallery-phone', after: flows.herbGallery });
+    await visit(context, { route: '/prices', locale: 'he', width: desktop, label: 'flow prices-cheapest', after: flows.pricesCheapest });
     if (patientIds[0]) {
       await visit(context, { route: `/patients/${patientIds[0]}?tab=encounters`, locale: 'he', width: desktop, label: 'flow patient-tab', after: flows.patientTab });
       if (phone) {
