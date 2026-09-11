@@ -1453,9 +1453,13 @@
       "zoomHint": "Mouse wheel zooms, dragging pans, double-click resets. Keyboard: + − and the arrows.",
       "openMonograph": "Open the monograph of {name}",
       "fullPage": "The herb's full page",
-      "moveEarlier": "Move {name} left",
-      "moveLater": "Move {name} right",
-      "monographFailed": "The monograph did not load. Close and try again."
+      "monographFailed": "The monograph did not load. Close and try again.",
+      "dragToReorder": "Drag to move {name}",
+      "dragInstructions": "To move a picture: Space or Enter picks it up, the arrow keys move it, Space drops it. Escape cancels.",
+      "dragPicked": "{name} picked up. Arrow keys move it, Space drops it.",
+      "dragOver": "{name} will move to position {position}",
+      "dragDropped": "{name} dropped at position {position}",
+      "dragCancelled": "Move cancelled"
     },
     "stock": {
       "title": "Stock",

@@ -1453,9 +1453,13 @@
       "zoomHint": "גלגלת העכבר מגדילה ומקטינה, גרירה מזיזה, לחיצה כפולה מאפסת. במקלדת: + − וחצים.",
       "openMonograph": "פתיחת המונוגרף של {name}",
       "fullPage": "לדף המלא של הצמח",
-      "moveEarlier": "הזזת {name} ימינה",
-      "moveLater": "הזזת {name} שמאלה",
-      "monographFailed": "המונוגרף לא נטען. אפשר לסגור ולנסות שוב."
+      "monographFailed": "המונוגרף לא נטען. אפשר לסגור ולנסות שוב.",
+      "dragToReorder": "גרירה לשינוי המקום של {name}",
+      "dragInstructions": "כדי להזיז תמונה: רווח או Enter מרימים אותה, החצים מזיזים, ורווח מניח. Esc מבטל.",
+      "dragPicked": "{name} הורמה. החצים מזיזים, רווח מניח.",
+      "dragOver": "{name} תעבור למקום {position}",
+      "dragDropped": "{name} הונחה במקום {position}",
+      "dragCancelled": "ההזזה בוטלה"
     },
     "stock": {
       "title": "מלאי",

@@ -2,7 +2,24 @@
 
 import { createContext, useCallback, useContext, useMemo, useState, type CSSProperties } from 'react';
 import { useTranslations } from 'next-intl';
-import { ArrowLeft, ArrowRight, Images, Plus, X } from 'lucide-react';
+import {
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  arrayMove,
+  rectSortingStrategy,
+  sortableKeyboardCoordinates,
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { GripHorizontal, Images, Plus, X } from 'lucide-react';
 import { Button, Combobox, Dialog, DialogContent, cn, type ComboboxValue } from '@clinic/ui';
 import { ZoomFrame } from '@/features/encounters/zoom-frame';
 import { HerbMonographSheet } from './herb-monograph-sheet';
@@ -16,8 +33,9 @@ import { HerbMonographSheet } from './herb-monograph-sheet';
  * list, up to six herbs sit beside one another in a window that takes the
  * whole screen, each picked by name from a search box that knows every herb
  * with a photograph, not only the page on screen: "does Bai Shao look like
- * Chi Shao" is asked across the catalogue. The pictures can be put in any
- * order, and a herb's name opens its monograph over the comparison.
+ * Chi Shao" is asked across the catalogue. The pictures are dragged into
+ * any order by the grip under each one (or moved with the keyboard from it),
+ * and a herb's name opens its monograph over the comparison.
  *
  * The provider carries that list once per page; thumbnails and the button
  * reach it through context, so the server-rendered rows stay rows.
@@ -35,7 +53,17 @@ export interface HerbGalleryEntry {
   src: string;
   /** The catalogue's photograph shows the dried material or the living plant. */
   form: 'material' | 'plant' | 'clinic';
-  credit: { author: string; source: string; licence: string; licenceUrl: string; page: string } | null;
+  /** The catalogue photograph's source; `required` is whether its licence asks for the credit to be shown. */
+  credit: {
+    author: string;
+    source: string;
+    licence: string;
+    licenceUrl: string;
+    page: string;
+    required: boolean;
+  } | null;
+  /** What the clinic wrote as the credit of its own photograph, if anything. */
+  attribution: string | null;
 }
 
 interface GalleryState {
@@ -141,7 +169,7 @@ export function HerbCompareButton({ className }: { className?: string }) {
 }
 
 const ICON_BUTTON =
-  'flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-ink-500 transition-colors hover:bg-ink-100 hover:text-ink-900 active:bg-ink-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus disabled:pointer-events-none disabled:opacity-40';
+  'flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-ink-500 transition-colors hover:bg-ink-100 hover:text-ink-900 active:bg-ink-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus';
 
 function GalleryContent({
   shown,
@@ -174,15 +202,21 @@ function GalleryContent({
     [entries, shown],
   );
 
-  /** Moves one picture a step towards the start (−1) or the end (+1) of the row. */
-  const move = (id: string, step: -1 | 1) => {
-    const from = shown.indexOf(id);
-    const to = from + step;
-    if (from < 0 || to < 0 || to >= shown.length) return;
-    const next = [...shown];
-    next.splice(from, 1);
-    next.splice(to, 0, id);
-    onChange(next);
+  // A few pixels before a drag begins, so a click on the grip is a click;
+  // the keyboard sensor lets the grip be moved with the arrows once it has
+  // been picked up with Space.
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+  const nameOf = (id: unknown) => byId.get(String(id))?.name ?? '';
+  const positionOf = (id: unknown) => shown.indexOf(String(id)) + 1;
+  const handleDragEnd = ({ active, over }: DragEndEvent) => {
+    if (!over || active.id === over.id) return;
+    const from = shown.indexOf(String(active.id));
+    const to = shown.indexOf(String(over.id));
+    if (from < 0 || to < 0) return;
+    onChange(arrayMove(shown, from, to));
   };
 
   const zoomLabels = { zoomIn: t('zoomIn'), zoomOut: t('zoomOut'), hint: t('zoomHint') };
@@ -235,109 +269,42 @@ function GalleryContent({
         {herbs.length === 0 ? (
           <p className="mt-6 text-center text-sm text-ink-600">{t('compareHint', { max: MAX_COMPARED })}</p>
         ) : (
-          <div
-            // One column per picture from `sm` up, whatever their number; a
-            // phone stacks them and scrolls.
-            style={{ '--cols': herbs.length } as CSSProperties}
-            className="grid grid-cols-1 gap-3 sm:min-h-0 sm:flex-1 sm:[grid-template-columns:repeat(var(--cols),minmax(0,1fr))]"
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+            accessibility={{
+              screenReaderInstructions: { draggable: t('dragInstructions') },
+              announcements: {
+                onDragStart: ({ active }) => t('dragPicked', { name: nameOf(active.id) }),
+                onDragOver: ({ active, over }) =>
+                  over ? t('dragOver', { name: nameOf(active.id), position: positionOf(over.id) }) : '',
+                onDragEnd: ({ active, over }) =>
+                  over ? t('dragDropped', { name: nameOf(active.id), position: positionOf(over.id) }) : t('dragCancelled'),
+                onDragCancel: () => t('dragCancelled'),
+              },
+            }}
           >
-            {herbs.map((herb, index) => (
-              <figure key={herb.id} className="flex min-w-0 flex-col sm:min-h-0">
-                <ZoomFrame
-                  src={herb.src}
-                  alt={herb.name}
-                  fit="contain"
-                  labels={zoomLabels}
-                  className="h-[55vh] w-full rounded-lg border border-ink-200 bg-ink-50 sm:h-auto sm:min-h-0 sm:flex-1"
-                />
-                <figcaption className="mt-1.5 flex shrink-0 items-start justify-between gap-2 text-xs text-ink-600">
-                  <span className="min-w-0">
-                    {/* The name is the door to the monograph: what the
-                        picture shows, in words, without leaving the comparison. */}
-                    <button
-                      type="button"
-                      data-herb-name
-                      onClick={() => setMonograph(herb)}
-                      title={t('openMonograph', { name: herb.name })}
-                      className="block max-w-full truncate rounded text-start text-sm font-semibold text-jade-800 underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
-                    >
-                      {herb.name}
-                    </button>
-                    {herb.secondary ? <span className="block truncate">{herb.secondary}</span> : null}
-                    <span className="block">
-                      {herb.form === 'clinic'
-                        ? t('clinicPhoto')
-                        : t(herb.form === 'material' ? 'referenceMaterialNote' : 'referencePlantNote')}
-                    </span>
-                    {/* The credit is a condition of the licence, not decoration. */}
-                    {herb.credit ? (
-                      <span className="block">
-                        <a
-                          href={herb.credit.page}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="underline-offset-2 hover:underline"
-                        >
-                          {t('referenceCredit', {
-                            author: herb.credit.author,
-                            source: herb.credit.source,
-                            licence: herb.credit.licence,
-                          })}
-                        </a>
-                        {' · '}
-                        <a
-                          href={herb.credit.licenceUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="underline-offset-2 hover:underline"
-                          dir="ltr"
-                        >
-                          {herb.credit.licence}
-                        </a>
-                      </span>
-                    ) : null}
-                  </span>
-                  {herbs.length > 1 ? (
-                    <span className="flex shrink-0 items-center">
-                      {/* The arrows mean "towards the start" and "towards the
-                          end" of the row, and are mirrored for Hebrew. */}
-                      <button
-                        type="button"
-                        data-move="earlier"
-                        disabled={index === 0}
-                        onClick={() => move(herb.id, -1)}
-                        aria-label={t('moveEarlier', { name: herb.name })}
-                        title={t('moveEarlier', { name: herb.name })}
-                        className={ICON_BUTTON}
-                      >
-                        <ArrowLeft className="h-4 w-4 rtl:-scale-x-100" aria-hidden />
-                      </button>
-                      <button
-                        type="button"
-                        data-move="later"
-                        disabled={index === herbs.length - 1}
-                        onClick={() => move(herb.id, 1)}
-                        aria-label={t('moveLater', { name: herb.name })}
-                        title={t('moveLater', { name: herb.name })}
-                        className={ICON_BUTTON}
-                      >
-                        <ArrowRight className="h-4 w-4 rtl:-scale-x-100" aria-hidden />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => onChange(shown.filter((id) => id !== herb.id))}
-                        aria-label={t('removeFromCompare', { name: herb.name })}
-                        title={t('removeFromCompare', { name: herb.name })}
-                        className={ICON_BUTTON}
-                      >
-                        <X className="h-4 w-4" aria-hidden />
-                      </button>
-                    </span>
-                  ) : null}
-                </figcaption>
-              </figure>
-            ))}
-          </div>
+            <SortableContext items={herbs.map((herb) => herb.id)} strategy={rectSortingStrategy}>
+              <div
+                // One column per picture from `sm` up, whatever their number; a
+                // phone stacks them and scrolls.
+                style={{ '--cols': herbs.length } as CSSProperties}
+                className="grid grid-cols-1 gap-3 sm:min-h-0 sm:flex-1 sm:[grid-template-columns:repeat(var(--cols),minmax(0,1fr))]"
+              >
+                {herbs.map((herb) => (
+                  <GalleryFigure
+                    key={herb.id}
+                    herb={herb}
+                    removable={herbs.length > 1}
+                    zoomLabels={zoomLabels}
+                    onOpenMonograph={() => setMonograph(herb)}
+                    onRemove={() => onChange(shown.filter((id) => id !== herb.id))}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
         )}
       </div>
 
@@ -347,5 +314,118 @@ function GalleryContent({
         onClose={() => setMonograph(null)}
       />
     </DialogContent>
+  );
+}
+
+/**
+ * One picture with its caption. The grip is the only thing that drags —
+ * the picture itself is dragged to pan inside its zoom frame, and the two
+ * must not fight. Under the picture: the name (a door to the monograph),
+ * the other names, and the credit where the licence asks for one.
+ */
+function GalleryFigure({
+  herb,
+  removable,
+  zoomLabels,
+  onOpenMonograph,
+  onRemove,
+}: {
+  herb: HerbGalleryEntry;
+  removable: boolean;
+  zoomLabels: { zoomIn: string; zoomOut: string; hint: string };
+  onOpenMonograph: () => void;
+  onRemove: () => void;
+}) {
+  const t = useTranslations('inventory.image');
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } =
+    useSortable({ id: herb.id });
+
+  return (
+    <figure
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition }}
+      className={cn('flex min-w-0 flex-col sm:min-h-0', isDragging && 'z-10 opacity-80')}
+    >
+      <ZoomFrame
+        src={herb.src}
+        alt={herb.name}
+        fit="contain"
+        labels={zoomLabels}
+        className="h-[55vh] w-full rounded-lg border border-ink-200 bg-ink-50 sm:h-auto sm:min-h-0 sm:flex-1"
+      />
+      <figcaption className="mt-1.5 flex shrink-0 items-start justify-between gap-2 text-xs text-ink-600">
+        <span className="min-w-0">
+          {/* The name is the door to the monograph: what the picture shows,
+              in words, without leaving the comparison. */}
+          <button
+            type="button"
+            data-herb-name
+            onClick={onOpenMonograph}
+            title={t('openMonograph', { name: herb.name })}
+            // Wraps rather than truncates: six columns leave each name a
+            // few words wide, and a name with three dots is not a name.
+            className="block max-w-full rounded text-start text-sm leading-snug font-semibold break-words text-jade-800 underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+          >
+            {herb.name}
+          </button>
+          {herb.secondary ? <span className="block break-words">{herb.secondary}</span> : null}
+          {/* Only the credit a licence requires, or the one the clinic wrote
+              for its own photograph — nothing about the picture itself. */}
+          {herb.attribution ? (
+            <span className="block break-words">{herb.attribution}</span>
+          ) : herb.credit?.required ? (
+            <span className="block">
+              <a
+                href={herb.credit.page}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline-offset-2 hover:underline"
+              >
+                {t('referenceCredit', {
+                  author: herb.credit.author,
+                  source: herb.credit.source,
+                  licence: herb.credit.licence,
+                })}
+              </a>
+              {' · '}
+              <a
+                href={herb.credit.licenceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline-offset-2 hover:underline"
+                dir="ltr"
+              >
+                {herb.credit.licence}
+              </a>
+            </span>
+          ) : null}
+        </span>
+        {removable ? (
+          <span className="flex shrink-0 items-center">
+            <button
+              type="button"
+              ref={setActivatorNodeRef}
+              data-drag-handle
+              {...attributes}
+              {...listeners}
+              aria-label={t('dragToReorder', { name: herb.name })}
+              title={t('dragToReorder', { name: herb.name })}
+              className={cn(ICON_BUTTON, 'touch-none cursor-grab active:cursor-grabbing')}
+            >
+              <GripHorizontal className="h-4 w-4" aria-hidden />
+            </button>
+            <button
+              type="button"
+              onClick={onRemove}
+              aria-label={t('removeFromCompare', { name: herb.name })}
+              title={t('removeFromCompare', { name: herb.name })}
+              className={ICON_BUTTON}
+            >
+              <X className="h-4 w-4" aria-hidden />
+            </button>
+          </span>
+        ) : null}
+      </figcaption>
+    </figure>
   );
 }

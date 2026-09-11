@@ -68,8 +68,10 @@ export async function loadHerbGalleryEntries(
               licence: reference.licence,
               licenceUrl: reference.licenceUrl,
               page: reference.page,
+              required: reference.creditRequired,
             }
           : null,
+      attribution: herb.image_url ? herb.image_attribution?.trim() || null : null,
     });
   }
   return entries;

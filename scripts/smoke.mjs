@@ -1009,12 +1009,21 @@ const flows = {
     if (offered) await option.click();
     await page.waitForTimeout(500);
     const two = await dialog.locator('[role="group"][aria-label]').count();
-    // The second picture's "earlier" arrow puts it first.
+    // The second picture's grip, moved with the keyboard, puts it first:
+    // Space picks it up, an arrow towards the start moves it (right in the
+    // Hebrew row; up in the phone's stack), Space drops it.
     const names = () => dialog.locator('figcaption button[data-herb-name]').allInnerTexts();
     const before = await names();
-    const earlier = dialog.locator('figure').nth(1).locator('button[data-move="earlier"]');
-    if ((await earlier.count()) > 0) await earlier.click();
-    await page.waitForTimeout(300);
+    const grip = dialog.locator('figure').nth(1).locator('button[data-drag-handle]');
+    if ((await grip.count()) > 0) {
+      await grip.focus();
+      await page.keyboard.press('Space');
+      await page.waitForTimeout(200);
+      await page.keyboard.press((page.viewportSize()?.width ?? 1280) < 640 ? 'ArrowUp' : 'ArrowRight');
+      await page.waitForTimeout(200);
+      await page.keyboard.press('Space');
+    }
+    await page.waitForTimeout(400);
     const after = await names();
     const reordered = before.length === 2 && after[0] === before[1] && after[1] === before[0];
     // A name opens the monograph in a second window over the first; Escape
