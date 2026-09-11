@@ -88,23 +88,41 @@ select cron.schedule(
 ## השוואת מחירים — הקורא של החנויות
 
 המסך "השוואת מחירים" מציג מחירים שנקראים מדפי המוצר הציבוריים של החנויות, פעם ביום
-בערך, על ידי פונקציה שרצה בתוך Supabase. כדי שהוא יתמלא:
+בערך, על ידי פונקציה שרצה בתוך Supabase. הרצת ה-SQL יוצרת רק את הטבלאות — הן נשארות
+ריקות עד שהפונקציה מותקנת ורצה. כדי שהמסך יתמלא:
 
-1. להריץ ב-SQL editor את `27_shop_prices_to_run.sql` (ואחריו `supabase/tests/tenant_isolation.sql`).
-2. ב-Supabase: Edge Functions ← Secrets — להוסיף `SHOP_PRICES_SECRET` (מחרוזת אקראית ארוכה),
-   `SHOP_PRICES_CONTACT` (אימייל שחנות יכולה לפנות אליו) ו-`SHOP_PRICES_SITE` (כתובת המערכת).
-3. במסוף, בתיקיית הפרויקט: `supabase functions deploy fetch-shop-prices --no-verify-jwt`.
-4. ריצה ראשונה ידנית לכל חנות (הפקודה ב-`supabase/functions/README.md`), עד שהתשובה אומרת
-   `"partial": false`.
-5. ב-SQL editor — ההוראה `cron.schedule` שבסוף קובץ המיגרציה, עם הכתובת של הפרויקט והסוד.
-6. ב-Vercel (וב-`.env.local`): `SHOP_PRICES_SECRET` — אותו ערך — כדי שהכפתור "רענון עכשיו"
-   במסך `/prices/stores` יוכל להפעיל את הקורא. בלעדיו הכפתור רק מסמן בקשה, והתור הבא של
-   הלו"ז מבצע אותה.
+1. ב-SQL editor: `27_shop_prices_to_run.sql`, אחריו `28_shop_prices_grants_to_run.sql`, ואז
+   `supabase/tests/tenant_isolation.sql` (צריך להסתיים ב-ALL TENANT ISOLATION CHECKS PASSED).
+2. להמציא סוד: מחרוזת אקראית ארוכה (למשל 40 אותיות וספרות). שומרים אותה במקום בטוח — היא
+   תידרש שלוש פעמים למטה. לא לשלוח אותה בצ'אט.
+3. ב-Supabase: Edge Functions ← Secrets ← Add new — שלושה סודות:
+   `SHOP_PRICES_SECRET` (הסוד מסעיף 2), `SHOP_PRICES_CONTACT` (אימייל שחנות יכולה לפנות אליו),
+   `SHOP_PRICES_SITE` (כתובת המערכת, למשל https://…vercel.app).
+4. להעלות את הפונקציה. ב-VS Code: Terminal ← New Terminal, ואז שלוש פקודות, אחת אחרי השנייה
+   (ה-Reference ID נמצא ב-Supabase תחת Project Settings ← General):
+
+   ```
+   npx supabase@latest login
+   npx supabase@latest link --project-ref XXXXXXXX
+   npx supabase@latest functions deploy fetch-shop-prices --no-verify-jwt
+   ```
+
+   הראשונה פותחת דפדפן לאישור; השנייה שואלת סיסמת מסד — פשוט Enter (לא נדרשת כאן); השלישית
+   מסתיימת ב-"Deployed Functions". ב-Supabase ← Edge Functions הפונקציה `fetch-shop-prices`
+   אמורה להופיע.
+5. ב-SQL editor — ההוראה `cron.schedule` שבסוף `27_shop_prices_to_run.sql` (בהערה), אחרי
+   שמחליפים בה את YOUR-PROJECT-REF ב-Reference ID ואת THE-SAME-SECRET בסוד. לפני כן, ב-Database ←
+   Extensions, לוודא ש-`pg_cron` ו-`pg_net` דלוקות. מרגע זה כל עשר דקות נקראת חנות אחת; ארבע
+   החנויות מלאות תוך כשעה, וכל אחת מתעדכנת פעם ביום.
+6. ב-Vercel (Settings ← Environment Variables) וב-`.env.local` במחשב: `SHOP_PRICES_SECRET`
+   — אותו ערך. זה מה שנותן לכפתור "קריאה עכשיו" במסך "החנויות" (`/prices/stores`) להפעיל את
+   הקורא מיד במקום לחכות לסיבוב הבא. אחרי שינוי ב-`.env.local` מפעילים את השרת המקומי מחדש.
 
 ארבע חנויות פעילות מהיום הראשון (יש להן קטלוג ציבורי מסודר). שלוש נוספות בנויות אבל
-כבויות עד שהחנות מאשרת בכתב — ואז מפעילים אותן מ-`/prices/stores`. שייאו איי לא נתמכת כרגע.
+כבויות עד שהחנות מאשרת בכתב — נוסח הבקשה ב-`supabase/functions/fetch-shop-prices/permission-email.he.md`,
+ואחרי אישור מפעילים אותן מ-`/prices/stores`. שייאו איי לא נתמכת כרגע.
 
-
+## מה בודקים אחרי העלייה
 
 1. `https://<כתובת-המערכת>/he/login` — כניסה עם המשתמש הרגיל שלך. אם יש שגיאה — 90% זה משתני סביבה: לבדוק שאין רווח בסוף הערך, ולעשות Redeploy.
 2. הגדרות ← זימון אונליין ← "פתיחה" — הדף נפתח בכתובת האמיתית, ואפשר לשלוח את הקישור.
