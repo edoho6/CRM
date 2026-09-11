@@ -4,9 +4,12 @@
  * For each botanical name in supabase/seed/herbs, asks — in this order —
  * iNaturalist, Wikimedia Commons and GBIF for a photograph of exactly that
  * species, and keeps one only when its licence plainly allows use inside
- * commercial software: CC0 or public domain first, CC BY when that is all
- * there is. Non-commercial, share-alike, "all rights reserved" and anything
- * ambiguous are refused, and the herb is left without a picture.
+ * commercial software: CC0 or public domain first, then CC BY, then CC BY-SA.
+ * Share-alike binds only an adapted work, and a photograph shown as it is,
+ * with its credit, is not one — so the app owes it nothing beyond the credit
+ * and a file left unedited apart from downscaling. Non-commercial,
+ * no-derivatives, "all rights reserved" and anything ambiguous are refused,
+ * and the herb is left without a picture.
  *
  * Species identity is checked, not guessed: iNaturalist is asked for the
  * taxon by name and only research-grade observations of that taxon are used;
@@ -75,6 +78,15 @@ const ACCEPTED = [
     credit: true,
     rank: 1,
   },
+  {
+    // Share-alike: the photograph is shown as received, so nothing here is an
+    // adaptation, and the obligation is the same credit and licence link.
+    test: (s) => /^cc[- ]by[- ]sa(?![- ]?(nc|nd))/i.test(s),
+    id: 'CC BY-SA',
+    url: 'https://creativecommons.org/licenses/by-sa/4.0/',
+    credit: true,
+    rank: 2,
+  },
 ];
 
 function classifyLicence(raw) {
@@ -135,7 +147,7 @@ async function fromINaturalist(species) {
   if (!taxon) return null;
   await sleep(350);
   const obs = await getJson(
-    `https://api.inaturalist.org/v1/observations?taxon_id=${taxon.id}&photo_license=cc0,cc-by&quality_grade=research&photos=true&per_page=12&order_by=votes`,
+    `https://api.inaturalist.org/v1/observations?taxon_id=${taxon.id}&photo_license=cc0,cc-by,cc-by-sa&quality_grade=research&photos=true&per_page=12&order_by=votes`,
   );
   for (const o of obs.results ?? []) {
     // Belt and braces: the observation's own identified taxon must be ours.
@@ -247,7 +259,13 @@ async function fromGbif(species) {
     for (const m of o.media ?? []) {
       if (m.type !== 'StillImage' || !m.identifier) continue;
       const licence = classifyLicence(
-        m.license?.includes('zero') ? 'CC0' : m.license?.includes('/by/') ? 'CC BY' : '',
+        m.license?.includes('zero')
+          ? 'CC0'
+          : m.license?.includes('/by-sa/')
+            ? 'CC BY-SA'
+            : m.license?.includes('/by/')
+              ? 'CC BY'
+              : '',
       );
       if (!licence) continue;
       return {
@@ -292,7 +310,9 @@ async function download(url, file) {
   const res = await fetch(url, { headers: { 'User-Agent': UA } });
   if (!res.ok) throw new Error(`download ${res.status}`);
   const type = res.headers.get('content-type') ?? '';
-  if (!/^image\/(jpeg|png)/.test(type)) throw new Error(`not an image: ${type}`);
+  // WebP only when sharp is here to turn it into the JPEG the manifest promises.
+  if (!(sharp ? /^image\/(jpeg|png|webp)/ : /^image\/(jpeg|png)/).test(type))
+    throw new Error(`not an image: ${type}`);
   const buffer = Buffer.from(await res.arrayBuffer());
   // Anything up to twenty megabytes is welcome when it can be shrunk here;
   // without sharp the cap has to be what the repository can carry.
@@ -418,21 +438,44 @@ function writeCredits(manifest) {
     '# Reference photographs · credits',
     '',
     'Every photograph here is used under a licence that permits use inside commercial software.',
-    'CC0 needs no credit; CC BY requires the credit shown. Refused: NC, SA, ND, all rights reserved, unclear.',
+    'CC0 needs no credit; CC BY and CC BY-SA require the credit shown, with a link to the licence.',
+    'The files are as received from the source, apart from downscaling to 640 px; none has been edited,',
+    'so no adapted work exists and share-alike asks nothing further. Refused: NC, ND, all rights reserved, unclear.',
     '',
-    '| Herb | Species | Source | Author | Licence | Page |',
-    '|---|---|---|---|---|---|',
+    '"Material" is the dried medicinal material as dispensed; "plant" is the living plant, shown only where no material photograph was found.',
+    '',
+    '| Herb | Species | Shows | Source | Author | Licence | Page |',
+    '|---|---|---|---|---|---|---|',
   ];
   for (const [pinyin, e] of Object.entries(manifest).sort()) {
     if (!e.file) continue;
     lines.push(
-      `| ${pinyin} | ${e.species} | ${e.source} | ${e.author} | [${e.licence}](${e.licenceUrl}) | [page](${e.page}) |`,
+      `| ${pinyin} | ${e.species ?? e.botanical ?? ''} | ${e.form === 'material' ? 'material' : 'plant'} | ${e.source} | ${e.author} | [${e.licence}](${e.licenceUrl}) | [page](${e.page}) |`,
     );
   }
   fs.writeFileSync(creditsPath, lines.join('\n') + '\n');
 }
 
-main().catch((e) => {
-  console.error(e);
-  process.exitCode = 1;
-});
+export {
+  readCatalogue,
+  classifyLicence,
+  speciesOf,
+  isPlantName,
+  slugOf,
+  sleep,
+  getJson,
+  download,
+  writeCredits,
+  UA,
+  outDir,
+  manifestPath,
+};
+
+// Only the direct `node scripts/fetch-herb-images.mjs` run walks the catalogue;
+// scripts/fetch-herb-material-images.mjs imports the helpers above.
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main().catch((e) => {
+    console.error(e);
+    process.exitCode = 1;
+  });
+}
