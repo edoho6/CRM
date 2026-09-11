@@ -35,7 +35,8 @@ for a caller with a clinic membership, so a portal patient or an anonymous
 caller sees nothing, and no policy allows a write from the app. Rows are
 written by the `fetch-shop-prices` function, which runs inside Supabase with
 the service role, through `SECURITY DEFINER` functions granted to
-`service_role` alone; a platform admin may change a shop's status or ask for a
+`service_role` alone — revoked by name from `anon` and `authenticated`, which
+Supabase otherwise grants EXECUTE on every new public function; a platform admin may change a shop's status or ask for a
 refresh through two functions that check `is_platform_admin()`. The view
 `shop_product_prices` is `security_invoker` like the others.
 

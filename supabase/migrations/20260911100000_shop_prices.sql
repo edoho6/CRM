@@ -209,8 +209,11 @@ left join lateral (
 ) s on true;
 
 -- ---------------------------------------------------------------------------
--- The job's three functions (service role only)
+-- The job's functions (service role only)
 -- ---------------------------------------------------------------------------
+-- Supabase grants EXECUTE on every new public function to anon, authenticated
+-- and service_role by default privilege; a revoke from PUBLIC leaves those
+-- grants standing, so the two app roles are revoked by name.
 
 -- Claims a store for one pass. Null when the store is not active or another
 -- pass has it (started within three minutes and not finished): two passes
@@ -240,6 +243,7 @@ end;
 $$;
 
 revoke all on function public.shop_claim_store(uuid, uuid) from public;
+revoke execute on function public.shop_claim_store(uuid, uuid) from anon, authenticated;
 grant execute on function public.shop_claim_store(uuid, uuid) to service_role;
 
 -- Saves the bookmark between pages of one pass.
@@ -253,6 +257,7 @@ as $$
 $$;
 
 revoke all on function public.shop_save_bookmark(uuid, jsonb) from public;
+revoke execute on function public.shop_save_bookmark(uuid, jsonb) from anon, authenticated;
 grant execute on function public.shop_save_bookmark(uuid, jsonb) to service_role;
 
 -- One page of offers from one store. Each element:
@@ -393,6 +398,7 @@ end;
 $$;
 
 revoke all on function public.shop_upsert_offers(uuid, uuid, jsonb) from public;
+revoke execute on function public.shop_upsert_offers(uuid, uuid, jsonb) from anon, authenticated;
 grant execute on function public.shop_upsert_offers(uuid, uuid, jsonb) to service_role;
 
 -- Closes a pass. A complete, successful pass marks every offer the pass did
@@ -458,6 +464,7 @@ end;
 $$;
 
 revoke all on function public.shop_finish_run(uuid, uuid, text, boolean, boolean, text, jsonb) from public;
+revoke execute on function public.shop_finish_run(uuid, uuid, text, boolean, boolean, text, jsonb) from anon, authenticated;
 grant execute on function public.shop_finish_run(uuid, uuid, text, boolean, boolean, text, jsonb) to service_role;
 
 -- ---------------------------------------------------------------------------
@@ -487,6 +494,7 @@ end;
 $$;
 
 revoke all on function public.shop_set_store_status(uuid, text, text) from public;
+revoke execute on function public.shop_set_store_status(uuid, text, text) from anon;
 grant execute on function public.shop_set_store_status(uuid, text, text) to authenticated;
 
 -- Asks the next scheduled pass to take this store first. Refuses a second
@@ -515,6 +523,7 @@ end;
 $$;
 
 revoke all on function public.shop_request_refresh(uuid) from public;
+revoke execute on function public.shop_request_refresh(uuid) from anon;
 grant execute on function public.shop_request_refresh(uuid) to authenticated;
 
 -- Counts for the admin screen. Runs as the caller, so the read policies apply.
@@ -536,6 +545,7 @@ as $$
 $$;
 
 revoke all on function public.shop_store_stats() from public;
+revoke execute on function public.shop_store_stats() from anon;
 grant execute on function public.shop_store_stats() to authenticated;
 
 -- ---------------------------------------------------------------------------

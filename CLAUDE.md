@@ -151,6 +151,11 @@
   פונקציית `security definer` שמקבלת token אקראי (uuid), עם
   `revoke all from public; grant execute to anon`. **אין service-role key**
   בשום מקום — ה-token הוא ההרשאה כולה, ולכן מתחלף בכפתור ומוגבל בקצב
+- **הרשאות על פונקציות:** Supabase מעניקה EXECUTE ל-anon, authenticated ו-service_role לכל פונקציה
+  חדשה ב-public דרך default privileges. `revoke all … from public` לא נוגע בהענקות האלה — פונקציה
+  שמיועדת ל-service_role בלבד חייבת `revoke execute … from anon, authenticated` במפורש (migration 36).
+  בדיקת הבידוד קוראת לפונקציה כחבר קליניקה ומצפה ל-insufficient_privilege; כך נתפס שפונקציית הכתיבה
+  של קורא המחירים הייתה פתוחה לכל משתמש מחובר
 - **Views:** תמיד `with (security_invoker = true)`, אחרת ה-view עוקף את ה-RLS
   של הטבלאות. `p.*` קופא ביצירה — עמודה חדשה ב-`patients` דורשת
   `drop view` + `create view` ל-`patients_with_diary`, אחרת היא לא תופיע
