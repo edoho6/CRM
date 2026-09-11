@@ -3,7 +3,11 @@
 import { useFormatter, useTranslations } from 'next-intl';
 import { defineWidget } from '@clinic/domain/widgets';
 import { Link } from '@clinic/i18n/navigation';
+import { Stat } from '@clinic/ui';
+import { monthStartIn } from '@clinic/domain';
 import { useAsyncData } from '@/lib/use-supabase';
+import { useDashboardContext, useWidgetInitialData } from '../dashboard-context';
+import { fetchRevenueStats, type RevenueStats } from '../queries/revenue';
 import { registerWidget } from '../registry';
 import { WidgetLoading } from '../widget-frame';
 
@@ -15,51 +19,17 @@ import { WidgetLoading } from '../widget-frame';
  * estimate.
  */
 
-interface RevenueStats {
-  collectedThisMonth: number;
-  outstanding: number;
-  invoicesThisMonth: number;
-}
-
 function RevenueWidget() {
   const t = useTranslations('widgets.revenue');
   const format = useFormatter();
 
-  const { data, loading } = useAsyncData<RevenueStats>(async (supabase) => {
-    const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-
-    const [paidResult, openResult, invoicesResult] = await Promise.all([
-      supabase.from('payments').select('amount').eq('status', 'paid').gte('paid_at', monthStart),
-      supabase
-        .from('invoices')
-        .select('total, amount_paid')
-        .in('status', ['sent', 'partially_paid']),
-      supabase
-        .from('invoices')
-        .select('id', { count: 'exact', head: true })
-        .gte('created_at', monthStart)
-        .neq('status', 'cancelled'),
-    ]);
-
-    if (paidResult.error) throw new Error(paidResult.error.message);
-    if (openResult.error) throw new Error(openResult.error.message);
-
-    const collected = (paidResult.data ?? []).reduce(
-      (sum, row) => sum + Number((row as { amount: number }).amount),
-      0,
-    );
-    const outstanding = (openResult.data ?? []).reduce((sum, row) => {
-      const invoice = row as { total: number; amount_paid: number };
-      return sum + Math.max(0, Number(invoice.total) - Number(invoice.amount_paid));
-    }, 0);
-
-    return {
-      collectedThisMonth: collected,
-      outstanding,
-      invoicesThisMonth: invoicesResult.count ?? 0,
-    };
-  });
+  const { timeZone } = useDashboardContext();
+  const initial = useWidgetInitialData<RevenueStats>('revenue');
+  const { data, loading } = useAsyncData<RevenueStats>(
+    (supabase) => fetchRevenueStats(supabase, monthStartIn(new Date(), timeZone).toISOString()),
+    [timeZone],
+    { initial },
+  );
 
   if (loading) return <WidgetLoading />;
 
@@ -68,12 +38,12 @@ function RevenueWidget() {
       href="/billing"
       className="flex h-full flex-col justify-between gap-3 rounded-lg transition-colors hover:bg-ink-50/60"
     >
-      <div>
-        <p className="text-xs font-medium text-ink-500">{t('collectedThisMonth')}</p>
-        <p className="mt-1 text-3xl font-semibold text-jade-800 tabular-nums" dir="ltr">
-          {format.number(data?.collectedThisMonth ?? 0, 'currency')}
-        </p>
-      </div>
+      <Stat
+        size="lg"
+        tone="accent"
+        value={<span dir="ltr">{format.number(data?.collectedThisMonth ?? 0, 'currency')}</span>}
+        label={t('collectedThisMonth')}
+      />
       <div className="grid grid-cols-2 gap-2">
         <div className="rounded-lg bg-ink-50 px-3 py-2">
           <p className="text-xs text-ink-600">{t('outstanding')}</p>

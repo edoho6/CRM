@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 /**
  * The line that says "it is now".
@@ -9,6 +9,11 @@ import { useEffect, useState } from 'react';
  * Red on purpose: today's column is tinted jade, and a jade line on a jade
  * column would be the one thing in the diary that is not there to be found.
  * Hidden outside the hours the grid draws.
+ *
+ * On its first appearance it scrolls the grid's panel (`[data-time-grid]`)
+ * so the line sits a third of the way down: the diary opens on now, with
+ * more of what is about to happen than of what has. The panel and not the
+ * window, so the page itself does not jump.
  */
 export function NowLine({
   dayStartHour,
@@ -22,6 +27,8 @@ export function NowLine({
   slotCount: number;
 }) {
   const [minutes, setMinutes] = useState<number | null>(null);
+  const ref = useRef<HTMLDivElement>(null);
+  const scrolled = useRef(false);
 
   useEffect(() => {
     const tick = () => {
@@ -33,6 +40,16 @@ export function NowLine({
     return () => clearInterval(timer);
   }, []);
 
+  useEffect(() => {
+    if (minutes === null || scrolled.current) return;
+    const line = ref.current;
+    const panel = line?.closest<HTMLElement>('[data-time-grid]');
+    if (!line || !panel) return;
+    scrolled.current = true;
+    const delta = line.getBoundingClientRect().top - panel.getBoundingClientRect().top;
+    panel.scrollTop = Math.max(0, panel.scrollTop + delta - panel.clientHeight / 3);
+  }, [minutes]);
+
   if (minutes === null) return null;
   const offset = minutes - dayStartHour * 60;
   if (offset < 0 || offset > slotCount * slotMinutes) return null;
@@ -40,6 +57,7 @@ export function NowLine({
 
   return (
     <div
+      ref={ref}
       aria-hidden
       className="pointer-events-none absolute inset-x-0 z-10 flex items-center"
       style={{ top }}

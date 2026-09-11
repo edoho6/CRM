@@ -4,54 +4,34 @@ import { useTranslations } from 'next-intl';
 import { CalendarPlus, ChartColumn, PackagePlus, UserPlus, CalendarDays } from 'lucide-react';
 import { defineWidget } from '@clinic/domain/widgets';
 import { Link } from '@clinic/i18n/navigation';
+import { Stat } from '@clinic/ui';
+import { monthStartIn } from '@clinic/domain';
 import { useAsyncData } from '@/lib/use-supabase';
-import { useDashboardContext } from '../dashboard-context';
+import { useDashboardContext, useWidgetInitialData } from '../dashboard-context';
+import { fetchPatientStats, type PatientStats } from '../queries/patient-stats';
 import { registerWidget } from '../registry';
 import { WidgetLoading } from '../widget-frame';
-
-interface PatientStats {
-  active: number;
-  newThisMonth: number;
-}
 
 function PatientStatsWidget() {
   const t = useTranslations('widgets.patientStats');
 
-  const { data, loading } = useAsyncData<PatientStats>(async (supabase) => {
-    const monthStart = new Date();
-    monthStart.setDate(1);
-    monthStart.setHours(0, 0, 0, 0);
-
-    // `head: true` asks Postgres for the count only — no rows cross the wire.
-    const [activeResult, newResult] = await Promise.all([
-      supabase.from('patients').select('id', { count: 'exact', head: true }).eq('is_active', true),
-      supabase
-        .from('patients')
-        .select('id', { count: 'exact', head: true })
-        .gte('created_at', monthStart.toISOString()),
-    ]);
-
-    if (activeResult.error) throw new Error(activeResult.error.message);
-    if (newResult.error) throw new Error(newResult.error.message);
-
-    return { active: activeResult.count ?? 0, newThisMonth: newResult.count ?? 0 };
-  });
+  const { timeZone } = useDashboardContext();
+  const initial = useWidgetInitialData<PatientStats>('patient-stats');
+  const { data, loading } = useAsyncData<PatientStats>(
+    (supabase) => fetchPatientStats(supabase, monthStartIn(new Date(), timeZone).toISOString()),
+    [timeZone],
+    { initial },
+  );
 
   if (loading) return <WidgetLoading />;
 
   return (
     <div className="grid h-full grid-cols-2 gap-3">
       <div className="flex flex-col justify-center rounded-lg bg-jade-50 px-3 py-2">
-        <span className="text-2xl font-semibold text-jade-800 tabular-nums">
-          {data?.active ?? 0}
-        </span>
-        <span className="text-xs text-jade-700">{t('activePatients')}</span>
+        <Stat value={data?.active ?? 0} label={t('activePatients')} tone="accent" />
       </div>
       <div className="flex flex-col justify-center rounded-lg bg-ink-50 px-3 py-2">
-        <span className="text-2xl font-semibold text-ink-800 tabular-nums">
-          {data?.newThisMonth ?? 0}
-        </span>
-        <span className="text-xs text-ink-600">{t('newThisMonth')}</span>
+        <Stat value={data?.newThisMonth ?? 0} label={t('newThisMonth')} />
       </div>
     </div>
   );

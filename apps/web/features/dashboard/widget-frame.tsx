@@ -6,7 +6,7 @@ import { GripVertical, Maximize2, X } from 'lucide-react';
 /** The pointer/keyboard listeners `useSortable` returns for the drag handle. */
 type DragListeners = Record<string, (event: React.SyntheticEvent) => void> | undefined;
 import { useTranslations } from 'next-intl';
-import { cn, Spinner } from '@clinic/ui';
+import { cn, SkeletonText } from '@clinic/ui';
 import type { WidgetSize } from '@clinic/domain/widgets';
 
 /**
@@ -62,6 +62,7 @@ export function WidgetFrame({
 
   return (
     <section
+      data-widget=""
       className={cn(
         'flex h-full flex-col overflow-hidden rounded-card border border-ink-200 bg-white shadow-xs',
         isEditing && 'ring-2 ring-jade-500/30',
@@ -121,11 +122,9 @@ export function WidgetFrame({
 }
 
 export function WidgetLoading() {
-  return (
-    <div className="flex h-full items-center justify-center text-ink-300">
-      <Spinner />
-    </div>
-  );
+  // A sketch of the rows to come rather than a spinner: the eye reads the
+  // shape of the widget before its numbers, and nothing jumps when they land.
+  return <SkeletonText lines={3} className="p-1" />;
 }
 
 export function WidgetEmpty({ children }: { children: React.ReactNode }) {

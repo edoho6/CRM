@@ -903,6 +903,36 @@ const flows = {
     const gone = await dialog.waitFor({ state: 'detached', timeout: 3_000 }).then(() => true).catch(() => false);
     return { ok: fieldsets > 0 && gone, detail: `${fieldsets} filter groups in the drawer, closed ${gone}` };
   },
+  async calendarPhoneDay(page) {
+    // Asked for by a phone (the user agent was rewritten in `before`), the
+    // diary is a single day from the first byte — no week drawn and swapped.
+    const columns = await page.locator('[data-time-grid] > div > div').first().locator(':scope > div').count();
+    const url = new URL(page.url());
+    const ok = columns === 2 && !url.searchParams.has('view');
+    return { ok, detail: `${columns - 1} day column(s), view param ${url.searchParams.get('view') ?? 'none'}` };
+  },
+  async calendarScrollToNow(page) {
+    // The clock was fixed at 11:00 in `before`: the panel must have scrolled
+    // so the now line is in view rather than starting at seven in the morning.
+    const panel = page.locator('[data-time-grid]');
+    if ((await panel.count()) === 0) return { ok: false, detail: 'no time grid' };
+    await page.waitForTimeout(600);
+    const state = await panel.evaluate((el) => {
+      const line = el.querySelector('.bg-red-600');
+      const box = line?.parentElement?.getBoundingClientRect();
+      const panelBox = el.getBoundingClientRect();
+      return { scrollTop: Math.round(el.scrollTop), inView: Boolean(box && box.top >= panelBox.top && box.top <= panelBox.bottom), hasLine: Boolean(line) };
+    });
+    const ok = state.hasLine && state.scrollTop > 0 && state.inView;
+    return { ok, detail: `now line ${state.hasLine}, scrollTop ${state.scrollTop}, in view ${state.inView}` };
+  },
+  async dashboardNoSpinners(page) {
+    // Widgets arrive with their numbers: nothing spins after the document
+    // has loaded, because the page computed the first paint on the server.
+    const spinners = await page.locator('main .animate-spin').count();
+    const stats = await page.locator('main [data-widget]').count();
+    return { ok: spinners === 0 && stats > 0, detail: `${spinners} spinner(s) over ${stats} widget(s)` };
+  },
   async phoneSearchOverlay(page) {
     // On a phone the search takes the whole top bar while it is open.
     const trigger = page.locator('[data-top-bar] button[aria-label="חיפוש מהיר"], [data-top-bar] button[aria-label="Quick search"]').first();
@@ -1022,6 +1052,26 @@ async function main() {
       await visit(context, { route: '/patients', locale: 'he', width: phone, label: 'flow card-row-tap', after: flows.cardRowTap });
       await visit(context, { route: '/reference/herbs', locale: 'he', width: phone, label: 'flow phone-filter-sheet', after: flows.phoneFilterSheet });
     }
+    if (phone) {
+      await visit(context, {
+        route: '/calendar', locale: 'he', width: phone, label: 'flow calendar-phone-day',
+        before: (page) => page.route('**/*', (route) => {
+          const headers = { ...route.request().headers(), 'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1' };
+          return route.continue({ headers });
+        }),
+        after: flows.calendarPhoneDay,
+      });
+    }
+    await visit(context, {
+      route: '/calendar?view=day', locale: 'he', width: desktop, label: 'flow calendar-scroll-to-now',
+      before: async (page) => {
+        const eleven = new Date();
+        eleven.setHours(11, 0, 0, 0);
+        await page.clock.setFixedTime(eleven);
+      },
+      after: flows.calendarScrollToNow,
+    });
+    await visit(context, { route: '/', locale: 'he', width: desktop, label: 'flow dashboard-no-spinners', after: flows.dashboardNoSpinners });
     await visit(context, {
       route: '/patients', locale: 'he', width: desktop, label: 'flow sidebar-no-shift',
       before: async (page) => {

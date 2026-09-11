@@ -8,6 +8,7 @@ import { defineWidget } from '@clinic/domain/widgets';
 import {
   APPOINTMENT_STATUS_TONES,
   DEFAULT_ENTRY_COLOR,
+  dayBoundsIn,
   statusTone,
   type Locale,
 } from '@clinic/domain';
@@ -16,19 +17,14 @@ import { useAsyncData } from '@/lib/use-supabase';
 import { appointmentTypeName, patientFullName } from '@/lib/display';
 import { registerWidget } from '../registry';
 import { WidgetEmpty, WidgetLoading } from '../widget-frame';
+import { useDashboardContext, useWidgetInitialData } from '../dashboard-context';
+import {
+  fetchTodayAppointments,
+  fetchUpcomingAppointments,
+  upcomingHorizon,
+  type AppointmentRow,
+} from '../queries/appointments';
 import { formatDate } from '@clinic/i18n';
-
-interface AppointmentRow {
-  id: string;
-  start_at: string;
-  end_at: string;
-  status: string;
-  patient: { id: string; first_name: string; last_name: string; full_name: string } | null;
-  appointment_type: { name_he: string; name_en: string; color: string } | null;
-}
-
-const SELECT =
-  'id, start_at, end_at, status, patient:patients(id, first_name, last_name, full_name), appointment_type:appointment_types(name_he, name_en, color)';
 
 
 function AppointmentList({
@@ -82,32 +78,20 @@ function AppointmentList({
   );
 }
 
-/** Start and end of "today" in the browser's local time. */
-function todayBounds() {
-  const start = new Date();
-  start.setHours(0, 0, 0, 0);
-  const end = new Date(start);
-  end.setDate(end.getDate() + 1);
-  return { start: start.toISOString(), end: end.toISOString() };
-}
-
 function TodayAppointmentsWidget() {
   const t = useTranslations('widgets.todayAppointments');
-  const { start, end } = todayBounds();
-
+  const { timeZone } = useDashboardContext();
+  // Fixed once per mount, and in the clinic's zone: the day as the clinic
+  // counts it, wherever this happens to render.
+  const [{ start, end }] = useState(() => {
+    const bounds = dayBoundsIn(new Date(), timeZone);
+    return { start: bounds.start.toISOString(), end: bounds.end.toISOString() };
+  });
+  const initial = useWidgetInitialData<AppointmentRow[]>('today-appointments');
   const { data, loading } = useAsyncData<AppointmentRow[]>(
-    async (supabase) => {
-      const { data: rows, error } = await supabase
-        .from('appointments')
-        .select(SELECT)
-        .gte('start_at', start)
-        .lt('start_at', end)
-        .neq('status', 'cancelled')
-        .order('start_at', { ascending: true });
-      if (error) throw new Error(error.message);
-      return (rows ?? []) as unknown as AppointmentRow[];
-    },
+    (supabase) => fetchTodayAppointments(supabase, start, end),
     [start, end],
+    { initial },
   );
 
   if (loading) return <WidgetLoading />;
@@ -121,25 +105,13 @@ function UpcomingAppointmentsWidget() {
   // the spinner came back, and the widget twitched without end.
   const [{ from, to }] = useState(() => {
     const now = new Date();
-    const horizon = new Date(now);
-    horizon.setDate(horizon.getDate() + 7);
-    return { from: now.toISOString(), to: horizon.toISOString() };
+    return { from: now.toISOString(), to: upcomingHorizon(now).toISOString() };
   });
-
+  const initial = useWidgetInitialData<AppointmentRow[]>('upcoming-appointments');
   const { data, loading } = useAsyncData<AppointmentRow[]>(
-    async (supabase) => {
-      const { data: rows, error } = await supabase
-        .from('appointments')
-        .select(SELECT)
-        .gte('start_at', from)
-        .lte('start_at', to)
-        .neq('status', 'cancelled')
-        .order('start_at', { ascending: true })
-        .limit(25);
-      if (error) throw new Error(error.message);
-      return (rows ?? []) as unknown as AppointmentRow[];
-    },
+    (supabase) => fetchUpcomingAppointments(supabase, from, to),
     [from, to],
+    { initial },
   );
 
   if (loading) return <WidgetLoading />;

@@ -255,6 +255,19 @@
   כדי שהכפתורים לידו לא יזוזו
 - **מסננים בטלפון:** `FilterDisclosure` הוא `<details>` על שולחן ומגירה מתחת ל-`md`;
   הילדים הם קישורים, ולכן הבחירה מנווטת והמגירה פשוט נסגרת
+- **היומן בטלפון:** ברירת המחדל "יום" נקבעת בשרת מה-user agent (`calendar/page.tsx`), לא
+  ב-`router.replace` אחרי שהשבוע כבר צויר; `?view=` בכתובת תמיד גובר, ובורר התצוגה מוצג
+  בכל רוחב. השעות נגללות בתוך `[data-time-grid]` עם שורת הימים דביקה, ו-`NowLine` גולל את
+  הפאנל (לא את החלון) ל"עכשיו"
+- **לוח הבקרה מגיע עם המספרים:** שאילתות הווידג'טים ב-`features/dashboard/queries/*`
+  (פונקציה של client, גוף אחד לשרת ולדפדפן); `loaders.ts` (`server-only`) מריץ אותן בעמוד
+  לציור הראשון ומעביר דרך `DashboardProvider.initialData`; `useAsyncData(fetcher, deps,
+  { initial })` מדלג על הטעינה הראשונה. ווידג'ט חדש = מודול ב-`queries` + שורת `run` ב-loaders;
+  בלעדיה הוא פשוט נטען בדפדפן כמו פעם. `WidgetLoading` הוא שלד, לא ספינר
+- **תאריכים לפי אזור הקליניקה:** `packages/domain/src/dates-tz.ts` (`dayBoundsIn`,
+  `monthStartIn`, `dateKeyIn`, `startOfWeekIn`…) בשרת ובדפדפן כאחד — "היום" הוא של
+  הקליניקה (`clinics.timezone`), לא של השרת, אחרת ה-HTML מהשרת וההידרציה חולקים על
+  המספר. `computeStats` ב-`dashboard/kpi-stats.ts` מקבל `timeZone` ונבדק על יום קבוע
 - **CSS משותף:** כללים שאינם טוקנים (מיקוד, placeholder, `select.ui-select`, `.table-cards`,
   `[data-table-size]`, הדפסה בסיסית) ב-`packages/ui/src/base.css`, מיובא בשני
   ה-`globals.css`; ה-`@theme` נשאר לכל אפליקציה בנפרד

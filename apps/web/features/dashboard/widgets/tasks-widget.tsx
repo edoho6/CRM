@@ -12,6 +12,8 @@ import type { ClinicTaskWithPatient } from '@clinic/db/types';
 import { useAsyncData } from '@/lib/use-supabase';
 import { createTask, deleteTask, setTaskDone } from '@/features/tasks/actions';
 import { withPending } from '@/features/tasks/optimistic';
+import { useWidgetInitialData } from '../dashboard-context';
+import { fetchOpenTasks } from '../queries/tasks';
 import { registerWidget } from '../registry';
 import { WidgetEmpty, WidgetLoading } from '../widget-frame';
 
@@ -36,22 +38,13 @@ function TasksWidget() {
   const [isPending, startTransition] = useTransition();
   const [reloadKey, setReloadKey] = useState(0);
 
+  const initial = useWidgetInitialData<ClinicTaskWithPatient[]>('tasks');
   const { data, loading } = useAsyncData<ClinicTaskWithPatient[]>(
-    async (supabase) => {
-      const { data: rows, error } = await supabase
-        .from('clinic_tasks')
-        .select('*, patient:patients(id, full_name)')
-        .is('done_at', null)
-        .order('is_urgent', { ascending: false })
-        .order('due_on', { ascending: true, nullsFirst: false })
-        .order('created_at', { ascending: true })
-        .limit(50);
-      if (error) throw new Error(error.message);
-      return (rows ?? []) as ClinicTaskWithPatient[];
-    },
+    fetchOpenTasks,
     // Re-read after every write. The list is short and the alternative is
     // guessing at the new order, which the urgent-first sort would get wrong.
     [reloadKey],
+    { initial },
   );
 
   const refresh = () => setReloadKey((key) => key + 1);

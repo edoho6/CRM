@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getBrowserClient } from '@clinic/db/browser';
 
@@ -23,22 +23,36 @@ export interface AsyncState<T> {
  * That is what keeps the registry honest: adding a widget must not require editing
  * a central query. Row Level Security is what makes it safe to query from the
  * browser at all.
+ *
+ * `initial` is the same data, computed by the page on the server for the
+ * widgets it knows how to (see `features/dashboard/loaders.ts`). With it the
+ * widget renders its numbers in the first HTML and never shows a spinner;
+ * the first fetch is skipped, and `reload` — or a change in `deps` — fetches
+ * as before. Without it, the widget loads in the browser exactly as it
+ * always did, which is also what happens when the server's query failed.
  */
 export function useAsyncData<T>(
   fetcher: (supabase: SupabaseClient) => Promise<T>,
   deps: unknown[] = [],
+  options: { initial?: T } = {},
 ): AsyncState<T> {
   const supabase = useSupabase();
-  const [data, setData] = useState<T | null>(null);
-  const [loading, setLoading] = useState(true);
+  const hasInitial = options.initial !== undefined;
+  const [data, setData] = useState<T | null>(hasInitial ? (options.initial as T) : null);
+  const [loading, setLoading] = useState(!hasInitial);
   const [error, setError] = useState<string | null>(null);
   const [nonce, setNonce] = useState(0);
+  const skipFirstFetch = useRef(hasInitial);
 
   const reload = useCallback(() => setNonce((value) => value + 1), []);
 
   useEffect(() => {
     if (!supabase) {
       setLoading(false);
+      return;
+    }
+    if (skipFirstFetch.current) {
+      skipFirstFetch.current = false;
       return;
     }
 

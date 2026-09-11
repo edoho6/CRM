@@ -11,7 +11,6 @@ import { NowLine } from './now-line';
 import { Button, PageHeader, SegmentedControl, cn } from '@clinic/ui';
 import { DateInput } from '@/components/date-input';
 import { DEFAULT_ENTRY_COLOR, type Locale } from '@clinic/domain';
-import { useSearchParams } from 'next/navigation';
 import { Link, usePathname, useRouter } from '@clinic/i18n/navigation';
 import type { AppointmentType, AppointmentWithRelations, Patient } from '@clinic/db/types';
 import { appointmentTypeName, patientFullName } from '@/lib/display';
@@ -175,7 +174,6 @@ export function CalendarView({
   const isRtl = locale === 'he';
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
 
   const anchor = useMemo(() => fromDateKey(anchorDate), [anchorDate]);
   const days = useMemo(() => {
@@ -196,26 +194,8 @@ export function CalendarView({
   /** Day and week draw a time grid; month and range draw lists. */
   const isTimeGrid = view === 'day' || view === 'week';
 
-  /*
-   * A phone shows one day. The week grid is 720px wide and the month grid
-   * 640px, and on a 390px screen either becomes a two-axis scroll with
-   * labels too small to read. The switch between views is hidden there too,
-   * so the day view is not a trap the user can walk out of by accident.
-   */
-  useEffect(() => {
-    if (view === 'day') return;
-    const narrow = window.matchMedia('(max-width: 767px)');
-    // Everything else in the URL — the patient being booked, `new=1` — rides along.
-    if (narrow.matches) {
-      router.replace({
-        pathname,
-        query: { ...Object.fromEntries(searchParams.entries()), date: anchorDate, view: 'day' },
-      });
-    }
-    // Only on arrival and when the view changes; resizing a window mid-visit
-    // is not a reason to lose the week.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [view]);
+  // A phone arrives on the day view: the page decides that from the request
+  // (see calendar/page.tsx), so nothing here has to draw a week and swap it.
 
   /*
    * The open hours for each visible day, keyed by date.
@@ -404,7 +384,7 @@ export function CalendarView({
               >
                 {isRtl ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
               </Button>
-              <Button variant="secondary" size="sm" onClick={goToday}>
+              <Button variant="secondary" onClick={goToday}>
                 {tc('today')}
               </Button>
               <span className="ms-2 text-sm font-medium text-ink-700">{rangeLabel}</span>
@@ -422,6 +402,7 @@ export function CalendarView({
           ) : (
             <div className="flex flex-wrap items-center gap-1.5">
               <DateInput
+                compact={false}
                 aria-label={tFilters('from')}
                 value={rangeFrom ?? toDateKey(days[0]!)}
                 max={rangeTo ?? undefined}
@@ -429,6 +410,7 @@ export function CalendarView({
               />
               <span className="text-sm text-ink-600">–</span>
               <DateInput
+                compact={false}
                 aria-label={tFilters('to')}
                 value={rangeTo ?? toDateKey(days[days.length - 1]!)}
                 min={rangeFrom ?? undefined}
@@ -442,8 +424,10 @@ export function CalendarView({
         </div>
 
         <div className="flex flex-wrap items-center gap-1">
+          {/* Shown at every width. It was hidden on a phone, where the day
+              view was forced — now the phone merely starts on the day and
+              can leave it. */}
           <SegmentedControl
-            className="hidden md:inline-flex"
             label={t('views.label')}
             size="md"
             value={view}
@@ -471,11 +455,22 @@ export function CalendarView({
           onBlockOn={(day) => setBlockDay(day)}
         />
       ) : (
-        <div className="overflow-x-auto rounded-card border border-ink-200 bg-white">
-          <div className="min-w-[720px]">
+        // The hours scroll inside this panel, under a day row that stays
+        // put, and the panel opens on the current time (NowLine scrolls it).
+        // It used to be as tall as the day, so on a phone the whole page
+        // scrolled and the day names left with it. The height is what the
+        // window leaves after the shell and the toolbar; the floor keeps a
+        // short window from squashing it to nothing. A week's grid is wider
+        // than a phone and scrolls sideways inside the same panel.
+        <div
+          data-time-grid
+          data-scroll-panel
+          className="max-h-[calc(100dvh-var(--bottom-bar,0px)-14rem)] min-h-[20rem] overflow-auto overscroll-contain rounded-card border border-ink-200 bg-white"
+        >
+          <div className={cn(days.length > 1 && 'min-w-[720px]')}>
             {/* Header row: time gutter + one cell per day. */}
             <div
-              className="grid border-b border-ink-200"
+              className="sticky top-0 z-20 grid border-b border-ink-200 bg-white"
               style={{ gridTemplateColumns: `4rem repeat(${days.length}, minmax(0, 1fr))` }}
             >
               <div className="border-e border-ink-100" />
@@ -521,9 +516,11 @@ export function CalendarView({
               })}
             </div>
 
-            {/* Body: time gutter + day columns with absolutely-placed events. */}
+            {/* Body: time gutter + day columns with absolutely-placed events.
+                The top padding gives the first hour's label room under the
+                sticky row. */}
             <div
-              className="grid"
+              className="grid pt-2"
               style={{ gridTemplateColumns: `4rem repeat(${days.length}, minmax(0, 1fr))` }}
             >
               <div className="border-e border-ink-100">

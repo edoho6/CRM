@@ -8,6 +8,8 @@ import type { Locale } from '@clinic/domain';
 import type { HerbStockLevel } from '@clinic/db/types';
 import { Link } from '@clinic/i18n/navigation';
 import { useAsyncData } from '@/lib/use-supabase';
+import { useWidgetInitialData } from '../dashboard-context';
+import { fetchLowStock } from '../queries/low-stock';
 import { herbPrimaryName, herbSecondaryName } from '@/lib/display';
 import { registerWidget } from '../registry';
 import { WidgetEmpty, WidgetLoading } from '../widget-frame';
@@ -25,17 +27,8 @@ function LowStockWidget() {
   const locale = useLocale() as Locale;
   const format = useFormatter();
 
-  const { data, loading } = useAsyncData<HerbStockLevel[]>(async (supabase) => {
-    const { data: rows, error } = await supabase
-      .from('herb_stock_levels')
-      .select('*')
-      .eq('is_active', true)
-      .eq('is_below_threshold', true)
-      .order('total_remaining', { ascending: true })
-      .limit(20);
-    if (error) throw new Error(error.message);
-    return (rows ?? []) as HerbStockLevel[];
-  });
+  const initial = useWidgetInitialData<HerbStockLevel[]>('low-stock');
+  const { data, loading } = useAsyncData<HerbStockLevel[]>(fetchLowStock, [], { initial });
 
   if (loading) return <WidgetLoading />;
 

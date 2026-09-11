@@ -1,3 +1,5 @@
+import { headers } from 'next/headers';
+import { userAgent } from 'next/server';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import type { AppointmentType, AppointmentWithRelations, Location, Patient, Room } from '@clinic/db/types';
 import { getClinicScope } from '@/lib/session';
@@ -48,8 +50,17 @@ export default async function CalendarPage({
 
   const DATE_KEY = /^\d{4}-\d{2}-\d{2}$/;
 
+  // A phone opens on the day. Decided here, from the request, rather than in
+  // the browser after the week had already been drawn — that drew a week and
+  // then swapped it for a day: a flash and a second round trip on every visit.
+  // A view named in the URL always wins, so the switch works on a phone too.
+  const phone = userAgent({ headers: await headers() }).device.type === 'mobile';
   const view: CalendarViewMode =
-    viewParam === 'day' || viewParam === 'month' || viewParam === 'range' ? viewParam : 'week';
+    viewParam === 'day' || viewParam === 'month' || viewParam === 'range'
+      ? viewParam
+      : viewParam === 'week' || !phone
+        ? 'week'
+        : 'day';
 
   const anchorKey = date && DATE_KEY.test(date) ? date : toDateKey(new Date());
   const anchor = fromDateKey(anchorKey);

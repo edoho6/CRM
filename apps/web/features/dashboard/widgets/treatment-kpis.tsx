@@ -6,7 +6,11 @@ import { ChevronDown, ChevronUp, Minus, TrendingDown, TrendingUp } from 'lucide-
 import { cn, Dash } from '@clinic/ui';
 import { defineWidget, type WidgetProps } from '@clinic/domain/widgets';
 import { Link } from '@clinic/i18n/navigation';
+import { addMonthsIn, dateKeyIn } from '@clinic/domain';
 import { useAsyncData } from '@/lib/use-supabase';
+import { useDashboardContext, useWidgetInitialData } from '../dashboard-context';
+import { computeStats, type Period, type PeriodStats } from '../kpi-stats';
+import { fetchEncountersSince, type EncounterRow } from '../queries/encounters';
 import { registerWidget } from '../registry';
 import { WidgetLoading } from '../widget-frame';
 
@@ -23,105 +27,7 @@ import { WidgetLoading } from '../widget-frame';
  * client-side: six counts and three breakdowns from a single round trip.
  */
 
-type Period = 'today' | 'week' | 'month';
-
-interface EncounterRow {
-  id: string;
-  encounter_date: string;
-  created_at: string;
-  status: string;
-  patient: { id: string; full_name: string } | null;
-}
-
-interface PeriodStats {
-  current: number;
-  previous: number;
-  /** Day buckets for the chart, oldest first. */
-  days: { key: string; date: Date; count: number; isToday: boolean }[];
-}
-
-function startOfDay(date: Date): Date {
-  const result = new Date(date);
-  result.setHours(0, 0, 0, 0);
-  return result;
-}
-
-function addDays(date: Date, days: number): Date {
-  const result = new Date(date);
-  result.setDate(result.getDate() + days);
-  return result;
-}
-
-/** Sunday-first week, the Israeli working week. */
-function startOfWeek(date: Date): Date {
-  const day = startOfDay(date);
-  return addDays(day, -day.getDay());
-}
-
-function startOfMonth(date: Date): Date {
-  return new Date(date.getFullYear(), date.getMonth(), 1);
-}
-
-function dateKey(date: Date): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
-}
-
-function countBetween(rows: EncounterRow[], from: Date, to: Date): number {
-  const fromKey = dateKey(from);
-  const toKey = dateKey(to);
-  return rows.filter((row) => row.encounter_date >= fromKey && row.encounter_date < toKey).length;
-}
-
-function buildDays(rows: EncounterRow[], from: Date, to: Date, today: Date) {
-  const days: PeriodStats['days'] = [];
-  const todayKey = dateKey(today);
-  for (let cursor = from; cursor < to; cursor = addDays(cursor, 1)) {
-    const key = dateKey(cursor);
-    days.push({
-      key,
-      date: cursor,
-      count: rows.filter((row) => row.encounter_date === key).length,
-      isToday: key === todayKey,
-    });
-  }
-  return days;
-}
-
-function computeStats(rows: EncounterRow[]): Record<Period, PeriodStats> {
-  const now = new Date();
-  const today = startOfDay(now);
-  const tomorrow = addDays(today, 1);
-  const yesterday = addDays(today, -1);
-
-  const weekStart = startOfWeek(now);
-  const weekEnd = addDays(weekStart, 7);
-  const lastWeekStart = addDays(weekStart, -7);
-
-  const monthStart = startOfMonth(now);
-  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-  const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-
-  return {
-    today: {
-      current: countBetween(rows, today, tomorrow),
-      previous: countBetween(rows, yesterday, today),
-      days: buildDays(rows, addDays(today, -6), tomorrow, today),
-    },
-    week: {
-      current: countBetween(rows, weekStart, weekEnd),
-      previous: countBetween(rows, lastWeekStart, weekStart),
-      days: buildDays(rows, weekStart, weekEnd, today),
-    },
-    month: {
-      current: countBetween(rows, monthStart, monthEnd),
-      previous: countBetween(rows, lastMonthStart, monthStart),
-      days: buildDays(rows, monthStart, monthEnd, today),
-    },
-  };
-}
+// The arithmetic lives in ../kpi-stats, in the clinic's zone and under test.
 
 /**
  * Column chart, drawn to the mark spec: columns capped at 24px, 4px rounded
@@ -237,27 +143,22 @@ function TreatmentKpisWidget({ size }: WidgetProps<Record<string, never>>) {
   const format = useFormatter();
   const [openPeriod, setOpenPeriod] = useState<Period | null>(null);
 
-  const fromKey = useMemo(() => {
-    const now = new Date();
+  const { timeZone } = useDashboardContext();
+  const fromKey = useMemo(
     // Two months back covers "last month" for the month delta and everything
-    // shorter.
-    return dateKey(new Date(now.getFullYear(), now.getMonth() - 1, 1));
-  }, []);
-
-  const { data, loading } = useAsyncData<EncounterRow[]>(
-    async (supabase) => {
-      const { data: rows, error } = await supabase
-        .from('encounters')
-        .select('id, encounter_date, created_at, status, patient:patients(id, full_name)')
-        .gte('encounter_date', fromKey)
-        .order('encounter_date', { ascending: true });
-      if (error) throw new Error(error.message);
-      return (rows ?? []) as unknown as EncounterRow[];
-    },
-    [fromKey],
+    // shorter — in the clinic's zone, like every date on this tile.
+    () => dateKeyIn(addMonthsIn(new Date(), -1, timeZone), timeZone),
+    [timeZone],
   );
 
-  const stats = useMemo(() => computeStats(data ?? []), [data]);
+  const initial = useWidgetInitialData<EncounterRow[]>('treatment-kpis');
+  const { data, loading } = useAsyncData<EncounterRow[]>(
+    (supabase) => fetchEncountersSince(supabase, fromKey),
+    [fromKey],
+    { initial },
+  );
+
+  const stats = useMemo(() => computeStats(data ?? [], { timeZone }), [data, timeZone]);
 
   if (loading) return <WidgetLoading />;
 
@@ -267,7 +168,7 @@ function TreatmentKpisWidget({ size }: WidgetProps<Record<string, never>>) {
     { key: 'month', label: t('month'), previousLabel: t('lastMonth') },
   ];
 
-  const todayKey = dateKey(new Date());
+  const todayKey = dateKeyIn(new Date(), timeZone);
   const todaysRows = (data ?? []).filter((row) => row.encounter_date === todayKey);
   const compact = size === 'sm' || size === 'md';
 

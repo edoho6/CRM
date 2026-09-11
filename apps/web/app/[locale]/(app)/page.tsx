@@ -5,6 +5,7 @@ import { DashboardGrid } from '@/features/dashboard/dashboard-grid';
 import { GettingStarted } from '@/features/dashboard/getting-started';
 import { defaultDashboardLayout } from '@/features/dashboard/default-layout';
 import { parseStoredLayout } from '@/features/dashboard/layout-utils';
+import { DEFAULT_TIME_ZONE, loadDashboardData } from '@/features/dashboard/loaders';
 
 export default async function DashboardPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -39,6 +40,10 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
   // A stored-but-empty layout is a real choice (the user removed every widget), so
   // only fall back to the default when nothing has ever been saved.
   const layout = data ? parseStoredLayout(data.layout) : defaultDashboardLayout(tracksInventory);
+  // The widgets' own queries, run here for the first paint so the page
+  // arrives with its numbers rather than as a grid of spinners.
+  const timeZone = scope.context.clinic.timezone || DEFAULT_TIME_ZONE;
+  const initialData = await loadDashboardData(scope.supabase, layout, timeZone);
   const name = scope.context.profile?.full_name?.trim();
 
   return (
@@ -49,7 +54,12 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
         hasTypes={(typesCount.count ?? 0) > 0}
         hasPatients={(patientsCount.count ?? 0) > 0}
       />
-      <DashboardGrid initialLayout={layout} tracksInventory={tracksInventory} />
+      <DashboardGrid
+        initialLayout={layout}
+        tracksInventory={tracksInventory}
+        timeZone={timeZone}
+        initialData={initialData}
+      />
     </>
   );
 }

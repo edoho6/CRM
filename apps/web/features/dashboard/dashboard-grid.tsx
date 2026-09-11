@@ -23,7 +23,7 @@ import { LayoutGrid, RotateCcw } from 'lucide-react';
 import { Alert, ArrangeToggle, Button, EmptyState, cn, useConfirm } from '@clinic/ui';
 import type { DashboardLayout, DashboardWidgetInstance, WidgetSize } from '@clinic/domain/widgets';
 import { AddWidgetDialog } from './add-widget-dialog';
-import { DashboardProvider } from './dashboard-context';
+import { DashboardProvider, type DashboardInitialData } from './dashboard-context';
 import { defaultDashboardLayout } from './default-layout';
 import { useWidgetLabels } from './widget-labels';
 import {
@@ -54,10 +54,16 @@ const SAVE_DEBOUNCE_MS = 800;
 export function DashboardGrid({
   initialLayout,
   tracksInventory,
+  timeZone,
+  initialData,
 }: {
   initialLayout: DashboardLayout;
   /** Whether the clinic keeps herb stock — decides which widgets exist here at all. */
   tracksInventory: boolean;
+  /** The clinic's zone, for "today" and "this month". */
+  timeZone: string;
+  /** What the page fetched for the widgets before the first paint, by widget type. */
+  initialData: DashboardInitialData;
 }) {
   const t = useTranslations('dashboard');
   const confirm = useConfirm();
@@ -191,7 +197,7 @@ export function DashboardGrid({
   // toolbar, and the toolbar is on the empty dashboard too.
   if (layout.length === 0) {
     return (
-      <DashboardProvider value={{ tracksInventory }}>
+      <DashboardProvider value={{ tracksInventory, timeZone, initialData }}>
         <div>
           {toolbar}
           <EmptyState
@@ -205,7 +211,7 @@ export function DashboardGrid({
   }
 
   return (
-    <DashboardProvider value={{ tracksInventory }}>
+    <DashboardProvider value={{ tracksInventory, timeZone, initialData }}>
     <div>
       {toolbar}
 
