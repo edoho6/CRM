@@ -149,6 +149,28 @@ export async function signEncounter(encounterId: string): Promise<ActionResult> 
   return actionOk();
 }
 
+/**
+ * Reopens a signed record for editing, with a reason.
+ *
+ * The database function keeps the earlier signature in encounter_signatures
+ * and puts the record back to draft; the audit log records every change
+ * after that, and the record has to be signed again.
+ */
+export async function reopenEncounter(encounterId: string, reason: string): Promise<ActionResult> {
+  const scope = await getClinicScope();
+  if (!scope) return actionError(new Error('unauthorized'));
+  const trimmed = reason.trim();
+  if (!trimmed || trimmed.length > 500) return actionError(new Error('validation'));
+
+  const { error } = await scope.supabase.rpc('reopen_encounter', {
+    p_encounter_id: encounterId,
+    p_reason: trimmed,
+  });
+
+  if (error) return actionError(error);
+  return actionOk();
+}
+
 export async function updateEncounterDate(
   encounterId: string,
   encounterDate: string,

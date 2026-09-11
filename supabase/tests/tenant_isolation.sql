@@ -103,6 +103,8 @@ begin
 
   insert into public.tcm_notes (clinic_id, encounter_id, chief_complaint)
   values (v_clinic_a, v_encounter, 'Isolation test note');
+  insert into public.encounter_signatures (clinic_id, encounter_id, signed_at, signed_by, reopened_by, reason)
+  values (v_clinic_a, v_encounter, now() - interval '1 day', v_user_a, v_user_a, 'Isolation test reopening');
 
   -- A punch card in each clinic, and a redemption against B's, so the
   -- balances view has something to leak if it is going to.
@@ -507,6 +509,16 @@ begin
   end;
   raise notice 'ok   invitations are the owner''s, and a clinic keeps its last owner';
 
+  select count(*) into v_count from public.encounter_signatures;
+  if v_count <> 1 then raise exception 'FAIL: clinic A saw % signature record(s), expected its own one', v_count; end if;
+  begin
+    update public.encounter_signatures set reason = 'edited' where encounter_id = v_encounter;
+    if found then raise exception 'FAIL: a signature record was edited'; end if;
+  exception
+    when insufficient_privilege then null;
+  end;
+  raise notice 'ok   signature history is visible to its clinic and cannot be changed';
+
   -- The service overview is empty for a clinic owner who is not on the
   -- platform list, and the clinic-making function refuses someone who already
   -- belongs somewhere — a second clinic is never one click away.
@@ -578,6 +590,15 @@ begin
   perform set_config('role', 'authenticated', true);
 
   raise notice '--- as clinic B ---';
+
+  select count(*) into v_count from public.encounter_signatures;
+  if v_count <> 0 then raise exception 'FAIL: clinic B saw % of clinic A''s signature record(s)', v_count; end if;
+  begin
+    perform public.reopen_encounter(v_encounter, 'Isolation test');
+    raise exception 'FAIL: clinic B reopened clinic A''s treatment record';
+  exception
+    when insufficient_privilege then null;
+  end;
 
   select count(*) into v_count from public.patients where id = v_patient_b;
   if v_count <> 1 then raise exception 'FAIL: clinic B cannot read its own patient'; end if;
@@ -699,6 +720,8 @@ begin
   if v_count <> 0 then raise exception 'FAIL: anonymous read returned % shop price(s)', v_count; end if;
   select count(*) into v_count from public.clinic_invitations;
   if v_count <> 0 then raise exception 'FAIL: anonymous read returned % invitation(s)', v_count; end if;
+  select count(*) into v_count from public.encounter_signatures;
+  if v_count <> 0 then raise exception 'FAIL: anonymous read returned % signature record(s)', v_count; end if;
   select count(*) into v_count from public.invitation_by_token(gen_random_uuid());
   if v_count <> 0 then raise exception 'FAIL: a random invitation token answered'; end if;
   select count(*) into v_count from public.invitation_by_token(v_invite_a) where clinic_name = 'Isolation Test A' and status = 'open';

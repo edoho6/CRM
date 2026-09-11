@@ -38,15 +38,8 @@ export function HerbMonographSheet({
   fallbackName: string;
   onClose: () => void;
 }) {
-  const t = useTranslations('inventory.herbs');
   const ti = useTranslations('inventory.image');
   const tc = useTranslations('common');
-  const tCategory = useTranslations('inventory.category');
-  const tTcm = useTranslations('inventory.tcmCategory');
-  const tTemp = useTranslations('inventory.temperature');
-  const tTaste = useTranslations('inventory.taste');
-  const tChannel = useTranslations('inventory.channel');
-  const format = useFormatter();
   const [herb, setHerb] = useState<Herb | null>(herbId ? (loaded.get(herbId) ?? null) : null);
   const [failed, setFailed] = useState(false);
 
@@ -77,12 +70,6 @@ export function HerbMonographSheet({
   const primary = herb ? herbPrimaryName(herb) : fallbackName;
   const chinese = herb ? herbChineseName(herb) : '';
   const botanical = herb ? herbBotanicalName(herb) : '';
-  const dosage =
-    herb && (herb.dosage_min_g !== null || herb.dosage_max_g !== null)
-      ? `${herb.dosage_min_g !== null ? format.number(Number(herb.dosage_min_g)) : '?'}–${
-          herb.dosage_max_g !== null ? format.number(Number(herb.dosage_max_g)) : '?'
-        } g`
-      : null;
 
   return (
     <Dialog open={herbId !== null} onOpenChange={(open) => !open && onClose()}>
@@ -109,96 +96,122 @@ export function HerbMonographSheet({
               {tc('loading')}
             </p>
           ) : (
-            <div data-monograph-loaded className="space-y-4">
-              <div className="flex flex-wrap items-start gap-x-6 gap-y-3 rounded-lg border border-ink-200 bg-ink-50 p-3">
-                <div>
-                  <p className="text-xs font-medium text-ink-600">{t('fields.dosageRange')}</p>
-                  {dosage ? (
-                    <p dir="ltr" className="text-2xl leading-tight font-bold tabular-nums text-jade-800">
-                      {dosage}
-                    </p>
-                  ) : (
-                    <p className="text-2xl leading-tight font-bold text-ink-500">—</p>
-                  )}
-                </div>
-                <div>
-                  <p className="mb-1 text-xs font-medium text-ink-600">{t('fields.temperature')}</p>
-                  {herb.temperature ? (
-                    <TcmChip
-                      scale="temperature"
-                      value={herb.temperature}
-                      href={{ pathname: HERBS_PATH, query: { temp: herb.temperature } }}
-                    >
-                      {tTemp(herb.temperature)}
-                    </TcmChip>
-                  ) : (
-                    <Dash />
-                  )}
-                </div>
-                <div>
-                  <p className="mb-1 text-xs font-medium text-ink-600">{t('fields.tastes')}</p>
-                  <TcmChips
-                    scale="taste"
-                    values={herb.tastes ?? []}
-                    render={(value) => tTaste(value as never)}
-                    hrefFor={(value) => ({ pathname: HERBS_PATH, query: { taste: value } })}
-                  />
-                </div>
-                <div>
-                  <p className="mb-1 text-xs font-medium text-ink-600">{t('fields.channels')}</p>
-                  <TcmChips
-                    scale="channel"
-                    values={herb.channels ?? []}
-                    render={(value) => tChannel(value as never)}
-                    hrefFor={(value) => ({ pathname: HERBS_PATH, query: { chan: value } })}
-                  />
-                </div>
-                <div>
-                  <p className="mb-1 text-xs font-medium text-ink-600">{t('fields.tcmCategory')}</p>
-                  {herb.tcm_category ? (
-                    <TcmChip
-                      scale="tcmCategory"
-                      value={herb.tcm_category}
-                      href={{ pathname: HERBS_PATH, query: { cat: herb.tcm_category } }}
-                    >
-                      {tTcm(herb.tcm_category)}
-                    </TcmChip>
-                  ) : (
-                    <Dash />
-                  )}
-                </div>
-              </div>
-
-              <dl>
-                <DetailRow label={t('fields.functions')}>
-                  <Prose text={herb.functions} />
-                </DetailRow>
-                <DetailRow label={t('fields.indications')}>
-                  <Prose text={herb.indications} />
-                </DetailRow>
-                <DetailRow label={t('fields.cautions')}>
-                  <Prose text={herb.cautions} />
-                </DetailRow>
-                {herb.properties ? <DetailRow label={t('fields.properties')}>{herb.properties}</DetailRow> : null}
-                <DetailRow label={t('fields.category')}>{tCategory(herb.category)}</DetailRow>
-                <DetailRow label={t('fields.pharmaceuticalName')}>
-                  <span dir="ltr">{herb.pharmaceutical_name ?? <Dash />}</span>
-                </DetailRow>
-                {herb.dosage_notes ? <DetailRow label={t('fields.dosageNotes')}>{herb.dosage_notes}</DetailRow> : null}
-              </dl>
-
-              <div className="flex justify-end">
-                <Button asChild variant="secondary">
-                  <Link href={`/reference/herbs/${herb.id}`}>
-                    <BookOpen className="h-4 w-4" aria-hidden />
-                    {ti('fullPage')}
-                  </Link>
-                </Button>
-              </div>
-            </div>
+            <HerbMonographBody herb={herb} />
           )}
         </DialogContent>
       ) : null}
     </Dialog>
+  );
+}
+
+/**
+ * The monograph itself — what the herb's page puts above the fold, and the
+ * text beneath. Shared by the gallery's sheet and by the reference card that
+ * opens from a chip anywhere else.
+ */
+export function HerbMonographBody({ herb }: { herb: Herb }) {
+  const t = useTranslations('inventory.herbs');
+  const ti = useTranslations('inventory.image');
+  const tCategory = useTranslations('inventory.category');
+  const tTcm = useTranslations('inventory.tcmCategory');
+  const tTemp = useTranslations('inventory.temperature');
+  const tTaste = useTranslations('inventory.taste');
+  const tChannel = useTranslations('inventory.channel');
+  const format = useFormatter();
+  const dosage =
+    herb.dosage_min_g !== null || herb.dosage_max_g !== null
+      ? `${herb.dosage_min_g !== null ? format.number(Number(herb.dosage_min_g)) : '?'}–${
+          herb.dosage_max_g !== null ? format.number(Number(herb.dosage_max_g)) : '?'
+        } g`
+      : null;
+
+  return (
+    <div data-monograph-loaded className="space-y-4">
+      <div className="flex flex-wrap items-start gap-x-6 gap-y-3 rounded-lg border border-ink-200 bg-ink-50 p-3">
+        <div>
+          <p className="text-xs font-medium text-ink-600">{t('fields.dosageRange')}</p>
+          {dosage ? (
+            <p dir="ltr" className="text-2xl leading-tight font-bold tabular-nums text-jade-800">
+              {dosage}
+            </p>
+          ) : (
+            <p className="text-2xl leading-tight font-bold text-ink-500">—</p>
+          )}
+        </div>
+        <div>
+          <p className="mb-1 text-xs font-medium text-ink-600">{t('fields.temperature')}</p>
+          {herb.temperature ? (
+            <TcmChip
+              scale="temperature"
+              value={herb.temperature}
+              href={{ pathname: HERBS_PATH, query: { temp: herb.temperature } }}
+            >
+              {tTemp(herb.temperature)}
+            </TcmChip>
+          ) : (
+            <Dash />
+          )}
+        </div>
+        <div>
+          <p className="mb-1 text-xs font-medium text-ink-600">{t('fields.tastes')}</p>
+          <TcmChips
+            scale="taste"
+            values={herb.tastes ?? []}
+            render={(value) => tTaste(value as never)}
+            hrefFor={(value) => ({ pathname: HERBS_PATH, query: { taste: value } })}
+          />
+        </div>
+        <div>
+          <p className="mb-1 text-xs font-medium text-ink-600">{t('fields.channels')}</p>
+          <TcmChips
+            scale="channel"
+            values={herb.channels ?? []}
+            render={(value) => tChannel(value as never)}
+            hrefFor={(value) => ({ pathname: HERBS_PATH, query: { chan: value } })}
+          />
+        </div>
+        <div>
+          <p className="mb-1 text-xs font-medium text-ink-600">{t('fields.tcmCategory')}</p>
+          {herb.tcm_category ? (
+            <TcmChip
+              scale="tcmCategory"
+              value={herb.tcm_category}
+              href={{ pathname: HERBS_PATH, query: { cat: herb.tcm_category } }}
+            >
+              {tTcm(herb.tcm_category)}
+            </TcmChip>
+          ) : (
+            <Dash />
+          )}
+        </div>
+      </div>
+
+      <dl>
+        <DetailRow label={t('fields.functions')}>
+          <Prose text={herb.functions} />
+        </DetailRow>
+        <DetailRow label={t('fields.indications')}>
+          <Prose text={herb.indications} />
+        </DetailRow>
+        <DetailRow label={t('fields.cautions')}>
+          <Prose text={herb.cautions} />
+        </DetailRow>
+        {herb.properties ? <DetailRow label={t('fields.properties')}>{herb.properties}</DetailRow> : null}
+        <DetailRow label={t('fields.category')}>{tCategory(herb.category)}</DetailRow>
+        <DetailRow label={t('fields.pharmaceuticalName')}>
+          <span dir="ltr">{herb.pharmaceutical_name ?? <Dash />}</span>
+        </DetailRow>
+        {herb.dosage_notes ? <DetailRow label={t('fields.dosageNotes')}>{herb.dosage_notes}</DetailRow> : null}
+      </dl>
+
+      <div className="flex justify-end">
+        <Button asChild variant="secondary">
+          <Link href={`/reference/herbs/${herb.id}`}>
+            <BookOpen className="h-4 w-4" aria-hidden />
+            {ti('fullPage')}
+          </Link>
+        </Button>
+      </div>
+    </div>
   );
 }

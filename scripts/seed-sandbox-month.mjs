@@ -593,6 +593,7 @@ async function main() {
         p_dose_amount: 3 + (p.i % 2),
         p_dose_unit: 'gram',
         p_dose_timing: p.i % 3 === 0 ? 'before_meal' : 'after_meal',
+        p_doses_per_day: 2,
       }),
       `prescription for ${p.fullName}`,
     );

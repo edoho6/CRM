@@ -96,6 +96,12 @@ export function mapDatabaseError(error: PostgrestError | Error | null | undefine
 
   // The team screen: the database keeps every clinic with an owner, and
   // keeps an owner from switching themselves off.
+  if (message.includes('reason_required')) {
+    return { key: 'errors.reasonRequired' };
+  }
+  if (message.includes('encounter_not_signed')) {
+    return { key: 'errors.encounterNotSigned' };
+  }
   if (message.includes('last_owner')) {
     return { key: 'errors.lastOwner' };
   }

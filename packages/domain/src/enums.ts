@@ -19,6 +19,10 @@ export type MembershipRole = (typeof MEMBERSHIP_ROLES)[number];
 
 /** The roles an invitation may carry: ownership is handed over, never mailed. */
 export const INVITABLE_ROLES = ['practitioner', 'staff', 'assistant'] as const;
+
+/** Where the clinic name at the top of the menu may lead. Mirrors profiles_home_path_check. */
+export const HOME_PATHS = ['/', '/calendar', '/patients', '/tasks', '/encounters'] as const;
+export type HomePath = (typeof HOME_PATHS)[number];
 export type InvitableRole = (typeof INVITABLE_ROLES)[number];
 
 export const SEXES = ['female', 'male', 'other', 'unspecified'] as const;

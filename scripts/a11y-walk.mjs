@@ -722,7 +722,17 @@ const flows = {
       return finish(flow, context);
     }
     await page.keyboard.press('Enter');
-    if (!(await dialogChecks(page, flow, 'appointment dialog (edit)', { tabs: 0 }))) return finish(flow, context);
+    // The block opens its details first; the edit form is a button in there.
+    if (!(await dialogChecks(page, flow, 'appointment details', { tabs: 12 }))) return finish(flow, context);
+    await screen(page, flow, 'appointment details');
+    const editButton = await tabTo(page, flow, (s) => s.tag === 'button' && s.inDialog && /עריכת התור/.test(s.name), { where: 'details → edit', max: 12 });
+    if (!editButton) return finish(flow, context);
+    await page.keyboard.press('Enter');
+    if (!(await page.locator('[role="dialog"] #patient_id').waitFor({ timeout: 5_000 }).then(() => true).catch(() => false))) {
+      issue(flow, 'details → edit: Enter on "edit" did not open the edit form');
+      return finish(flow, context);
+    }
+    await page.waitForTimeout(400);
     await screen(page, flow, 'edit appointment dialog');
     const del = await tabTo(page, flow, (s) => s.tag === 'button' && s.inDialog && /^מחיקה$/.test(s.name), { where: 'edit dialog → delete', max: 40 });
     if (!del) {

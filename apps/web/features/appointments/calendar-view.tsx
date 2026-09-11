@@ -15,6 +15,7 @@ import { Link, usePathname, useRouter } from '@clinic/i18n/navigation';
 import type { AppointmentType, AppointmentWithRelations, Patient } from '@clinic/db/types';
 import { appointmentTypeName, patientFullName } from '@/lib/display';
 import { AppointmentDialog, type AppointmentDraft } from './appointment-dialog';
+import { AppointmentDetails } from './appointment-details';
 import {
   blockedWindowsFor,
   closureFor,
@@ -69,8 +70,17 @@ interface PositionedAppointment {
 /**
  * Lays out a day's appointments, splitting overlapping ones into side-by-side
  * columns so a double-booked slot is visible rather than hidden underneath.
+ *
+ * With rooms, the columns are the rooms: room one is always the first lane
+ * and room two the second, all day, so a block's position says where it is
+ * before its text is read. A day with no overlap at all keeps full-width
+ * blocks — the lanes are worth their width only when something shares the
+ * hour.
  */
-function positionDay(appointments: AppointmentWithRelations[]): PositionedAppointment[] {
+function positionDay(
+  appointments: AppointmentWithRelations[],
+  roomLane: Map<string, number>,
+): PositionedAppointment[] {
   const sorted = [...appointments].sort(
     (a, b) => new Date(a.start_at).getTime() - new Date(b.start_at).getTime(),
   );
@@ -79,14 +89,30 @@ function positionDay(appointments: AppointmentWithRelations[]): PositionedAppoin
   let cluster: AppointmentWithRelations[] = [];
   let clusterEnd = 0;
 
+  // Whether anything in the day overlaps anything else, decided up front so
+  // every cluster of the day is drawn with the same lanes.
+  let overlaps = false;
+  let runningEnd = 0;
+  for (const appointment of sorted) {
+    const start = new Date(appointment.start_at).getTime();
+    if (start < runningEnd) overlaps = true;
+    runningEnd = Math.max(runningEnd, new Date(appointment.end_at).getTime());
+  }
+  const laneCount = overlaps && roomLane.size >= 2 ? roomLane.size : 0;
+
   const flush = () => {
     if (cluster.length === 0) return;
-    // Greedy column assignment within the cluster.
-    const columnEnds: number[] = [];
+    // Greedy column assignment within the cluster — after the room's own lane,
+    // when there is one and it is free at that hour.
+    const columnEnds: (number | undefined)[] = [];
     const assignments = cluster.map((appointment) => {
       const start = new Date(appointment.start_at).getTime();
       const end = new Date(appointment.end_at).getTime();
-      let column = columnEnds.findIndex((value) => value <= start);
+      const preferred = laneCount && appointment.room ? roomLane.get(appointment.room.id) : undefined;
+      let column =
+        preferred !== undefined && (columnEnds[preferred] === undefined || columnEnds[preferred] <= start)
+          ? preferred
+          : columnEnds.findIndex((value) => value === undefined || value <= start);
       if (column === -1) {
         column = columnEnds.length;
       }
@@ -94,7 +120,7 @@ function positionDay(appointments: AppointmentWithRelations[]): PositionedAppoin
       return { appointment, column };
     });
 
-    const columns = columnEnds.length;
+    const columns = Math.max(columnEnds.length, laneCount);
     for (const { appointment, column } of assignments) {
       const start = new Date(appointment.start_at);
       const end = new Date(appointment.end_at);
@@ -218,6 +244,13 @@ export function CalendarView({
 
   const [dialogOpen, setDialogOpen] = useState(Boolean(openNewOnLoad));
   const [blockDay, setBlockDay] = useState<Date | null>(null);
+  // A block is read before it is edited: the click opens this, and the edit
+  // form is a button inside it.
+  const [details, setDetails] = useState<AppointmentWithRelations | null>(null);
+  const roomLane = useMemo(
+    () => new Map(rooms.filter((room) => room.is_active !== false).map((room, index) => [room.id, index])),
+    [rooms],
+  );
   const [draft, setDraft] = useState<AppointmentDraft | null>(
     openNewOnLoad
       ? {
@@ -442,6 +475,10 @@ export function CalendarView({
         </div>
       </div>
 
+      {isTimeGrid && (roomLane.size > 0 || appointmentTypes.length > 1) ? (
+        <CalendarLegend rooms={rooms} appointmentTypes={appointmentTypes} locale={locale} />
+      ) : null}
+
       {!isTimeGrid ? (
         <MonthOrRangeView
           days={days}
@@ -450,7 +487,7 @@ export function CalendarView({
           byDay={byDay}
           availability={availability}
           locale={locale}
-          onOpen={openAppointment}
+          onOpen={setDetails}
           onAddOn={(day) => openSlot(day, 4)}
           onBlockOn={(day) => setBlockDay(day)}
         />
@@ -549,7 +586,7 @@ export function CalendarView({
               {days.map((day) => {
                 const key = toDateKey(day);
                 const dayAppointments = byDay.get(key) ?? [];
-                const positioned = positionDay(dayAppointments);
+                const positioned = positionDay(dayAppointments, roomLane);
                 const today = isSameDay(day, new Date());
                 // Undefined means no schedule has been set, which shades nothing.
                 const open = openMinutes.get(key);
@@ -635,36 +672,46 @@ export function CalendarView({
                       const color = appointment.appointment_type?.color ?? DEFAULT_ENTRY_COLOR;
                       const isCancelled = appointment.status === 'cancelled';
                       const widthPercent = 100 / columns;
+                      // A week's column split into lanes leaves room for a
+                      // name and an hour, and nothing else: the room is the
+                      // lane and the stripe, the type is the tint, and the
+                      // rest is one click away in the details.
+                      const narrow = days.length > 1 && columns > 1;
+                      const roomColor = appointment.room?.color ?? null;
                       return (
                         <button
                           key={appointment.id}
                           type="button"
-                          onClick={() => openAppointment(appointment)}
+                          aria-haspopup="dialog"
+                          onClick={() => setDetails(appointment)}
                           style={{
                             top,
                             height,
                             // Logical offsets keep events flowing in reading order.
                             insetInlineStart: `calc(${column * widthPercent}% + 2px)`,
                             width: `calc(${widthPercent}% - 4px)`,
-                            borderInlineStartColor: color,
+                            borderInlineStartColor: roomColor ?? color,
                             backgroundColor: isCancelled ? undefined : `${color}1a`,
                           }}
                           className={cn(
-                            'absolute overflow-hidden rounded-md border-s-3 px-1.5 py-0.5 text-start transition-shadow hover:shadow-md',
+                            'absolute overflow-hidden rounded-md border-s-3 text-start transition-shadow hover:shadow-md',
+                            narrow ? 'px-1 py-0.5' : 'px-1.5 py-0.5',
                             isCancelled ? 'bg-ink-100 text-ink-500 line-through' : 'text-ink-900',
                           )}
                         >
                           <span className="flex items-center gap-1">
                             {/* Whether the patient said they are coming, as a
                                 dot beside the hour: grey, amber, green, red. */}
-                            {!isCancelled ? <ConfirmationDot appointment={appointment} /> : null}
+                            {!isCancelled ? (
+                              <ConfirmationDot appointment={appointment} className={narrow ? 'h-2 w-2' : undefined} />
+                            ) : null}
                             <span
                               className="block truncate text-xs font-semibold tabular-nums"
                               dir="ltr"
                             >
                               {format.dateTime(new Date(appointment.start_at), 'time')}
                             </span>
-                            {appointment.room ? (
+                            {appointment.room && !narrow ? (
                               <span
                                 className="ms-auto max-w-[45%] truncate rounded px-1 text-xs font-medium leading-4"
                                 style={{
@@ -677,10 +724,15 @@ export function CalendarView({
                               </span>
                             ) : null}
                           </span>
-                          <span className="block truncate text-sm leading-tight">
+                          <span
+                            className={cn(
+                              'block leading-tight',
+                              narrow ? 'line-clamp-2 text-xs font-medium' : 'truncate text-sm',
+                            )}
+                          >
                             {patientFullName(appointment.patient)}
                           </span>
-                          {height > 44 ? (
+                          {height > 44 && !narrow ? (
                             <span className="block truncate text-xs text-ink-500">
                               {appointmentTypeName(appointment.appointment_type, locale)}
                             </span>
@@ -696,6 +748,15 @@ export function CalendarView({
         </div>
       )}
 
+      <AppointmentDetails
+        appointment={details}
+        locale={locale}
+        onClose={() => setDetails(null)}
+        onEdit={(appointment) => {
+          setDetails(null);
+          openAppointment(appointment);
+        }}
+      />
       <AppointmentDialog
         availability={availability}
         open={dialogOpen}
@@ -717,6 +778,76 @@ export function CalendarView({
       />
     </div>
     </>
+  );
+}
+
+/**
+ * What the colours mean, said in words above the grid: the stripe on a
+ * block is its room, the tint is its treatment type, the dot is whether the
+ * patient said they are coming. A legend the diary carries itself, rather
+ * than a convention to remember.
+ */
+function CalendarLegend({
+  rooms,
+  appointmentTypes,
+  locale,
+}: {
+  rooms: Room[];
+  appointmentTypes: AppointmentType[];
+  locale: Locale;
+}) {
+  const t = useTranslations('appointments.legend');
+  const tConfirmation = useTranslations('appointments.confirmation');
+  const activeRooms = rooms.filter((room) => room.is_active !== false);
+  const activeTypes = appointmentTypes.filter((type) => type.is_active !== false);
+  return (
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-ink-600">
+      {activeRooms.length > 0 ? (
+        <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1">
+          <span className="font-medium text-ink-700">{t('rooms')}</span>
+          {activeRooms.map((room) => (
+            <span key={room.id} className="inline-flex items-center gap-1">
+              <span aria-hidden className="h-3 w-1 rounded-sm" style={{ backgroundColor: room.color }} />
+              {room.name}
+            </span>
+          ))}
+        </span>
+      ) : null}
+      {activeTypes.length > 1 ? (
+        <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1">
+          <span className="font-medium text-ink-700">{t('types')}</span>
+          {activeTypes.map((type) => (
+            <span key={type.id} className="inline-flex items-center gap-1">
+              <span
+                aria-hidden
+                className="h-3 w-3 rounded-sm border"
+                style={{ backgroundColor: `${type.color}33`, borderColor: type.color }}
+              />
+              {appointmentTypeName(type, locale)}
+            </span>
+          ))}
+        </span>
+      ) : null}
+      <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1">
+        <span className="font-medium text-ink-700">{t('confirmation')}</span>
+        <span className="inline-flex items-center gap-1">
+          <span aria-hidden className="h-2.5 w-2.5 rounded-full border border-ink-300" />
+          {tConfirmation('none')}
+        </span>
+        <span className="inline-flex items-center gap-1">
+          <span aria-hidden className="h-2.5 w-2.5 rounded-full bg-amber-500" />
+          {tConfirmation('sent')}
+        </span>
+        <span className="inline-flex items-center gap-1">
+          <span aria-hidden className="h-2.5 w-2.5 rounded-full bg-jade-600" />
+          {tConfirmation('confirmed')}
+        </span>
+        <span className="inline-flex items-center gap-1">
+          <span aria-hidden className="h-2.5 w-2.5 rounded-full bg-red-600" />
+          {tConfirmation('declined')}
+        </span>
+      </span>
+    </div>
   );
 }
 

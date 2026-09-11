@@ -30,6 +30,8 @@ import { EncounterFormsPanel } from '@/features/forms/encounter-forms-panel';
 import type { PreviousEncounter } from '@/features/encounters/encounter-compare';
 import { EncounterNav, type EncounterStep } from '@/features/encounters/encounter-nav';
 import { PaymentAction } from '@/features/billing/payment-status';
+import { ReopenEncounterButton } from '@/features/encounters/reopen-encounter-button';
+import type { EncounterSignature } from '@clinic/db/types';
 import { toPaymentSummary } from '@/features/billing/payment-summary';
 import { formatDate, formatDateTime } from '@clinic/i18n';
 import { pageTitle } from '@/lib/page-title';
@@ -87,9 +89,15 @@ interface PreviousRow {
   note: PreviousNote[] | PreviousNote | null;
   dispensing: {
     formula: Pick<HerbFormula, 'id' | 'name_pinyin' | 'name_english' | 'name_hebrew'> | null;
+    preparation: string | null;
+    dose_amount: number | null;
+    dose_unit: string | null;
+    doses_per_day: number | null;
+    dose_timing: string | null;
     items: {
       custom_name: string | null;
       quantity: number;
+      unit: string | null;
       herb: Pick<Herb, 'id' | 'pinyin_name' | 'chinese_name' | 'english_name' | 'hebrew_name'> | null;
     }[];
   }[];
@@ -137,6 +145,7 @@ export default async function EncounterPage({
     previousResult,
     stepsResult,
     tonguePhotosResult,
+    signaturesResult,
   ] = await Promise.all([
       scope.supabase.from('tcm_notes').select('*').eq('encounter_id', id).maybeSingle<TcmNote>(),
       scope.supabase
@@ -210,8 +219,9 @@ export default async function EncounterPage({
         .from('encounters')
         .select(
           'id, encounter_date, note:tcm_notes(points_used),' +
-            ' dispensing:dispensing_records(formula:herb_formulas(id, name_pinyin, name_english,' +
-            ' name_hebrew), items:dispensing_items(custom_name, quantity,' +
+            ' dispensing:dispensing_records(preparation, dose_amount, dose_unit, doses_per_day, dose_timing,' +
+            ' formula:herb_formulas(id, name_pinyin, name_english,' +
+            ' name_hebrew), items:dispensing_items(custom_name, quantity, unit,' +
             ' herb:herbs(id, pinyin_name, chinese_name, english_name, hebrew_name)))',
         )
         .eq('patient_id', encounter.patient_id)
@@ -252,6 +262,16 @@ export default async function EncounterPage({
         .order('created_at', { ascending: false })
         .limit(24)
         .returns<TonguePhotoRow[]>(),
+      // The signatures this record carried before it was reopened, newest
+      // first. Until migration 38 has run the table does not exist, the
+      // query fails, and the record simply shows no history of reopening.
+      scope.supabase
+        .from('encounter_signatures')
+        .select('*')
+        .eq('encounter_id', id)
+        .order('reopened_at', { ascending: false })
+        .limit(10)
+        .returns<EncounterSignature[]>(),
     ]);
 
   // Opening a treatment record is reading a patient's clinical notes, and is
@@ -332,12 +352,14 @@ export default async function EncounterPage({
     const dispensingList = Array.isArray(row.dispensing) ? row.dispensing : [];
     const dispensing = dispensingList[dispensingList.length - 1] ?? null;
 
+    const items = dispensing?.items ?? [];
     return {
       id: row.id,
       date: row.encounter_date,
       points: note?.points_used ?? [],
       formula: dispensing?.formula ? formulaPrimaryName(dispensing.formula, uiLocale) : null,
-      herbs: (dispensing?.items ?? []).flatMap((item) => {
+      formulaId: dispensing?.formula?.id ?? null,
+      herbs: items.flatMap((item) => {
         const name = item.herb ? herbPrimaryName(item.herb, uiLocale) : item.custom_name;
         if (!name) return [];
         return [
@@ -345,9 +367,21 @@ export default async function EncounterPage({
             key: prescriptionKey(item.herb?.pinyin_name, name),
             name,
             quantity: Number(item.quantity),
+            herbId: item.herb?.id ?? null,
           },
         ];
       }),
+      meta: dispensing
+        ? {
+            preparation: dispensing.preparation,
+            total: items.length ? Math.round(items.reduce((sum, item) => sum + Number(item.quantity), 0) * 100) / 100 : null,
+            unit: items[0]?.unit ?? null,
+            doseAmount: dispensing.dose_amount === null ? null : Number(dispensing.dose_amount),
+            doseUnit: dispensing.dose_unit,
+            dosesPerDay: dispensing.doses_per_day === null ? null : Number(dispensing.doses_per_day),
+            doseTiming: dispensing.dose_timing,
+          }
+        : null,
     };
   });
 
@@ -391,18 +425,24 @@ export default async function EncounterPage({
             </span>
           ) : null
         }
+        // The state of the money, beside the record's name: a thing you check
+        // before letting a patient leave, in the same glance as the date.
+        aside={
+          <PaymentAction
+            summary={toPaymentSummary(paymentResult.data)}
+            encounterId={encounter.id}
+            canBill={canBill}
+            size="sm"
+          />
+        }
         actions={
           <>
-            {/* The state of the money, at the top of the record, next to the
-                state of the record. Both are things you check before letting a
-                patient leave, so they belong in the same glance. */}
-            <PaymentAction
-              summary={toPaymentSummary(paymentResult.data)}
-              encounterId={encounter.id}
-              canBill={canBill}
-              size="md"
-            />
             <Badge tone={isSigned ? 'success' : 'warning'}>{t(`status.${encounter.status}`)}</Badge>
+            {isSigned ? <ReopenEncounterButton encounterId={encounter.id} /> : null}
+            {/* The switch that arranges both columns lands here, last — the
+                far corner of the header — so the columns start level with
+                each other and the switch is out of the way of the record. */}
+            <span id="encounter-header-tools" className="inline-flex items-center" />
           </>
         }
       />
@@ -419,6 +459,7 @@ export default async function EncounterPage({
         protocols={protocolsResult.data ?? []}
         previousEncounters={previousEncounters}
         tonguePhotos={tonguePhotos}
+        reopened={signaturesResult.data?.[0] ?? null}
         dispensePanel={
           <DispensePanel
             encounterId={encounter.id}

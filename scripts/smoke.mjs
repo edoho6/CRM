@@ -787,10 +787,14 @@ const flows = {
     const toast = (pattern) => page.locator('[role="status"], [role="alert"]', { hasText: pattern }).first().waitFor({ timeout: 10_000 }).then(() => true).catch(() => false);
     const blockAtTen = () => page.locator('main button.absolute', { hasText: '10:00' }).first();
     const deleteBlock = async (block) => {
+      // A click on a block opens its details; the edit form is a button in there.
       await block.click();
-      const edit = page.locator('[role="dialog"]').first();
-      await edit.waitFor({ timeout: 5_000 });
-      await edit.locator('button', { hasText: /^מחיקה$/ }).first().click();
+      const details = page.locator('[role="dialog"]').first();
+      await details.waitFor({ timeout: 5_000 });
+      await details.locator('button', { hasText: /עריכת התור/ }).first().click();
+      const deleteButton = page.locator('[role="dialog"] button', { hasText: /^מחיקה$/ }).first();
+      await deleteButton.waitFor({ timeout: 5_000 });
+      await deleteButton.click();
       await page.locator('[role="dialog"]').last().locator('button', { hasText: /^מחיקה$/ }).last().click();
       return toast(/התור נמחק/);
     };

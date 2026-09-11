@@ -17,7 +17,8 @@ import { createContext, useContext } from 'react';
  * catalogue shows in the current language; the key is the pinyin (or the typed
  * name for an off-catalogue herb), which is the same on both sides of the
  * comparison. A diff on display names would call Huang Qi and חואנג צ'י two
- * different herbs.
+ * different herbs. The `herbId` travels too, for the chip that opens the
+ * herb's card — a herb typed by name has none.
  */
 
 export interface PrescriptionLine {
@@ -25,11 +26,31 @@ export interface PrescriptionLine {
   key: string;
   name: string;
   quantity: number | null;
+  /** The catalogue row, when the line came from one. */
+  herbId?: string | null;
+}
+
+/**
+ * How the prescription is taken: the form it comes in, how much of it there
+ * is, and the daily dose — the three figures a patient asks about, put beside
+ * the herbs rather than left in the prescription's own dialog.
+ */
+export interface PrescriptionMeta {
+  preparation: string | null;
+  total: number | null;
+  unit: string | null;
+  doseAmount: number | null;
+  doseUnit: string | null;
+  dosesPerDay: number | null;
+  doseTiming: string | null;
 }
 
 export interface CurrentPrescription {
   formula: string | null;
+  /** The catalogue formula, when one was chosen. */
+  formulaId?: string | null;
   herbs: PrescriptionLine[];
+  meta?: PrescriptionMeta | null;
   /** True while the lines are only chosen in the panel and not yet recorded. */
   draft: boolean;
 }

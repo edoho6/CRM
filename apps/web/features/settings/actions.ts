@@ -13,6 +13,7 @@ import {
   practitionerProfileSchema,
   scheduleExceptionSchema,
   workingHoursSchema,
+  HOME_PATHS,
 } from '@clinic/domain';
 import { isPaymentProviderId } from '@/features/billing/providers';
 import { getClinicScope } from '@/lib/session';
@@ -358,6 +359,21 @@ export async function savePractitionerProfile(input: unknown): Promise<ActionRes
     .update(parsed.data)
     .eq('id', scope.context.membership.user_id);
 
+  if (error) return actionError(error);
+  return actionOk();
+}
+
+/** Where the clinic name leads for this person. Refused unless it is one of the known screens. */
+export async function saveHomePath(path: unknown): Promise<ActionResult> {
+  const scope = await getClinicScope();
+  if (!scope) return actionError(new Error('unauthorized'));
+  if (typeof path !== 'string' || !(HOME_PATHS as readonly string[]).includes(path)) {
+    return actionError(new Error('validation'));
+  }
+  const { error } = await scope.supabase
+    .from('profiles')
+    .update({ home_path: path })
+    .eq('id', scope.context.membership.user_id);
   if (error) return actionError(error);
   return actionOk();
 }

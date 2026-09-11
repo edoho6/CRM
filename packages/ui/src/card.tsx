@@ -56,13 +56,30 @@ export function Section({
   actions,
   children,
   className,
+  titleHidden = false,
 }: {
   title: React.ReactNode;
   description?: React.ReactNode;
   actions?: React.ReactNode;
   children: React.ReactNode;
   className?: string;
+  /**
+   * Keeps the heading for screen readers and takes it off the screen. For a
+   * form whose field labels already say everything the heading said — the
+   * treatment record, where "complaint and history" sat over a field called
+   * "chief complaint" — and the practitioner asked for the furniture to go.
+   */
+  titleHidden?: boolean;
 }) {
+  if (titleHidden) {
+    return (
+      <section className={cn('space-y-3', className)}>
+        <h2 className="sr-only">{title}</h2>
+        {actions ? <div className="flex justify-end">{actions}</div> : null}
+        {children}
+      </section>
+    );
+  }
   return (
     <section className={cn('space-y-3', className)}>
       <div className="flex flex-wrap items-end justify-between gap-2">

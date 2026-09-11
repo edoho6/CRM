@@ -3,6 +3,7 @@ import { setRequestLocale } from 'next-intl/server';
 import { isSupabaseConfigured } from '@clinic/db';
 import type { Locale } from '@clinic/domain';
 import { AppShell } from '@/components/app-shell';
+import { ReferenceSheetProvider } from '@/features/reference/reference-sheet';
 import { getMembershipContext } from '@/lib/session';
 import { getCurrentUser } from '@clinic/db/server';
 import { signOutAction } from '../(auth)/actions';
@@ -61,9 +62,10 @@ export default async function AppLayout({
       // the same reason as the setting above.
       isSynthetic={context.clinic.is_synthetic === true}
       isPlatformAdmin={context.isPlatformAdmin}
+      homePath={context.profile?.home_path ?? '/'}
       onSignOut={handleSignOut}
     >
-      {children}
+      <ReferenceSheetProvider>{children}</ReferenceSheetProvider>
     </AppShell>
   );
 }

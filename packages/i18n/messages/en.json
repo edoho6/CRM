@@ -740,6 +740,25 @@
       "closed": "Closed day",
       "overlap": "That hour is taken",
       "failed": "Not saved"
+    },
+    "details": {
+      "title": "Appointment details",
+      "when": "When",
+      "duration": "{minutes} minutes",
+      "status": "Status",
+      "phone": "Phone",
+      "notes": "Notes",
+      "reminder": "Reminder",
+      "reminderSentAt": "Sent {date}",
+      "edit": "Edit appointment",
+      "file": "Patient file",
+      "treatment": "Open treatment",
+      "start": "Start treatment"
+    },
+    "legend": {
+      "rooms": "Stripe — room:",
+      "types": "Tint — treatment type:",
+      "confirmation": "Attendance:"
     }
   },
   "encounters": {
@@ -898,7 +917,7 @@
     "autosavedAt": "Autosaved at {time}",
     "autosaveFailed": "Autosave failed — save manually",
     "compare": {
-      "title": "Last time, beside now",
+      "title": "Versus earlier treatments",
       "chooseTreatment": "Treatment being compared",
       "mostRecent": "Most recent",
       "previous": "Then",
@@ -909,7 +928,7 @@
       "none": "None",
       "was": "was {quantity}",
       "firstVisit": "First treatment",
-      "legend": "Amber on the left: given then, not now. Green on the right: new now. Amber on the right: the dose changed."
+      "legend": "The same colour on both sides: the same point or herb in both treatments. Amber on the \"then\" side: given then, not now. Green on the \"now\" side: new. \"Was\" beside a herb: the dose changed."
     },
     "tonguePhotos": {
       "showEarlier": "{count, plural, one {One earlier tongue photo} other {# earlier tongue photos}}",
@@ -935,13 +954,26 @@
       "done": "Done",
       "hint": "Drag a panel by its bar, or focus the bar and use the arrow keys.",
       "examination": "Tongue and pulse",
-      "compare": "Then and now",
+      "compare": "Versus earlier treatments",
       "dispensing": "Herbs",
       "forms": "Questionnaires"
     },
     "sessionNav": "Move between treatments",
     "sessionNumber": "Session {number} of {total}",
-    "single": "Treatment"
+    "single": "Treatment",
+    "reopen": {
+      "button": "Reopen for editing",
+      "title": "Reopen a signed treatment for editing",
+      "body": "The earlier signature stays on the record with the reason, every change is logged, and the record must be signed again when done.",
+      "reason": "Reason for reopening",
+      "reasonHint": "For example: correcting the points recorded, adding a recommendation that was left out.",
+      "confirm": "Reopen",
+      "done": "The treatment is open for editing. Sign it again when done."
+    },
+    "reopenedNotice": {
+      "title": "This treatment was reopened after signing",
+      "body": "Signed {signedAt}, reopened {reopenedAt}. Reason: {reason}. Sign it again when done."
+    }
   },
   "billing": {
     "keepInvoice": "Keep the invoice",
@@ -1295,7 +1327,7 @@
       "multiplierHint": "e.g. 7 for a week of treatment",
       "preview": "Dispensing preview",
       "insufficientStock": "Not enough {herb} in stock. Need {required}, have {available}.",
-      "history": "Dispensing history",
+      "history": "Herbs dispensed",
       "empty": "No herbs dispensed in this treatment",
       "dispensedAt": "Dispensed on",
       "dispensedBy": "Dispensed by",
@@ -1828,7 +1860,9 @@
     "storeNotActive": "This shop is not active right now, so there is nothing to refresh.",
     "lastOwner": "A clinic must keep at least one active owner.",
     "notYourself": "Your own role and standing are changed by another owner, not by you.",
-    "alreadyMember": "This account already belongs to a clinic."
+    "alreadyMember": "This account already belongs to a clinic.",
+    "reasonRequired": "A reason is needed.",
+    "encounterNotSigned": "This treatment is not signed."
   },
   "settings": {
     "booking": {
@@ -2170,6 +2204,15 @@
       "attribute": "Attribute",
       "ingredients": "Ingredients",
       "ingredientCount": "Number of herbs"
+    },
+    "sheet": {
+      "open": "Details",
+      "fullPage": "Full page",
+      "failed": "The details did not load. Close and try again.",
+      "herb": "Herb",
+      "formula": "Formula",
+      "point": "Acupuncture point",
+      "total": "Total {amount} {unit}"
     }
   },
   "accessibility": {
@@ -2314,7 +2357,10 @@
     "sections": {
       "hint": "Select a heading to open it."
     },
-    "toSettings": "Go to payment settings"
+    "toSettings": "Go to payment settings",
+    "homePath": "My home page",
+    "homePathHint": "Where clicking the clinic name at the top of the menu leads.",
+    "homePathSaved": "Home page saved"
   },
   "forms": {
     "library": {

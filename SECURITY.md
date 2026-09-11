@@ -113,6 +113,14 @@ invoice list does, and it should.
 bound. At clinic volume that is years away from mattering, and it is still
 unspecified.
 
+**Signed records.** A signed treatment record cannot be edited in place. It
+can be reopened through `reopen_encounter`, which requires a reason, keeps the
+signature it carried (who, when) together with who reopened it, when and why
+in `encounter_signatures` — a table with no update or delete policy — and
+returns the record to draft to be signed again. Every field change in between
+is in the audit log as before. The rule: a correction is always visible, and a
+signature is never erased.
+
 ## 4 · Watching for misuse
 
 `/settings/access` shows the trail with names resolved, filterable by reads

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, useTransition } from 'react';
 import { useFormatter, useLocale, useTranslations } from 'next-intl';
 import { Check, Columns2, Plus, Printer, Sprout, X } from 'lucide-react';
 import {
+  Dash,
   Alert,
   Badge,
   Button,
@@ -56,6 +57,7 @@ import { GranuleCalculator } from './granule-calculator';
 import { multiplierForTotal, round2, splitByParts } from './dosing';
 import { dispenseHerbs, recordPrescription } from './actions';
 import { formatDate, formatDateTime } from '@clinic/i18n';
+import { ReferenceChip } from '@/features/reference/reference-sheet';
 import { cn } from '@clinic/ui/cn';
 
 interface HerbRow {
@@ -218,32 +220,48 @@ export function DispensePanel({
    */
   const publish = useCurrentPrescriptionPublisher();
   useEffect(() => {
+    // How the draft is taken, as typed so far. Empty figures stay null: a
+    // dose of nothing is not a dose.
+    const draftMeta = (total: number | null) => ({
+      preparation,
+      total,
+      unit,
+      doseAmount: Number(doseAmount) > 0 ? Number(doseAmount) : null,
+      doseUnit,
+      dosesPerDay: Number(dosesPerDay) > 0 ? Number(dosesPerDay) : null,
+      doseTiming: doseTiming || null,
+    });
     if (mode === 'formula' && selectedFormula) {
       publish({
         formula: formulaPrimaryName(selectedFormula, locale),
+        formulaId: selectedFormula.id,
         draft: true,
+        meta: draftMeta(round2(formulaBookDose * multiplier) || null),
         herbs: selectedFormula.items.map((item) => ({
           key: prescriptionKey(item.herb?.pinyin_name, herbPrimaryName(item.herb, locale)),
           name: herbPrimaryName(item.herb, locale),
           quantity: round2(Number(item.dosage) * multiplier),
+          herbId: item.herb?.id ?? null,
         })),
       });
       return;
     }
     if (mode === 'formula' && formulaChoice?.label.trim()) {
-      publish({ formula: formulaChoice.label.trim(), draft: true, herbs: [] });
+      publish({ formula: formulaChoice.label.trim(), draft: true, herbs: [], meta: draftMeta(null) });
       return;
     }
     if (mode === 'herb' && herbLines.length > 0) {
       publish({
         formula: null,
         draft: true,
+        meta: draftMeta(herbLinesTotal || null),
         herbs: herbLines.map((line) => {
           const herb = herbs.find((entry) => entry.id === line.choice.id);
           return {
             key: prescriptionKey(herb?.pinyin_name, line.choice.label),
             name: line.choice.label,
             quantity: line.quantity,
+            herbId: herb?.id ?? null,
           };
         }),
       });
@@ -253,13 +271,24 @@ export function DispensePanel({
     if (latest) {
       publish({
         formula: latest.formula ? formulaPrimaryName(latest.formula, locale) : null,
+        formulaId: latest.formula?.id ?? null,
         draft: false,
+        meta: {
+          preparation: latest.preparation,
+          total: recordTotal(latest) || null,
+          unit: latest.items[0]?.unit ?? null,
+          doseAmount: latest.dose_amount === null ? null : Number(latest.dose_amount),
+          doseUnit: latest.dose_unit,
+          dosesPerDay: latest.doses_per_day === null ? null : Number(latest.doses_per_day),
+          doseTiming: latest.dose_timing,
+        },
         herbs: latest.items.map((item) => {
           const name = item.herb ? herbPrimaryName(item.herb, locale) : (item.custom_name ?? '—');
           return {
             key: prescriptionKey(item.herb?.pinyin_name, name),
             name,
             quantity: Number(item.quantity),
+            herbId: item.herb?.id ?? null,
           };
         }),
       });
@@ -816,32 +845,33 @@ export function DispensePanel({
                         >
                           {name}
                         </button>
-                        <p className="text-xs text-ink-500">
-                          <span dir="ltr">{formatDateTime(new Date(record.dispensed_at))}</span>
-                          {record.preparation ? ` · ${tPrep(record.preparation)}` : ''}
-                        </p>
-                      </div>
-                      <div className="text-end">
-                        <p className="text-base font-semibold text-ink-900">
+                        {/* How it is taken, in one line and large: the form,
+                            then the day's dose — the two things asked about
+                            on the phone a week later. The date is a line of
+                            its own underneath, and the total sits at the end. */}
+                        <p className="mt-0.5 flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
+                          <span className="text-sm font-semibold text-ink-900">
+                            {record.preparation ? tPrep(record.preparation) : <Dash />}
+                          </span>
                           {daily ? (
-                            <>
+                            <span className="text-sm font-semibold text-ink-900">
                               <span className="tabular-nums">
                                 {format.number(daily.amount)} {tUnit(daily.unit)}
                               </span>{' '}
-                              <span className="text-xs font-normal text-ink-500">
-                                {t('perDaySuffix')}
-                              </span>
-                            </>
+                              {t('perDaySuffix')}
+                            </span>
                           ) : (
-                            <span className="text-sm font-normal text-ink-500">{t('noDosing')}</span>
+                            <span className="text-sm text-ink-500">{t('noDosing')}</span>
                           )}
-                        </p>
-                        <p className="text-xs text-ink-500">
-                          {t('totalShort')}{' '}
-                          <span className="tabular-nums">
-                            {format.number(recordTotal(record))}{' '}
-                            {tUnit(record.items[0]?.unit ?? unit)}
+                          <span className="text-xs text-ink-500">
+                            {t('totalShort')}{' '}
+                            <span className="tabular-nums">
+                              {format.number(recordTotal(record))} {tUnit(record.items[0]?.unit ?? unit)}
+                            </span>
                           </span>
+                        </p>
+                        <p className="text-xs text-ink-500" dir="ltr">
+                          {formatDateTime(new Date(record.dispensed_at))}
                         </p>
                       </div>
                     </li>
@@ -963,7 +993,14 @@ function DispensingDetailDialog({
                   <tbody>
                     {record.items.map((item) => (
                       <tr key={item.id}>
-                        <Td dir="auto">{itemLabel(item, locale)}</Td>
+                        <Td dir="auto">
+                          <ReferenceChip
+                            target={{ kind: 'herb', id: item.herb?.id ?? null, pinyin: item.herb?.pinyin_name ?? null, name: item.custom_name, label: itemLabel(item, locale) }}
+                            dir="auto"
+                          >
+                            {itemLabel(item, locale)}
+                          </ReferenceChip>
+                        </Td>
                         <Td className="text-end">
                           <span className="tabular-nums">
                             {format.number(Number(item.quantity))} {tUnit(item.unit)}

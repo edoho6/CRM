@@ -10,6 +10,7 @@ import type {
   AuditAction,
   BodyView,
   Channel,
+  HomePath,
   ConsentKind,
   ConsentMethod,
   FormulaTcmCategory,
@@ -100,6 +101,8 @@ export interface Profile {
   /** Theirs, not the clinic's — a room rented two days a week is not the practice. */
   email: string | null;
   address: string | null;
+  /** Where the clinic name at the top of the menu leads. Absent until migration 38 has run. */
+  home_path?: HomePath;
   created_at: string;
   updated_at: string;
 }
@@ -322,6 +325,18 @@ export interface MessageLogEntry {
   error_code: string | null;
   created_at: string;
   sent_at: string | null;
+}
+
+/** A signature a treatment record carried before it was reopened for editing. */
+export interface EncounterSignature {
+  id: string;
+  clinic_id: string;
+  encounter_id: string;
+  signed_at: string;
+  signed_by: string | null;
+  reopened_at: string;
+  reopened_by: string | null;
+  reason: string;
 }
 
 export interface Encounter {

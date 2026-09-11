@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { FloatingList, inputClasses, useAnchoredPosition } from '@clinic/ui';
 import { cn } from '@clinic/ui/cn';
+import { useReferenceSheet } from '@/features/reference/reference-sheet';
 import {
   POINT_PLACEMENTS,
   toPointPlacement,
@@ -464,6 +465,7 @@ export function PointsEditor({
  */
 function PointName({ row, option }: { row: PointRow; option: PointOption | undefined }) {
   const t = useTranslations('encounters.points.details');
+  const sheet = useReferenceSheet();
   const [open, setOpen] = useState(false);
   const anchorRef = useRef<HTMLButtonElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -489,6 +491,20 @@ function PointName({ row, option }: { row: PointRow; option: PointOption | undef
     </span>
   );
 
+  // A catalogue point opens its card even when the catalogue has no words
+  // for it yet: the card says so, and the full page is a link inside it.
+  if (!hasDetails && sheet && row.point_id) {
+    return (
+      <button
+        type="button"
+        aria-haspopup="dialog"
+        onClick={() => sheet.open({ kind: 'point', id: row.point_id!, label: row.point })}
+        className="rounded px-0.5 underline decoration-dotted decoration-jade-400 underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+      >
+        {name}
+      </button>
+    );
+  }
   if (!hasDetails) return name;
 
   return (
@@ -502,8 +518,15 @@ function PointName({ row, option }: { row: PointRow; option: PointOption | undef
         onMouseLeave={() => setOpen(false)}
         onFocus={() => setOpen(true)}
         onBlur={() => setOpen(false)}
-        // A tap on a touch screen, where there is no hover.
-        onClick={() => setOpen((current) => !current)}
+        // A click opens the point's card over the page — the whole
+        // monograph, not the three lines of the hover card. Without a sheet
+        // to open it in, the click toggles the hover card for a touch screen.
+        onClick={() => {
+          if (sheet && row.point_id) {
+            setOpen(false);
+            sheet.open({ kind: 'point', id: row.point_id, label: row.point });
+          } else setOpen((current) => !current);
+        }}
         className="rounded px-0.5 underline decoration-dotted decoration-jade-400 underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
       >
         {name}

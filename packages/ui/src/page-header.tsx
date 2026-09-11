@@ -26,12 +26,15 @@ export function PageHeader({
   actions,
   banner,
   below,
+  aside,
   size = 'page',
   className,
 }: {
   title: React.ReactNode;
   description?: React.ReactNode;
   actions?: React.ReactNode;
+  /** Beside the title, outside the h1 — a badge or a state that belongs to the name. */
+  aside?: React.ReactNode;
   banner?: React.ReactNode;
   below?: React.ReactNode;
   size?: 'page' | 'auth' | 'print';
@@ -49,15 +52,18 @@ export function PageHeader({
           {/* Large on a phone, where it is the screen's own title and folds
               into the top bar as it scrolls (the bar watches
               `data-page-title`); the size the app has always had from `sm`. */}
-          <h1
-            data-page-title={size === 'page' ? '' : undefined}
-            className={cn(
-              'font-semibold text-ink-900',
-              size === 'print' ? 'text-2xl' : size === 'page' ? 'text-2xl sm:text-xl' : 'text-xl',
-            )}
-          >
-            {title}
-          </h1>
+          <div className={cn('flex flex-wrap items-center gap-3', size === 'auth' && 'justify-center')}>
+            <h1
+              data-page-title={size === 'page' ? '' : undefined}
+              className={cn(
+                'font-semibold text-ink-900',
+                size === 'print' ? 'text-2xl' : size === 'page' ? 'text-2xl sm:text-xl' : 'text-xl',
+              )}
+            >
+              {title}
+            </h1>
+            {aside}
+          </div>
           {/* A `div`, not a `p`: callers put real markup here (a `<nav>` on the
               treatment page), and a `<nav>` inside a `<p>` is invalid HTML that
               the browser silently repairs — differently from the server. */}

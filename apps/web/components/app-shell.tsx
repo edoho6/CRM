@@ -141,12 +141,15 @@ export function AppShell({
   tracksInventory,
   isSynthetic = false,
   isPlatformAdmin = false,
+  homePath = '/',
   onSignOut,
 }: {
   children: React.ReactNode;
   clinicName: string;
   userName: string;
   tracksInventory: boolean;
+  /** Where the clinic name at the top of the menu leads — the person's own choice. */
+  homePath?: string;
   /** True for a sandbox clinic holding fictional patients. */
   isSynthetic?: boolean;
   /** Shows the service-wide overview link. Decided by the database, not here. */
@@ -364,20 +367,35 @@ export function AppShell({
             collapsed ? 'justify-center px-2' : 'px-4',
           )}
         >
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent text-accent-fg">
-            <Leaf className="h-4 w-4" />
-          </span>
-          {/* The clinic at the top, the person at the foot. Where you are is a
-              property of the window; who you are is a property of you, and
-              putting the name in both places said it twice. */}
-          {!collapsed ? (
-            <>
+          {/* The clinic's name is the way home — to whichever screen this
+              person chose as home in their personal area. */}
+          <Link
+            href={homePath}
+            className={cn(
+              'flex min-w-0 items-center gap-2.5 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus',
+              !collapsed && 'flex-1',
+            )}
+            title={clinicName}
+          >
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent text-accent-fg">
+              <Leaf className="h-4 w-4" />
+            </span>
+            {/* The clinic at the top, the person at the foot. Where you are is a
+                property of the window; who you are is a property of you, and
+                putting the name in both places said it twice. */}
+            {!collapsed ? (
               <span
                 data-sidebar-expanded-only
                 className="min-w-0 truncate text-sm font-semibold text-ink-900"
               >
                 {clinicName}
               </span>
+            ) : (
+              <span className="sr-only">{clinicName}</span>
+            )}
+          </Link>
+          {!collapsed ? (
+            <>
               {/* Beside the menu it arranges. A switch, not a mode buried in
                   settings: press it, drag, press it again. */}
               <span data-sidebar-expanded-only className="ms-auto flex shrink-0">

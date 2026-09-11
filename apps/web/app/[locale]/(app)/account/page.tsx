@@ -149,7 +149,7 @@ export default async function AccountPage({ params }: { params: Promise<{ locale
           title={t('appearance')}
           icon={<Palette className="h-4 w-4" aria-hidden />}
         >
-          <AppearanceSettings />
+          <AppearanceSettings homePath={profile?.home_path ?? '/'} />
         </Collapsible>
 
         {/* Its own screen rather than a panel: seven days of switches and times
