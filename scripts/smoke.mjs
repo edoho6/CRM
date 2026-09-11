@@ -972,6 +972,9 @@ const flows = {
     const card = page.locator('.table-cards tbody tr').first();
     if ((await card.count()) === 0) return { ok: false, detail: 'no card rows' };
     const cell = card.locator('td').nth(1);
+    // The mouse clicks viewport coordinates: at 200% text the first card sits
+    // below the fold, and a click at its box would land outside the window.
+    await cell.scrollIntoViewIfNeeded();
     const box = await cell.boundingBox();
     if (!box) return { ok: false, detail: 'second cell has no box' };
     const rtl = (await page.evaluate(() => document.documentElement.dir)) === 'rtl';

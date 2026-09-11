@@ -37,9 +37,11 @@ const buttonVariants = cva(
         link: 'text-jade-700 underline-offset-4 hover:underline hover:translate-y-0 hover:shadow-none active:scale-100',
       },
       size: {
-        sm: 'h-8 px-3 text-sm pointer-coarse:min-h-11',
-        md: 'h-10 px-4 text-sm pointer-coarse:min-h-11',
-        lg: 'h-11 px-5 text-base',
+        // A minimum, not a fixed height: a label that wraps at 200% text makes
+        // the button taller instead of spilling out of it.
+        sm: 'min-h-8 px-3 text-sm pointer-coarse:min-h-11',
+        md: 'min-h-10 px-4 text-sm pointer-coarse:min-h-11',
+        lg: 'min-h-11 px-5 text-base',
         icon: 'h-10 w-10 pointer-coarse:min-h-11 pointer-coarse:min-w-11',
         'icon-sm': 'h-8 w-8 pointer-coarse:min-h-11 pointer-coarse:min-w-11',
       },

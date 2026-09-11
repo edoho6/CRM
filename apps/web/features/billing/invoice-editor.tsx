@@ -358,14 +358,14 @@ export function InvoiceEditor({ invoice }: { invoice: InvoiceWithDetails }) {
                       disabled={isPending}
                     />
                   </Field>
-                  <Field label={t('payment.method')} htmlFor="payment_method">
+                  <Field label={t('payment.method')} htmlFor="payment_method" className="min-w-0 flex-1 basis-28">
                     <Select id="payment_method"
                       value={manualMethod}
                       onChange={(event) =>
                         setManualMethod(event.target.value as Exclude<PaymentMethod, 'card'>)
                       }
                       disabled={isPending}
-                      className="w-32"
+                      className="w-full"
                     >
                       {MANUAL_METHODS.map((method) => (
                         <option key={method} value={method}>
