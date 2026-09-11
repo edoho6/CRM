@@ -46,7 +46,9 @@ export async function loadHerbGalleryEntries(
     entries.push({
       id: herb.id,
       name: herbPrimaryName(herb, locale as Locale),
-      secondary: chinese || botanical || null,
+      // Both names beside the primary one: the botanical name is how two
+      // look-alikes are told apart, and the search box shows it too.
+      secondary: [chinese, botanical].filter(Boolean).join(' · ') || null,
       keywords: [
         herb.pinyin_name,
         herb.chinese_name,

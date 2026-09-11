@@ -1,0 +1,204 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useFormatter, useTranslations } from 'next-intl';
+import { BookOpen } from 'lucide-react';
+import { Alert, Button, Dash, DetailRow, Dialog, DialogContent, Spinner } from '@clinic/ui';
+import type { Herb } from '@clinic/db/types';
+import { Link } from '@clinic/i18n/navigation';
+import { TcmChip, TcmChips } from '@/components/tcm-chip';
+import { herbBotanicalName, herbChineseName, herbPrimaryName } from '@/lib/display';
+import { loadHerbMonograph } from './herb-monograph-action';
+
+/** Where a chip sends you: the herb list, filtered by that value. */
+const HERBS_PATH = '/reference/herbs';
+
+/** Monographs already read this page, so reopening one costs nothing. */
+const loaded = new Map<string, Herb>();
+
+function Prose({ text }: { text: string | null }) {
+  if (!text) return <Dash />;
+  return <span className="whitespace-pre-wrap">{text}</span>;
+}
+
+/**
+ * A herb's monograph as a pop-up over the gallery: what the herb's own page
+ * puts above the fold — dose, temperature, tastes, channels, group — and the
+ * text beneath, without leaving the comparison. The full page is one link
+ * away for the stock and the formulas, which a comparison does not need.
+ */
+export function HerbMonographSheet({
+  herbId,
+  fallbackName,
+  onClose,
+}: {
+  /** The herb to show; null keeps the sheet closed. */
+  herbId: string | null;
+  /** Shown in the title until the monograph arrives. */
+  fallbackName: string;
+  onClose: () => void;
+}) {
+  const t = useTranslations('inventory.herbs');
+  const ti = useTranslations('inventory.image');
+  const tc = useTranslations('common');
+  const tCategory = useTranslations('inventory.category');
+  const tTcm = useTranslations('inventory.tcmCategory');
+  const tTemp = useTranslations('inventory.temperature');
+  const tTaste = useTranslations('inventory.taste');
+  const tChannel = useTranslations('inventory.channel');
+  const format = useFormatter();
+  const [herb, setHerb] = useState<Herb | null>(herbId ? (loaded.get(herbId) ?? null) : null);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    if (!herbId) return;
+    const cached = loaded.get(herbId);
+    setFailed(false);
+    if (cached) {
+      setHerb(cached);
+      return;
+    }
+    setHerb(null);
+    let cancelled = false;
+    loadHerbMonograph(herbId).then((result) => {
+      if (cancelled) return;
+      if (result.ok) {
+        loaded.set(herbId, result.data);
+        setHerb(result.data);
+      } else {
+        setFailed(true);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [herbId]);
+
+  const primary = herb ? herbPrimaryName(herb) : fallbackName;
+  const chinese = herb ? herbChineseName(herb) : '';
+  const botanical = herb ? herbBotanicalName(herb) : '';
+  const dosage =
+    herb && (herb.dosage_min_g !== null || herb.dosage_max_g !== null)
+      ? `${herb.dosage_min_g !== null ? format.number(Number(herb.dosage_min_g)) : '?'}–${
+          herb.dosage_max_g !== null ? format.number(Number(herb.dosage_max_g)) : '?'
+        } g`
+      : null;
+
+  return (
+    <Dialog open={herbId !== null} onOpenChange={(open) => !open && onClose()}>
+      {herbId !== null ? (
+        <DialogContent
+          title={primary}
+          description={
+            chinese || botanical ? (
+              <span dir="ltr">
+                {chinese}
+                {chinese && botanical ? ' · ' : ''}
+                {botanical ? <span className="italic">{botanical}</span> : null}
+              </span>
+            ) : undefined
+          }
+          closeLabel={tc('close')}
+          className="sm:max-w-2xl"
+        >
+          {failed ? (
+            <Alert tone="danger">{ti('monographFailed')}</Alert>
+          ) : !herb ? (
+            <p className="flex items-center gap-2 py-6 text-sm text-ink-600" role="status">
+              <Spinner className="h-4 w-4" />
+              {tc('loading')}
+            </p>
+          ) : (
+            <div data-monograph-loaded className="space-y-4">
+              <div className="flex flex-wrap items-start gap-x-6 gap-y-3 rounded-lg border border-ink-200 bg-ink-50 p-3">
+                <div>
+                  <p className="text-xs font-medium text-ink-600">{t('fields.dosageRange')}</p>
+                  {dosage ? (
+                    <p dir="ltr" className="text-2xl leading-tight font-bold tabular-nums text-jade-800">
+                      {dosage}
+                    </p>
+                  ) : (
+                    <p className="text-2xl leading-tight font-bold text-ink-500">—</p>
+                  )}
+                </div>
+                <div>
+                  <p className="mb-1 text-xs font-medium text-ink-600">{t('fields.temperature')}</p>
+                  {herb.temperature ? (
+                    <TcmChip
+                      scale="temperature"
+                      value={herb.temperature}
+                      href={{ pathname: HERBS_PATH, query: { temp: herb.temperature } }}
+                    >
+                      {tTemp(herb.temperature)}
+                    </TcmChip>
+                  ) : (
+                    <Dash />
+                  )}
+                </div>
+                <div>
+                  <p className="mb-1 text-xs font-medium text-ink-600">{t('fields.tastes')}</p>
+                  <TcmChips
+                    scale="taste"
+                    values={herb.tastes ?? []}
+                    render={(value) => tTaste(value as never)}
+                    hrefFor={(value) => ({ pathname: HERBS_PATH, query: { taste: value } })}
+                  />
+                </div>
+                <div>
+                  <p className="mb-1 text-xs font-medium text-ink-600">{t('fields.channels')}</p>
+                  <TcmChips
+                    scale="channel"
+                    values={herb.channels ?? []}
+                    render={(value) => tChannel(value as never)}
+                    hrefFor={(value) => ({ pathname: HERBS_PATH, query: { chan: value } })}
+                  />
+                </div>
+                <div>
+                  <p className="mb-1 text-xs font-medium text-ink-600">{t('fields.tcmCategory')}</p>
+                  {herb.tcm_category ? (
+                    <TcmChip
+                      scale="tcmCategory"
+                      value={herb.tcm_category}
+                      href={{ pathname: HERBS_PATH, query: { cat: herb.tcm_category } }}
+                    >
+                      {tTcm(herb.tcm_category)}
+                    </TcmChip>
+                  ) : (
+                    <Dash />
+                  )}
+                </div>
+              </div>
+
+              <dl>
+                <DetailRow label={t('fields.functions')}>
+                  <Prose text={herb.functions} />
+                </DetailRow>
+                <DetailRow label={t('fields.indications')}>
+                  <Prose text={herb.indications} />
+                </DetailRow>
+                <DetailRow label={t('fields.cautions')}>
+                  <Prose text={herb.cautions} />
+                </DetailRow>
+                {herb.properties ? <DetailRow label={t('fields.properties')}>{herb.properties}</DetailRow> : null}
+                <DetailRow label={t('fields.category')}>{tCategory(herb.category)}</DetailRow>
+                <DetailRow label={t('fields.pharmaceuticalName')}>
+                  <span dir="ltr">{herb.pharmaceutical_name ?? <Dash />}</span>
+                </DetailRow>
+                {herb.dosage_notes ? <DetailRow label={t('fields.dosageNotes')}>{herb.dosage_notes}</DetailRow> : null}
+              </dl>
+
+              <div className="flex justify-end">
+                <Button asChild variant="secondary">
+                  <Link href={`/reference/herbs/${herb.id}`}>
+                    <BookOpen className="h-4 w-4" aria-hidden />
+                    {ti('fullPage')}
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      ) : null}
+    </Dialog>
+  );
+}

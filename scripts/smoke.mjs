@@ -1009,10 +1009,33 @@ const flows = {
     if (offered) await option.click();
     await page.waitForTimeout(500);
     const two = await dialog.locator('[role="group"][aria-label]').count();
+    // The second picture's "earlier" arrow puts it first.
+    const names = () => dialog.locator('figcaption button[data-herb-name]').allInnerTexts();
+    const before = await names();
+    const earlier = dialog.locator('figure').nth(1).locator('button[data-move="earlier"]');
+    if ((await earlier.count()) > 0) await earlier.click();
+    await page.waitForTimeout(300);
+    const after = await names();
+    const reordered = before.length === 2 && after[0] === before[1] && after[1] === before[0];
+    // A name opens the monograph in a second window over the first; Escape
+    // closes only that one.
+    await dialog.locator('figcaption button[data-herb-name]').first().click();
+    const inner = page.locator('[role="dialog"]').nth(1);
+    const monograph = await inner.waitFor({ timeout: 8_000 }).then(() => true).catch(() => false);
+    let loaded = false;
+    if (monograph) {
+      loaded = await inner.locator('[data-monograph-loaded]').waitFor({ timeout: 15_000 }).then(() => true).catch(() => false);
+      await page.keyboard.press('Escape');
+      await inner.waitFor({ state: 'detached', timeout: 3_000 }).catch(() => {});
+    }
+    const outerStill = (await page.locator('[role="dialog"]').count()) === 1;
     await page.keyboard.press('Escape');
     const gone = await dialog.waitFor({ state: 'detached', timeout: 3_000 }).then(() => true).catch(() => false);
-    const ok = one === 1 && two === 2 && gone;
-    return { ok, detail: `frames ${one} then ${two}, option offered ${offered}, closed ${gone}` };
+    const ok = one === 1 && two === 2 && reordered && monograph && loaded && outerStill && gone;
+    return {
+      ok,
+      detail: `frames ${one} then ${two}, option offered ${offered}, reordered ${reordered}, monograph ${monograph}/${loaded}, outer kept ${outerStill}, closed ${gone}`,
+    };
   },
   async pricesCheapest(page) {
     // Each row's green chip must be the lowest price among the row's live

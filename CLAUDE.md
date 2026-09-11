@@ -208,7 +208,9 @@
   הקרדיט (CC BY מחייב) וכיתוב שאומר אם זה החומר או הצמח. לא להוסיף תמונה בלי רשומה ב-manifest.
   **הגלריה:** `features/inventory/herb-gallery.tsx` — `HerbGalleryProvider` (מקבל את כל הצמחים עם תמונה
   מ-`loadHerbGalleryEntries`, `server-only`), `HerbThumb` פותח את התמונה בגדול ב-`ZoomFrame`, ו"השוואת
-  תמונות" מציב עד 4 צמחים זה לצד זה לפי בחירה ב-`Combobox`. הקרדיט מוצג בכל מסגרת
+  תמונות" מציב עד 6 צמחים זה לצד זה (חלון על כל המסך מ-`sm`, עמודה לכל תמונה) לפי בחירה ב-`Combobox`
+  שמציג גם את השם הבוטני; חצים מסדרים מחדש, ושם הצמח פותח את המונוגרף בחלון מעל
+  (`herb-monograph-sheet.tsx`, נטען לפי דרישה דרך `loadHerbMonograph`). הקרדיט מוצג בכל מסגרת
 - **שאלונים מהספרייה:** `features/forms/library.ts` — תבניות מוכנות עם מזהי שדות קבועים.
   כל מילוי שאלון מקבל שורה ב-`patient_documents` עם `file_path = 'form-submission:<id>'`
   (trigger ב-migration 20260910170000); אין קובץ באחסון — `/api/documents/[id]` מרנדר את

@@ -1450,7 +1450,12 @@
       "clinicPhoto": "A photo the clinic uploaded",
       "zoomIn": "Zoom in",
       "zoomOut": "Zoom out",
-      "zoomHint": "Mouse wheel zooms, dragging pans, double-click resets. Keyboard: + − and the arrows."
+      "zoomHint": "Mouse wheel zooms, dragging pans, double-click resets. Keyboard: + − and the arrows.",
+      "openMonograph": "Open the monograph of {name}",
+      "fullPage": "The herb's full page",
+      "moveEarlier": "Move {name} left",
+      "moveLater": "Move {name} right",
+      "monographFailed": "The monograph did not load. Close and try again."
     },
     "stock": {
       "title": "Stock",
