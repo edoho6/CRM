@@ -1,6 +1,8 @@
 import { redirect } from '@clinic/i18n/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { isSupabaseConfigured } from '@clinic/db';
+import { tryCreateServerSupabase } from '@clinic/db/server';
+import type { InvitationSummary } from '@clinic/db/types';
 import { Card, CardBody } from '@clinic/ui';
 import type { Locale } from '@clinic/domain';
 import { Leaf } from 'lucide-react';
@@ -15,8 +17,17 @@ import { SignupForm } from './signup-form';
  * The same frame as sign-in, so the two read as one door. Someone already
  * signed in and already in a clinic has no business here and goes home.
  */
-export default async function SignupPage({ params }: { params: Promise<{ locale: string }> }) {
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export default async function SignupPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ locale: string }>;
+  searchParams: Promise<{ join?: string }>;
+}) {
   const { locale } = await params;
+  const { join } = await searchParams;
   setRequestLocale(locale);
 
   if (!isSupabaseConfigured()) {
@@ -30,6 +41,15 @@ export default async function SignupPage({ params }: { params: Promise<{ locale:
 
   const t = await getTranslations('auth.signup');
   const tc = await getTranslations('common');
+
+  // From an invitation link: the clinic already exists, and is named here.
+  let joining: { token: string; clinic: string } | null = null;
+  if (join && UUID.test(join)) {
+    const supabase = await tryCreateServerSupabase();
+    const { data } = supabase ? await supabase.rpc('invitation_by_token', { p_token: join }) : { data: null };
+    const summary = (Array.isArray(data) ? data[0] : null) as InvitationSummary | null | undefined;
+    if (summary?.status === 'open') joining = { token: join, clinic: summary.clinic_name };
+  }
 
   return (
     <main className="grid min-h-dvh place-items-center bg-ink-50 px-6 py-12">
@@ -47,10 +67,12 @@ export default async function SignupPage({ params }: { params: Promise<{ locale:
         <Card>
           <CardBody className="space-y-4">
             <div>
-              <h2 className="text-sm font-semibold text-ink-900">{t('title')}</h2>
-              <p className="text-xs text-ink-500">{t('subtitle')}</p>
+              <h2 className="text-sm font-semibold text-ink-900">
+                {joining ? t('joinTitle', { clinic: joining.clinic }) : t('title')}
+              </h2>
+              <p className="text-xs text-ink-500">{joining ? t('joinSubtitle') : t('subtitle')}</p>
             </div>
-            <SignupForm locale={locale as Locale} />
+            <SignupForm locale={locale as Locale} joinToken={joining?.token} joinClinic={joining?.clinic} />
           </CardBody>
         </Card>
 

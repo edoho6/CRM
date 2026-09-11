@@ -7,3 +7,4 @@ export * from './reference';
 export * from './forms';
 export * from './practice';
 export * from './shop-prices';
+export * from './team';

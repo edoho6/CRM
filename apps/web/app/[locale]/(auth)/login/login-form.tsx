@@ -6,7 +6,14 @@ import { Alert, Button, Field, LtrInput, Input, Spinner } from '@clinic/ui';
 import type { Locale } from '@clinic/domain';
 import { signInAction, type SignInState } from '../actions';
 
-export function LoginForm({ locale }: { locale: Locale }) {
+export function LoginForm({
+  locale,
+  joinToken,
+}: {
+  locale: Locale;
+  /** From an invitation link: after signing in, back to the invitation to accept it. */
+  joinToken?: string;
+}) {
   const t = useTranslations('auth');
   const [state, formAction, isPending] = useActionState<SignInState, FormData>(
     signInAction.bind(null, locale),
@@ -15,6 +22,7 @@ export function LoginForm({ locale }: { locale: Locale }) {
 
   return (
     <form action={formAction} className="space-y-4">
+      {joinToken ? <input type="hidden" name="join" value={joinToken} /> : null}
       {state.error ? (
         <Alert tone="danger">
           {state.error === 'notConfigured'

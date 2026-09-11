@@ -9,8 +9,17 @@ import { getMembershipContext } from '@/lib/session';
 import { LoginForm } from './login-form';
 import { Link } from '@clinic/i18n/navigation';
 
-export default async function LoginPage({ params }: { params: Promise<{ locale: string }> }) {
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export default async function LoginPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ locale: string }>;
+  searchParams: Promise<{ join?: string }>;
+}) {
   const { locale } = await params;
+  const { join } = await searchParams;
   setRequestLocale(locale);
 
   if (!isSupabaseConfigured()) {
@@ -50,7 +59,7 @@ export default async function LoginPage({ params }: { params: Promise<{ locale: 
               <h2 className="text-sm font-semibold text-ink-900">{t('signInTitle')}</h2>
               <p className="text-xs text-ink-500">{t('signInSubtitle')}</p>
             </div>
-            <LoginForm locale={locale as Locale} />
+            <LoginForm locale={locale as Locale} joinToken={join && UUID.test(join) ? join : undefined} />
           </CardBody>
         </Card>
 

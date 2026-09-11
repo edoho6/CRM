@@ -22,6 +22,7 @@ import type {
   HerbCategory,
   HerbPreparation,
   HerbUnit,
+  InvitableRole,
   Locale,
   MembershipRole,
   NeedleTechnique,
@@ -110,6 +111,29 @@ export interface Membership {
   role: MembershipRole;
   is_active: boolean;
   created_at: string;
+}
+
+/** A link that lets one person join one clinic once. Owners' rows; the invitee sees it only through a function. */
+export interface ClinicInvitation {
+  id: string;
+  clinic_id: string;
+  token: string;
+  role: InvitableRole;
+  invitee_name: string | null;
+  invited_by: string | null;
+  created_at: string;
+  expires_at: string;
+  accepted_at: string | null;
+  accepted_by: string | null;
+  revoked_at: string | null;
+}
+
+/** What invitation_by_token answers: enough to decide, nothing about who asked. */
+export interface InvitationSummary {
+  clinic_name: string;
+  role: InvitableRole;
+  invitee_name: string | null;
+  status: 'open' | 'expired' | 'accepted' | 'revoked';
 }
 
 /** Membership joined with its clinic and profile — what the app shell needs on every page. */

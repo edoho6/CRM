@@ -49,6 +49,18 @@ export default async function WelcomePage({ params }: { params: Promise<{ locale
   const clinicName = typeof metadata.clinic_name === 'string' ? metadata.clinic_name : '';
   const phone = typeof metadata.phone === 'string' ? metadata.phone : '';
 
+  // An account made from an invitation link finishes the join here, after
+  // the email confirmation put a screen between the sign-up and the clinic.
+  const invitationToken = typeof metadata.invitation_token === 'string' ? metadata.invitation_token : '';
+  let invitationClosed = false;
+  if (invitationToken && supabase && !isPortalAccount) {
+    const { error } = await supabase.rpc('accept_invitation', { p_token: invitationToken });
+    if (!error || error.message.includes('already_member')) {
+      redirect({ href: '/', locale: locale as Locale });
+    }
+    invitationClosed = true;
+  }
+
   async function handleSignOut() {
     'use server';
     await signOutAction(locale as Locale);
@@ -79,6 +91,7 @@ export default async function WelcomePage({ params }: { params: Promise<{ locale
               </>
             ) : (
               <>
+                {invitationClosed ? <Alert tone="warning">{t('invitationClosed')}</Alert> : null}
                 <div>
                   <h2 className="text-sm font-semibold text-ink-900">{t('title')}</h2>
                   <p className="text-xs text-ink-500">{t('subtitle')}</p>

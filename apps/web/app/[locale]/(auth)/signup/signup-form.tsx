@@ -12,7 +12,16 @@ import { signUpAction, type SignUpState } from '../actions';
  * screen, because the person signing up is the clinic: there is no "set up
  * your workspace" step that would not be this same question asked twice.
  */
-export function SignupForm({ locale }: { locale: Locale }) {
+export function SignupForm({
+  locale,
+  joinToken,
+  joinClinic,
+}: {
+  locale: Locale;
+  /** From an invitation link: no clinic to name, and the account joins the inviting one. */
+  joinToken?: string;
+  joinClinic?: string;
+}) {
   const t = useTranslations('auth.signup');
   const tAuth = useTranslations('auth');
   const [state, formAction, isPending] = useActionState<SignUpState, FormData>(
@@ -24,7 +33,7 @@ export function SignupForm({ locale }: { locale: Locale }) {
     return (
       <div className="space-y-4">
         <Alert tone="success" title={t('checkEmailTitle')}>
-          {t('checkEmailBody', { email: state.email ?? '' })}
+          {t(state.join ? 'joinCheckEmailBody' : 'checkEmailBody', { email: state.email ?? '' })}
         </Alert>
         <Link href="/login" className="block text-center text-sm text-jade-800 underline-offset-2 hover:underline">
           {tAuth('backToSignIn')}
@@ -49,9 +58,16 @@ export function SignupForm({ locale }: { locale: Locale }) {
         <Input id="full_name" name="full_name" autoComplete="name" required disabled={isPending} />
       </Field>
 
-      <Field label={t('clinicName')} htmlFor="clinic_name" required hint={t('clinicNameHint')}>
-        <Input id="clinic_name" name="clinic_name" autoComplete="organization" required disabled={isPending} />
-      </Field>
+      {joinToken ? (
+        <>
+          <input type="hidden" name="join" value={joinToken} />
+          <p className="text-sm text-ink-700">{t('joinHint', { clinic: joinClinic ?? '' })}</p>
+        </>
+      ) : (
+        <Field label={t('clinicName')} htmlFor="clinic_name" required hint={t('clinicNameHint')}>
+          <Input id="clinic_name" name="clinic_name" autoComplete="organization" required disabled={isPending} />
+        </Field>
+      )}
 
       <Field label={t('phone')} htmlFor="phone">
         <LtrInput id="phone" name="phone" type="tel" autoComplete="tel" disabled={isPending} />
@@ -77,7 +93,7 @@ export function SignupForm({ locale }: { locale: Locale }) {
 
       <Button type="submit" size="lg" className="w-full" disabled={isPending}>
         {isPending ? <Spinner /> : null}
-        {isPending ? t('creating') : t('create')}
+        {isPending ? t('creating') : joinToken ? t('joinCreate') : t('create')}
       </Button>
     </form>
   );

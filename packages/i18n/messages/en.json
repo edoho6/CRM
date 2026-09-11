@@ -335,14 +335,20 @@
         "weakPassword": "The password is too short — at least 8 characters.",
         "emailTaken": "We could not open an account with this email. If you already signed up, sign in.",
         "generic": "Something went wrong. Please try again in a moment."
-      }
+      },
+      "joinTitle": "Join {clinic}",
+      "joinSubtitle": "Create an account and you are in.",
+      "joinHint": "The account will join {clinic}.",
+      "joinCreate": "Create an account and join",
+      "joinCheckEmailBody": "We sent a confirmation link to {email}. After you click it you will join the clinic."
     },
     "welcome": {
       "title": "Welcome",
       "subtitle": "All that is left is to name the clinic.",
       "open": "Open the clinic",
       "portalTitle": "This is a patient account",
-      "portalBody": "This account belongs to the patient portal, not the clinic app. To run a clinic, open a new account with a different email."
+      "portalBody": "This account belongs to the patient portal, not the clinic app. To run a clinic, open a new account with a different email.",
+      "invitationClosed": "The invitation you signed up with is no longer open. Ask whoever invited you for a new link, or open a clinic of your own."
     },
     "signInTitle": "Sign in",
     "signInSubtitle": "Enter your clinic account details",
@@ -1813,7 +1819,10 @@
     "roomOverlap": "That room is already booked at this hour",
     "forbidden": "You are not allowed to do this.",
     "tooSoon": "You just asked for this. Try again in two minutes.",
-    "storeNotActive": "This shop is not active right now, so there is nothing to refresh."
+    "storeNotActive": "This shop is not active right now, so there is nothing to refresh.",
+    "lastOwner": "A clinic must keep at least one active owner.",
+    "notYourself": "Your own role and standing are changed by another owner, not by you.",
+    "alreadyMember": "This account already belongs to a clinic."
   },
   "settings": {
     "booking": {
@@ -1926,7 +1935,8 @@
       "access": "Access log",
       "billing": "Billing",
       "consent": "Consent documents",
-      "account": "My area"
+      "account": "My area",
+      "team": "Team"
     },
     "access": {
       "title": "Access log",
@@ -1995,6 +2005,45 @@
       "deleteConfirm": "Bookings already made with this type stay.",
       "inUse": "This type is attached to existing bookings, so it was hidden from the picker rather than deleted — past appointments keep their label.",
       "countBadge": "{count, plural, =0 {No types} one {1 type} other {# types}}"
+    },
+    "team": {
+      "title": "Team",
+      "subtitle": "Who works in the clinic, and who is on the way",
+      "members": "Members",
+      "unnamedMember": "Unnamed",
+      "you": "(you)",
+      "role": "Role",
+      "roleOf": "{name}'s role",
+      "joined": "Joined",
+      "activate": "Activate",
+      "deactivate": "Deactivate",
+      "roles": {
+        "owner": "Owner",
+        "practitioner": "Practitioner",
+        "staff": "Staff",
+        "assistant": "Assistant"
+      },
+      "roleHint": "For now every role sees the same screens; the one difference is that only owners manage the team. Finer permissions per role come later.",
+      "inviteTitle": "Invite a team member",
+      "inviteIntro": "Make a link and send it to the person joining — WhatsApp, or however suits. Whoever opens it signs in or creates an account and joins the clinic in the role you chose. The link is good for seven days and works once.",
+      "inviteRole": "Role",
+      "inviteName": "For whom (optional)",
+      "inviteNameHint": "Only to tell the invitations apart in the list.",
+      "create": "Create an invitation link",
+      "created": "The link is ready. Send it to the person joining.",
+      "pending": "Open invitations",
+      "none": "No open invitations.",
+      "unnamed": "Unnamed",
+      "link": "Invitation link",
+      "copy": "Copy",
+      "copied": "Link copied",
+      "copyFailed": "Copying failed",
+      "expires": "Valid until {date}",
+      "revoke": "Cancel",
+      "revokeOf": "Cancel {name}'s invitation",
+      "revoked": "Invitation cancelled",
+      "saved": "Saved",
+      "onlyOwners": "Only the clinic's owners invite team members and change roles."
     }
   },
   "reference": {
@@ -2584,5 +2633,19 @@
     "cutHere": "Cut here and attach to the bag",
     "dailyTotal": "Total per day",
     "keepAway": "Store in a cool, dry place, out of reach of children. Contact the clinic with any question or unexpected effect."
+  },
+  "join": {
+    "title": "An invitation to a clinic",
+    "body": "{clinic} invites you to join as {role}.",
+    "accept": "Join {clinic}",
+    "accepting": "Joining…",
+    "signUp": "Create an account and join",
+    "signIn": "Already have an account? Sign in",
+    "notFound": "This link is not recognised. Ask whoever sent it for a new one.",
+    "closed": "This invitation is no longer open: it expired, was cancelled or was already used. Ask for a new link.",
+    "alreadyMember": "Your account already belongs to {clinic}. Joining another clinic needs an account with a different email.",
+    "portalAccount": "This is a patient-portal account, not a staff account. Staff accounts are created with a different email.",
+    "failed": "Joining did not work. Try again, or ask for a new link.",
+    "home": "To the dashboard"
   }
 }

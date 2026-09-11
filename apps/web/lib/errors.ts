@@ -93,6 +93,18 @@ export function mapDatabaseError(error: PostgrestError | Error | null | undefine
   if (message.includes('too_soon')) {
     return { key: 'errors.tooSoon' };
   }
+
+  // The team screen: the database keeps every clinic with an owner, and
+  // keeps an owner from switching themselves off.
+  if (message.includes('last_owner')) {
+    return { key: 'errors.lastOwner' };
+  }
+  if (message.includes('not_yourself')) {
+    return { key: 'errors.notYourself' };
+  }
+  if (message.includes('already_member')) {
+    return { key: 'errors.alreadyMember' };
+  }
   if (message.includes('store_not_active')) {
     return { key: 'errors.storeNotActive' };
   }

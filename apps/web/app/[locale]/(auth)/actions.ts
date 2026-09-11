@@ -64,9 +64,44 @@ export async function signInAction(
   }
 
   clearAttempts(key);
-  redirect({ href: '/', locale });
+  // Someone who signed in from an invitation link goes back to it, to accept.
+  const join = String(formData.get('join') ?? '');
+  redirect({ href: UUID.test(join) ? `/join/${join}` : '/', locale });
   // `redirect` throws internally, so this is unreachable — it exists only because
   // next-intl types it as returning void rather than never.
+  return {};
+}
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export interface AcceptInvitationState {
+  error?: 'closed' | 'portal' | 'generic';
+}
+
+/**
+ * Joins the signed-in account to the inviting clinic. "Already a member" is
+ * a double click and goes home; a closed link, or a portal account, is told
+ * so on the page.
+ */
+export async function acceptInvitationAction(
+  locale: Locale,
+  token: string,
+  _prevState: AcceptInvitationState,
+  _formData: FormData,
+): Promise<AcceptInvitationState> {
+  if (!isSupabaseConfigured() || !UUID.test(token)) return { error: 'generic' };
+  const supabase = await createServerSupabase();
+  const { error } = await supabase.rpc('accept_invitation', { p_token: token });
+  if (error) {
+    if (error.message.includes('already_member')) {
+      redirect({ href: '/', locale });
+      return {};
+    }
+    if (error.message.includes('portal_account')) return { error: 'portal' };
+    if (error.message.includes('invitation_')) return { error: 'closed' };
+    return { error: 'generic' };
+  }
+  redirect({ href: '/', locale });
   return {};
 }
 
@@ -85,6 +120,8 @@ export async function signOutAction(locale: Locale): Promise<void> {
 export interface SignUpState {
   status?: 'checkEmail';
   email?: string;
+  /** The account was made from an invitation link; the join finishes after the email. */
+  join?: boolean;
   error?: 'missing' | 'weakPassword' | 'emailTaken' | 'tooManyAttempts' | 'generic';
   retryAfterSeconds?: number;
 }
@@ -110,8 +147,13 @@ export async function signUpAction(
   const phone = String(formData.get('phone') ?? '').trim();
   const email = String(formData.get('email') ?? '').trim();
   const password = String(formData.get('password') ?? '');
+  // From an invitation link: no clinic of their own to name, and the token
+  // rides in the account's metadata so the welcome page can finish the join
+  // after the email is confirmed.
+  const joinRaw = String(formData.get('join') ?? '');
+  const join = UUID.test(joinRaw) ? joinRaw : null;
 
-  if (!fullName || !clinicName || !email || !password) return { error: 'missing' };
+  if (!fullName || (!clinicName && !join) || !email || !password) return { error: 'missing' };
   if (password.length < 8) return { error: 'weakPassword' };
 
   const key = await rateLimitKey(`signup:${email}`);
@@ -125,7 +167,13 @@ export async function signUpAction(
     email,
     password,
     options: {
-      data: { full_name: fullName, clinic_name: clinicName, phone, preferred_locale: locale },
+      data: {
+        full_name: fullName,
+        clinic_name: join ? '' : clinicName,
+        phone,
+        preferred_locale: locale,
+        ...(join ? { invitation_token: join } : {}),
+      },
     },
   });
 
@@ -141,7 +189,14 @@ export async function signUpAction(
   // identities rather than an error, so the form cannot tell who has an
   // account. Treat it exactly like a fresh sign-up that needs its email.
   if (!data.session) {
-    return { status: 'checkEmail', email };
+    return { status: 'checkEmail', email, join: Boolean(join) };
+  }
+
+  if (join) {
+    const { error: joinError } = await supabase.rpc('accept_invitation', { p_token: join });
+    // The link explains itself when it cannot be used.
+    redirect({ href: joinError ? `/join/${join}` : '/', locale });
+    return {};
   }
 
   const { error: clinicError } = await supabase.rpc('create_clinic_for_current_user', {

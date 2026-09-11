@@ -1065,6 +1065,30 @@ const flows = {
       detail: `frames ${one} then ${two}, option offered ${offered}, reordered ${reordered}, monograph ${monograph}/${loaded}, outer kept ${outerStill}, closed ${gone}`,
     };
   },
+  async writeInvite(page) {
+    // An owner makes an invitation link; a stranger opening it sees the
+    // clinic's name and the way in; the owner cancels it; the stranger now
+    // sees that it is closed. No account is created.
+    const create = page.locator('main button', { hasText: /יצירת קישור הזמנה/ }).first();
+    if ((await create.count()) === 0) return { ok: false, detail: 'no invite button (not an owner?)' };
+    await page.fill('#invite-name', 'Smoke invitee');
+    await create.click();
+    const link = page.locator('main input[aria-label="קישור ההזמנה"]').first();
+    await link.waitFor({ timeout: 10_000 });
+    const url = await link.inputValue();
+    if (!/\/join\/[0-9a-f-]{36}$/.test(url)) return { ok: false, detail: `link ${url}` };
+    const stranger = await current.browser.newContext({ locale: 'he-IL', viewport: { width: 1280, height: 900 } });
+    const guest = await stranger.newPage();
+    await guest.goto(url, { waitUntil: 'networkidle' });
+    const offered = (await guest.locator('main').getByText(/קליניקת בדיקות/).count()) > 0 && (await guest.locator('main a', { hasText: /פתיחת חשבון והצטרפות/ }).count()) > 0;
+    await page.locator('main button[aria-label^="ביטול ההזמנה של Smoke invitee"]').first().click();
+    await page.waitForTimeout(800);
+    await guest.goto(url, { waitUntil: 'networkidle' });
+    const closed = (await guest.locator('main').getByText(/כבר לא פעילה/).count()) > 0;
+    await stranger.close();
+    const ok = offered && closed;
+    return { ok, detail: `offered ${offered}, closed after cancel ${closed}` };
+  },
   async pricesCheapest(page) {
     // Each row's green chip must be the lowest price among the row's live
     // chips, and every chip must leave the app safely (new tab, no opener).
@@ -1125,10 +1149,10 @@ const STATIC_ROUTES = [
   '/inventory', '/inventory?tab=low', '/inventory/batches', '/inventory/batches/receive',
   '/inventory/suppliers', '/prices', '/prices?cat=needles&min=2', '/prices/credits', '/billing', '/billing/new',
   '/billing/settings', '/reports', '/assistant',
-  '/settings', '/settings/access', '/settings/booking', '/settings/consent', '/settings/tags',
+  '/settings', '/settings/team', '/settings/access', '/settings/booking', '/settings/consent', '/settings/tags',
   '/account', '/account/protocols', '/account/schedule', '/accessibility',
 ];
-const PUBLIC_ROUTES = ['/about', '/accessibility', '/login', '/signup', '/setup'];
+const PUBLIC_ROUTES = ['/about', '/accessibility', '/login', '/signup', '/setup', '/join/00000000-0000-4000-8000-000000000000'];
 
 async function main() {
   await waitForServer();
@@ -1323,6 +1347,7 @@ async function main() {
       await visit(context, { route: '/encounters/new', locale: 'he', width: desktop, label: 'flow write-encounter', after: flows.writeEncounter });
       await visit(context, { route: '/billing/new', locale: 'he', width: desktop, label: 'flow write-invoice-line', after: flows.writeInvoiceLine });
       await visit(context, { route: '/account/schedule', locale: 'he', width: desktop, label: 'flow write-feed', after: flows.writeFeed });
+      await visit(context, { route: '/settings/team', locale: 'he', width: desktop, label: 'flow write-invite', after: flows.writeInvite });
       // The standing test patient, by search: its id is not known up front.
       const testPatient = await collectIds(context, '/patients?q=%D7%91%D7%93%D7%99%D7%A7%D7%94&inactive=1', '/patients/([0-9a-f-]{36})$', 1);
       if (testPatient[0]) {

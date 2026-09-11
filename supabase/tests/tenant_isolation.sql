@@ -47,6 +47,10 @@ declare
   v_shop_store uuid;
   v_shop_product uuid;
   v_shop_fp    text := 'iso|' || gen_random_uuid();  -- the product's fingerprint, shared with its offer
+  v_user_c     uuid := gen_random_uuid();  -- a stranger with an account and no clinic
+  v_invite_a   uuid;
+  v_invite_b   uuid;
+  v_owner_a    uuid;
   v_count      integer;
 begin
   -- ==========================================================================
@@ -74,7 +78,9 @@ begin
     (v_user_b, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
      'iso-b-' || v_user_b || '@example.test', '', now(), now(), now()),
     (v_user_p, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
-     'iso-p-' || v_user_p || '@example.test', '', now(), now(), now());
+     'iso-p-' || v_user_p || '@example.test', '', now(), now(), now()),
+    (v_user_c, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
+     'iso-c-' || v_user_c || '@example.test', '', now(), now(), now());
 
   insert into public.memberships (clinic_id, user_id, role, is_active)
   values (v_clinic_a, v_user_a, 'owner', true),
@@ -233,6 +239,13 @@ begin
 
   insert into public.shop_offers (store_id, product_id, external_id, raw_name, url, fingerprint, price)
   values (v_shop_store, v_shop_product, 'iso-1', 'Iso needle', 'https://example.test/p/1', v_shop_fp, 42);
+
+  -- An open invitation in each clinic. The link is the whole secret.
+  insert into public.clinic_invitations (clinic_id, role, invitee_name, invited_by)
+  values (v_clinic_a, 'practitioner', 'Iso Invitee A', v_user_a) returning token into v_invite_a;
+  insert into public.clinic_invitations (clinic_id, role, invitee_name, invited_by)
+  values (v_clinic_b, 'staff', 'Iso Invitee B', v_user_b) returning token into v_invite_b;
+  select id into v_owner_a from public.memberships where clinic_id = v_clinic_a and user_id = v_user_a;
 
   raise notice 'clinic A = %', v_clinic_a;
   raise notice 'clinic B = %', v_clinic_b;
@@ -471,6 +484,29 @@ begin
   end;
   raise notice 'ok   shop prices are readable by every member and writable by none';
 
+  -- Invitations belong to the owner who made them, and the last owner stays.
+  select count(*) into v_count from public.clinic_invitations;
+  if v_count <> 1 then raise exception 'FAIL: clinic A saw % invitation(s), expected only its own', v_count; end if;
+  begin
+    perform public.set_membership_active(v_owner_a, false);
+    raise exception 'FAIL: an owner switched themselves off';
+  exception
+    when invalid_parameter_value then null;
+  end;
+  begin
+    delete from public.memberships where id = v_owner_a;
+    raise exception 'FAIL: the last owner was deleted';
+  exception
+    when check_violation then null;
+  end;
+  begin
+    perform public.accept_invitation(v_invite_b);
+    raise exception 'FAIL: a member of clinic A accepted an invitation to clinic B';
+  exception
+    when unique_violation then null;
+  end;
+  raise notice 'ok   invitations are the owner''s, and a clinic keeps its last owner';
+
   -- The service overview is empty for a clinic owner who is not on the
   -- platform list, and the clinic-making function refuses someone who already
   -- belongs somewhere — a second clinic is never one click away.
@@ -661,6 +697,12 @@ begin
   if v_count <> 0 then raise exception 'FAIL: anonymous read returned % clinic row(s)', v_count; end if;
   select count(*) into v_count from public.shop_offers;
   if v_count <> 0 then raise exception 'FAIL: anonymous read returned % shop price(s)', v_count; end if;
+  select count(*) into v_count from public.clinic_invitations;
+  if v_count <> 0 then raise exception 'FAIL: anonymous read returned % invitation(s)', v_count; end if;
+  select count(*) into v_count from public.invitation_by_token(gen_random_uuid());
+  if v_count <> 0 then raise exception 'FAIL: a random invitation token answered'; end if;
+  select count(*) into v_count from public.invitation_by_token(v_invite_a) where clinic_name = 'Isolation Test A' and status = 'open';
+  if v_count <> 1 then raise exception 'FAIL: the real invitation token did not answer with its clinic'; end if;
   raise notice 'ok   anonymous callers see nothing';
 
   -- The token functions are the only doors without a session. A guessed
@@ -711,6 +753,31 @@ begin
   select count(*) into v_count from public.patients;
   if v_count <> 0 then raise exception 'FAIL: anonymous read returned patients after booking calls'; end if;
   raise notice 'ok   the booking page shows one clinic and nothing else';
+
+  -- ==========================================================================
+  -- Identity 5 · a stranger with an account and no clinic, holding A's link
+  -- ==========================================================================
+  perform set_config('role', 'postgres', true);
+  perform set_config('request.jwt.claims',
+    json_build_object('sub', v_user_c, 'role', 'authenticated')::text, true);
+  perform set_config('role', 'authenticated', true);
+
+  raise notice '--- as the invited stranger ---';
+
+  if public.current_clinic_id() is not null then raise exception 'FAIL: the stranger already had a clinic'; end if;
+  if public.accept_invitation(v_invite_a) <> v_clinic_a then raise exception 'FAIL: accepting did not return clinic A'; end if;
+  if public.current_clinic_id() is distinct from v_clinic_a then raise exception 'FAIL: the stranger did not become a member of A'; end if;
+  select count(*) into v_count from public.patients where id = v_patient_a;
+  if v_count <> 1 then raise exception 'FAIL: the new member cannot read clinic A''s patient'; end if;
+  select count(*) into v_count from public.patients where id = v_patient_b;
+  if v_count <> 0 then raise exception 'FAIL: the new member read clinic B'; end if;
+  begin
+    perform public.accept_invitation(v_invite_a);
+    raise exception 'FAIL: a spent invitation was accepted again';
+  exception
+    when unique_violation or invalid_parameter_value then null;
+  end;
+  raise notice 'ok   an invitation opens one clinic, once, for the account that holds the link';
 
   perform set_config('role', 'postgres', true);
   raise notice ' ';

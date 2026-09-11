@@ -17,6 +17,10 @@ export const DEFAULT_LOCALE: Locale = 'he';
 export const MEMBERSHIP_ROLES = ['owner', 'practitioner', 'staff', 'assistant'] as const;
 export type MembershipRole = (typeof MEMBERSHIP_ROLES)[number];
 
+/** The roles an invitation may carry: ownership is handed over, never mailed. */
+export const INVITABLE_ROLES = ['practitioner', 'staff', 'assistant'] as const;
+export type InvitableRole = (typeof INVITABLE_ROLES)[number];
+
 export const SEXES = ['female', 'male', 'other', 'unspecified'] as const;
 export type Sex = (typeof SEXES)[number];
 

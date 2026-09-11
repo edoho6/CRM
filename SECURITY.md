@@ -62,13 +62,24 @@ CI can reach, which means the staging project of §12.
 ## 2 · Who may do what
 
 `memberships(user_id, clinic_id, role)` with roles `owner`, `practitioner`,
-`staff`, `assistant`. The structure supports several people per clinic from day
-one, even though only an `owner` row exists so far.
+`staff`, `assistant`. A second person joins only through an invitation
+(`clinic_invitations`, migration 37): an owner makes a link on the team page and
+passes it on themselves — the app sends no email. The link's token is the whole
+secret: `invitation_by_token` (callable anonymously) answers with the clinic's
+name, the role and whether the link is still open, nothing else; `accept_invitation`
+(signed-in accounts only) refuses portal accounts and anyone who already belongs
+to a clinic, and spends the link on first use. Links expire after seven days and
+an owner can revoke one at any time. Only owners see or manage invitations and
+members (`set_membership_role`, `set_membership_active`), never their own row, and
+the trigger `memberships_keep_owner` refuses any change that would leave a clinic
+without an active owner. `tenant_isolation.sql` covers all of this with a fifth
+identity: a stranger holding a link.
 
 **Gap:** `has_clinic_role` exists but the policies do not yet distinguish roles —
-every active member of a clinic has the same access. Before a second person is
-invited, the policies need to separate at minimum: who may see clinical notes,
-who may see financial records, and who may change clinic settings.
+every active member of a clinic has the same access, whatever role the invitation
+gave them. Before a clinic invites someone who should see less than the owner, the
+policies need to separate at minimum: who may see clinical notes, who may see
+financial records, and who may change clinic settings.
 
 **Gap:** MFA is not enforced for the owner account. Supabase supports it; it is
 not switched on.
