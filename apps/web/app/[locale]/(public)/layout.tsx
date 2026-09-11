@@ -20,7 +20,10 @@ export default async function PublicLayout({
   setRequestLocale(locale);
 
   return (
-    <main className="grid min-h-dvh place-items-center bg-ink-50 px-6 py-12">
+    // Centred on a desk; on a phone the booking form is taller than the
+    // window and a centred grid cut its top off, so there it starts at the
+    // top and scrolls, with room at the foot for the sticky action bar.
+    <main className="flex min-h-dvh flex-col items-center justify-start bg-ink-50 px-4 pt-6 pb-[calc(env(safe-area-inset-bottom)+2rem)] sm:justify-center sm:px-6 sm:py-12">
       <div className="w-full max-w-md">{children}</div>
     </main>
   );

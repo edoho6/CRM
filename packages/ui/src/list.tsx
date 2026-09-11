@@ -35,7 +35,7 @@ export function ListRow({
   className,
   children,
   ...props
-}: React.HTMLAttributes<HTMLElement> & {
+}: Omit<React.HTMLAttributes<HTMLElement>, 'title'> & {
   /** Render the row's props onto the child (a link), so the whole row navigates. */
   asChild?: boolean;
   leading?: React.ReactNode;

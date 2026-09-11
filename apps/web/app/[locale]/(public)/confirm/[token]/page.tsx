@@ -1,6 +1,6 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { Leaf } from 'lucide-react';
-import { Alert, Card, CardBody } from '@clinic/ui';
+import { CalendarPlus, Leaf, MapPin } from 'lucide-react';
+import { Alert, Button, Card, CardBody } from '@clinic/ui';
 import { tryCreateServerSupabase } from '@clinic/db/server';
 import type { Locale } from '@clinic/domain';
 import { formatDate, formatTime } from '@clinic/i18n';
@@ -101,6 +101,32 @@ export default async function ConfirmPage({
               </p>
             ) : null}
           </div>
+
+          {/* The two things a phone does with an appointment: put it in the
+              calendar and find the way there. The calendar file comes from
+              the same token as this page, so it says what the page says. */}
+          {!cancelled ? (
+            <div className="grid grid-cols-2 gap-2">
+              <Button asChild variant="secondary">
+                <a href={`/api/confirm/${token}/ics`}>
+                  <CalendarPlus className="h-4 w-4" aria-hidden />
+                  {t('addToCalendar')}
+                </a>
+              </Button>
+              {row.clinic_address ? (
+                <Button asChild variant="secondary">
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(row.clinic_address)}`}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    <MapPin className="h-4 w-4" aria-hidden />
+                    {t('directions')}
+                  </a>
+                </Button>
+              ) : null}
+            </div>
+          ) : null}
 
           {cancelled ? (
             <p className="text-center text-sm text-red-700">{t('cancelled')}</p>

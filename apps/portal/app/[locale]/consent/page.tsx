@@ -6,7 +6,7 @@ import { getCurrentUser, isSupabaseConfigured, tryCreateServerSupabase } from '@
 import type { ConsentDocument, PatientConsentStatus } from '@clinic/db/types';
 import type { Locale } from '@clinic/domain';
 import { ConsentCard } from './consent-card';
-import { PortalNav } from '../portal-nav';
+import { PortalShell } from '../portal-shell';
 
 /**
  * What the patient has agreed to, and the ability to change it.
@@ -77,10 +77,7 @@ export default async function PortalConsentPage({
   const documents = [...current.values()];
 
   return (
-    <main className="mx-auto max-w-2xl space-y-5 px-4 py-8 sm:px-6">
-      <PortalNav current="consent" />
-
-      <h1 className="text-xl font-semibold text-ink-900">{t('title')}</h1>
+    <PortalShell current="consent" title={t('title')}>
       <p className="text-sm text-ink-700">{t('intro')}</p>
 
       {documents.length === 0 ? (
@@ -99,11 +96,12 @@ export default async function PortalConsentPage({
                 version={document.version}
                 decided={status !== null}
                 granted={status?.granted === true}
+                decidedAt={status?.decided_at ?? null}
               />
             );
           })}
         </div>
       )}
-    </main>
+    </PortalShell>
   );
 }

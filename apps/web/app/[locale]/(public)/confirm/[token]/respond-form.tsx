@@ -48,7 +48,6 @@ export function RespondForm({
           type="button"
           size="lg"
           disabled={isPending}
-          aria-pressed={answered === 'confirmed'}
           onClick={() => respond('confirmed')}
         >
           {isPending ? <Spinner /> : <Check className="h-5 w-5" aria-hidden />}
@@ -59,7 +58,6 @@ export function RespondForm({
           size="lg"
           variant="secondary"
           disabled={isPending}
-          aria-pressed={answered === 'declined'}
           onClick={() => respond('declined')}
         >
           <X className="h-5 w-5" aria-hidden />

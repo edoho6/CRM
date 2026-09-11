@@ -65,6 +65,9 @@ export function SignaturePad({
     value?.method === 'typed' ? 'typed' : 'drawn',
   );
   const [typed, setTyped] = React.useState(value?.method === 'typed' ? value.content : '');
+  // Its own id per instance: two pads on one page (a consent form and a
+  // questionnaire) used to share one, and the label pointed at the wrong one.
+  const typedId = React.useId();
 
   /** Device pixels per CSS pixel, so the stroke is sharp on a phone. */
   const ratio = React.useRef(1);
@@ -173,7 +176,7 @@ export function SignaturePad({
             aria-checked={mode === option}
             onClick={() => chooseMode(option)}
             className={cn(
-              'rounded-md px-3 py-1 text-sm font-medium transition-colors',
+              'min-h-9 rounded-md px-4 py-1 text-sm font-medium transition-colors pointer-coarse:min-h-10',
               focusRing,
               mode === option ? 'bg-accent text-accent-fg' : 'text-ink-600 hover:bg-ink-50',
             )}
@@ -217,11 +220,11 @@ export function SignaturePad({
         </div>
       ) : (
         <div className="max-w-lg space-y-1.5">
-          <label htmlFor="signature-typed" className="sr-only">
+          <label htmlFor={typedId} className="sr-only">
             {labels.typedLabel}
           </label>
           <input
-            id="signature-typed"
+            id={typedId}
             type="text"
             autoComplete="name"
             value={typed}
@@ -239,10 +242,15 @@ export function SignaturePad({
         </div>
       )}
 
+      {/* A button that looks like one: the link-styled word was a 14px target
+          under a signature drawn with a finger. */}
       <button
         type="button"
         onClick={clear}
-        className="mt-2 rounded-md text-xs font-medium text-ink-600 underline-offset-4 hover:text-ink-900 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+        className={cn(
+          'mt-2 inline-flex min-h-9 items-center rounded-md border border-ink-200 bg-white px-3 text-sm font-medium text-ink-700 transition-colors hover:bg-ink-50 active:bg-ink-100 pointer-coarse:min-h-10',
+          focusRing,
+        )}
       >
         {labels.clear}
       </button>

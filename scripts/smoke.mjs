@@ -572,7 +572,8 @@ const flows = {
     // leave details, land on the confirmation page and say "I will come".
     const first = page.locator('main button', { hasText: /טיפול|דיקור|ייעוץ|פגישה|Treatment/ }).first();
     if ((await page.locator('#book-what').count()) > 0 && (await first.count()) > 0) await first.click();
-    const tabs = page.locator('main [role="tab"]');
+    // The days are pressed buttons in a group, not tabs: nothing switches panels.
+    const tabs = page.locator('main [role="group"][aria-label] button[aria-pressed]');
     await tabs.first().waitFor({ timeout: 10_000 });
     let slot = null;
     for (let index = 0; index < Math.min(await tabs.count(), 10); index += 1) {
@@ -597,6 +598,12 @@ const flows = {
     }
     await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {});
     const bookedNote = (await page.locator('main', { hasText: /התור נקבע/ }).count()) > 0;
+    // The calendar file behind "add to calendar": the same token, as text/calendar.
+    const icsHref = await page.locator('main a[href*="/ics"]').first().getAttribute('href').catch(() => null);
+    const icsType = icsHref
+      ? await page.request.get(new URL(icsHref, page.url()).toString()).then((r) => r.headers()['content-type'] ?? '').catch(() => '')
+      : '';
+    if (!icsType.includes('text/calendar')) return { ok: false, detail: `calendar file: ${icsHref ?? 'no link'} → ${icsType || 'no response'}` };
     await page.locator('main button', { hasText: /^אגיע$/ }).first().click();
     const thanked = await page.locator('main', { hasText: /ההגעה אושרה/ }).waitFor({ timeout: 10_000 }).then(() => true).catch(() => false);
     return { ok: bookedNote && thanked, detail: `booked ${hour}, confirmation page ${bookedNote ? 'showed the booking' : 'missing the booked note'}, arrival ${thanked ? 'confirmed' : 'not acknowledged'}` };
@@ -933,6 +940,29 @@ const flows = {
     const stats = await page.locator('main [data-widget]').count();
     return { ok: spinners === 0 && stats > 0, detail: `${spinners} spinner(s) over ${stats} widget(s)` };
   },
+  async bookingSteps(page) {
+    // The public booking page says where you are: a step meter with a
+    // progressbar, "back" only where there is somewhere to go.
+    const meter = page.locator('main [role="progressbar"]');
+    if ((await meter.count()) === 0) return { ok: true, detail: 'one screen only (nothing to choose); no meter by design' };
+    const now = await meter.getAttribute('aria-valuenow');
+    const max = await meter.getAttribute('aria-valuemax');
+    const back = page.locator('main button', { hasText: /^חזרה$|^Back$/ });
+    // With one treatment and one practitioner the page opens on the time
+    // step: two steps, no "back". With a choice to make, choosing it moves
+    // the meter to 2 and "back" appears.
+    const choosing = (await page.locator('#book-what').count()) > 0;
+    if (!choosing) {
+      const ok = now === '1' && max === '2' && (await back.count()) === 0;
+      return { ok, detail: `no choice to make: step ${now} of ${max}, back buttons ${await back.count()}` };
+    }
+    const first = page.locator('main button', { hasText: /טיפול|דיקור|ייעוץ|פגישה|Treatment/ }).first();
+    if ((await first.count()) > 0) await first.click();
+    await page.waitForTimeout(400);
+    const after = await meter.getAttribute('aria-valuenow');
+    const ok = now === '1' && Number(max) >= 2 && after === '2' && (await back.count()) === 1;
+    return { ok, detail: `step ${now} of ${max}, then ${after}; back buttons ${await back.count()}` };
+  },
   async phoneSearchOverlay(page) {
     // On a phone the search takes the whole top bar while it is open.
     const trigger = page.locator('[data-top-bar] button[aria-label="חיפוש מהיר"], [data-top-bar] button[aria-label="Quick search"]').first();
@@ -1127,6 +1157,12 @@ async function main() {
       await visit(context, { route: '/settings/booking', locale: 'he', width: desktop, label: 'flow write-booking-settings', after: flows.writeBookingSettings });
       await visit(context, { route: '/account', locale: 'he', width: desktop, label: 'flow write-bookable-type', after: flows.writeBookableType });
       if (sandbox.bookingSlug) await visit(context, { route: `/book/${sandbox.bookingSlug}`, locale: 'he', width: desktop, label: 'flow write-booking', after: flows.writeBooking });
+      // The same page on a phone, signed out, for its step meter.
+      if (sandbox.bookingSlug && phone) {
+        const guest = await current.browser.newContext({ locale: 'he-IL' });
+        await visit(guest, { route: `/book/${sandbox.bookingSlug}`, locale: 'he', width: phone, label: 'flow booking-steps', after: flows.bookingSteps });
+        await guest.close();
+      }
       await visit(context, { route: '/encounters/new', locale: 'he', width: desktop, label: 'flow write-encounter', after: flows.writeEncounter });
       await visit(context, { route: '/billing/new', locale: 'he', width: desktop, label: 'flow write-invoice-line', after: flows.writeInvoiceLine });
       await visit(context, { route: '/account/schedule', locale: 'he', width: desktop, label: 'flow write-feed', after: flows.writeFeed });

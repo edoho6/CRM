@@ -24,7 +24,9 @@ export async function GET(request: NextRequest) {
   const { error } = await supabase.auth.exchangeCodeForSession(code);
 
   if (error) {
-    return NextResponse.redirect(new URL(`/${locale}/login`, url.origin));
+    // Back to the sign-in page with a reason: a link that is opened twice, or
+    // a day late, used to land on the same form with nothing said.
+    return NextResponse.redirect(new URL(`/${locale}/login?error=expired`, url.origin));
   }
 
   // Best effort: a failure here still leaves a signed-in user, and the portal page

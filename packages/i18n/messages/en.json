@@ -34,6 +34,13 @@
       "code_expired": "The code has expired. Send a new one.",
       "too_many": "Too many attempts. Try again in a few minutes.",
       "generic": "Something went wrong. Please try again in a moment."
+    },
+    "stepOf": "Step {step} of {total}",
+    "resendIn": "Send again in {seconds} s",
+    "steps": {
+      "what": "What",
+      "when": "When",
+      "who": "Details"
     }
   },
   "messages": {
@@ -90,7 +97,9 @@
     "error": "Something went wrong. Please try again in a moment.",
     "cancelled": "This appointment was cancelled.",
     "questions": "Questions? Call:",
-    "changeLater": "You can come back to this link and change your answer."
+    "changeLater": "You can come back to this link and change your answer.",
+    "addToCalendar": "Add to calendar",
+    "directions": "Directions"
   },
   "tasks": {
     "remindWhen": "Remind",
@@ -350,7 +359,12 @@
     "magicLinkSent": "Check your email for a sign-in link. It is valid for 60 minutes.",
     "magicLinkError": "We couldn't send the link. Please check the email address.",
     "backToSignIn": "Back to sign in",
-    "tooManyAttempts": "Too many sign-in attempts. Try again in {minutes} minutes."
+    "tooManyAttempts": "Too many sign-in attempts. Try again in {minutes} minutes.",
+    "sentTo": "We sent a sign-in link to {email}",
+    "resendLink": "Send again",
+    "resendIn": "Send again in {seconds} s",
+    "useAnotherEmail": "Use another address",
+    "magicLinkExpired": "The link has expired or was already used. Ask for a new one."
   },
   "setup": {
     "title": "Finish setup",
@@ -1527,7 +1541,14 @@
         "typedLabel": "Full name as signature",
         "clear": "Clear the signature",
         "optional": "Optional. You can send the questionnaire without signing."
-      }
+      },
+      "open": "Fill in",
+      "answered": "Answered",
+      "stepOf": "Step {step} of {total}",
+      "next": "Next",
+      "previous": "Previous",
+      "fixErrors": "Some answers in this step are missing",
+      "backToList": "Back to questionnaires"
     },
     "consent": {
       "title": "Consents",
@@ -1547,8 +1568,13 @@
         "typedLabel": "Full name as signature",
         "clear": "Clear the signature",
         "optional": "Optional."
-      }
-    }
+      },
+      "readAll": "Scroll to the end of the document to agree",
+      "grantedOn": "Agreed on {date}"
+    },
+    "nextAppointment": "Your next appointment",
+    "addToCalendar": "Add to calendar",
+    "moreAppointments": "More appointments"
   },
   "errors": {
     "slugTaken": "That address is already taken.",

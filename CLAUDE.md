@@ -264,6 +264,16 @@
   לציור הראשון ומעביר דרך `DashboardProvider.initialData`; `useAsyncData(fetcher, deps,
   { initial })` מדלג על הטעינה הראשונה. ווידג'ט חדש = מודול ב-`queries` + שורת `run` ב-loaders;
   בלעדיה הוא פשוט נטען בדפדפן כמו פעם. `WidgetLoading` הוא שלד, לא ספינר
+- **הפורטל:** כל מסך מחובר עטוף ב-`portal-shell.tsx` (קישור דילוג, כותרת, `PortalNav`,
+  `main#main-content`, פוטר עם שפה ויציאה) — לא `<main>` משלו. שאלון = מסך משלו
+  (`forms/[id]`), בשלבים לפי הסעיפים שהקליניקה כתבה (`@clinic/domain/forms/steps`,
+  נבדק): אימות לכל שלב, מלא בשליחה, וחזרה לשלב הבעייתי. הסכמה נפתחת לאישור רק אחרי
+  גלילה לסוף המסמך. קובץ יומן (`.ics`) נכתב ב-`@clinic/domain/ics` ומוגש משלושה
+  מקומות: פיד היומן, `/api/appointments/[id]/ics` בפורטל (RLS), ו-`/api/confirm/[token]/ics`
+  הציבורי (אותו token ואותה הגבלת קצב כמו הדף)
+- **אייקוני מסך הבית:** `app/manifest.ts` + `app/apple-icon.png` + `public/icons/*.png` בשתי
+  האפליקציות, מיוצרים מ-`app/icon.svg` ב-`node scripts/render-icons.mjs` (Edge headless,
+  בלי ספריית תמונות). שינוי ב-SVG = להריץ שוב
 - **תאריכים לפי אזור הקליניקה:** `packages/domain/src/dates-tz.ts` (`dayBoundsIn`,
   `monthStartIn`, `dateKeyIn`, `startOfWeekIn`…) בשרת ובדפדפן כאחד — "היום" הוא של
   הקליניקה (`clinics.timezone`), לא של השרת, אחרת ה-HTML מהשרת וההידרציה חולקים על

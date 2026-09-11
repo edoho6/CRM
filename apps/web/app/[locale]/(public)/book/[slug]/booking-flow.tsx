@@ -3,7 +3,19 @@
 import { useEffect, useMemo, useState, useTransition } from 'react';
 import { useFormatter, useLocale, useTranslations } from 'next-intl';
 import { ArrowLeft, ArrowRight, Check } from 'lucide-react';
-import { Alert, Button, Card, CardBody, Field, Input, LtrInput, Spinner, Textarea, cn } from '@clinic/ui';
+import {
+  Alert,
+  Button,
+  Card,
+  CardBody,
+  Field,
+  FormActionBar,
+  Input,
+  LtrInput,
+  Spinner,
+  Textarea,
+  cn,
+} from '@clinic/ui';
 import type { Locale } from '@clinic/domain';
 import { useRouter } from '@clinic/i18n/navigation';
 import { formatTime } from '@clinic/i18n';
@@ -89,7 +101,16 @@ export function BookingFlow({
   const [note, setNote] = useState('');
   const [code, setCode] = useState('');
   const [codeSent, setCodeSent] = useState(false);
+  // Seconds until the code may be sent again: a second tap right after the
+  // first sent two messages and, on some networks, two different codes.
+  const [resendIn, setResendIn] = useState(0);
   const [error, setError] = useState<BookingError | null>(null);
+
+  useEffect(() => {
+    if (resendIn <= 0) return;
+    const timer = window.setTimeout(() => setResendIn((value) => value - 1), 1000);
+    return () => window.clearTimeout(timer);
+  }, [resendIn]);
 
   const typeName = (type: BookingType) =>
     (locale === 'he' ? type.name_he : type.name_en).trim() || type.name_en || type.name_he;
@@ -132,6 +153,7 @@ export function BookingFlow({
         return;
       }
       setCodeSent(true);
+      setResendIn(60);
     });
   }
 
@@ -168,10 +190,44 @@ export function BookingFlow({
   }
 
   const Back = locale === 'he' ? ArrowRight : ArrowLeft;
+  const hadChoice = types.length > 1 || practitioners.length > 1 || locations.length > 1;
+  const STEPS = ['what', 'when', 'who'] as const;
+  // Where there was nothing to choose, "what" was never a screen.
+  const visibleSteps = hadChoice ? STEPS : STEPS.slice(1);
+  const stepIndex = visibleSteps.indexOf(step);
 
   return (
     <div className="space-y-4">
-      {error ? <Alert tone="danger">{t(`errors.${error}`)}</Alert> : null}
+      {/* Where you are, said in words for a screen reader and drawn as a
+          bar for everyone else. */}
+      {visibleSteps.length > 1 ? (
+        <div className="space-y-1.5">
+          <p className="flex items-center justify-between text-xs text-ink-600">
+            <span>{t('stepOf', { step: stepIndex + 1, total: visibleSteps.length })}</span>
+            <span className="font-medium text-ink-800">{t(`steps.${step}`)}</span>
+          </p>
+          <div
+            role="progressbar"
+            aria-valuemin={1}
+            aria-valuemax={visibleSteps.length}
+            aria-valuenow={stepIndex + 1}
+            aria-label={t('stepOf', { step: stepIndex + 1, total: visibleSteps.length })}
+            aria-valuetext={t('stepOf', { step: stepIndex + 1, total: visibleSteps.length })}
+            className="flex gap-1"
+          >
+            {visibleSteps.map((name, index) => (
+              <span
+                key={name}
+                className={cn(
+                  'h-1.5 flex-1 rounded-full',
+                  index <= stepIndex ? 'bg-jade-600' : 'bg-ink-200',
+                )}
+              />
+            ))}
+          </div>
+        </div>
+      ) : null}
+      {error && step !== 'who' ? <Alert tone="danger">{t(`errors.${error}`)}</Alert> : null}
 
       {step === 'what' ? (
         <div className="space-y-4">
@@ -259,22 +315,32 @@ export function BookingFlow({
             <h2 id="book-when" className="text-sm font-semibold text-ink-900">
               {t('chooseTime')}
             </h2>
-            <button
-              type="button"
-              onClick={() => {
-                setTypeId(types.length === 1 ? typeId : null);
-                setPractitionerId(practitioners.length === 1 ? practitionerId : null);
-                setLocationId(locations.length === 1 ? locationId : null);
-                if (types.length === 1 && practitioners.length === 1 && locations.length <= 1) return;
-              }}
-              className="inline-flex items-center gap-1 text-xs text-ink-600 underline-offset-2 hover:underline"
-            >
-              <Back className="h-3.5 w-3.5" aria-hidden />
-              {t('back')}
-            </button>
+            {/* Only when the first screen was a screen: with one treatment
+                and one practitioner there is nothing to go back to. */}
+            {hadChoice ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setTypeId(types.length === 1 ? typeId : null);
+                  setPractitionerId(practitioners.length === 1 ? practitionerId : null);
+                  setLocationId(locations.length === 1 ? locationId : null);
+                }}
+                className="inline-flex min-h-9 items-center gap-1 rounded-md px-2 text-sm text-ink-600 hover:bg-ink-100 hover:text-ink-900"
+              >
+                <Back className="h-4 w-4" aria-hidden />
+                {t('back')}
+              </button>
+            ) : null}
           </div>
 
-          <div className="flex gap-1.5 overflow-x-auto pb-1" role="tablist" aria-label={t('day')}>
+          {/* A row of days, not a tablist: nothing switches panels, one is
+              pressed. It scrolls sideways inside itself — with the browser's
+              own swipe-back gesture kept out of it — and snaps to a day. */}
+          <div
+            className="flex snap-x gap-1.5 overflow-x-auto overscroll-x-contain pb-1"
+            role="group"
+            aria-label={t('day')}
+          >
             {days.map((candidate) => {
               const key = toDateKey(candidate);
               const selected = key === day;
@@ -282,13 +348,12 @@ export function BookingFlow({
                 <button
                   key={key}
                   type="button"
-                  role="tab"
-                  aria-selected={selected}
+                  aria-pressed={selected}
                   onClick={() => setDay(key)}
                   className={cn(
-                    'flex shrink-0 flex-col items-center rounded-lg border px-3 py-2 text-sm',
+                    'flex min-h-11 shrink-0 snap-start flex-col items-center rounded-lg border px-3 py-1.5 text-sm transition-colors active:scale-[0.98]',
                     selected
-                      ? 'border-jade-600 bg-jade-600 text-accent-fg'
+                      ? 'border-accent bg-accent text-accent-fg'
                       : 'border-ink-200 bg-white text-ink-800 hover:bg-ink-50',
                   )}
                 >
@@ -314,7 +379,7 @@ export function BookingFlow({
                   <button
                     type="button"
                     onClick={() => setStartAt(slot)}
-                    className="w-full rounded-lg border border-ink-200 bg-white py-3 text-base font-medium tabular-nums text-ink-900 hover:border-jade-500 hover:bg-jade-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+                    className="w-full min-h-11 rounded-lg border border-ink-200 bg-white py-3 text-base font-medium tabular-nums text-ink-900 transition-colors hover:border-jade-500 hover:bg-jade-50 active:bg-jade-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
                     dir="ltr"
                   >
                     {formatTime(new Date(slot))}
@@ -398,11 +463,14 @@ export function BookingFlow({
                 <Button
                   type="button"
                   variant="secondary"
-                  size="sm"
-                  disabled={isPending || phone.replace(/\D/g, '').length < 8}
+                  disabled={isPending || resendIn > 0 || phone.replace(/\D/g, '').length < 8}
                   onClick={requestCode}
                 >
-                  {codeSent ? t('resendCode') : t('sendCode')}
+                  {codeSent
+                    ? resendIn > 0
+                      ? t('resendIn', { seconds: resendIn })
+                      : t('resendCode')
+                    : t('sendCode')}
                 </Button>
                 {codeSent ? (
                   <Field label={t('code')} htmlFor="code" required density="compact">
@@ -422,16 +490,30 @@ export function BookingFlow({
             </div>
           ) : null}
 
-          <Button
-            type="submit"
-            size="lg"
-            className="w-full"
-            disabled={isPending || (clinic.verify_sms && code.length < 6)}
-          >
-            {isPending ? <Spinner /> : <Check className="h-5 w-5" aria-hidden />}
-            {t('book')}
-          </Button>
           <p className="text-center text-xs text-ink-500">{t('privacy')}</p>
+          {/* Stuck to the foot of the window, so the one button that matters
+              is never a screen of fields away; a failure is said right
+              beside it, where the eye is when it happens. */}
+          <FormActionBar
+            className="-mx-4 sm:-mx-6 xl:mx-0"
+            status={
+              error ? (
+                <span role="alert" className="font-medium text-red-700">
+                  {t(`errors.${error}`)}
+                </span>
+              ) : undefined
+            }
+          >
+            <Button
+              type="submit"
+              size="lg"
+              className="w-full sm:w-auto"
+              disabled={isPending || (clinic.verify_sms && code.length < 6)}
+            >
+              {isPending ? <Spinner /> : <Check className="h-5 w-5" aria-hidden />}
+              {t('book')}
+            </Button>
+          </FormActionBar>
         </form>
       ) : null}
     </div>

@@ -6,10 +6,13 @@ import { PortalLoginForm } from './login-form';
 
 export default async function PortalLoginPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string }>;
+  searchParams: Promise<{ error?: string }>;
 }) {
   const { locale } = await params;
+  const { error } = await searchParams;
   setRequestLocale(locale);
 
   const t = await getTranslations('auth');
@@ -31,7 +34,9 @@ export default async function PortalLoginPage({
               <h2 className="text-sm font-semibold text-ink-900">{t('magicLinkTitle')}</h2>
               <p className="text-xs text-ink-500">{t('magicLinkSubtitle')}</p>
             </div>
-            <PortalLoginForm locale={locale as Locale} />
+            {/* `?error=expired` is where the magic-link landing sends a link
+                that was opened twice or a day late. */}
+            <PortalLoginForm locale={locale as Locale} expired={error === 'expired'} />
           </CardBody>
         </Card>
       </div>

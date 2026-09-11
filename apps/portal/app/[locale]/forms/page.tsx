@@ -1,12 +1,12 @@
 import { redirect } from '@clinic/i18n/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { ClipboardList } from 'lucide-react';
-import { Alert, Card, CardBody, CardHeader, CardTitle, EmptyState } from '@clinic/ui';
+import { Check, ClipboardList } from 'lucide-react';
+import { Alert, EmptyState, List, ListRow } from '@clinic/ui';
 import { getCurrentUser, isSupabaseConfigured, tryCreateServerSupabase } from '@clinic/db';
 import type { FormSubmission, FormTemplate } from '@clinic/db/types';
 import type { Locale } from '@clinic/domain';
-import { PortalForm } from './portal-form';
-import { PortalNav } from '../portal-nav';
+import { Link } from '@clinic/i18n/navigation';
+import { PortalShell } from '../portal-shell';
 import { formatDate } from '@clinic/i18n';
 
 /**
@@ -17,6 +17,10 @@ import { formatDate } from '@clinic/i18n';
  * advertises it; here it needed no new database work at all, because
  * `form_templates_patient_read` and `form_submissions_patient_insert` have been
  * in place since the questionnaire builder was written.
+ *
+ * A list of rows, one questionnaire each, leading to its own screen: every
+ * questionnaire used to be open on this page at once, which on a phone was
+ * a hundred questions on one scroll with nowhere to stand.
  *
  * Nothing on this page takes a patient id from the URL. Every query is filtered
  * by RLS against `current_patient_id()`, so there is no id to tamper with.
@@ -60,11 +64,11 @@ export default async function PortalFormsPage({
   const [templatesResult, submissionsResult] = await Promise.all([
     supabase
       .from('form_templates')
-      .select('id, title, description, fields, version')
+      .select('id, title, description')
       .eq('is_active', true)
       .order('title', { ascending: true })
       .limit(50)
-      .returns<Pick<FormTemplate, 'id' | 'title' | 'description' | 'fields' | 'version'>[]>(),
+      .returns<Pick<FormTemplate, 'id' | 'title' | 'description'>[]>(),
     supabase
       .from('form_submissions')
       .select('id, template_id, submitted_at')
@@ -85,49 +89,40 @@ export default async function PortalFormsPage({
   }
 
   return (
-    <main className="mx-auto max-w-2xl space-y-5 px-4 py-8 sm:px-6">
-      <PortalNav current="forms" />
-
-      <h1 className="text-xl font-semibold text-ink-900">{t('title')}</h1>
+    <PortalShell current="forms" title={t('title')}>
       <p className="text-sm text-ink-700">{t('intro')}</p>
 
       {templates.length === 0 ? (
         <EmptyState icon={<ClipboardList className="h-8 w-8" />} title={t('none')} />
       ) : (
-        <div className="space-y-5">
+        <List>
           {templates.map((template) => {
             const answered = lastAnswered.get(template.id);
             return (
-              <Card key={template.id}>
-                <CardHeader>
-                  <CardTitle>{template.title}</CardTitle>
-                </CardHeader>
-                <CardBody className="space-y-3">
-                  {template.description ? (
-                    <p className="text-sm text-ink-700" dir="auto">
-                      {template.description}
-                    </p>
-                  ) : null}
-
-                  {/* Said before the questions, not after: someone who filled
-                      this in last week should know that before answering it
-                      again. It is not blocked — a follow-up questionnaire is
-                      meant to be answered more than once. */}
-                  {answered ? (
-                    <Alert tone="info">
-                      {t('answeredOn', {
-                        date: formatDate(new Date(answered)),
-                      })}
-                    </Alert>
-                  ) : null}
-
-                  <PortalForm templateId={template.id} fields={template.fields} />
-                </CardBody>
-              </Card>
+              <ListRow
+                key={template.id}
+                asChild
+                chevron
+                leading={
+                  answered ? (
+                    <Check className="h-5 w-5 text-jade-700" aria-hidden />
+                  ) : (
+                    <ClipboardList className="h-5 w-5" aria-hidden />
+                  )
+                }
+                title={template.title}
+                description={
+                  answered
+                    ? t('answeredOn', { date: formatDate(new Date(answered)) })
+                    : (template.description ?? t('open'))
+                }
+              >
+                <Link href={`/forms/${template.id}`} />
+              </ListRow>
             );
           })}
-        </div>
+        </List>
       )}
-    </main>
+    </PortalShell>
   );
 }
