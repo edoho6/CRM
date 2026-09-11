@@ -20,7 +20,7 @@
  * The browser is the Edge already installed on Windows (`channel: 'msedge'`);
  * set PW_CHANNEL=chromium after `npx playwright install chromium` to use that.
  *
- * Usage:  node scripts/smoke.mjs [--public-only] [--desktop-only] [--he-only] [--write]
+ * Usage:  node scripts/smoke.mjs [--public-only] [--desktop-only] [--he-only] [--write] [--zoom] [--dark]
  * --write adds flows that save, then remove, a patient edit, a task and an
  * appointment — the paths a screenshot cannot judge. Sandbox clinic only.
  * Output: test-results/smoke/<timestamp>/{report.json, summary.md, screenshots/}
@@ -79,6 +79,17 @@ const AXE_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
 const darkAll = args.has('--dark');
 /** --no-axe skips the audit, for a quick run. */
 const skipAxe = args.has('--no-axe');
+/**
+ * --zoom opens every screen with the text at 200%.
+ *
+ * WCAG 1.4.4 asks that text can be doubled without losing content or
+ * function. The browser setting that does it raises the root font size, and
+ * a layout built in rem follows it; one built in px does not, and clips or
+ * overflows. Setting the root to 200% before the page draws is that setting.
+ * The inspection then looks for the two ways a layout fails it: the page
+ * scrolls sideways, or an element clips text it was not designed to truncate.
+ */
+const zoom = args.has('--zoom');
 
 async function auditAccessibility(page) {
   await page.evaluate(axeSource);
@@ -102,7 +113,7 @@ async function auditAccessibility(page) {
 }
 
 const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-const outDir = path.join(root, 'test-results', 'smoke', stamp + (darkAll ? '-dark' : ''));
+const outDir = path.join(root, 'test-results', 'smoke', stamp + (darkAll ? '-dark' : '') + (zoom ? '-zoom' : ''));
 const shotDir = path.join(outDir, 'screenshots');
 fs.mkdirSync(shotDir, { recursive: true });
 
@@ -172,6 +183,39 @@ async function inspect(page) {
     const emptyMain = main ? main.children.length === 0 && main.innerText.trim() === '' : false;
     const errorText = errorTexts.find((text) => body.includes(text)) ?? null;
     const devError = document.querySelector('main pre[dir="ltr"]')?.textContent?.slice(0, 500) ?? null;
+
+    // Text zoom: the page must not scroll sideways, and text must not be
+    // cut off by a box that was not built to truncate it.
+    const root = document.documentElement;
+    const overflowX = Math.max(0, root.scrollWidth - root.clientWidth);
+    const clipped = [];
+    const describe = (element) =>
+      element.tagName.toLowerCase() +
+      (element.id ? '#' + element.id : '') +
+      (typeof element.className === 'string' && element.className.trim()
+        ? '.' + element.className.trim().split(/\s+/).slice(0, 3).join('.')
+        : '') +
+      ' "' + (element.textContent ?? '').trim().replace(/\s+/g, ' ').slice(0, 40) + '"';
+    for (const element of document.querySelectorAll('main *, header *, aside *, nav *')) {
+      if (!(element instanceof HTMLElement)) continue;
+      const style = getComputedStyle(element);
+      // Only boxes that hide their overflow can cut text off; a scrolling
+      // box shows it on demand, and a truncating one does it on purpose.
+      const hidesX = style.overflowX === 'hidden' || style.overflowX === 'clip';
+      const hidesY = style.overflowY === 'hidden' || style.overflowY === 'clip';
+      if (!hidesX && !hidesY) continue;
+      if (style.textOverflow === 'ellipsis' || style.webkitLineClamp !== 'none') continue;
+      if (element.closest('[aria-hidden="true"], canvas, svg, [data-time-grid], [data-zoom-frame]')) continue;
+      const text = (element.textContent ?? '').trim();
+      if (!text) continue;
+      const rect = element.getBoundingClientRect();
+      // Nothing drawn, or the 1px box of a screen-reader-only heading.
+      if (rect.width <= 1 || rect.height <= 1) continue;
+      const cutX = hidesX && element.scrollWidth > element.clientWidth + 2;
+      const cutY = hidesY && element.scrollHeight > element.clientHeight + 2;
+      if (cutX || cutY) clipped.push(describe(element));
+      if (clipped.length >= 8) break;
+    }
     return {
       overlay,
       emptyMain,
@@ -180,6 +224,8 @@ async function inspect(page) {
       title: document.title,
       h1: document.querySelector('h1')?.textContent?.trim() ?? null,
       synthetic: body.includes('סביבת פיתוח'),
+      overflowX,
+      clipped,
     };
   }, ERROR_TEXTS);
 }
@@ -231,6 +277,19 @@ async function visitOnce(context, { route, locale, width, label = route, expect4
   let flow = null;
   try {
     if (darkAll) await page.addInitScript(() => localStorage.setItem('herbalist-theme', 'dark'));
+    if (zoom) {
+      // Before the first paint, as the browser's own font-size setting would be.
+      await page.addInitScript(() => {
+        // The script runs before <html> exists; the style goes in the moment it does.
+        const apply = () => {
+          const style = document.createElement('style');
+          style.textContent = 'html { font-size: 200% !important; }';
+          document.documentElement.appendChild(style);
+        };
+        if (document.documentElement) apply();
+        else new MutationObserver((_, observer) => { if (document.documentElement) { observer.disconnect(); apply(); } }).observe(document, { childList: true });
+      });
+    }
     if (before) await before(page);
     // The dev server compiles a route the first time it is asked for, and
     // under load that can outlast the timeout. One retry tells a slow compile
@@ -292,6 +351,8 @@ async function visitOnce(context, { route, locale, width, label = route, expect4
     inspection?.errorText && !(expect404 && notFound) ? `error text: ${inspection.errorText}` : null,
     inspection?.devError ? `boundary: ${inspection.devError}` : null,
     flow && flow.ok === false ? `flow: ${flow.detail}` : null,
+    zoom && inspection?.overflowX > 8 ? `zoom: the page scrolls sideways by ${inspection.overflowX}px` : null,
+    zoom && inspection?.clipped?.length ? `zoom: text cut off in ${inspection.clipped.length} box(es): ${inspection.clipped.slice(0, 4).join(' · ')}` : null,
     ...(inspection?.axe ?? [])
       .filter((violation) => violation.impact === 'critical' || violation.impact === 'serious')
       .map((violation) => `a11y ${violation.impact}: ${violation.id} × ${violation.count} — ${violation.help} (${violation.example})`),
@@ -900,7 +961,9 @@ const flows = {
       const panel = document.querySelector('[data-sidebar-panel]');
       return { width: panel ? Math.round(panel.getBoundingClientRect().width) : null, attr: document.documentElement.dataset.sidebar ?? null };
     });
-    const ok = early?.width === 56 && late.width === 56 && late.attr === 'collapsed';
+    // In rem, so twice as wide at 200% text; what matters is that it did not move.
+    const folded = zoom ? 112 : 56;
+    const ok = early?.width === folded && late.width === folded && late.attr === 'collapsed';
     return { ok, detail: `width at domcontentloaded ${early?.width ?? '?'} (attr ${early?.attr ?? '?'}), after load ${late.width} (attr ${late.attr})` };
   },
   async cardRowTap(page) {
@@ -913,7 +976,9 @@ const flows = {
     if (!box) return { ok: false, detail: 'second cell has no box' };
     const rtl = (await page.evaluate(() => document.documentElement.dir)) === 'rtl';
     // The label sits at the inline start of the cell: the right in Hebrew.
-    await page.mouse.click(rtl ? box.x + box.width - 16 : box.x + 16, box.y + box.height / 2);
+    // Near the top of the cell: with wrapped values (large text) the middle can
+    // be a control of its own, which is above the card link on purpose.
+    await page.mouse.click(rtl ? box.x + box.width - 16 : box.x + 16, box.y + Math.min(box.height / 2, 14));
     const opened = await page.waitForURL(/\/patients\/[0-9a-f-]{36}/, { timeout: 10_000 }).then(() => true).catch(() => false);
     return { ok: opened, detail: opened ? 'the card opened the file' : `still at ${page.url()}` };
   },
@@ -1086,12 +1151,14 @@ const flows = {
     await guest.goto(url, { waitUntil: 'networkidle' });
     const offered = (await guest.locator('main').getByText(/קליניקת בדיקות/).count()) > 0 && (await guest.locator('main a', { hasText: /פתיחת חשבון והצטרפות/ }).count()) > 0;
     await page.locator('main button[aria-label^="ביטול ההזמנה של Smoke invitee"]').first().click();
-    await page.waitForTimeout(800);
+    // A confirmation, if the screen asks for one; then the word that it happened.
+    await page.locator('[role="dialog"] button', { hasText: /^ביטול ההזמנה$|^אישור$|^כן/ }).first().click({ timeout: 1_500 }).catch(() => {});
+    const revoked = await page.locator('[role="status"], [role="alert"]', { hasText: /ההזמנה בוטלה/ }).first().waitFor({ timeout: 10_000 }).then(() => true).catch(() => false);
     await guest.goto(url, { waitUntil: 'networkidle' });
     const closed = (await guest.locator('main').getByText(/כבר לא פעילה/).count()) > 0;
     await stranger.close();
-    const ok = offered && closed;
-    return { ok, detail: `offered ${offered}, closed after cancel ${closed}` };
+    const ok = offered && revoked && closed;
+    return { ok, detail: `offered ${offered}, revoked ${revoked}, closed after cancel ${closed}` };
   },
   async pricesCheapest(page) {
     // Each row's green chip must be the lowest price among the row's live
@@ -1154,7 +1221,7 @@ const STATIC_ROUTES = [
   '/inventory/suppliers', '/prices', '/prices?cat=needles&min=2', '/prices/credits', '/billing', '/billing/new',
   '/billing/settings', '/reports', '/assistant',
   '/settings', '/settings/team', '/settings/access', '/settings/booking', '/settings/consent', '/settings/tags',
-  '/account', '/account/protocols', '/account/schedule', '/accessibility',
+  '/account', '/account/protocols', '/account/schedule', '/accessibility', '/verify',
 ];
 const PUBLIC_ROUTES = ['/about', '/accessibility', '/login', '/signup', '/setup', '/join/00000000-0000-4000-8000-000000000000'];
 

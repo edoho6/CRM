@@ -536,7 +536,7 @@ export function EncounterForm({
     {/* The side column is a little wider than a third: tongue, pulse and the
         comparison were cramped at a third, and the fields lose nothing. */}
     <div className="grid gap-5 xl:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
-      <div className="space-y-4">
+      <div className="min-w-0 space-y-4">
         {toolsSlot ? createPortal(arrangeToggle, toolsSlot) : <div className="flex justify-end">{arrangeToggle}</div>}
         {arranging ? <p className="text-xs text-ink-600">{tPanels('hint')}</p> : null}
         {isSigned ? <Alert tone="info" title={t('lockedNotice')} /> : null}

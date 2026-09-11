@@ -124,7 +124,7 @@ export function SidePanels({
     .filter((panel): panel is SidePanel => Boolean(panel));
 
   return (
-    <div className={cn('space-y-4', className)}>
+    <div className={cn('min-w-0 space-y-4', className)}>
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={ordered.map((panel) => panel.id)} strategy={verticalListSortingStrategy}>
           {ordered.map((panel) => (

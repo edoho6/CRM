@@ -107,7 +107,7 @@ export function TagsManager({
         return (
           <Card key={draft.id ?? `new-${index}`}>
             <CardBody className="flex flex-wrap items-end gap-3">
-              <Field label={t('name')} htmlFor={`tag-${index}`} required className="min-w-48 flex-1">
+              <Field label={t('name')} htmlFor={`tag-${index}`} required className="min-w-0 flex-1 basis-48">
                 <Input
                   id={`tag-${index}`}
                   value={draft.name}

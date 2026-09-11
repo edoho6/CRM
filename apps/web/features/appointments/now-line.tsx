@@ -18,12 +18,13 @@ import { useEffect, useRef, useState } from 'react';
 export function NowLine({
   dayStartHour,
   slotMinutes,
-  slotHeight,
+  slotHeightRem,
   slotCount,
 }: {
   dayStartHour: number;
   slotMinutes: number;
-  slotHeight: number;
+  /** One slot's height in rem, so the line sits right at any text size. */
+  slotHeightRem: number;
   slotCount: number;
 }) {
   const [minutes, setMinutes] = useState<number | null>(null);
@@ -53,7 +54,7 @@ export function NowLine({
   if (minutes === null) return null;
   const offset = minutes - dayStartHour * 60;
   if (offset < 0 || offset > slotCount * slotMinutes) return null;
-  const top = (offset / slotMinutes) * slotHeight;
+  const top = `${(offset / slotMinutes) * slotHeightRem}rem`;
 
   return (
     <div

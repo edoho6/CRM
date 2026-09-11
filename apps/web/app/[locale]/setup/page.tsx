@@ -53,7 +53,9 @@ export default async function SetupPage({ params }: { params: Promise<{ locale: 
         <Alert tone="warning" title={t('missingVars')}>
           <ul className="mt-1 space-y-0.5">
             {missing.map((name) => (
-              <li key={name} dir="ltr" className="font-mono text-xs">
+              // break-all: a variable name has no spaces to wrap at, and at 200%
+              // text on a phone it was the one thing wider than the page.
+              <li key={name} dir="ltr" className="break-all font-mono text-xs">
                 {name}
               </li>
             ))}

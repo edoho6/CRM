@@ -271,7 +271,7 @@ export function FormulaForm({ formula, herbs }: { formula?: HerbFormulaWithItems
             <ul className="space-y-2">
               {items.map((item, index) => (
                 <li key={index} className="flex flex-wrap items-end gap-2">
-                  <div className="min-w-48 flex-1">
+                  <div className="min-w-0 flex-1 basis-48">
                     <Select
                       aria-label={t('selectHerb')}
                       value={item.herb_id}

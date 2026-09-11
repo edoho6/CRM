@@ -152,7 +152,7 @@ export function InvoiceEditor({ invoice }: { invoice: InvoiceWithDetails }) {
 
   return (
     <div className="grid gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-      <div className="space-y-4">
+      <div className="min-w-0 space-y-4">
         {error ? <Alert tone="danger">{error}</Alert> : null}
 
         <Card>
@@ -250,7 +250,7 @@ export function InvoiceEditor({ invoice }: { invoice: InvoiceWithDetails }) {
 
             {!locked ? (
               <div className="flex flex-wrap items-end gap-2 border-t border-ink-100 p-3">
-                <Field label={t('description')} htmlFor="new_description" className="min-w-48 flex-1">
+                <Field label={t('description')} htmlFor="new_description" className="min-w-0 flex-1 basis-48">
                   <Input id="new_description"
                     value={newDescription}
                     onChange={(event) => setNewDescription(event.target.value)}
@@ -289,7 +289,7 @@ export function InvoiceEditor({ invoice }: { invoice: InvoiceWithDetails }) {
         </Card>
       </div>
 
-      <div className="space-y-4">
+      <div className="min-w-0 space-y-4">
         <Card>
           <CardBody>
             <dl className="space-y-2 text-sm">
@@ -347,8 +347,8 @@ export function InvoiceEditor({ invoice }: { invoice: InvoiceWithDetails }) {
 
               <div className="space-y-2 border-t border-ink-100 pt-3">
                 <p className="text-xs font-medium text-ink-600">{t('payment.recordManual')}</p>
-                <div className="flex items-end gap-2">
-                  <Field label={t('payment.amount')} htmlFor="payment_amount" className="flex-1">
+                <div className="flex flex-wrap items-end gap-2">
+                  <Field label={t('payment.amount')} htmlFor="payment_amount" className="min-w-0 flex-1 basis-28">
                     <LtrInput id="payment_amount"
                       type="number"
                       min={0}
@@ -402,7 +402,7 @@ export function InvoiceEditor({ invoice }: { invoice: InvoiceWithDetails }) {
                 {invoice.payments.map((payment) => (
                   <li
                     key={payment.id}
-                    className="flex items-center justify-between gap-2 px-4 py-2.5"
+                    className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5"
                   >
                     <span className="min-w-0">
                       <span className="block text-sm text-ink-900" dir="ltr">

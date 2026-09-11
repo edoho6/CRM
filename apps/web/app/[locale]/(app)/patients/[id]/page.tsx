@@ -287,7 +287,7 @@ export default async function PatientDetailPage({
           </DetailRow>
           <DetailRow label={t('fields.email')}>
             {patient.email ? (
-              <a href={`mailto:${patient.email}`} dir="ltr" className="text-jade-800">
+              <a href={`mailto:${patient.email}`} dir="ltr" className="break-all text-jade-800">
                 {patient.email}
               </a>
             ) : (

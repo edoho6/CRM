@@ -14,7 +14,9 @@ export function CardHeader({ className, ...props }: React.HTMLAttributes<HTMLDiv
   return (
     <div
       className={cn(
-        'flex items-center justify-between gap-3 border-b border-ink-100 px-4 py-3',
+        // flex-wrap: a title and its actions side by side while they fit, one
+        // under the other when they do not — a narrow card at 200% text.
+        'flex flex-wrap items-center justify-between gap-3 border-b border-ink-100 px-4 py-3',
         className,
       )}
       {...props}

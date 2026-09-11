@@ -62,7 +62,7 @@ export function PatientSearch({
 
   return (
     <div className="flex flex-wrap items-center gap-3">
-      <div className="relative min-w-64 flex-1">
+      <div className="relative min-w-0 flex-1 basis-64">
         <Search
           className="pointer-events-none absolute inset-y-0 start-3 my-auto h-4 w-4 text-ink-500"
           aria-hidden

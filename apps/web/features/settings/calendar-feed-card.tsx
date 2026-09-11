@@ -114,7 +114,7 @@ export function CalendarFeedCard({
                 value={url}
                 aria-label={t('url')}
                 onFocus={(event) => event.currentTarget.select()}
-                className="min-w-64 flex-1 text-xs"
+                className="min-w-0 flex-1 basis-64 text-xs"
               />
               <Button type="button" size="sm" variant="secondary" onClick={copy} disabled={!url}>
                 <Copy className="h-4 w-4" aria-hidden />

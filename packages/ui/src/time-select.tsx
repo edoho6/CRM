@@ -40,7 +40,10 @@ const MINUTES = Array.from({ length: 60 }, (_, minute) => String(minute).padStar
  * the selected hour was invisible — the control looked empty. The width has to
  * clear the padding on both sides before it holds any text at all.
  */
-const SELECT_WIDTH = 'w-[5.5rem]';
+// The two lists share the group's width instead of each owning 5.5rem: at
+// 200% text two fixed lists were wider than a phone. The group is 12rem when
+// there is room, the container's width when there is not.
+const SELECT_WIDTH = 'min-w-0 flex-1';
 
 function split(value: string): { hour: string; minute: string } {
   const [hour = '09', minute = '00'] = value.split(':');
@@ -78,7 +81,7 @@ export function TimeSelect({
     <span
       role="group"
       aria-label={label}
-      className={cn('inline-flex items-center gap-1', className)}
+      className={cn('flex w-full max-w-[12rem] items-center gap-1', className)}
       dir="ltr"
     >
       <Select

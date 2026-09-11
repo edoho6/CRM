@@ -9,7 +9,7 @@ import { focusField, focusRing } from './focus';
 
 export const inputClasses =
   // 16px on a phone: below that iOS zooms the page in on focus and never zooms back.
-  'w-full rounded-lg border border-ink-200 bg-white px-3 py-2 text-base sm:text-sm text-ink-900 ' +
+  'w-full min-w-0 rounded-lg border border-ink-200 bg-white px-3 py-2 text-base sm:text-sm text-ink-900 ' +
   'placeholder:text-ink-500 shadow-xs transition-colors text-start ' +
   `${focusField} ` +
   'disabled:cursor-not-allowed disabled:bg-ink-50 disabled:text-ink-500 ' +
@@ -117,7 +117,9 @@ export const Select = React.forwardRef<
       inputClasses,
       compact ? compactClasses : 'h-10',
       // `ui-select` draws the one arrow (see base.css) instead of the platform's.
-      'ui-select cursor-pointer pe-9 text-ellipsis',
+      // min-w-0: a select is as wide as its longest option unless told it may
+      // shrink, and at 200% text that pushed a narrow card off the page.
+      'ui-select min-w-0 cursor-pointer pe-9 text-ellipsis',
       className,
     )}
     {...props}

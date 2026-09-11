@@ -87,7 +87,7 @@ export async function Pagination({
             ? t('rangeUnknown', { from, to })
             : t('range', { from, to, total })}
       </span>
-      <div className="flex items-center gap-1">
+      <div className="flex flex-wrap items-center gap-1">
         <Button asChild variant="secondary" size="sm">
           {hasPrevious ? (
             <Link href={href(beyond ? pages : page - 1)} rel="prev">

@@ -54,7 +54,13 @@ export type CalendarViewMode = 'day' | 'week' | 'month' | 'range';
 const DAY_START_HOUR = 7;
 const DAY_END_HOUR = 22;
 const SLOT_MINUTES = 30;
-const SLOT_HEIGHT = 28; // px per 30 minutes
+/**
+ * The height of one half hour, in rem rather than px, so the grid grows with
+ * the text: at 200% text size a 28px slot held a 24px line and cut it off.
+ * Positions are computed in slots and turned into rem at the edge.
+ */
+const SLOT_HEIGHT_REM = 1.75;
+const slotsToRem = (slots: number) => `${slots * SLOT_HEIGHT_REM}rem`;
 
 const TOTAL_MINUTES = (DAY_END_HOUR - DAY_START_HOUR) * 60;
 const SLOT_COUNT = TOTAL_MINUTES / SLOT_MINUTES;
@@ -131,8 +137,10 @@ function positionDay(
 
       positioned.push({
         appointment,
-        top: (clampedStart / SLOT_MINUTES) * SLOT_HEIGHT,
-        height: Math.max(((clampedEnd - clampedStart) / SLOT_MINUTES) * SLOT_HEIGHT, 18),
+        // In slots. The floor keeps a fifteen-minute booking tall enough to
+        // hold one line of text.
+        top: clampedStart / SLOT_MINUTES,
+        height: Math.max((clampedEnd - clampedStart) / SLOT_MINUTES, 0.65),
         column,
         columns,
       });
@@ -567,7 +575,7 @@ export function CalendarView({
                   return (
                     <div
                       key={index}
-                      style={{ height: SLOT_HEIGHT }}
+                      style={{ height: slotsToRem(1) }}
                       className={cn('relative', isHour && 'border-t border-ink-100')}
                     >
                       {isHour ? (
@@ -618,7 +626,7 @@ export function CalendarView({
                           // the next control. The day's "+" menu is the keyboard's way in.
                           tabIndex={-1}
                           onClick={() => openSlot(day, index)}
-                          style={{ height: SLOT_HEIGHT }}
+                          style={{ height: slotsToRem(1) }}
                           className={cn(
                             'block w-full transition-colors hover:bg-jade-100/60',
                             minutes % 60 === 0
@@ -644,8 +652,8 @@ export function CalendarView({
                           aria-hidden
                           className="pointer-events-none absolute inset-x-0 z-[1] overflow-hidden border-y border-ink-300/60 px-1.5 py-0.5 text-xs leading-tight text-ink-600"
                           style={{
-                            top: (start / SLOT_MINUTES) * SLOT_HEIGHT,
-                            height: ((end - start) / SLOT_MINUTES) * SLOT_HEIGHT,
+                            top: slotsToRem(start / SLOT_MINUTES),
+                            height: slotsToRem((end - start) / SLOT_MINUTES),
                             backgroundImage:
                               // Mixed from the ink colour, not from black: black on a dark
                               // surface is nothing, and a closed afternoon read as open.
@@ -663,7 +671,7 @@ export function CalendarView({
                       <NowLine
                         dayStartHour={DAY_START_HOUR}
                         slotMinutes={SLOT_MINUTES}
-                        slotHeight={SLOT_HEIGHT}
+                        slotHeightRem={SLOT_HEIGHT_REM}
                         slotCount={SLOT_COUNT}
                       />
                     ) : null}
@@ -685,8 +693,8 @@ export function CalendarView({
                           aria-haspopup="dialog"
                           onClick={() => setDetails(appointment)}
                           style={{
-                            top,
-                            height,
+                            top: slotsToRem(top),
+                            height: slotsToRem(height),
                             // Logical offsets keep events flowing in reading order.
                             insetInlineStart: `calc(${column * widthPercent}% + 2px)`,
                             width: `calc(${widthPercent}% - 4px)`,
@@ -732,7 +740,7 @@ export function CalendarView({
                           >
                             {patientFullName(appointment.patient)}
                           </span>
-                          {height > 44 && !narrow ? (
+                          {height > 1.5 && !narrow ? (
                             <span className="block truncate text-xs text-ink-500">
                               {appointmentTypeName(appointment.appointment_type, locale)}
                             </span>
