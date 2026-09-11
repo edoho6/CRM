@@ -42,7 +42,14 @@ export function CardFooter({ className, ...props }: React.HTMLAttributes<HTMLDiv
   );
 }
 
-/** Page section with a heading, used to break long forms into readable blocks. */
+/**
+ * Page section with a heading, used to break long forms into readable blocks.
+ *
+ * The heading is an h2: a form's sections sit right under the page's h1, and
+ * an h3 there is a skipped level — a screen reader's heading list jumped from
+ * the page to "personal details" with nothing in between. The finer headings
+ * inside a section (tongue, pulse, points) are h3.
+ */
 export function Section({
   title,
   description,
@@ -60,7 +67,7 @@ export function Section({
     <section className={cn('space-y-3', className)}>
       <div className="flex flex-wrap items-end justify-between gap-2">
         <div>
-          <h3 className="text-sm font-semibold text-ink-900">{title}</h3>
+          <h2 className="text-sm font-semibold text-ink-900">{title}</h2>
           {description ? <p className="text-xs text-ink-600">{description}</p> : null}
         </div>
         {actions}

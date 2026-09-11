@@ -20,6 +20,9 @@ import { PAGE_SIZE, Pagination, pageFrom, pageRange } from '@/components/paginat
 import { getClinicScope } from '@/lib/session';
 import { SettingsNav } from '@/features/settings/settings-nav';
 import { formatDateTime } from '@clinic/i18n';
+import { pageTitle } from '@/lib/page-title';
+
+export const generateMetadata = pageTitle('settings.access', 'title');
 
 /**
  * Who read what, and when.

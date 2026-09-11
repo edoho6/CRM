@@ -162,6 +162,8 @@ function PointCombobox({
   disabled?: boolean;
 }) {
   const t = useTranslations('encounters.points');
+  // Four of these fields share a page; "point" alone was one field to a screen reader.
+  const tRegion = useTranslations('encounters.region');
   const [term, setTerm] = useState('');
   const [highlight, setHighlight] = useState(0);
   const [open, setOpen] = useState(false);
@@ -212,10 +214,12 @@ function PointCombobox({
         // or "ear", under a hint that says what to type — a third repetition of
         // "search for a point" only added grey text to look past. The accessible
         // name stays, so nothing is lost to a screen reader.
-        aria-label={t('point')}
+        aria-label={`${t('point')} · ${tRegion(region)}`}
         aria-expanded={open && matches.length > 0}
         role="combobox"
         aria-controls={`point-options-${region}`}
+        // The highlighted match, by id, so it is read out as the arrows move.
+        aria-activedescendant={open && matches[highlight] ? `point-options-${region}-${highlight}` : undefined}
         autoComplete="off"
         onChange={(event) => {
           setTerm(event.target.value);
@@ -256,6 +260,7 @@ function PointCombobox({
             <li key={option.id}>
               <button
                 type="button"
+                id={`point-options-${region}-${index}`}
                 role="option"
                 aria-selected={index === highlight}
                 onMouseEnter={() => setHighlight(index)}

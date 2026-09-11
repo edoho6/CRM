@@ -8,6 +8,9 @@ import { Leaf } from 'lucide-react';
 import { getMembershipContext } from '@/lib/session';
 import { signOutAction } from '../actions';
 import { WelcomeForm } from './welcome-form';
+import { pageTitle } from '@/lib/page-title';
+
+export const generateMetadata = pageTitle('auth.welcome', 'title');
 
 /**
  * Where a signed-in person with no clinic lands.

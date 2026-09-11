@@ -10,6 +10,9 @@ import { ReportCard } from '@/features/reports/report-card';
 import { PeriodFilter } from '@/features/reports/period-filter';
 import { DEFAULT_PERIOD, parsePeriod } from '@/features/reports/period';
 import { formatDate } from '@clinic/i18n';
+import { pageTitle } from '@/lib/page-title';
+
+export const generateMetadata = pageTitle('reports', 'title');
 
 /**
  * What the practice looks like from a distance.

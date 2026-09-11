@@ -26,6 +26,9 @@ import { toPaymentSummary } from '@/features/billing/payment-summary';
 import { formatDate } from '@clinic/i18n';
 import { ConfirmationBadge } from '@/features/appointments/confirmation-status';
 import { confirmationState } from '@/features/appointments/confirmation';
+import { pageTitle } from '@/lib/page-title';
+
+export const generateMetadata = pageTitle('encounters', 'title');
 
 type EncounterRow = Encounter & {
   patient: Pick<Patient, 'id' | 'full_name'> | null;

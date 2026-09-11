@@ -5,6 +5,9 @@ import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
 import { assistantAvailable } from '@/features/assistant/actions';
 import { AssistantPanel } from '@/features/assistant/assistant-panel';
+import { pageTitle } from '@/lib/page-title';
+
+export const generateMetadata = pageTitle('assistant', 'title');
 
 /**
  * Questions about the clinic's own numbers.

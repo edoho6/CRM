@@ -1,6 +1,9 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { PageHeader } from '@/components/app-shell';
 import { FormBuilder } from '@/features/forms/form-builder';
+import { pageTitle } from '@/lib/page-title';
+
+export const generateMetadata = pageTitle('forms', 'newForm');
 
 export default async function NewFormPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;

@@ -17,6 +17,9 @@ import { Pagination, pageFrom, pageRange } from '@/components/pagination';
 import { getClinicScope } from '@/lib/session';
 import { InventoryNav } from '@/features/inventory/inventory-nav';
 import { NewSupplierDialog } from '@/features/inventory/supplier-form';
+import { pageTitle } from '@/lib/page-title';
+
+export const generateMetadata = pageTitle('inventory.suppliers', 'title');
 
 export default async function SuppliersPage({
   params,

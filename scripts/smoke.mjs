@@ -771,7 +771,7 @@ const flows = {
     // stay usable while it is written.
     const others = page.locator('main li input[type="checkbox"]:not([disabled])');
     const usableBefore = await others.count();
-    await row.locator('button[aria-label="מחיקה"]').first().click();
+    await row.locator('button[aria-label^="מחיקת המשימה"]').first().click();
     const goneAtOnce = await row.waitFor({ state: 'detached', timeout: 150 }).then(() => true).catch(() => false);
     const usableDuring = await others.count();
     const gone = goneAtOnce || (await row.waitFor({ state: 'detached', timeout: 10_000 }).then(() => true).catch(() => false));
@@ -1245,7 +1245,7 @@ async function main() {
     await visit(context, { route: '/', locale: 'he', width: desktop, label: 'flow quick-create', after: flows.quickCreate });
     await visit(context, { route: '/', locale: 'he', width: desktop, label: 'flow global-search', after: flows.globalSearch });
     await visit(context, { route: '/calendar?new=1', locale: 'he', width: desktop, label: 'flow new-appointment', after: flows.newAppointmentDialog });
-    await visit(context, { route: '/calendar?new=1', locale: 'he', width: phone, label: 'flow drawer-swipe', after: flows.drawerSwipe });
+    if (phone) await visit(context, { route: '/calendar?new=1', locale: 'he', width: phone, label: 'flow drawer-swipe', after: flows.drawerSwipe });
     await visit(context, { route: '/calendar?view=week', locale: 'he', width: desktop, label: 'flow block-day-escape', after: flows.blockDayThenEscape });
     await visit(context, { route: '/patients', locale: 'he', width: desktop, label: 'flow status-tile-filter', after: flows.statusTileKeepsFilter });
     await visit(context, { route: '/patients', locale: 'he', width: desktop, label: 'flow filters-remembered', after: flows.filtersRemembered });

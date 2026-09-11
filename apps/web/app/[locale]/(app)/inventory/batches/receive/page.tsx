@@ -4,6 +4,9 @@ import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
 import { InventoryNav } from '@/features/inventory/inventory-nav';
 import { ReceiveForm } from '@/features/inventory/receive-form';
+import { pageTitle } from '@/lib/page-title';
+
+export const generateMetadata = pageTitle('inventory.batches', 'receive');
 
 export default async function ReceiveStockPage({
   params,

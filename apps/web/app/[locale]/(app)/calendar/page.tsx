@@ -12,6 +12,9 @@ import {
   toDateKey,
 } from '@/features/appointments/date-utils';
 import type { BlockedWindow, DayException, WorkingBlock } from '@/features/appointments/availability';
+import { pageTitle } from '@/lib/page-title';
+
+export const generateMetadata = pageTitle('nav', 'calendar');
 
 const APPOINTMENT_SELECT =
   'id, clinic_id, patient_id, practitioner_id, appointment_type_id, start_at, end_at, status, location, notes, cancelled_reason, cancelled_at, created_by, created_at, updated_at, ' +

@@ -4,6 +4,9 @@ import { PageHeader } from '@/components/app-shell';
 import { Pagination, pageFrom, pageRange } from '@/components/pagination';
 import { getClinicScope } from '@/lib/session';
 import { MessageQueue, type QueueRow } from '@/features/messages/message-queue';
+import { pageTitle } from '@/lib/page-title';
+
+export const generateMetadata = pageTitle('messages', 'title');
 
 const SELECT =
   '*, patient:patients(id, full_name), appointment:appointments(id, start_at)';

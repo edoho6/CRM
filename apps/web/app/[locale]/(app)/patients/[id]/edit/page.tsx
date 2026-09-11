@@ -4,6 +4,9 @@ import type { Patient } from '@clinic/db/types';
 import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
 import { PatientForm } from '@/features/patients/patient-form';
+import { pageTitle } from '@/lib/page-title';
+
+export const generateMetadata = pageTitle('patients', 'edit');
 
 export default async function EditPatientPage({
   params,

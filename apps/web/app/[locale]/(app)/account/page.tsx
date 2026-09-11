@@ -26,6 +26,9 @@ import { AppearanceSettings } from '@/features/settings/appearance-settings';
 import { PractitionerForm } from '@/features/settings/practitioner-form';
 import { LocationsManager } from '@/features/settings/locations-manager';
 import { RoomsManager } from '@/features/settings/rooms-manager';
+import { pageTitle } from '@/lib/page-title';
+
+export const generateMetadata = pageTitle('account', 'title');
 
 /**
  * The personal area.

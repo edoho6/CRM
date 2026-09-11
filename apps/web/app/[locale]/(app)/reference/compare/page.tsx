@@ -13,6 +13,9 @@ import {
 } from '@/lib/display';
 import { ReferenceNav } from '@/features/reference/reference-nav';
 import { CompareTable, type CompareColumn, type CompareRow } from '@/features/reference/compare-table';
+import { pageTitle } from '@/lib/page-title';
+
+export const generateMetadata = pageTitle('reference.compare', 'title');
 
 /**
  * Two to four entries of the catalogue, side by side.

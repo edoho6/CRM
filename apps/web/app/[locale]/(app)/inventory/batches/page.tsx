@@ -21,6 +21,9 @@ import { getClinicScope } from '@/lib/session';
 import { herbPrimaryName } from '@/lib/display';
 import { InventoryNav } from '@/features/inventory/inventory-nav';
 import { formatDate } from '@clinic/i18n';
+import { pageTitle } from '@/lib/page-title';
+
+export const generateMetadata = pageTitle('inventory.batches', 'title');
 
 /** Batches expiring within this window are flagged so they get used first. */
 const EXPIRY_WARNING_DAYS = 60;

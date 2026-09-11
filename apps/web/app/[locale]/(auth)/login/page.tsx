@@ -8,6 +8,9 @@ import { LanguageSwitcher } from '@/components/language-switcher';
 import { getMembershipContext } from '@/lib/session';
 import { LoginForm } from './login-form';
 import { Link } from '@clinic/i18n/navigation';
+import { pageTitle } from '@/lib/page-title';
+
+export const generateMetadata = pageTitle('auth', 'signInTitle');
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 

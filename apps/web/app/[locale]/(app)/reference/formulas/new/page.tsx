@@ -4,6 +4,9 @@ import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
 import { ReferenceNav } from '@/features/reference/reference-nav';
 import { FormulaForm } from '@/features/inventory/formula-form';
+import { pageTitle } from '@/lib/page-title';
+
+export const generateMetadata = pageTitle('inventory.formulas', 'new');
 
 export default async function NewFormulaPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;

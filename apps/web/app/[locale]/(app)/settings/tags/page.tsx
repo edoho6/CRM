@@ -5,6 +5,9 @@ import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
 import { SettingsNav } from '@/features/settings/settings-nav';
 import { TagsManager } from '@/features/settings/tags-manager';
+import { pageTitle } from '@/lib/page-title';
+
+export const generateMetadata = pageTitle('settings', 'tags.title');
 
 export default async function TagsSettingsPage({
   params,

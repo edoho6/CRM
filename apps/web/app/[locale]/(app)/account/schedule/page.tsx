@@ -7,6 +7,9 @@ import { getClinicScope } from '@/lib/session';
 import { ScheduleForm } from '@/features/settings/schedule-form';
 import { CalendarFeedCard } from '@/features/settings/calendar-feed-card';
 import type { CalendarFeed } from '@clinic/db/types';
+import { pageTitle } from '@/lib/page-title';
+
+export const generateMetadata = pageTitle('schedule', 'title');
 
 /**
  * When this practitioner works.

@@ -28,6 +28,7 @@ export function DialogContent({
   description,
   closeLabel = 'Close',
   onOpenAutoFocus,
+  onCloseAutoFocus,
   onPointerDownOutside,
   onFocusOutside,
   ...props
@@ -45,7 +46,10 @@ export function DialogContent({
    * `data-autofocus`; otherwise the first enabled control in the body wins,
    * and a dialog with no controls at all keeps Radix's default.
    */
+  const openerRef = React.useRef<HTMLElement | null>(null);
   const focusFirstField = (event: Event) => {
+    // Remembered now, while it still has focus: where to go back to on close.
+    openerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     onOpenAutoFocus?.(event);
     if (event.defaultPrevented) return;
     const content = event.currentTarget as HTMLElement | null;
@@ -58,6 +62,27 @@ export function DialogContent({
     if (target) {
       event.preventDefault();
       target.focus();
+    }
+  };
+
+  /*
+   * Focus goes back to what opened the dialog.
+   *
+   * Radix returns focus to its own DialogTrigger — and nearly every dialog
+   * here is opened from a plain button through `open` state, so it returned
+   * focus to nothing and a keyboard user landed at the top of the page after
+   * every Escape and every save. Back to the opener while it is still on the
+   * page; when it is gone (the appointment that was just deleted), to the
+   * main content, so the next Tab starts on the page and not in the header.
+   */
+  const returnFocus = (event: Event) => {
+    onCloseAutoFocus?.(event);
+    if (event.defaultPrevented) return;
+    const opener = openerRef.current;
+    const target = opener && opener.isConnected ? opener : document.getElementById('main-content');
+    if (target) {
+      event.preventDefault();
+      target.focus({ preventScroll: target !== opener });
     }
   };
 
@@ -97,6 +122,7 @@ export function DialogContent({
           className,
         )}
         onOpenAutoFocus={focusFirstField}
+        onCloseAutoFocus={returnFocus}
         onPointerDownOutside={(event) => {
           if (isInsideFloatingPanel(event.detail.originalEvent)) event.preventDefault();
           onPointerDownOutside?.(event);

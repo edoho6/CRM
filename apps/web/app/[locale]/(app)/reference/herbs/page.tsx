@@ -19,6 +19,9 @@ import { RememberQuery } from '@/components/remember-query';
 import { SortLinkTh } from '@/components/sort-link-th';
 import { compareComputed, parseSort, type SortState } from '@/lib/sort-params';
 import { TcmChip, TcmChips } from '@/components/tcm-chip';
+import { pageTitle } from '@/lib/page-title';
+
+export const generateMetadata = pageTitle('inventory.herbs', 'title');
 
 /** Every chip links back into this list, filtered by what the chip says. */
 const HERBS_PATH = '/reference/herbs';

@@ -4,6 +4,9 @@ import type { FormTemplate } from '@clinic/db/types';
 import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
 import { FormBuilder } from '@/features/forms/form-builder';
+import { pageTitle } from '@/lib/page-title';
+
+export const generateMetadata = pageTitle('forms', 'single');
 
 /**
  * Editing a questionnaire.

@@ -19,6 +19,9 @@ import { FORM_LIBRARY } from '@/features/forms/library';
 import { LibraryPicker } from '@/features/forms/library-picker';
 import { getClinicScope } from '@/lib/session';
 import { formatDate } from '@clinic/i18n';
+import { pageTitle } from '@/lib/page-title';
+
+export const generateMetadata = pageTitle('forms', 'title');
 
 /**
  * The questionnaires this practice has built.

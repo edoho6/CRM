@@ -6,6 +6,9 @@ import { GettingStarted } from '@/features/dashboard/getting-started';
 import { defaultDashboardLayout } from '@/features/dashboard/default-layout';
 import { parseStoredLayout } from '@/features/dashboard/layout-utils';
 import { DEFAULT_TIME_ZONE, loadDashboardData } from '@/features/dashboard/loaders';
+import { pageTitle } from '@/lib/page-title';
+
+export const generateMetadata = pageTitle('nav', 'dashboard');
 
 export default async function DashboardPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;

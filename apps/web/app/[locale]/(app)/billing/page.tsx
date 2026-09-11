@@ -19,6 +19,9 @@ import { PageHeader } from '@/components/app-shell';
 import { Pagination, pageFrom, pageRange } from '@/components/pagination';
 import { getClinicScope } from '@/lib/session';
 import { formatDate } from '@clinic/i18n';
+import { pageTitle } from '@/lib/page-title';
+
+export const generateMetadata = pageTitle('billing', 'title');
 
 type InvoiceRow = Invoice & { patient: Pick<Patient, 'id' | 'full_name'> | null };
 

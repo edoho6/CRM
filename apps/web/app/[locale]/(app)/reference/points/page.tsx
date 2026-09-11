@@ -13,6 +13,9 @@ import { getClinicScope } from '@/lib/session';
 import { ReferenceNav } from '@/features/reference/reference-nav';
 import { CompareToggle, CompareTray } from '@/features/reference/compare-controls';
 import { PointSearch } from '@/features/reference/point-search';
+import { pageTitle } from '@/lib/page-title';
+
+export const generateMetadata = pageTitle('reference.points', 'title');
 
 /**
  * Columns the list can be ordered by; every one is a column, so the database

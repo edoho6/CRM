@@ -32,6 +32,8 @@ export function SheetContent({
   description,
   closeLabel = 'Close',
   side = 'start',
+  onOpenAutoFocus,
+  onCloseAutoFocus,
   onPointerDownOutside,
   onFocusOutside,
   ...props
@@ -41,6 +43,23 @@ export function SheetContent({
   closeLabel?: string;
   side?: 'start' | 'end';
 }) {
+  // Same as DialogContent: the sheet is opened through `open` state, not a
+  // trigger, so Radix would return focus to nothing when it closes.
+  const openerRef = React.useRef<HTMLElement | null>(null);
+  const rememberOpener = (event: Event) => {
+    openerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    onOpenAutoFocus?.(event);
+  };
+  const returnFocus = (event: Event) => {
+    onCloseAutoFocus?.(event);
+    if (event.defaultPrevented) return;
+    const opener = openerRef.current;
+    const target = opener && opener.isConnected ? opener : document.getElementById('main-content');
+    if (target) {
+      event.preventDefault();
+      target.focus({ preventScroll: target !== opener });
+    }
+  };
   return (
     <DialogPrimitive.Portal>
       <DialogPrimitive.Overlay className="fixed inset-0 z-overlay bg-ink-900/40 backdrop-blur-[1px] data-[state=open]:animate-fade-in data-[state=closed]:animate-fade-out" />
@@ -54,6 +73,8 @@ export function SheetContent({
           'data-[state=open]:animate-sheet-in data-[state=closed]:animate-sheet-out',
           className,
         )}
+        onOpenAutoFocus={rememberOpener}
+        onCloseAutoFocus={returnFocus}
         onPointerDownOutside={(event) => {
           if (isInsideFloatingPanel(event.detail.originalEvent)) event.preventDefault();
           onPointerDownOutside?.(event);

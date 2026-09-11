@@ -6,6 +6,9 @@ import { PageHeader } from '@/components/app-shell';
 import { ExternalLink } from '@/components/external-link';
 import { getClinicScope } from '@/lib/session';
 import { shopImageCredits } from '@/features/prices/shop-image';
+import { pageTitle } from '@/lib/page-title';
+
+export const generateMetadata = pageTitle('prices.credits', 'title');
 
 /**
  * Where the comparison's pictures come from, one line each.

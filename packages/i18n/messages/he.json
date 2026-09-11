@@ -166,7 +166,9 @@
     "bellEmpty": "אין תזכורות שהגיע זמנן.",
     "dueNow": "הגיע הזמן",
     "soon": "בקרוב",
-    "openAll": "לכל המשימות"
+    "openAll": "לכל המשימות",
+    "deleteTaskOf": "מחיקת המשימה \"{title}\"",
+    "editTaskOf": "עריכת המשימה \"{title}\""
   },
   "common": {
     "opensInNewTab": "נפתח בחלון חדש",
@@ -494,7 +496,8 @@
       "empty": "אין משימות פתוחות.",
       "markDone": "סימון \"{title}\" כבוצע",
       "urgent": "דחוף",
-      "overdue": "באיחור"
+      "overdue": "באיחור",
+      "deleteTaskOf": "מחיקת המשימה \"{title}\""
     }
   },
   "patients": {
@@ -937,7 +940,8 @@
       "forms": "שאלונים"
     },
     "sessionNav": "מעבר בין טיפולים",
-    "sessionNumber": "טיפול {number} מתוך {total}"
+    "sessionNumber": "טיפול {number} מתוך {total}",
+    "single": "טיפול"
   },
   "billing": {
     "keepInvoice": "להשאיר את החשבונית",
@@ -1159,7 +1163,8 @@
       "count": "{count, plural, =0 {אין צמחים} one {צמח אחד} two {שני צמחים} other {# צמחים}}",
       "usedIn": "מופיע בפורמולות",
       "usedInEmpty": "הצמח לא מופיע באף פורמולה שמורה",
-      "notStocked": "לא במלאי"
+      "notStocked": "לא במלאי",
+      "single": "צמח"
     },
     "category": {
       "raw_herb": "צמח גולמי",
@@ -1224,7 +1229,8 @@
       "nature": "טבע וטעם",
       "clinical": "מידע קליני",
       "itemNotes": "הערת הכנה",
-      "herbCount": "מספר צמחים"
+      "herbCount": "מספר צמחים",
+      "single": "פורמולה"
     },
     "batches": {
       "noHerbsAction": "הוספת צמח למאגר",
@@ -2081,7 +2087,8 @@
       "filterByChannel": "סינון לפי מרידיאן",
       "filterByArea": "סינון לפי אזור",
       "filterByCategory": "סינון לפי קטגוריה",
-      "clinicalSource": "המידע נכתב לפי הידע הקליני הסטנדרטי המשותף למקורות המקצועיים. אינו מהווה תחליף לשיקול דעת קליני, והמידות הן לאדם בוגר בעל מבנה גוף ממוצע."
+      "clinicalSource": "המידע נכתב לפי הידע הקליני הסטנדרטי המשותף למקורות המקצועיים. אינו מהווה תחליף לשיקול דעת קליני, והמידות הן לאדם בוגר בעל מבנה גוף ממוצע.",
+      "single": "נקודת דיקור"
     },
     "pointChannel": {
       "lung": "ריאה (LU)",
@@ -2384,7 +2391,8 @@
     "outcomeSummary": "{count, plural, one {תשובה אחת} two {שתי תשובות} other {# תשובות}} · מ-{first} ל-{latest}",
     "answeredOn": "תאריך",
     "showTable": "הצגת הנתונים כטבלה",
-    "hideTable": "הסתרת הטבלה"
+    "hideTable": "הסתרת הטבלה",
+    "single": "שאלון"
   },
   "schedule": {
     "feed": {

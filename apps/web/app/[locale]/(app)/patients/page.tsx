@@ -27,6 +27,9 @@ import { PatientStatusCell } from '@/features/patients/status-cell';
 import { PatientStatusSummary, type StatusCounts } from '@/features/patients/status-summary';
 import { TagChipLink, type TagChip } from '@/features/patients/patient-tags';
 import { TAG_CLASSES } from '@/features/patients/tag-colors';
+import { pageTitle } from '@/lib/page-title';
+
+export const generateMetadata = pageTitle('patients', 'title');
 
 type TagLinkRow = { patient_id: string; tag: TagChip | null };
 

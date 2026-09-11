@@ -5,6 +5,9 @@ import { PageHeader } from '@/components/app-shell';
 import { SettingsNav } from '@/features/settings/settings-nav';
 import { getClinicScope } from '@/lib/session';
 import { GrowSettingsForm } from '@/features/billing/grow-settings-form';
+import { pageTitle } from '@/lib/page-title';
+
+export const generateMetadata = pageTitle('billing.settings', 'title');
 
 export default async function BillingSettingsPage({
   params,

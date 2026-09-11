@@ -5,6 +5,9 @@ import { getClinicScope } from '@/lib/session';
 import { SettingsNav } from '@/features/settings/settings-nav';
 import { ClinicSettingsForm } from '@/features/settings/clinic-settings-form';
 import { ReminderTemplateForm } from '@/features/settings/reminder-template-form';
+import { pageTitle } from '@/lib/page-title';
+
+export const generateMetadata = pageTitle('settings', 'title');
 
 export default async function SettingsPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;

@@ -64,6 +64,9 @@ import { PatientTags, type TagChip } from '@/features/patients/patient-tags';
 import { ConfirmationBadge } from '@/features/appointments/confirmation-status';
 import { confirmationState } from '@/features/appointments/confirmation';
 import { formatDate, formatDateTime } from '@clinic/i18n';
+import { pageTitle } from '@/lib/page-title';
+
+export const generateMetadata = pageTitle('patients', 'profile');
 
 type AppointmentRow = Appointment & {
   appointment_type: Pick<AppointmentType, 'name_he' | 'name_en'> | null;

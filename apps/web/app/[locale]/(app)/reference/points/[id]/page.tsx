@@ -8,6 +8,9 @@ import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
 import { ReferenceNav } from '@/features/reference/reference-nav';
 import { BodyMap, type MappedPoint } from '@/features/reference/body-map';
+import { pageTitle } from '@/lib/page-title';
+
+export const generateMetadata = pageTitle('reference.points', 'single');
 
 /**
  * A point's page.

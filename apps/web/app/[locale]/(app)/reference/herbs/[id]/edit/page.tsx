@@ -7,6 +7,9 @@ import { getClinicScope } from '@/lib/session';
 import { herbPrimaryName } from '@/lib/display';
 import { ReferenceNav } from '@/features/reference/reference-nav';
 import { HerbForm } from '@/features/inventory/herb-form';
+import { pageTitle } from '@/lib/page-title';
+
+export const generateMetadata = pageTitle('inventory.herbs', 'edit');
 
 export default async function EditHerbPage({
   params,

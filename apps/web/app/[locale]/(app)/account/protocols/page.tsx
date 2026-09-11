@@ -5,6 +5,9 @@ import { PageHeader } from '@/components/app-shell';
 import { SettingsNav } from '@/features/settings/settings-nav';
 import { getClinicScope } from '@/lib/session';
 import { ProtocolsManager } from '@/features/encounters/protocols-manager';
+import { pageTitle } from '@/lib/page-title';
+
+export const generateMetadata = pageTitle('protocols', 'title');
 
 /**
  * Saved treatment protocols.

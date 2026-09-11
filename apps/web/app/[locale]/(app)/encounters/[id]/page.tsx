@@ -32,6 +32,9 @@ import { EncounterNav, type EncounterStep } from '@/features/encounters/encounte
 import { PaymentAction } from '@/features/billing/payment-status';
 import { toPaymentSummary } from '@/features/billing/payment-summary';
 import { formatDate, formatDateTime } from '@clinic/i18n';
+import { pageTitle } from '@/lib/page-title';
+
+export const generateMetadata = pageTitle('encounters', 'single');
 
 const FORMULA_SELECT =
   '*, items:herb_formula_items(*, herb:herbs(id, pinyin_name, chinese_name, english_name, hebrew_name, default_unit))';

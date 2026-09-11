@@ -5,6 +5,9 @@ import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
 import { SettingsNav } from '@/features/settings/settings-nav';
 import { TeamPanel, type TeamMember } from '@/features/settings/team-panel';
+import { pageTitle } from '@/lib/page-title';
+
+export const generateMetadata = pageTitle('settings.team', 'title');
 
 /**
  * The clinic's people. Members come from the memberships table (the

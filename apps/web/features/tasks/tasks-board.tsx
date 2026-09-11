@@ -209,7 +209,7 @@ export function TasksBoard({
           ) : null}
           <button
             type="button"
-            aria-label={t('editTask')}
+            aria-label={t('editTaskOf', { title: task.title })}
             title={t('editTask')}
             disabled={pendingIds.has(task.id)}
             onClick={() => edit(task)}
@@ -219,7 +219,7 @@ export function TasksBoard({
           </button>
           <button
             type="button"
-            aria-label={tc('delete')}
+            aria-label={t('deleteTaskOf', { title: task.title })}
             title={tc('delete')}
             disabled={pendingIds.has(task.id)}
             onClick={() => remove(task)}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useTransition } from 'react';
+import { useEffect, useState, useTransition, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { AlertTriangle, Plus, Trash2 } from 'lucide-react';
 import { Button, Input, Spinner, useToast } from '@clinic/ui';
@@ -37,6 +37,7 @@ function TasksWidget() {
   const [title, setTitle] = useState('');
   const [isPending, startTransition] = useTransition();
   const [reloadKey, setReloadKey] = useState(0);
+  const formRef = useRef<HTMLFormElement>(null);
 
   const initial = useWidgetInitialData<ClinicTaskWithPatient[]>('tasks');
   const { data, loading } = useAsyncData<ClinicTaskWithPatient[]>(
@@ -48,6 +49,15 @@ function TasksWidget() {
   );
 
   const refresh = () => setReloadKey((key) => key + 1);
+
+  // The field is disabled while a task is written, and a disabled field drops
+  // its focus — so Enter left a keyboard user nowhere, with the next task
+  // in mind. Focus comes back to the field once the write is over.
+  const wasPending = useRef(false);
+  useEffect(() => {
+    if (wasPending.current && !isPending) formRef.current?.querySelector('input')?.focus();
+    wasPending.current = isPending;
+  }, [isPending]);
 
   function add() {
     const trimmed = title.trim();
@@ -85,7 +95,25 @@ function TasksWidget() {
     );
   }, [data]);
 
+  // Ticking or deleting a row removes it — and with it whatever had focus,
+  // which left a keyboard user at the top of the page. Focus moves to the
+  // row that takes its place, or to the field when the list is empty.
+  const listRef = useRef<HTMLUListElement>(null);
+  function keepFocus(id: string) {
+    const list = listRef.current;
+    const row = list?.querySelector<HTMLElement>(`[data-task-id="${id}"]`);
+    if (!row || !row.contains(document.activeElement)) return;
+    const boxes = [...(list?.querySelectorAll<HTMLInputElement>('input[type="checkbox"]') ?? [])];
+    const index = boxes.findIndex((box) => row.contains(box));
+    requestAnimationFrame(() => {
+      const left = [...(listRef.current?.querySelectorAll<HTMLInputElement>('input[type="checkbox"]') ?? [])];
+      const next = left[Math.min(Math.max(index, 0), left.length - 1)] ?? formRef.current?.querySelector<HTMLInputElement>('input');
+      next?.focus();
+    });
+  }
+
   async function settle(id: string, write: () => Promise<{ ok: boolean }>) {
+    keepFocus(id);
     setHiddenIds((current) => withPending(current, id, true));
     setBusyIds((current) => withPending(current, id, true));
     const result = await write();
@@ -102,6 +130,7 @@ function TasksWidget() {
   return (
     <div className="space-y-2">
       <form
+        ref={formRef}
         onSubmit={(event) => {
           event.preventDefault();
           add();
@@ -122,18 +151,20 @@ function TasksWidget() {
         </Button>
       </form>
 
-      {loading ? (
+      {/* The skeleton only before the first answer: a re-read after a tick keeps the
+          rows on screen — and keeps the focus a keyboard user has in them. */}
+      {loading && !data ? (
         <WidgetLoading />
       ) : rows.length === 0 ? (
         <WidgetEmpty>{t('empty')}</WidgetEmpty>
       ) : (
-        <ul className="divide-y divide-ink-100">
+        <ul ref={listRef} className="divide-y divide-ink-100">
           {rows.map((task) => {
             const overdue = task.due_at
               ? new Date(task.due_at).getTime() < Date.now()
               : task.due_on !== null && task.due_on < today;
             return (
-              <li key={task.id} className="flex items-start gap-2 py-1.5">
+              <li key={task.id} data-task-id={task.id} className="flex items-start gap-2 py-1.5">
                 <input
                   type="checkbox"
                   checked={false}
@@ -190,7 +221,7 @@ function TasksWidget() {
 
                 <button
                   type="button"
-                  aria-label={tc('delete')}
+                  aria-label={t('deleteTaskOf', { title: task.title })}
                   disabled={busyIds.has(task.id)}
                   onClick={() => settle(task.id, () => deleteTask(task.id))}
                   className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-ink-500 transition-colors hover:bg-red-50 hover:text-red-700 active:bg-red-100"

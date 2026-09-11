@@ -4,6 +4,9 @@ import { PageBody } from '@clinic/ui';
 import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
 import { TasksBoard } from '@/features/tasks/tasks-board';
+import { pageTitle } from '@/lib/page-title';
+
+export const generateMetadata = pageTitle('tasks', 'title');
 
 /**
  * The to-do list as a page.

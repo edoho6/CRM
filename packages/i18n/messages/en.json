@@ -166,7 +166,9 @@
     "bellEmpty": "Nothing is due.",
     "dueNow": "Due now",
     "soon": "Soon",
-    "openAll": "All tasks"
+    "openAll": "All tasks",
+    "deleteTaskOf": "Delete task \"{title}\"",
+    "editTaskOf": "Edit task \"{title}\""
   },
   "common": {
     "opensInNewTab": "opens in a new tab",
@@ -494,7 +496,8 @@
       "empty": "Nothing outstanding.",
       "markDone": "Mark “{title}” as done",
       "urgent": "Urgent",
-      "overdue": "Overdue"
+      "overdue": "Overdue",
+      "deleteTaskOf": "Delete task \"{title}\""
     }
   },
   "patients": {
@@ -937,7 +940,8 @@
       "forms": "Questionnaires"
     },
     "sessionNav": "Move between treatments",
-    "sessionNumber": "Session {number} of {total}"
+    "sessionNumber": "Session {number} of {total}",
+    "single": "Treatment"
   },
   "billing": {
     "keepInvoice": "Keep the invoice",
@@ -1159,7 +1163,8 @@
       "count": "{count, plural, =0 {No herbs} one {1 herb} other {# herbs}}",
       "usedIn": "Appears in formulas",
       "usedInEmpty": "This herb is not part of any saved formula",
-      "notStocked": "Not stocked"
+      "notStocked": "Not stocked",
+      "single": "Herb"
     },
     "category": {
       "raw_herb": "Raw herb",
@@ -1224,7 +1229,8 @@
       "nature": "Nature & taste",
       "clinical": "Clinical",
       "itemNotes": "Preparation note",
-      "herbCount": "Herbs"
+      "herbCount": "Herbs",
+      "single": "Formula"
     },
     "batches": {
       "noHerbsAction": "Add a herb to the catalogue",
@@ -2081,7 +2087,8 @@
       "filterByChannel": "Filter by channel",
       "filterByArea": "Filter by area",
       "filterByCategory": "Filter by category",
-      "clinicalSource": "Written from the standard clinical knowledge common to the professional sources. It does not replace clinical judgement, and the measurements assume an adult of average build."
+      "clinicalSource": "Written from the standard clinical knowledge common to the professional sources. It does not replace clinical judgement, and the measurements assume an adult of average build.",
+      "single": "Acupuncture point"
     },
     "pointChannel": {
       "lung": "Lung (LU)",
@@ -2384,7 +2391,8 @@
     "outcomeSummary": "{count, plural, one {1 answer} other {# answers}} · from {first} to {latest}",
     "answeredOn": "Date",
     "showTable": "Show the data as a table",
-    "hideTable": "Hide the table"
+    "hideTable": "Hide the table",
+    "single": "Questionnaire"
   },
   "schedule": {
     "feed": {

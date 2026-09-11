@@ -31,6 +31,9 @@ import {
   herbPrimaryName,
 } from '@/lib/display';
 import { ReferenceNav } from '@/features/reference/reference-nav';
+import { pageTitle } from '@/lib/page-title';
+
+export const generateMetadata = pageTitle('inventory.formulas', 'single');
 
 /**
  * A formula's reference page, built on the same skeleton as a herb's: identity

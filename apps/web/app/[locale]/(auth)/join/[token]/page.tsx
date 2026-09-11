@@ -9,6 +9,9 @@ import { Link, redirect } from '@clinic/i18n/navigation';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { getMembershipContext } from '@/lib/session';
 import { JoinForm } from './join-form';
+import { pageTitle } from '@/lib/page-title';
+
+export const generateMetadata = pageTitle('join', 'title');
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 

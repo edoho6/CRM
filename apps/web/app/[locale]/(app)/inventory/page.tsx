@@ -30,6 +30,9 @@ import { ThresholdCell } from '@/features/inventory/stock-controls';
 import { OrderDialog } from '@/features/inventory/order-dialog';
 import { OrderListRowControls } from '@/features/inventory/order-list-row';
 import { formatDate } from '@clinic/i18n';
+import { pageTitle } from '@/lib/page-title';
+
+export const generateMetadata = pageTitle('inventory.stock', 'title');
 
 /**
  * The stock room.

@@ -5,6 +5,9 @@ import { Badge, EmptyState, SortBody, SortTh, SortableTable, TableWrapper, Td, T
 import { formatDate, formatDateTime } from '@clinic/i18n';
 import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
+import { pageTitle } from '@/lib/page-title';
+
+export const generateMetadata = pageTitle('platform', 'title');
 
 interface PlatformClinicRow {
   id: string;

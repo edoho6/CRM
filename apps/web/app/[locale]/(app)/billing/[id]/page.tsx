@@ -5,6 +5,9 @@ import type { InvoiceWithDetails } from '@clinic/db/types';
 import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
 import { InvoiceEditor } from '@/features/billing/invoice-editor';
+import { pageTitle } from '@/lib/page-title';
+
+export const generateMetadata = pageTitle('billing', 'invoice');
 
 export default async function InvoicePage({
   params,

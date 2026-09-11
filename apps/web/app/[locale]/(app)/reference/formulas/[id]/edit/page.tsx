@@ -7,6 +7,9 @@ import { getClinicScope } from '@/lib/session';
 import { formulaPrimaryName } from '@/lib/display';
 import { ReferenceNav } from '@/features/reference/reference-nav';
 import { FormulaForm } from '@/features/inventory/formula-form';
+import { pageTitle } from '@/lib/page-title';
+
+export const generateMetadata = pageTitle('inventory.formulas', 'edit');
 
 export default async function EditFormulaPage({
   params,

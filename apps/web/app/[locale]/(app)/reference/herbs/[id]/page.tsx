@@ -45,6 +45,9 @@ import { loadHerbGalleryEntries } from '@/features/inventory/herb-gallery-entrie
 import { referenceImageFor } from '@/features/inventory/herb-reference-image';
 import { OrderDialog } from '@/features/inventory/order-dialog';
 import { formatDate } from '@clinic/i18n';
+import { pageTitle } from '@/lib/page-title';
+
+export const generateMetadata = pageTitle('inventory.herbs', 'single');
 
 /** Where a chip on this page sends you: the same herb list, filtered. */
 const HERBS_PATH = '/reference/herbs';

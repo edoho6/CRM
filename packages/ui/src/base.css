@@ -51,6 +51,14 @@
     outline-offset: 2px;
   }
 
+  /* Tab reaches a field at the bottom of the window and the browser scrolls
+     it into view — exactly under the sticky action bar; going up, under the
+     top bar. The margin makes that scroll stop clear of both. The bottom
+     allows for a phone's tab bar (`--bottom-bar`) plus the action bar. */
+  :where(a, button, input, textarea, select, summary, [role='button'], [role='combobox'], [role='tab'], [tabindex]) {
+    scroll-margin-block: 6rem calc(var(--bottom-bar, 0px) + 5rem);
+  }
+
   /* ink-500, not 400: the lighter step measures 3.8:1 on white, under the 4.5:1
      a placeholder still has to clear — people do read them. */
   ::placeholder {

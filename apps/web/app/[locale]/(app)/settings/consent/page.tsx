@@ -7,6 +7,9 @@ import { getClinicScope } from '@/lib/session';
 import { SettingsNav } from '@/features/settings/settings-nav';
 import { ConsentDocumentForm } from '@/features/consent/consent-document-form';
 import { formatDate } from '@clinic/i18n';
+import { pageTitle } from '@/lib/page-title';
+
+export const generateMetadata = pageTitle('consent', 'documentsTitle');
 
 /**
  * The consent texts the clinic asks patients to accept.

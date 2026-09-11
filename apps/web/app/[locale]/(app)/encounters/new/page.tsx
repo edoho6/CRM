@@ -3,6 +3,9 @@ import { PageBody } from '@clinic/ui';
 import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
 import { NewEncounterPicker, type TodayVisit } from '@/features/encounters/new-encounter-picker';
+import { pageTitle } from '@/lib/page-title';
+
+export const generateMetadata = pageTitle('encounters', 'newPicker.title');
 
 interface TodayRow {
   id: string;

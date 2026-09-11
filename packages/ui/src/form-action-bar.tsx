@@ -1,3 +1,5 @@
+'use client';
+
 import * as React from 'react';
 import { cn } from './cn';
 
@@ -21,8 +23,31 @@ export function FormActionBar({
   children,
   ...props
 }: React.HTMLAttributes<HTMLDivElement> & { status?: React.ReactNode }) {
+  const barRef = React.useRef<HTMLDivElement>(null);
+
+  /*
+   * A field that Tab reaches while it lies under this bar counts as "in view"
+   * for the browser, so nothing scrolls, and the person types into a box they
+   * cannot see. scroll-margin does not help: it only shapes a scroll that
+   * happens. So when focus lands on something the bar covers, the field is
+   * brought to the middle of the window — whichever panel scrolls.
+   */
+  React.useEffect(() => {
+    const onFocus = (event: FocusEvent) => {
+      const bar = barRef.current;
+      const target = event.target;
+      if (!bar || !(target instanceof HTMLElement) || bar.contains(target)) return;
+      const under = bar.getBoundingClientRect();
+      const box = target.getBoundingClientRect();
+      if (box.bottom > under.top && box.top < under.bottom) target.scrollIntoView({ block: 'center' });
+    };
+    document.addEventListener('focusin', onFocus);
+    return () => document.removeEventListener('focusin', onFocus);
+  }, []);
+
   return (
     <div
+      ref={barRef}
       className={cn(
         'no-print sticky bottom-[var(--bottom-bar,0px)] z-sticky -mx-4 mt-6 flex flex-wrap items-center justify-end gap-2',
         'border-t border-ink-200 bg-white px-4 py-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]',

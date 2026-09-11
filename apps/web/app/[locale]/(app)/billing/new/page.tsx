@@ -3,6 +3,9 @@ import { PageBody } from '@clinic/ui';
 import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
 import { NewInvoicePicker } from '@/features/billing/new-invoice-picker';
+import { pageTitle } from '@/lib/page-title';
+
+export const generateMetadata = pageTitle('billing', 'newPicker.title');
 
 /**
  * "New invoice" from the billing page and the quick-create menu: pick whose,

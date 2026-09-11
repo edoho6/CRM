@@ -18,6 +18,9 @@ import {
 import { PriceFilters } from '@/features/prices/price-filters';
 import { PriceTable } from '@/features/prices/price-table';
 import { listOffers, listProducts, listStores } from '@/features/prices/queries';
+import { pageTitle } from '@/lib/page-title';
+
+export const generateMetadata = pageTitle('prices', 'title');
 
 /**
  * What the shops charge for what a clinic buys, side by side.

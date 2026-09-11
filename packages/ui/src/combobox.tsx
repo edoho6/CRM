@@ -189,6 +189,9 @@ export function Combobox({
         aria-expanded={open}
         aria-controls={listId}
         aria-autocomplete="list"
+        // The highlighted row, by id, so a screen reader reads each name as
+        // the arrows move — the highlight alone is only a colour.
+        aria-activedescendant={listVisible && matches[highlight] ? `${listId}-${highlight}` : undefined}
         onChange={(event) => {
           setTerm(event.target.value);
           setHighlight(0);
@@ -257,6 +260,7 @@ export function Combobox({
           {matches.map((option, index) => (
             <li
               key={option.id}
+              id={`${listId}-${index}`}
               role="option"
               aria-selected={index === highlight}
               onMouseEnter={() => setHighlight(index)}

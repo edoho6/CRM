@@ -4,6 +4,9 @@ import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
 import { SettingsNav } from '@/features/settings/settings-nav';
 import { BookingSettingsForm } from '@/features/settings/booking-settings-form';
+import { pageTitle } from '@/lib/page-title';
+
+export const generateMetadata = pageTitle('settings', 'booking.title');
 
 export default async function BookingSettingsPage({
   params,

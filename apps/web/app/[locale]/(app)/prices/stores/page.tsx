@@ -6,6 +6,9 @@ import { Link } from '@clinic/i18n/navigation';
 import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
 import { StoreAdminPanel, type StoreStats } from '@/features/prices/store-admin-panel';
+import { pageTitle } from '@/lib/page-title';
+
+export const generateMetadata = pageTitle('prices.stores', 'title');
 
 /**
  * The shops behind the price comparison, for whoever runs the service.

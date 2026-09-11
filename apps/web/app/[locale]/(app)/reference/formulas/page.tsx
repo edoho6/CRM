@@ -29,6 +29,9 @@ import {
   parseFormulaFilters,
   type FormulaSearchParams,
 } from '@/features/inventory/formula-filter-params';
+import { pageTitle } from '@/lib/page-title';
+
+export const generateMetadata = pageTitle('inventory.formulas', 'title');
 
 /**
  * Columns the list can be ordered by. The number of herbs and the total weight

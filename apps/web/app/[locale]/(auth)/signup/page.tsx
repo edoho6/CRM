@@ -10,6 +10,9 @@ import { Link } from '@clinic/i18n/navigation';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { getMembershipContext } from '@/lib/session';
 import { SignupForm } from './signup-form';
+import { pageTitle } from '@/lib/page-title';
+
+export const generateMetadata = pageTitle('auth.signup', 'title');
 
 /**
  * A new clinic, from nothing.
