@@ -40,6 +40,8 @@ import {
 } from '@/lib/display';
 import { ReferenceNav } from '@/features/reference/reference-nav';
 import { HerbImageCard } from '@/features/inventory/herb-image-card';
+import { HerbGalleryProvider } from '@/features/inventory/herb-gallery';
+import { loadHerbGalleryEntries } from '@/features/inventory/herb-gallery-entries';
 import { referenceImageFor } from '@/features/inventory/herb-reference-image';
 import { OrderDialog } from '@/features/inventory/order-dialog';
 import { formatDate } from '@clinic/i18n';
@@ -147,6 +149,8 @@ export default async function HerbDetailPage({
   const chinese = herbChineseName(herb);
   const botanical = herbBotanicalName(herb);
   const primary = herbPrimaryName(herb);
+  // Every herb with a photograph, so the picture can be compared with another.
+  const galleryEntries = await loadHerbGalleryEntries(scope.supabase, locale);
   const tastes = herb.tastes ?? [];
   const channels = herb.channels ?? [];
 
@@ -296,13 +300,15 @@ export default async function HerbDetailPage({
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
         <div className="space-y-5">
-          <HerbImageCard
-            herbId={herb.id}
-            imageUrl={herb.image_url}
-            attribution={herb.image_attribution}
-            reference={referenceImageFor(herb)}
-            alt={primary}
-          />
+          <HerbGalleryProvider entries={galleryEntries}>
+            <HerbImageCard
+              herbId={herb.id}
+              imageUrl={herb.image_url}
+              attribution={herb.image_attribution}
+              reference={referenceImageFor(herb)}
+              alt={primary}
+            />
+          </HerbGalleryProvider>
 
           <Card>
             <CardHeader>

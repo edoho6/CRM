@@ -200,7 +200,10 @@
   (הקטנה בלבד), ולכן אין יצירה נגזרת. מאומת מול המקור עצמו. `herb-reference-rejects.json` = דפים
   שנפסלו בבדיקה בעין ולא ייבחרו שוב. `referenceImageFor(herb)` מחפש לפי פינין ואז לפי מין
   (תמונת חומר לעולם לא משמשת צמח אחר מאותו מין), מציג רק כשאין תמונה של הקליניקה, תמיד עם
-  הקרדיט (CC BY מחייב) וכיתוב שאומר אם זה החומר או הצמח. לא להוסיף תמונה בלי רשומה ב-manifest
+  הקרדיט (CC BY מחייב) וכיתוב שאומר אם זה החומר או הצמח. לא להוסיף תמונה בלי רשומה ב-manifest.
+  **הגלריה:** `features/inventory/herb-gallery.tsx` — `HerbGalleryProvider` (מקבל את כל הצמחים עם תמונה
+  מ-`loadHerbGalleryEntries`, `server-only`), `HerbThumb` פותח את התמונה בגדול ב-`ZoomFrame`, ו"השוואת
+  תמונות" מציב עד 4 צמחים זה לצד זה לפי בחירה ב-`Combobox`. הקרדיט מוצג בכל מסגרת
 - **שאלונים מהספרייה:** `features/forms/library.ts` — תבניות מוכנות עם מזהי שדות קבועים.
   כל מילוי שאלון מקבל שורה ב-`patient_documents` עם `file_path = 'form-submission:<id>'`
   (trigger ב-migration 20260910170000); אין קובץ באחסון — `/api/documents/[id]` מרנדר את

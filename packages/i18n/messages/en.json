@@ -1435,7 +1435,20 @@
       "none": "No image yet",
       "hint": "JPG or PNG, up to 5MB. The image is public.",
       "attribution": "Credit / source",
-      "uploaded": "Image saved"
+      "uploaded": "Image saved",
+      "openLarge": "Enlarge the photo of {name}",
+      "compare": "Compare photos",
+      "comparing": "Comparing {count} herbs",
+      "compareFull": "Up to {max} herbs at once",
+      "addHerb": "Add a herb to compare",
+      "addHerbPlaceholder": "Search a herb by name…",
+      "compareHint": "Pick a herb from the search box, then another beside it — up to {max}. Each photo zooms on its own.",
+      "addAnotherHint": "Add another herb from the search above to compare side by side.",
+      "removeFromCompare": "Remove {name} from the comparison",
+      "clinicPhoto": "A photo the clinic uploaded",
+      "zoomIn": "Zoom in",
+      "zoomOut": "Zoom out",
+      "zoomHint": "Mouse wheel zooms, dragging pans, double-click resets. Keyboard: + − and the arrows."
     },
     "stock": {
       "title": "Stock",

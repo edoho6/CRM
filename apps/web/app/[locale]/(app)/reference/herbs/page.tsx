@@ -45,6 +45,8 @@ import { herbBotanicalName, herbChineseName, herbPrimaryName } from '@/lib/displ
 import { ReferenceNav } from '@/features/reference/reference-nav';
 import { CatalogueSearch } from '@/features/reference/catalogue-search';
 import { referenceImageFor } from '@/features/inventory/herb-reference-image';
+import { HerbCompareButton, HerbGalleryProvider, HerbThumb } from '@/features/inventory/herb-gallery';
+import { loadHerbGalleryEntries } from '@/features/inventory/herb-gallery-entries';
 import { CompareToggle, CompareTray } from '@/features/reference/compare-controls';
 import { HerbFilters } from '@/features/inventory/herb-filters';
 import { parseHerbFilters, type HerbSearchParams } from '@/features/inventory/herb-filter-params';
@@ -170,8 +172,11 @@ export default async function HerbsPage({
     }
   }
 
+  // Every herb with a photograph, for the gallery's search box.
+  const galleryEntries = await loadHerbGalleryEntries(scope.supabase, locale);
+
   return (
-    <>
+    <HerbGalleryProvider entries={galleryEntries}>
       <PageHeader
         title={t('title')}
         description={t('count', { count: count ?? herbs.length })}
@@ -194,7 +199,10 @@ export default async function HerbsPage({
             furniture over the list instead of three. */}
         <div className="flex flex-wrap items-center justify-between gap-2">
           <ReferenceNav />
-          <CatalogueSearch initialQuery={filters.q} placeholder={t('searchPlaceholder')} />
+          <div className="flex flex-wrap items-center gap-2">
+            <HerbCompareButton />
+            <CatalogueSearch initialQuery={filters.q} placeholder={t('searchPlaceholder')} />
+          </div>
         </div>
         <HerbFilters filters={filters} />
       </div>
@@ -253,12 +261,10 @@ export default async function HerbsPage({
                     <Td data-card-title>
                       <div className="flex items-start gap-3">
                         {herb.image_url || referenceImageFor(herb) ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
+                          <HerbThumb
+                            herbId={herb.id}
                             src={herb.image_url ?? referenceImageFor(herb)!.src}
-                            alt=""
-                            loading="lazy"
-                            className="h-12 w-12 shrink-0 rounded-lg border border-ink-100 object-cover"
+                            alt={herbPrimaryName(herb, locale as Locale)}
                           />
                         ) : (
                           <span
@@ -384,6 +390,6 @@ export default async function HerbsPage({
         pathname="/reference/herbs"
         query={{ ...rawParams }}
       />
-    </>
+    </HerbGalleryProvider>
   );
 }

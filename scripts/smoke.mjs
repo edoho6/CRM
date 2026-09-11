@@ -992,6 +992,28 @@ const flows = {
       (state.cellDisplay === null || state.cellDisplay === 'table-cell');
     return { ok, detail: JSON.stringify(state) };
   },
+  async herbGallery(page) {
+    // A thumbnail opens the herb large with a zoom frame; the search box in
+    // the sheet puts a second herb beside it; Escape closes.
+    const thumb = page.locator('main button[aria-label^="הגדלת"], main button[aria-label^="Enlarge"]').first();
+    if ((await thumb.count()) === 0) return { ok: false, detail: 'no thumbnail buttons in the list' };
+    await thumb.click();
+    const dialog = page.locator('[role="dialog"]').first();
+    await dialog.waitFor({ timeout: 5_000 });
+    await page.waitForTimeout(500);
+    const one = await dialog.locator('[role="group"][aria-label]').count();
+    const box = dialog.locator('#herb-gallery-pick');
+    await box.fill('a');
+    const option = page.locator('[role="option"]').first();
+    const offered = await option.waitFor({ timeout: 5_000 }).then(() => true).catch(() => false);
+    if (offered) await option.click();
+    await page.waitForTimeout(500);
+    const two = await dialog.locator('[role="group"][aria-label]').count();
+    await page.keyboard.press('Escape');
+    const gone = await dialog.waitFor({ state: 'detached', timeout: 3_000 }).then(() => true).catch(() => false);
+    const ok = one === 1 && two === 2 && gone;
+    return { ok, detail: `frames ${one} then ${two}, option offered ${offered}, closed ${gone}` };
+  },
   async phoneSearchOverlay(page) {
     // On a phone the search takes the whole top bar while it is open.
     const trigger = page.locator('[data-top-bar] button[aria-label="חיפוש מהיר"], [data-top-bar] button[aria-label="Quick search"]').first();
@@ -1150,6 +1172,8 @@ async function main() {
       after: flows.sidebarNoShift,
     });
     await visit(context, { route: '/reference/herbs?page=2', locale: 'he', width: desktop, label: 'catalogue page 2' });
+    await visit(context, { route: '/reference/herbs', locale: 'he', width: desktop, label: 'flow herb-gallery', after: flows.herbGallery });
+    if (phone) await visit(context, { route: '/reference/herbs', locale: 'he', width: phone, label: 'flow herb-gallery-phone', after: flows.herbGallery });
     if (patientIds[0]) {
       await visit(context, { route: `/patients/${patientIds[0]}?tab=encounters`, locale: 'he', width: desktop, label: 'flow patient-tab', after: flows.patientTab });
       if (phone) {

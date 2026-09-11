@@ -13,6 +13,7 @@ import {
   Field,
   Input,
   Spinner,
+  cn,
   useConfirm,
   useToast,
 } from '@clinic/ui';
@@ -20,6 +21,7 @@ import { useRouter } from '@clinic/i18n/navigation';
 import { removeHerbImage, uploadHerbImage } from './image-actions';
 import { shrinkImage } from '@/lib/shrink-image';
 import type { ReferenceImage } from './herb-reference-image';
+import { useHerbGallery } from './herb-gallery';
 
 /**
  * The herb's photograph, with upload and replace.
@@ -50,6 +52,12 @@ export function HerbImageCard({
   const [status, setStatus] = useState<'idle' | 'error'>('idle');
   const confirm = useConfirm();
   const { toast } = useToast();
+  const gallery = useHerbGallery();
+  // The picture itself is the way to the large view, where a page has one.
+  const openLarge = gallery
+    ? { role: 'button' as const, tabIndex: 0, title: t('openLarge', { name: alt }), onClick: () => gallery.open(herbId),
+        onKeyDown: (event: React.KeyboardEvent) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); gallery.open(herbId); } } }
+    : {};
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -113,7 +121,8 @@ export function HerbImageCard({
             <img
               src={imageUrl}
               alt={alt}
-              className="aspect-square w-full rounded-lg border border-ink-100 object-cover"
+              {...openLarge}
+              className={cn('aspect-square w-full rounded-lg border border-ink-100 object-cover', gallery && 'cursor-zoom-in focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus')}
             />
             {attribution ? (
               <figcaption className="mt-1 text-xs text-ink-500" dir="auto">
@@ -127,7 +136,8 @@ export function HerbImageCard({
             <img
               src={reference.src}
               alt={alt}
-              className="aspect-square w-full rounded-lg border border-ink-100 object-cover"
+              {...openLarge}
+              className={cn('aspect-square w-full rounded-lg border border-ink-100 object-cover', gallery && 'cursor-zoom-in focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus')}
             />
             {/* The credit is a condition of the licence, not decoration: the
                 photographer's name and the licence, with links to both. */}
