@@ -963,6 +963,35 @@ const flows = {
     const ok = now === '1' && Number(max) >= 2 && after === '2' && (await back.count()) === 1;
     return { ok, detail: `step ${now} of ${max}, then ${after}; back buttons ${await back.count()}` };
   },
+  async printPreview(page) {
+    // Under print media the shell's furniture is gone, every scrolling panel
+    // is whole, and a table is a table even at a phone's width.
+    await page.emulateMedia({ media: 'print' });
+    await page.waitForTimeout(300);
+    const state = await page.evaluate(() => {
+      const hidden = (selector) => {
+        const el = document.querySelector(selector);
+        return el ? getComputedStyle(el).display === 'none' : null;
+      };
+      const panel = document.querySelector('[data-scroll-panel], [data-time-grid]');
+      const cell = document.querySelector('.table-cards td');
+      return {
+        tabBar: hidden('[data-tab-bar]'),
+        topBar: hidden('[data-top-bar]'),
+        noPrint: hidden('.no-print'),
+        panelOverflow: panel ? getComputedStyle(panel).overflowY : null,
+        cellDisplay: cell ? getComputedStyle(cell).display : null,
+      };
+    });
+    await page.emulateMedia({ media: null });
+    const ok =
+      state.tabBar !== false &&
+      state.topBar !== false &&
+      state.noPrint !== false &&
+      (state.panelOverflow === null || state.panelOverflow === 'visible') &&
+      (state.cellDisplay === null || state.cellDisplay === 'table-cell');
+    return { ok, detail: JSON.stringify(state) };
+  },
   async phoneSearchOverlay(page) {
     // On a phone the search takes the whole top bar while it is open.
     const trigger = page.locator('[data-top-bar] button[aria-label="חיפוש מהיר"], [data-top-bar] button[aria-label="Quick search"]').first();
@@ -1080,6 +1109,8 @@ async function main() {
       await visit(context, { route: '/reference/herbs', locale: 'he', width: phone, label: 'flow large-title-collapses', after: flows.largeTitleCollapses });
       await visit(context, { route: '/patients', locale: 'he', width: phone, label: 'flow phone-search-overlay', after: flows.phoneSearchOverlay });
       await visit(context, { route: '/patients', locale: 'he', width: phone, label: 'flow card-row-tap', after: flows.cardRowTap });
+      await visit(context, { route: '/patients', locale: 'he', width: phone, label: 'flow print-preview-list', after: flows.printPreview });
+      await visit(context, { route: '/calendar?view=day', locale: 'he', width: phone, label: 'flow print-preview-diary', after: flows.printPreview });
       await visit(context, { route: '/reference/herbs', locale: 'he', width: phone, label: 'flow phone-filter-sheet', after: flows.phoneFilterSheet });
     }
     if (phone) {

@@ -328,4 +328,25 @@ details[open]::details-content {
   h3 {
     break-after: avoid;
   }
+  /* The shell is for the screen: the tab bar, the top bar, the sidebar and
+     the open-files strip have no place on a printed record. Keyed by the
+     attributes the shell already carries, so no page has to remember. */
+  [data-tab-bar],
+  [data-top-bar],
+  [data-sidebar-panel],
+  [data-open-files-slot] {
+    display: none !important;
+  }
+  /* A panel that scrolls on screen prints whole: a diary cut at the
+     window's height and a consent text cut at its box are half a record. */
+  [data-scroll-panel],
+  [data-time-grid] {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+  /* Some print stylesheets append a link's address after its text; here a
+     link is its words. The address of a patient's file is nothing on paper. */
+  a[href]::after {
+    content: none !important;
+  }
 }

@@ -271,6 +271,11 @@
   גלילה לסוף המסמך. קובץ יומן (`.ics`) נכתב ב-`@clinic/domain/ics` ומוגש משלושה
   מקומות: פיד היומן, `/api/appointments/[id]/ics` בפורטל (RLS), ו-`/api/confirm/[token]/ics`
   הציבורי (אותו token ואותה הגבלת קצב כמו הדף)
+- **הדפסה:** הכללים המשותפים ב-`base.css` (`@page` A4, `.no-print`, שבירת עמוד, ומחלקה
+  לכל מה שהמעטפת מסמנת ב-`data-tab-bar`/`data-top-bar`/`data-sidebar-panel`/
+  `data-open-files-slot`, שנעלם על הנייר; `data-scroll-panel`/`data-time-grid` מודפסים
+  בשלמותם). תיבה שגוללת על המסך מקבלת `print:max-h-none print:overflow-visible`; כרטיסי
+  הטלפון הם `screen` בלבד. זרימת ה-smoke `printPreview` בודקת זאת עם `emulateMedia`
 - **אייקוני מסך הבית:** `app/manifest.ts` + `app/apple-icon.png` + `public/icons/*.png` בשתי
   האפליקציות, מיוצרים מ-`app/icon.svg` ב-`node scripts/render-icons.mjs` (Edge headless,
   בלי ספריית תמונות). שינוי ב-SVG = להריץ שוב

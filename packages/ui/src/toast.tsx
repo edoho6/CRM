@@ -158,7 +158,7 @@ export function ToastProvider({
         aria-live="polite"
         // Clear of a phone's tab bar (`--bottom-bar`, set by the app that has
         // one) and of the home indicator; otherwise a rem above the edge.
-        className="pointer-events-none fixed end-4 bottom-[calc(var(--bottom-bar,0px)+env(safe-area-inset-bottom)+1rem)] z-toast flex w-[min(24rem,calc(100dvw-2rem))] flex-col gap-2"
+        className="no-print pointer-events-none fixed end-4 bottom-[calc(var(--bottom-bar,0px)+env(safe-area-inset-bottom)+1rem)] z-toast flex w-[min(24rem,calc(100dvw-2rem))] flex-col gap-2"
       >
         {items.map((item) => (
           <ToastItem
