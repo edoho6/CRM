@@ -25,6 +25,7 @@ export default async function LoginPage({ params }: { params: Promise<{ locale: 
 
   const t = await getTranslations('auth');
   const tc = await getTranslations('common');
+  const tSite = await getTranslations('site');
 
   return (
     <main className="grid min-h-dvh place-items-center bg-ink-50 px-6 py-12">
@@ -36,6 +37,10 @@ export default async function LoginPage({ params }: { params: Promise<{ locale: 
           <div>
             <h1 className="text-xl font-semibold text-ink-900">{tc('appName')}</h1>
             <p className="text-xs text-ink-500">{tc('appTagline')}</p>
+            {/* For whoever arrived here from a search: what this is, first. */}
+            <Link href="/about" className="mt-1 inline-block text-xs text-jade-800 underline-offset-2 hover:underline">
+              {tSite('aboutLink')}
+            </Link>
           </div>
         </div>
 

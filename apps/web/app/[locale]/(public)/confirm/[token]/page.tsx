@@ -9,6 +9,9 @@ import { RespondForm } from './respond-form';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+/** A page reached only by its own link: never in a search index, whatever robots.txt says. */
+export const metadata = { robots: { index: false, follow: false } };
+
 interface TokenRow {
   start_at: string;
   end_at: string;

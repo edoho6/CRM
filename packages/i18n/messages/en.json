@@ -1600,6 +1600,66 @@
     "addToCalendar": "Add to calendar",
     "moreAppointments": "More appointments"
   },
+  "site": {
+    "meta": {
+      "title": "Herbalist — clinic management for Chinese medicine",
+      "description": "Clinic management for Chinese medicine: patients and medical files, calendar and online booking, treatment records, a herb and formula library with photographs, inventory, billing, a patient portal and equipment price comparison."
+    },
+    "nav": "Main navigation",
+    "aboutLink": "About the system",
+    "hero": {
+      "title": "Your clinic, in order",
+      "body": "Everything a Chinese-medicine clinic needs in one place: patients, the calendar, treatments, herbs, stock and billing. Built for the phone and the desk, with a portal for patients."
+    },
+    "cta": {
+      "login": "Sign in",
+      "signup": "Create an account"
+    },
+    "features": {
+      "title": "What the system does",
+      "patients": {
+        "title": "Patients and medical files",
+        "body": "Medical history, documents, signed consents, and the whole file in one click."
+      },
+      "calendar": {
+        "title": "Calendar and online booking",
+        "body": "A diary per practitioner and room, reminders, and a page where patients book for themselves."
+      },
+      "records": {
+        "title": "Treatment records",
+        "body": "Diagnosis, points, formula and dosage, tongue photographs, and a 3D body for the points."
+      },
+      "herbs": {
+        "title": "Herb and formula library",
+        "body": "Hundreds of herbs with photographs of the material, classical formulas, and side-by-side comparison."
+      },
+      "inventory": {
+        "title": "Inventory and dispensing",
+        "body": "Batches, expiry, low-stock thresholds, and automatic deduction on every dispensing."
+      },
+      "billing": {
+        "title": "Billing and packages",
+        "body": "Invoices, payments, treatment packages, and treatment confirmations for health funds."
+      },
+      "portal": {
+        "title": "Patient portal",
+        "body": "Questionnaires before the visit, consents, upcoming appointments and the documents you shared."
+      },
+      "prices": {
+        "title": "Equipment price comparison",
+        "body": "Needles, moxa, cupping and more from several shops, with a link to buy beside every price."
+      }
+    },
+    "trust": {
+      "title": "Built to keep the data safe",
+      "isolation": "Each clinic sees only its own data, and the separation is enforced in the database itself.",
+      "audit": "Every look at a patient file is recorded, and whoever runs the clinic sees who reached what and when.",
+      "storage": "Data is stored in Europe and encrypted, in transit and at rest."
+    },
+    "footer": {
+      "note": "Herbalist · clinic management for Chinese medicine"
+    }
+  },
   "prices": {
     "imageCredits": "Picture credits",
     "credits": {

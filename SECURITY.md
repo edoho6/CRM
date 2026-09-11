@@ -156,6 +156,12 @@ Both applications send, on every response:
 
 `X-Powered-By` is removed.
 
+**Search engines.** Each application serves a `robots.txt` (`app/robots.ts`). The web app
+allows indexing of the online booking page alone, with the assets needed to render it, and
+disallows everything else — sign-in, sign-up, the confirmation links, the calendar feeds; the
+confirmation page also carries its own `noindex`, so a link that leaks into a crawler's path
+is still not indexed. The patient portal disallows everything.
+
 **Known concession:** the CSP allows `'unsafe-inline'` for scripts and styles.
 Next injects inline bootstrap scripts, and Radix sets inline styles. Removing it
 needs per-request nonces threaded through the app. It is marked as a concession

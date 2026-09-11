@@ -199,6 +199,25 @@ async function visit(context, options) {
 /** The signed-in context in use; `visit` swaps it when the session is lost. */
 const current = { browser: null, context: null };
 
+/**
+ * A plain HTTP read with a few assertions, reported like a visit: for the
+ * files a crawler reads and the tags it looks for, which no page shows.
+ */
+async function checkText(label, url, assert) {
+  if (only && !only.some((needle) => label.includes(needle) || url.includes(needle))) return;
+  const started = Date.now();
+  let failures;
+  try {
+    const response = await fetch(url, { redirect: 'manual' });
+    const text = await response.text();
+    failures = response.ok ? assert(text).filter(Boolean) : [`http ${response.status}`];
+  } catch (error) {
+    failures = [`request failed: ${error.message}`];
+  }
+  report.push({ route: url, label, locale: '-', width: '-', finalUrl: url, durationMs: Date.now() - started, failures, screenshot: null });
+  console.log(`${failures.length ? 'FAIL' : ' ok '}  -    -  ${label}${failures.length ? `\n        ${failures.join('\n        ')}` : ''}`);
+}
+
 async function visitOnce(context, { route, locale, width, label = route, expect404 = false, before, after, origin = baseUrl }) {
   if (only && !only.some((needle) => route.includes(needle) || label.includes(needle))) return null;
   const page = await context.newPage();
@@ -1109,7 +1128,7 @@ const STATIC_ROUTES = [
   '/settings', '/settings/access', '/settings/booking', '/settings/consent', '/settings/tags',
   '/account', '/account/protocols', '/account/schedule', '/accessibility',
 ];
-const PUBLIC_ROUTES = ['/login', '/signup', '/setup'];
+const PUBLIC_ROUTES = ['/about', '/login', '/signup', '/setup'];
 
 async function main() {
   await waitForServer();
@@ -1133,6 +1152,21 @@ async function main() {
       }
     } else {
       console.log(`portal not running at ${portalUrl} — its login page was not opened`);
+    }
+    // Search engines: the app lets them index the booking page and nothing
+    // else, the confirmation page says noindex itself, the portal allows nothing.
+    await checkText('robots.txt', `${baseUrl}/robots.txt`, (text) => [
+      /^Disallow:\s*\/\s*$/m.test(text) ? null : 'no "Disallow: /" line',
+      /^Allow:\s*\/he\/about/m.test(text) ? null : 'the public home page is not allowed',
+      /^Allow:\s*\/he\/book\//m.test(text) ? null : 'the booking page is not allowed',
+    ]);
+    await checkText('confirm page noindex', `${baseUrl}/he/confirm/00000000-0000-4000-8000-000000000000`, (html) => [
+      /<meta name="robots" content="noindex/i.test(html) ? null : 'no noindex meta tag on the confirmation page',
+    ]);
+    if (portalUp) {
+      await checkText('portal robots.txt', `${portalUrl}/robots.txt`, (text) => [
+        /^Disallow:\s*\/\s*$/m.test(text) ? null : 'the portal is not disallowed',
+      ]);
     }
     await anonymous.close();
 
