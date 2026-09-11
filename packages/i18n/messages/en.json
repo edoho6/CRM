@@ -374,7 +374,17 @@
     "resendLink": "Send again",
     "resendIn": "Send again in {seconds} s",
     "useAnotherEmail": "Use another address",
-    "magicLinkExpired": "The link has expired or was already used. Ask for a new one."
+    "magicLinkExpired": "The link has expired or was already used. Ask for a new one.",
+    "verify": {
+      "title": "Two-step verification",
+      "subtitle": "Enter the code your authenticator app shows.",
+      "code": "Six-digit code",
+      "help": "The code changes every thirty seconds.",
+      "submit": "Confirm",
+      "submitting": "Checking…",
+      "invalidCode": "That code was not accepted. Check the time on your phone and try the current code.",
+      "tooManyAttempts": "Too many attempts. Try again in {minutes} minutes."
+    }
   },
   "setup": {
     "title": "Finish setup",
@@ -2360,7 +2370,28 @@
     "toSettings": "Go to payment settings",
     "homePath": "My home page",
     "homePathHint": "Where clicking the clinic name at the top of the menu leads.",
-    "homePathSaved": "Home page saved"
+    "homePathSaved": "Home page saved",
+    "twoFactor": {
+      "title": "Two-step verification",
+      "subtitle": "A code from an authenticator app after the password. Recommended for anyone who opens patient files.",
+      "body": "With two-step verification, signing in also asks for a code from an app on your phone (Google Authenticator or Authy, for example). Without the code, even someone who knows the password sees nothing — the database itself refuses.",
+      "enabled": "On",
+      "disabled": "Off",
+      "enable": "Turn on two-step verification",
+      "scan": "Scan the code with your authenticator app, or type the key into it. Then enter the first code it shows here.",
+      "qrAlt": "QR code to add this account to an authenticator app",
+      "secretLabel": "Key for typing in by hand",
+      "secretHint": "Keep a copy somewhere safe. Without it, a lost phone means no way in without help.",
+      "code": "The code the app shows",
+      "confirm": "Confirm and turn on",
+      "confirmed": "Two-step verification is on. Signing in will ask for a code from now on.",
+      "invalidCode": "That code was not accepted. Check the time on your phone and try the current code.",
+      "disable": "Turn off two-step verification",
+      "disableBody": "Signing in will go back to asking for the password only.",
+      "disabledToast": "Two-step verification is off.",
+      "failed": "Something went wrong. Please try again.",
+      "lostDevice": "If the phone is lost: whoever installs the system can remove the factor from the account (see GO-LIVE.md). Until then there is no way in."
+    }
   },
   "forms": {
     "library": {

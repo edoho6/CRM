@@ -7,6 +7,7 @@ import {
   CreditCard,
   MapPin,
   Palette,
+  ShieldCheck,
 } from 'lucide-react';
 import { Collapsible, PageBody } from '@clinic/ui';
 import { Link } from '@clinic/i18n/navigation';
@@ -26,6 +27,8 @@ import { AppearanceSettings } from '@/features/settings/appearance-settings';
 import { PractitionerForm } from '@/features/settings/practitioner-form';
 import { LocationsManager } from '@/features/settings/locations-manager';
 import { RoomsManager } from '@/features/settings/rooms-manager';
+import { TwoFactorSettings } from '@/features/settings/two-factor-settings';
+import { verifiedTotpFactor } from '@/lib/second-factor';
 import { pageTitle } from '@/lib/page-title';
 
 export const generateMetadata = pageTitle('account', 'title');
@@ -59,6 +62,7 @@ export default async function AccountPage({ params }: { params: Promise<{ locale
   if (!scope) return null;
 
   const today = new Date().toISOString().slice(0, 10);
+  const factor = await verifiedTotpFactor(scope.supabase);
 
   const [
     { data: types },
@@ -143,6 +147,19 @@ export default async function AccountPage({ params }: { params: Promise<{ locale
           }
         >
           <AppointmentTypesManager types={types ?? []} />
+        </Collapsible>
+
+        <Collapsible
+          title={t('twoFactor.title')}
+          description={t('twoFactor.subtitle')}
+          icon={<ShieldCheck className="h-4 w-4" aria-hidden />}
+          badge={
+            <span className="text-xs text-ink-600">
+              {factor ? t('twoFactor.enabled') : t('twoFactor.disabled')}
+            </span>
+          }
+        >
+          <TwoFactorSettings enabled={Boolean(factor)} factorId={factor?.id ?? null} />
         </Collapsible>
 
         <Collapsible

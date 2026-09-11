@@ -5,6 +5,7 @@ import { redirect } from '@clinic/i18n/navigation';
 import { createServerSupabase, isSupabaseConfigured } from '@clinic/db';
 import type { Locale } from '@clinic/domain';
 import { checkRateLimit, clearAttempts, recordFailure } from '@/lib/rate-limit';
+import { needsSecondFactor, verifiedTotpFactor } from '@/lib/second-factor';
 
 export interface SignInState {
   error?: 'invalidCredentials' | 'notConfigured' | 'generic' | 'tooManyAttempts';
@@ -66,13 +67,74 @@ export async function signInAction(
   clearAttempts(key);
   // Someone who signed in from an invitation link goes back to it, to accept.
   const join = String(formData.get('join') ?? '');
-  redirect({ href: UUID.test(join) ? `/join/${join}` : '/', locale });
+  const joinPath = UUID.test(join) ? `/join/${join}` : null;
+  // An account with an authenticator app is not in yet: the database holds
+  // the clinic closed until the code is given on the next screen.
+  if (await needsSecondFactor(supabase)) {
+    redirect({ href: joinPath ? `/verify?join=${join}` : '/verify', locale });
+    return {};
+  }
+  redirect({ href: joinPath ?? '/', locale });
   // `redirect` throws internally, so this is unreachable — it exists only because
   // next-intl types it as returning void rather than never.
   return {};
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export interface VerifyState {
+  error?: 'invalidCode' | 'tooManyAttempts';
+  retryAfterSeconds?: number;
+}
+
+/**
+ * The code from the authenticator app, after the password.
+ *
+ * Six digits against the account's verified factor. Guesses are counted the
+ * way password attempts are — a six-digit code is a small space, and the
+ * lock after repeated failures is what keeps it from being walked.
+ */
+export async function verifySecondFactorAction(
+  locale: Locale,
+  _prevState: VerifyState,
+  formData: FormData,
+): Promise<VerifyState> {
+  const supabase = await createServerSupabase();
+  const { data: userData } = await supabase.auth.getUser();
+  const user = userData.user;
+  if (!user) {
+    redirect({ href: '/login', locale });
+    return {};
+  }
+
+  const code = String(formData.get('code') ?? '').replace(/\s+/g, '');
+  const key = await rateLimitKey(`2fa:${user.id}`);
+  const limit = checkRateLimit(key);
+  if (!limit.allowed) {
+    return { error: 'tooManyAttempts', retryAfterSeconds: limit.retryAfterSeconds };
+  }
+  if (!/^\d{6}$/.test(code)) {
+    recordFailure(key);
+    return { error: 'invalidCode' };
+  }
+
+  const factor = await verifiedTotpFactor(supabase);
+  if (!factor) {
+    // Nothing to verify against: the account has no authenticator after all.
+    redirect({ href: '/', locale });
+    return {};
+  }
+  const { error } = await supabase.auth.mfa.challengeAndVerify({ factorId: factor.id, code });
+  if (error) {
+    recordFailure(key);
+    return { error: 'invalidCode' };
+  }
+  clearAttempts(key);
+
+  const join = String(formData.get('join') ?? '');
+  redirect({ href: UUID.test(join) ? `/join/${join}` : '/', locale });
+  return {};
+}
 
 export interface AcceptInvitationState {
   error?: 'closed' | 'portal' | 'generic';

@@ -81,8 +81,19 @@ gave them. Before a clinic invites someone who should see less than the owner, t
 policies need to separate at minimum: who may see clinical notes, who may see
 financial records, and who may change clinic settings.
 
-**Gap:** MFA is not enforced for the owner account. Supabase supports it; it is
-not switched on.
+**Second factor.** A staff account may enrol an authenticator app (TOTP) from
+the personal area; from then on the sign-in asks for the code after the
+password. The enforcement is in the database, not only on the screen:
+`session_needs_second_factor()` is true for a session that has not yet given
+the code (`aal1`) on an account with a verified factor, and the three helpers
+every policy reaches the clinic through — and the membership context the
+shell reads — return nothing for such a session (migration 39). A password
+alone therefore opens no patient, note, diary or invoice, whatever client
+presents it. There are no backup codes: a lost phone is resolved by whoever
+administers the project deleting the factor row in `auth.mfa_factors`.
+
+**Gap:** the second factor is offered, not required. Making it mandatory for
+every staff account is a one-line policy decision once the clinic wants it.
 
 ## 3 · The audit trail
 

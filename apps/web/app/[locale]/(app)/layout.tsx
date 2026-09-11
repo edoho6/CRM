@@ -5,6 +5,8 @@ import type { Locale } from '@clinic/domain';
 import { AppShell } from '@/components/app-shell';
 import { ReferenceSheetProvider } from '@/features/reference/reference-sheet';
 import { getMembershipContext } from '@/lib/session';
+import { needsSecondFactor } from '@/lib/second-factor';
+import { tryCreateServerSupabase } from '@clinic/db/server';
 import { getCurrentUser } from '@clinic/db/server';
 import { signOutAction } from '../(auth)/actions';
 
@@ -41,6 +43,14 @@ export default async function AppLayout({
     // away, or a portal patient in the wrong app. Both are told, on the
     // welcome page, rather than being bounced to a login they just passed.
     const user = await getCurrentUser();
+    // With an authenticator on the account, the database holds the clinic
+    // closed until the code is given — so there is no membership to find
+    // yet, and the person is sent to give it rather than to a welcome page.
+    const supabase = user ? await tryCreateServerSupabase() : null;
+    if (supabase && (await needsSecondFactor(supabase))) {
+      redirect({ href: '/verify', locale: locale as Locale });
+      return null;
+    }
     redirect({ href: user ? '/welcome' : '/login', locale: locale as Locale });
     // Unreachable: next-intl's redirect throws but is typed as returning void.
     return null;

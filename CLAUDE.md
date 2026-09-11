@@ -224,6 +224,19 @@
   השדות אומרות הכול; `Section titleHidden` משאיר h2 לקורא מסך היכן שנשאר סקשן. פאנלי הצד ורשימת
   הנקודות הם `resize-y overflow-auto` — נמתחים מהפינה כמו תיבת טקסט. עמודת הצד רחבה מעט משליש
   (`1.7fr/1fr`). סטטוס התשלום יושב ליד הכותרת (`PageHeader aside`), לא בין הפעולות
+- **אימות דו-שלבי (migration 39):** `profiles` לא יודע עליו; Supabase Auth מחזיק את הגורם (`auth.mfa_factors`)
+  ומסמן סשן שנתן קוד ב-`aal = 'aal2'`. הנעילה במסד: `session_needs_second_factor()` אמת לחשבון עם גורם
+  מאומת בסשן `aal1`, ושלושת העוזרים (`current_clinic_id`, `is_clinic_member`, `has_clinic_role`) וגם
+  `current_membership_context` מחזירים כלום עד שהקוד ניתן — כל policy עוברת דרכם. באפליקציה:
+  `lib/second-factor.ts` (`needsSecondFactor`), `/verify` אחרי הסיסמה, ההרשמה ב"איזור אישי ← אימות
+  דו-שלבי" (`two-factor-settings.tsx`, `mfa.enroll/challengeAndVerify/unenroll`). אין קודי גיבוי: טלפון שאבד =
+  מחיקת השורה ב-`auth.mfa_factors` מה-SQL editor (GO-LIVE.md). ה-smoke לא נרשם לגורם — חשבון הבדיקות
+  היה ננעל בלי קוד; `test-results/probe-2fa.tmp.mjs` (מייצר TOTP בעצמו) הוא הבדיקה מקצה לקצה
+- **הגדלת טקסט 200%:** `pnpm smoke -- --zoom` מציב `html { font-size: 200% }` לפני הציור ובודק בכל מסך
+  שהדף לא גולל הצידה ושאף תיבה לא חותכת טקסט שלא נועד להיחתך. מה שנשבר ותוקן: רוחב מינימלי קבוע
+  (`min-w-64`) → `min-w-0 basis-64`; `select`/`input` בלי `min-w-0` נמתחים לרוחב האופציה הארוכה;
+  כרטיסי טלפון (`.table-cards td`) עכשיו `flex-wrap`; `:where(.grid)` מקבל `grid-auto-columns: minmax(0,1fr)`
+  כי מסלול משתמע נמדד לפי התוכן והרחיב עמודה שלמה מעבר לטלפון; היומן עבר מפיקסלים ל-rem (`SLOT_HEIGHT_REM`)
 - **מספר לפני יחידה:** "6 גרם ליום" — לעולם לא `dir="ltr"` על מספר+יחידה (ראה "מספר + יחידה"); כך
   נולד "גרם 6 ליום" בהשוואה ובהיסטוריית הניפוקים
 - **השוואת טיפולים:** זוג זהה (אותה נקודה/אותו צמח בשני הצדדים) נצבע באותו גוון מ-`PAIR_HUES`

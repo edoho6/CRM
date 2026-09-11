@@ -6,6 +6,7 @@ import { Alert, Button, Card, CardBody } from '@clinic/ui';
 import type { Locale } from '@clinic/domain';
 import { Leaf } from 'lucide-react';
 import { getMembershipContext } from '@/lib/session';
+import { needsSecondFactor } from '@/lib/second-factor';
 import { signOutAction } from '../actions';
 import { WelcomeForm } from './welcome-form';
 import { pageTitle } from '@/lib/page-title';
@@ -41,6 +42,12 @@ export default async function WelcomePage({ params }: { params: Promise<{ locale
   }
 
   const supabase = await tryCreateServerSupabase();
+  // A member whose session still owes its code has no clinic yet; the code
+  // comes first, not a welcome page offering to open a clinic.
+  if (supabase && (await needsSecondFactor(supabase))) {
+    redirect({ href: '/verify', locale: locale as Locale });
+    return null;
+  }
   const { data: patientId } = supabase ? await supabase.rpc('current_patient_id') : { data: null };
   const isPortalAccount = Boolean(patientId);
 
