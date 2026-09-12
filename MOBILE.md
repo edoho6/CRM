@@ -226,7 +226,37 @@ Play Console ← Testing ← **Closed testing** ← Create track "בטא" ← Te
 
 ---
 
-## 8 · לפני ההגשה לביקורת
+## 8 · הרישום בחנויות — הטקסטים, הצילומים וההצהרות
+
+**הטקסטים** (שם, כותרת משנה, תיאור, מילות מפתח, הערות גרסה) כתובים בשתי השפות ב-
+`apps/mobile-<app>/fastlane/metadata/` — `he/` ו-`en-US/` ל-App Store, `android/iw-IL/` ו-`android/en-US/`
+ל-Google Play. לפני ההגשה מחליפים `https://app.YOUR-DOMAIN` בכתובת האמיתית (`privacy_url.txt`,
+`support_url.txt`, `marketing_url.txt`) וממלאים את `review_information/` (השם, האימייל, הטלפון וחשבון
+הבודקים) ואת `copyright.txt`. את הכול אפשר גם להדביק ביד בקונסולות.
+
+**הצילומים**: `SMOKE_BASE_URL=http://localhost:3002 node scripts/render-store-shots.mjs` (מול build שרץ,
+כמו ה-smoke) מצלם את מסכי הצוות מקליניקת הבדיקות בשתי השפות, בגדלים שהחנויות דורשות
+(`fastlane/screenshots/` ל-App Store, `fastlane/metadata/android/…/images/` ל-Play, יחד עם
+ה-feature graphic והאייקון 512). לצילומי הפורטל צריך מטופל בקליניקת הבדיקות עם סיסמה
+(סעיף 8, "חשבון לבודקים") ב-`SMOKE_PORTAL_EMAIL` / `SMOKE_PORTAL_PASSWORD` ב-`apps/web/.env.test.local`.
+העלאה ל-App Store Connect: Actions ← Store apps · iOS ← lane `metadata`. ל-Play — גרירה בקונסולה.
+
+**ההצהרות** — מה עונים:
+- **Apple → App Privacy:** Data collected: Contact Info (name, email, phone), Health & Fitness (health),
+  Identifiers (user ID, device ID), User Content (photos — צוות בלבד). לכל אחד: Linked to the user — Yes;
+  Used for tracking — No; Purpose — App Functionality. "Data not collected" לכל השאר.
+- **Google Play → Data safety:** Collects: Personal info (name, email, phone, address), Health info,
+  App activity? לא; Device IDs — כן (התראות). Encrypted in transit — Yes; users can request deletion —
+  Yes (`/delete-account`); shared with third parties — No (ספקי משנה אינם "שיתוף").
+  **Health apps declaration** — כן, אפליקציית בריאות (ניהול רשומות). **Government IDs** — כן
+  (תעודות זהות של מטופלים, צוות בלבד). Ads — No.
+- **Content rating** (Play) — שאלון "Utility/Productivity" ← הכול לא. **Target audience** — 18+.
+- **קטגוריות:** צוות — Medical (משני Business); פורטל — Medical.
+- **App Store → Age rating:** 4+ / "None" בכל השאלות; **Uses Health data** — לא (אין HealthKit).
+
+---
+
+## 9 · לפני ההגשה לביקורת
 
 - **מדיניות פרטיות ותנאי שימוש** — הדפים `/privacy` ו-`/terms` באתר קיימים עם טיוטה
   שכתבתי מהמערכת עצמה (מה נאסף, מי הספקים). **העו"ד חייב לעבור עליהם** (GO-LIVE.md §2)

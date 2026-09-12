@@ -1,0 +1,11 @@
+The patient's own area at a clinic that works with Herbalist.
+
+• Your coming appointments, with a tap to add them to the calendar and a tap to confirm.
+• The appointment reminder as a phone notification, instead of a message.
+• Questionnaires the clinic asked you to fill in, step by step, from the phone.
+• Consent documents to read and sign, with a record of what was agreed and when.
+• The documents the clinic shared with you.
+
+Sign in with a link or a code sent to your email — no password. The app is for patients whose clinic invited them; the medical file itself stays with the clinic.
+
+Privacy: your information is stored encrypted, with your clinic, and there is no advertising and no sale of data. The full privacy policy is at the address on this page.

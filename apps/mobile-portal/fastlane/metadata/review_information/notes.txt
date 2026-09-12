@@ -1,0 +1,1 @@
+Sign in with the password door at the foot of the sign-in form ("Sign in with a password"). The account is a fictional patient of a sandbox clinic; the code-by-email path also works with the same address.

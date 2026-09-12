@@ -20,6 +20,11 @@ on:
         description: First run only — let match create the certificates
         default: false
         type: boolean
+      lane:
+        description: beta = build and upload to TestFlight; metadata = the listing texts and screenshots only
+        default: beta
+        type: choice
+        options: [beta, metadata]
   push:
     tags: ['mobile-v*']
 
@@ -84,7 +89,7 @@ jobs:
           FASTLANE_HIDE_CHANGELOG: 1
         run: |
           export SHELL_VERSION=$(node -p "require('./package.json').version")
-          fastlane ios beta
+          fastlane ios ${{ inputs.lane || 'beta' }}
 
       - uses: actions/upload-artifact@v4
         if: always()

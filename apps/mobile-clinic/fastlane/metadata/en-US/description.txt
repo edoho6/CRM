@@ -1,0 +1,14 @@
+Herbalist is a practice-management system for Chinese medicine clinics — for the clinic's team, on the phone and at the desk.
+
+What it holds:
+• A diary by practitioner and room, with patient reminders and arrival confirmations.
+• A complete patient file: details, medical history, appointments, documents, questionnaires and signed consents.
+• The treatment record: complaint, diagnosis, acupuncture points (on a 3D body too), tongue and pulse, formula and dose.
+• A reference of herbs, formulas and points with images and monographs.
+• Herb stock, dispensing and billing, with invoices and receipts.
+• A patient portal: appointments, questionnaires and consents from the patient's own phone.
+• Phone notifications for tasks and reminders.
+
+The app is for the clinic's team. Sign in with the account of a clinic opened in the system.
+
+Privacy: medical information belongs to the clinic and is stored encrypted, with full separation between clinics and an access log that cannot be altered. No advertising, no sale of data. The full privacy policy is at the address on this page.
