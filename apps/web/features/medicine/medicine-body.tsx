@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { Activity, Pill, TestTube, Thermometer, type LucideIcon } from 'lucide-react';
-import { Alert, Badge, cn } from '@clinic/ui';
+import { Alert, Badge, Collapsible, cn } from '@clinic/ui';
 import { formatDate } from '@clinic/i18n';
 import type { MedEntry, MedLinkedEntry, MedQuote, MedSource } from '@clinic/db/types';
 import { MED_STATUS_TONES, statusTone, type MedKind } from '@clinic/domain';
@@ -18,6 +18,12 @@ import { ReferenceChip } from '@/features/reference/reference-context';
  * entry. The English quotes below them are the sources' own words, verbatim,
  * with their date and licence: that is where a dose or a side effect is
  * checked, and why a dose is never paraphrased into the Hebrew.
+ *
+ * Everything folds. Only the overview opens by itself: a drug's label runs to
+ * pages, and a reader who wants the interactions is one click from them,
+ * while a reader who wants to know what the thing is gets that at once. The
+ * entry's standing — its status, what was checked, where the Hebrew came
+ * from — sits with the sources at the end, not over the text.
  */
 
 const KIND_ICONS: Record<MedKind, LucideIcon> = {
@@ -64,11 +70,6 @@ export function MedicineStatusBadge({ entry }: { entry: Pick<MedEntry, 'status' 
       {label}
     </Badge>
   );
-}
-
-function Heading({ level, children, className }: { level: 'h2' | 'h3'; children: React.ReactNode; className?: string }) {
-  const Tag = level;
-  return <Tag className={cn('text-base font-semibold text-ink-900', className)}>{children}</Tag>;
 }
 
 function sourceName(source: string, t: ReturnType<typeof useTranslations<'medicine'>>): string {
@@ -143,25 +144,20 @@ export function MedicineBody({
   const groupOrder = ['treats_out', 'treats_in', 'symptom_of_in', 'symptom_of_out', 'side_effect_out', 'side_effect_in', 'class_out', 'class_in', 'related_out', 'related_in'];
   const groupKeys = [...groupOrder.filter((key) => groups.has(key)), ...[...groups.keys()].filter((key) => !groupOrder.includes(key))];
 
+  // The summary is the overview's first sentences: with an overview on the
+  // page it would be read twice. It stays only where it is the sole Hebrew
+  // (the sections still English) or the sole text at all.
+  const showSummaryHe = Boolean(entry.summary_he) && !sectionsHe;
+  const showSummaryEn = !showSummaryHe && Boolean(entry.summary_en) && !shown;
+  // The overview opens by itself; a drug has none, and its "what it is for" is the same first step.
+  const openKey = sectionKeys.includes('overview') ? 'overview' : sectionKeys[0];
+
   return (
     <div className="space-y-5">
       <div className="space-y-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <MedicineStatusBadge entry={entry} />
-          <span className="text-xs text-ink-600">{hebrewNote}</span>
-        </div>
-        {checks.length ? (
-          <ul className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-ink-600">
-            {checks.map((line) => (
-              <li key={line} dir="auto">
-                {line}
-              </li>
-            ))}
-          </ul>
-        ) : null}
-        {entry.summary_he ? (
+        {showSummaryHe ? (
           <p className="text-base text-ink-900">{entry.summary_he}</p>
-        ) : entry.summary_en ? (
+        ) : showSummaryEn ? (
           <p className="text-base text-ink-900" dir="ltr">
             {entry.summary_en}
           </p>
@@ -185,75 +181,91 @@ export function MedicineBody({
       </div>
 
       {sectionKeys.length > 0 ? (
-        <div className="space-y-4">
+        <div className="space-y-2">
           {sectionKeys.map((key) => {
             const text = shown?.[key];
             if (!text) return null;
             const warning = WARNING_SECTIONS.has(key);
             return (
-              <section key={key} className={cn(warning && 'border-s-4 border-amber-400 ps-3')}>
-                <Heading level={headingLevel} className="mb-1">
-                  {t(`sections.${key}` as never)}
-                </Heading>
+              <Collapsible
+                key={key}
+                titleAs={headingLevel}
+                title={t(`sections.${key}` as never)}
+                defaultOpen={key === openKey}
+                className={cn(warning && 'border-s-4 border-s-amber-400')}
+              >
                 <p
                   className={cn('whitespace-pre-wrap text-sm text-ink-800', shownIsEnglish && 'text-start')}
                   dir={shownIsEnglish ? 'ltr' : undefined}
                 >
                   {text}
                 </p>
-              </section>
+              </Collapsible>
             );
           })}
         </div>
       ) : null}
 
       {groupKeys.length > 0 ? (
-        <section className="space-y-2">
-          <Heading level={headingLevel}>{t('links.title')}</Heading>
-          {groupKeys.map((key) => (
-            <div key={key}>
-              <p className="text-xs font-medium text-ink-600">{t(`links.${key}` as never)}</p>
-              <ul className="flex flex-wrap gap-x-3 gap-y-1">
-                {groups.get(key)!.map((link) => (
-                  <li key={`${key}-${link.entry.id}`} className="inline-flex items-center gap-1 text-sm">
-                    <MedicineKindIcon kind={link.entry.kind} className="h-3.5 w-3.5 text-sky-800" />
-                    <ReferenceChip
-                      target={{ kind: 'medicine', id: link.entry.id, slug: link.entry.slug, label: link.entry.name_he ?? link.entry.name_en }}
-                      className="font-medium text-ink-900"
-                    >
-                      {link.entry.name_he ?? link.entry.name_en}
-                    </ReferenceChip>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </section>
+        <Collapsible titleAs={headingLevel} title={t('links.title')} badge={<Badge tone="muted">{links.length}</Badge>}>
+          <div className="space-y-2">
+            {groupKeys.map((key) => (
+              <div key={key}>
+                <p className="text-xs font-medium text-ink-600">{t(`links.${key}` as never)}</p>
+                <ul className="flex flex-wrap gap-x-3 gap-y-1">
+                  {groups.get(key)!.map((link) => (
+                    <li key={`${key}-${link.entry.id}`} className="inline-flex items-center gap-1 text-sm">
+                      <MedicineKindIcon kind={link.entry.kind} className="h-3.5 w-3.5 text-sky-800" />
+                      <ReferenceChip
+                        target={{ kind: 'medicine', id: link.entry.id, slug: link.entry.slug, label: link.entry.name_he ?? link.entry.name_en }}
+                        className="font-medium text-ink-900"
+                      >
+                        {link.entry.name_he ?? link.entry.name_en}
+                      </ReferenceChip>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </Collapsible>
       ) : null}
 
+      {entry.israel ? <IsraeliProducts israel={entry.israel} headingLevel={headingLevel} /> : null}
+
       {entry.quotes?.length ? (
-        <section className="space-y-2">
-          <Heading level={headingLevel}>{t('quotes.title')}</Heading>
-          <p className="text-xs text-ink-600">{t('quotes.hint')}</p>
+        <Collapsible titleAs={headingLevel} title={t('quotes.title')} badge={<Badge tone="muted">{entry.quotes.length}</Badge>}>
+          <p className="mb-2 text-xs text-ink-600">{t('quotes.hint')}</p>
           <div className="space-y-1.5">
             {entry.quotes.map((quote, index) => (
               <Quote key={`${quote.source}-${quote.field}-${index}`} quote={quote} sourceLabel={sourceName(quote.source, t)} fieldLabel={t(`sections.${quote.field}` as never)} />
             ))}
           </div>
-        </section>
+        </Collapsible>
       ) : null}
 
-      {basis.length > 0 || furtherReading.length > 0 ? (
-        <section className="space-y-2">
-          <Heading level={headingLevel}>{t('sources.title')}</Heading>
+      {/* The entry's standing lives with its sources: the status on the shut
+          row, and inside, where the Hebrew came from and what was checked. */}
+      <Collapsible titleAs={headingLevel} title={t('sources.title')} badge={<MedicineStatusBadge entry={entry} />}>
+        <div className="space-y-3">
+          <div className="space-y-1 text-xs text-ink-600">
+            <p>{hebrewNote}</p>
+            {checks.length ? (
+              <ul className="flex flex-wrap gap-x-3 gap-y-1">
+                {checks.map((line) => (
+                  <li key={line} dir="auto">
+                    {line}
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
           {basis.length > 0 ? <SourceList sources={basis} label={t('sources.basis')} nameOf={(source) => sourceName(source, t)} /> : null}
           {furtherReading.length > 0 ? (
             <SourceList sources={furtherReading} label={t('sources.furtherReading')} nameOf={(source) => sourceName(source, t)} />
           ) : null}
-        </section>
-      ) : null}
-
-      {entry.israel ? <IsraeliProducts israel={entry.israel} headingLevel={headingLevel} /> : null}
+        </div>
+      </Collapsible>
 
       {nhs ? <NhsAttribution url={nhs.url} /> : null}
       {fromWikipedia ? <WikipediaAttribution source={fromWikipedia} /> : null}
@@ -344,8 +356,7 @@ function IsraeliProducts({ israel, headingLevel }: { israel: NonNullable<MedEntr
   const t = useTranslations('medicine');
   const tc = useTranslations('common');
   return (
-    <section className="space-y-2">
-      <Heading level={headingLevel}>{t('israel.title')}</Heading>
+    <Collapsible titleAs={headingLevel} title={t('israel.title')} badge={<Badge tone="muted">{israel.products.length}</Badge>}>
       <ul className="divide-y divide-ink-100 rounded-lg border border-ink-200 bg-white">
         {israel.products.map((product) => (
           <li key={product.registration} className="flex flex-wrap items-baseline gap-x-2 gap-y-1 px-3 py-2 text-sm">
@@ -361,7 +372,7 @@ function IsraeliProducts({ israel, headingLevel }: { israel: NonNullable<MedEntr
           </li>
         ))}
       </ul>
-      <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-600">
+      <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-600">
         <span>{t('israel.source')}</span>
         {israel.leaflet ? (
           <ExternalLink href={israel.leaflet.url} newTabLabel={tc('opensInNewTab')} className="underline-offset-2 hover:underline">
@@ -372,7 +383,7 @@ function IsraeliProducts({ israel, headingLevel }: { israel: NonNullable<MedEntr
           {t('israel.registry')}
         </ExternalLink>
       </p>
-    </section>
+    </Collapsible>
   );
 }
 

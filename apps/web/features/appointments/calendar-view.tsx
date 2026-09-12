@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState, useTransition } from 'react';
+import { useEffect, useId, useMemo, useState, useTransition } from 'react';
 import { useFormatter, useLocale, useTranslations } from 'next-intl';
 import {
   DndContext,
@@ -318,6 +318,8 @@ export function CalendarView({
   const tAll = useTranslations();
   const { toast } = useToast();
   const [, startMove] = useTransition();
+  // A stable id for dnd-kit's aria-describedby: its own counter differs between the server and the browser.
+  const dndId = useId();
   const dragSensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 8 } }),
@@ -709,6 +711,7 @@ export function CalendarView({
           // short window from squashing it to nothing. A week's grid is wider
           // than a phone and scrolls sideways inside the same panel.
           <DndContext
+            id={dndId}
             sensors={dragSensors}
             onDragEnd={handleDragEnd}
             accessibility={{

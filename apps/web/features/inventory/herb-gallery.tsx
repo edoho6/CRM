@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useCallback, useContext, useMemo, useState, type CSSProperties } from 'react';
+import { createContext, useCallback, useContext, useId, useMemo, useState, type CSSProperties } from 'react';
 import { useTranslations } from 'next-intl';
 import {
   DndContext,
@@ -205,6 +205,8 @@ function GalleryContent({
   // A few pixels before a drag begins, so a click on the grip is a click;
   // the keyboard sensor lets the grip be moved with the arrows once it has
   // been picked up with Space.
+  // A stable id for dnd-kit's aria-describedby: its own counter differs between the server and the browser.
+  const dndId = useId();
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
@@ -270,6 +272,7 @@ function GalleryContent({
           <p className="mt-6 text-center text-sm text-ink-600">{t('compareHint', { max: MAX_COMPARED })}</p>
         ) : (
           <DndContext
+            id={dndId}
             sensors={sensors}
             collisionDetection={closestCenter}
             onDragEnd={handleDragEnd}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import {
   DndContext,
@@ -232,6 +232,11 @@ export function AppShell({
     [navOrder, tracksInventory],
   );
 
+  // dnd-kit numbers its contexts with a module-level counter — the server's
+  // has been climbing since it started, the browser's starts at zero — so the
+  // aria-describedby it writes disagrees at every hydration. A React id is the
+  // same on both sides.
+  const dndId = useId();
   const navSensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
@@ -264,6 +269,7 @@ export function AppShell({
       return (
         <nav id="sidebar-nav" className="flex flex-col gap-1" aria-label={t('mainMenu')}>
           <DndContext
+            id={dndId}
             sensors={navSensors}
             collisionDetection={closestCenter}
             onDragEnd={handleNavDragEnd}

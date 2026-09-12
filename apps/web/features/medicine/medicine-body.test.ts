@@ -76,6 +76,24 @@ describe('MedicineBody with the seed corpus', () => {
     expect(html).toContain('israeldrugs.health.gov.il');
   });
 
+  it('folds every section but the overview, and moves the standing to the sources', () => {
+    const row = rows.find((entry) => entry.kind === 'condition' && Object.keys(entry.sections?.he ?? {}).length >= 3)!;
+    const html = render(row);
+    // One section open — the overview — and the rest shut; the quotes and
+    // the sources are shut groups of their own.
+    expect(html.match(/<details open=""/g)).toHaveLength(1);
+    expect(html).toMatch(/<details open=""[^>]*>\s*<summary[^>]*>.*?סקירה/s);
+    expect(html.match(/<details/g)!.length).toBeGreaterThanOrEqual(Object.keys(row.sections!.he!).length + 1);
+    // The summary is the overview's first sentences: the overview alone shows them.
+    expect(html).not.toContain('<p class="text-base text-ink-900">');
+    const bare = rows.find((entry) => entry.summary_he && !entry.sections?.he);
+    if (bare) expect(render(bare)).toContain(`<p class="text-base text-ink-900">${bare.summary_he!.slice(0, 20)}`);
+    // The status is on the sources row, after the text — not before it.
+    const status = html.search(/הוצלב|טרם הוצלב|אומת/);
+    const overview = html.indexOf('סקירה');
+    expect(status).toBeGreaterThan(overview);
+  });
+
   it('shows a lab test with its LOINC code and the laboratory-range warning', () => {
     const row = rows.find((entry) => entry.kind === 'lab_test' && entry.identifiers.loinc);
     if (!row) return; // the corpus has no lab tests yet

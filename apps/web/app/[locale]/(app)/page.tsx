@@ -48,6 +48,9 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
   // The widgets' own queries, run here for the first paint so the page
   // arrives with its numbers rather than as a grid of spinners.
   const timeZone = scope.context.clinic.timezone || DEFAULT_TIME_ZONE;
+  // One clock for the page: the widgets read "now" from it on the server and
+  // in the browser alike, so what is overdue does not change between the two.
+  const renderedAt = new Date().toISOString();
   const initialData = await loadDashboardData(scope.supabase, layout, timeZone);
   const name = scope.context.profile?.full_name?.trim();
 
@@ -64,6 +67,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
         initialLayout={layout}
         tracksInventory={tracksInventory}
         timeZone={timeZone}
+        renderedAt={renderedAt}
         initialData={initialData}
       />
     </>

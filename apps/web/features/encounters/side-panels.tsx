@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useState } from 'react';
 import {
   DndContext,
   KeyboardSensor,
@@ -101,6 +101,8 @@ export function SidePanels({
     [storageKey],
   );
 
+  // A stable id for dnd-kit's aria-describedby: its own counter differs between the server and the browser.
+  const dndId = useId();
   const sensors = useSensors(
     // A small distance threshold keeps a plain click on the bar from starting a drag.
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -125,7 +127,7 @@ export function SidePanels({
 
   return (
     <div className={cn('min-w-0 space-y-4', className)}>
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+      <DndContext id={dndId} sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={ordered.map((panel) => panel.id)} strategy={verticalListSortingStrategy}>
           {ordered.map((panel) => (
             <SortablePanel key={panel.id} id={panel.id} title={panel.title} editing={editing} resizable={resizable}>

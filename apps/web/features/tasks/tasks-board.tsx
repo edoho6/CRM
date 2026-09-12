@@ -28,6 +28,7 @@ import { HeaderTools } from '@/components/header-tools';
 import { formatDate, formatDateTime } from '@clinic/i18n';
 import { Link, useRouter } from '@clinic/i18n/navigation';
 import type { ClinicTaskWithPatient } from '@clinic/db/types';
+import { dateKeyIn } from '@clinic/domain';
 import { deleteTask, setTaskDone } from './actions';
 import { TaskDialog } from './task-dialog';
 import { applyOverrides, reconcile, withOverride, withPending, type Overrides } from './optimistic';
@@ -43,12 +44,14 @@ import { applyOverrides, reconcile, withOverride, withPending, type Overrides } 
 
 type Group = 'overdue' | 'today' | 'later' | 'undated';
 
-function groupOf(task: ClinicTaskWithPatient, now: Date): Group {
-  const today = now.toISOString().slice(0, 10);
+function groupOf(task: ClinicTaskWithPatient, now: Date, timeZone: string): Group {
+  // The clinic's day, not UTC's: until three in the morning the two differ
+  // here, and a task due today sat under "today" the day after.
+  const today = dateKeyIn(now, timeZone);
   if (task.due_at) {
     const due = new Date(task.due_at);
     if (due.getTime() < now.getTime()) return 'overdue';
-    return due.toDateString() === now.toDateString() ? 'today' : 'later';
+    return dateKeyIn(due, timeZone) === today ? 'today' : 'later';
   }
   if (task.due_on) {
     if (task.due_on < today) return 'overdue';
@@ -67,10 +70,16 @@ export function TasksBoard({
   open,
   done,
   patients,
+  timeZone,
+  renderedAt,
 }: {
   open: ClinicTaskWithPatient[];
   done: ClinicTaskWithPatient[];
   patients: { id: string; full_name: string }[];
+  /** The clinic's zone: "today" is its day. */
+  timeZone: string;
+  /** When the page was rendered (ISO): the clock the server and the browser share. */
+  renderedAt: string;
 }) {
   const t = useTranslations('tasks');
   const router = useRouter();
@@ -96,14 +105,17 @@ export function TasksBoard({
   }, [open, done]);
 
   const shown = applyOverrides(open, done, overrides);
-  const now = new Date();
+  // The page's clock rather than Date.now(): a task falling due between the
+  // server's render and the browser's would otherwise change group at
+  // hydration, and React rebuilds the whole list.
+  const now = new Date(renderedAt);
   const groups: Record<Group, ClinicTaskWithPatient[]> = {
     overdue: [],
     today: [],
     later: [],
     undated: [],
   };
-  for (const task of shown.open) groups[groupOf(task, now)].push(task);
+  for (const task of shown.open) groups[groupOf(task, now, timeZone)].push(task);
 
   async function toggle(task: ClinicTaskWithPatient, isDone: boolean) {
     setOverrides((current) => withOverride(current, task.id, isDone ? 'done' : 'open'));
@@ -159,7 +171,7 @@ export function TasksBoard({
   }
 
   const row = (task: ClinicTaskWithPatient, isDone: boolean) => {
-    const late = !isDone && groupOf(task, now) === 'overdue';
+    const late = !isDone && groupOf(task, now, timeZone) === 'overdue';
     return (
       <li key={task.id} className="flex items-start gap-2.5 py-2">
         <input

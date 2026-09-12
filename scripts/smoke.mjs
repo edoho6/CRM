@@ -1120,6 +1120,27 @@ const flows = {
     const ok = state.hasLine && state.scrollTop > 0 && state.inView;
     return { ok, detail: `now line ${state.hasLine}, scrollTop ${state.scrollTop}, in view ${state.inView}` };
   },
+  async medicineEntry(page) {
+    // The list's first entry opens as a page. There, only the overview is
+    // open, every other section folds, and a shut one opens on a click —
+    // the reference is imported by hand, so an empty list is not a failure.
+    const link = page.locator('main a[href*="/reference/medicine/"]').first();
+    if ((await link.count()) === 0) return { ok: true, detail: 'no entries loaded (the corpus is imported by hand)' };
+    await link.click();
+    const opened = await page.waitForURL(/\/reference\/medicine\/[^/?#]+$/, { timeout: 15_000 }).then(() => true).catch(() => false);
+    if (!opened) return { ok: false, detail: `still at ${page.url()}` };
+    await page.locator('main details').first().waitFor({ timeout: 10_000 });
+    const total = await page.locator('main details').count();
+    const open = await page.locator('main details[open]').count();
+    const shut = page.locator('main details:not([open]) > summary').first();
+    if ((await shut.count()) === 0) return { ok: false, detail: `${open} open of ${total}, nothing folded` };
+    await shut.click();
+    await page.waitForTimeout(200);
+    const afterClick = await page.locator('main details[open]').count();
+    const h1 = ((await page.locator('h1').first().textContent()) ?? '').trim();
+    const ok = open <= 1 && afterClick === open + 1 && h1.length > 0;
+    return { ok, detail: `${open} open of ${total} before the click, ${afterClick} after; h1 "${h1}"` };
+  },
   async dashboardNoSpinners(page) {
     // Widgets arrive with their numbers: nothing spins after the document
     // has loaded, because the page computed the first paint on the server.
@@ -1494,6 +1515,7 @@ async function main() {
     await visit(context, { route: '/reference/herbs?page=2', locale: 'he', width: desktop, label: 'catalogue page 2' });
     await visit(context, { route: '/reference/herbs', locale: 'he', width: desktop, label: 'flow herb-gallery', after: flows.herbGallery });
     if (phone) await visit(context, { route: '/reference/herbs', locale: 'he', width: phone, label: 'flow herb-gallery-phone', after: flows.herbGallery });
+    await visit(context, { route: '/reference/medicine', locale: 'he', width: desktop, label: 'flow medicine-entry-folds', after: flows.medicineEntry });
     await visit(context, { route: '/prices', locale: 'he', width: desktop, label: 'flow prices-cheapest', after: flows.pricesCheapest });
     if (patientIds[0]) {
       await visit(context, { route: `/patients/${patientIds[0]}?tab=encounters`, locale: 'he', width: desktop, label: 'flow patient-tab', after: flows.patientTab });

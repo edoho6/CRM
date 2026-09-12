@@ -39,13 +39,17 @@ export function segmentClasses(selected: boolean, size: SegmentedSize, iconOnly 
   );
 }
 
-/** The count bubble inside a segment. */
+/**
+ * The count bubble inside a segment. On the chosen segment it is a darker
+ * green, not a lighter one: white at 20% over the accent lifted the surface
+ * until white digits on it fell under 4.5:1 (axe, the medicine list).
+ */
 export function SegmentCount({ value, selected }: { value: number; selected: boolean }) {
   return (
     <span
       className={cn(
         'rounded-full px-1.5 text-xs tabular-nums',
-        selected ? 'bg-accent-fg/20' : 'bg-ink-100 text-ink-600',
+        selected ? 'bg-accent-strong text-accent-fg' : 'bg-ink-100 text-ink-600',
       )}
     >
       {value}

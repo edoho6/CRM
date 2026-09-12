@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { AlertTriangle, Plus, Trash2 } from 'lucide-react';
 import { Button, Input, Spinner, useToast } from '@clinic/ui';
 import { cn } from '@clinic/ui/cn';
+import { dateKeyIn } from '@clinic/domain';
 import { defineWidget } from '@clinic/domain/widgets';
 import { formatDate, formatDateTime } from '@clinic/i18n';
 import { Link } from '@clinic/i18n/navigation';
@@ -12,7 +13,7 @@ import type { ClinicTaskWithPatient } from '@clinic/db/types';
 import { useAsyncData } from '@/lib/use-supabase';
 import { createTask, deleteTask, setTaskDone } from '@/features/tasks/actions';
 import { withPending } from '@/features/tasks/optimistic';
-import { useWidgetInitialData } from '../dashboard-context';
+import { useDashboardContext, useRenderedAt, useWidgetInitialData } from '../dashboard-context';
 import { fetchOpenTasks } from '../queries/tasks';
 import { registerWidget } from '../registry';
 import { WidgetEmpty, WidgetLoading } from '../widget-frame';
@@ -125,7 +126,13 @@ function TasksWidget() {
     }
     refresh();
   }
-  const today = new Date().toISOString().slice(0, 10);
+  // The page's clock, not Date.now(): the server and the browser must agree
+  // on what is overdue, or the list is rebuilt at hydration. "Today" is the
+  // clinic's day — until three in the morning UTC is still yesterday here.
+  const { timeZone } = useDashboardContext();
+  const renderedAt = useRenderedAt();
+  const nowMs = renderedAt.getTime();
+  const today = dateKeyIn(renderedAt, timeZone);
 
   return (
     <div className="space-y-2">
@@ -161,7 +168,7 @@ function TasksWidget() {
         <ul ref={listRef} className="divide-y divide-ink-100">
           {rows.map((task) => {
             const overdue = task.due_at
-              ? new Date(task.due_at).getTime() < Date.now()
+              ? new Date(task.due_at).getTime() < nowMs
               : task.due_on !== null && task.due_on < today;
             return (
               <li key={task.id} data-task-id={task.id} className="flex items-start gap-2 py-1.5">

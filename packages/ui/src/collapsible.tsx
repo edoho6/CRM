@@ -20,6 +20,7 @@ import { focusRing } from './focus';
  */
 export function Collapsible({
   title,
+  titleAs: TitleTag = 'span',
   icon,
   description,
   badge,
@@ -28,6 +29,12 @@ export function Collapsible({
   className,
 }: {
   title: React.ReactNode;
+  /**
+   * A heading element when the section is part of the document's outline (a
+   * reference entry's "Symptoms"), so the reader of a screen reader can jump
+   * to it shut or open; a span when it is a control of a form.
+   */
+  titleAs?: 'h2' | 'h3' | 'h4' | 'span';
   icon?: React.ReactNode;
   /** One line under the title, readable while the section is shut. */
   description?: React.ReactNode;
@@ -57,7 +64,7 @@ export function Collapsible({
         {icon ? <span className="shrink-0 text-ink-600">{icon}</span> : null}
 
         <span className="min-w-0 flex-1">
-          <span className="block text-sm font-semibold text-ink-900">{title}</span>
+          <TitleTag className="block text-sm font-semibold text-ink-900">{title}</TitleTag>
           {description ? (
             <span className="mt-0.5 block text-xs text-ink-600">{description}</span>
           ) : null}

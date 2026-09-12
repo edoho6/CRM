@@ -5,6 +5,7 @@ import { PageHeader } from '@/components/app-shell';
 import { HeaderToolsSlot } from '@/components/header-tools';
 import { getClinicScope } from '@/lib/session';
 import { TasksBoard } from '@/features/tasks/tasks-board';
+import { DEFAULT_TIME_ZONE } from '@/features/dashboard/loaders';
 import { pageTitle } from '@/lib/page-title';
 
 export const generateMetadata = pageTitle('tasks', 'title');
@@ -67,6 +68,8 @@ export default async function TasksPage({ params }: { params: Promise<{ locale: 
           open={openResult.data ?? []}
           done={doneResult.data ?? []}
           patients={patientsResult.data ?? []}
+          timeZone={scope.context.clinic.timezone || DEFAULT_TIME_ZONE}
+          renderedAt={new Date().toISOString()}
         />
       </PageBody>
     </>

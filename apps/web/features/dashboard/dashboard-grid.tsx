@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import {
   DndContext,
   KeyboardSensor,
@@ -55,6 +55,7 @@ export function DashboardGrid({
   initialLayout,
   tracksInventory,
   timeZone,
+  renderedAt,
   initialData,
 }: {
   initialLayout: DashboardLayout;
@@ -63,6 +64,8 @@ export function DashboardGrid({
   /** The clinic's zone, for "today" and "this month". */
   timeZone: string;
   /** What the page fetched for the widgets before the first paint, by widget type. */
+  /** The render instant (ISO), the widgets' shared clock — see DashboardContextValue. */
+  renderedAt: string;
   initialData: DashboardInitialData;
 }) {
   const t = useTranslations('dashboard');
@@ -75,6 +78,8 @@ export function DashboardGrid({
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSaved = useRef<DashboardLayout>(initialLayout);
 
+  // A stable id for dnd-kit's aria-describedby: its own counter differs between the server and the browser.
+  const dndId = useId();
   const sensors = useSensors(
     // A small distance threshold keeps a plain click on the header from
     // starting a drag.
@@ -196,7 +201,7 @@ export function DashboardGrid({
   // toolbar, and the toolbar is on the empty dashboard too.
   if (layout.length === 0) {
     return (
-      <DashboardProvider value={{ tracksInventory, timeZone, initialData }}>
+      <DashboardProvider value={{ tracksInventory, timeZone, renderedAt, initialData }}>
         <div>
           {toolbar}
           <EmptyState
@@ -210,7 +215,7 @@ export function DashboardGrid({
   }
 
   return (
-    <DashboardProvider value={{ tracksInventory, timeZone, initialData }}>
+    <DashboardProvider value={{ tracksInventory, timeZone, renderedAt, initialData }}>
       <div>
         {toolbar}
 
@@ -220,7 +225,7 @@ export function DashboardGrid({
           </Alert>
         ) : null}
 
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <DndContext id={dndId} sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={ids} strategy={rectSortingStrategy}>
             <div
               className={cn(

@@ -8,7 +8,7 @@ import { defineWidget, type WidgetProps } from '@clinic/domain/widgets';
 import { Link } from '@clinic/i18n/navigation';
 import { addMonthsIn, dateKeyIn } from '@clinic/domain';
 import { useAsyncData } from '@/lib/use-supabase';
-import { useDashboardContext, useWidgetInitialData } from '../dashboard-context';
+import { useDashboardContext, useRenderedAt, useWidgetInitialData } from '../dashboard-context';
 import { computeStats, type Period, type PeriodStats } from '../kpi-stats';
 import { fetchEncountersSince, type EncounterRow } from '../queries/encounters';
 import { registerWidget } from '../registry';
@@ -144,11 +144,14 @@ function TreatmentKpisWidget({ size }: WidgetProps<Record<string, never>>) {
   const [openPeriod, setOpenPeriod] = useState<Period | null>(null);
 
   const { timeZone } = useDashboardContext();
+  // The page's clock (see DashboardContextValue.renderedAt): the same "today"
+  // on the server and in the browser, so the tile hydrates as it was drawn.
+  const renderedAt = useRenderedAt();
   const fromKey = useMemo(
     // Two months back covers "last month" for the month delta and everything
     // shorter — in the clinic's zone, like every date on this tile.
-    () => dateKeyIn(addMonthsIn(new Date(), -1, timeZone), timeZone),
-    [timeZone],
+    () => dateKeyIn(addMonthsIn(renderedAt, -1, timeZone), timeZone),
+    [renderedAt, timeZone],
   );
 
   const initial = useWidgetInitialData<EncounterRow[]>('treatment-kpis');
@@ -168,7 +171,7 @@ function TreatmentKpisWidget({ size }: WidgetProps<Record<string, never>>) {
     { key: 'month', label: t('month'), previousLabel: t('lastMonth') },
   ];
 
-  const todayKey = dateKeyIn(new Date(), timeZone);
+  const todayKey = dateKeyIn(renderedAt, timeZone);
   const todaysRows = (data ?? []).filter((row) => row.encounter_date === todayKey);
   const compact = size === 'sm' || size === 'md';
 

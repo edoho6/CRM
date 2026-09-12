@@ -31,27 +31,24 @@ export default async function MedicineEntryPage({ params }: { params: Promise<{ 
 
   return (
     <>
+      {/* The title is the name in both languages and nothing else: the top bar
+          echoes the heading's text once it scrolls away, and a kind label in
+          it read "מחלהאסתמה". The kind is the line below, with the icon. */}
       <PageHeader
         title={
-          <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-sky-50 text-sky-800">
+          <span className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center self-center rounded-lg bg-sky-50 text-sky-800">
               <MedicineKindIcon kind={entry.kind} className="h-5 w-5" />
-              <span className="sr-only">{t(`kind.${entry.kind}`)}</span>
             </span>
-            <span>{name}</span>
-          </span>
-        }
-        description={
-          <span className="block">
-            <span className="text-ink-600">{t(`kind.${entry.kind}`)}</span>
+            <span>{name}</span>{' '}
             {entry.name_he ? (
-              <>
-                {' · '}
-                <span dir="ltr">{entry.name_en}</span>
-              </>
+              <span dir="ltr" className="text-base font-normal text-ink-600">
+                {entry.name_en}
+              </span>
             ) : null}
           </span>
         }
+        description={t(`kind.${entry.kind}`)}
         actions={<ReferenceNav compact />}
       />
       <PageBody width="narrow">

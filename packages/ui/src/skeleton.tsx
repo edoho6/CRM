@@ -16,8 +16,12 @@ import { Table, TableWrapper, Td, Th } from './table';
  * `animate-pulse` rather than a shimmer: it is in Tailwind's default theme, so
  * it needs no token in either app, and under the global reduced-motion clamp
  * it becomes a still block — which is the right degraded state.
+ *
+ * `max-w-full`: the widths are fixed (a name is about this wide), and at 200%
+ * text on a phone a fixed 14rem is wider than the screen — the loading page
+ * scrolled sideways for the second it was there.
  */
-const skeletonVariants = cva('animate-pulse bg-ink-200/70', {
+const skeletonVariants = cva('max-w-full animate-pulse bg-ink-200/70', {
   variants: {
     shape: {
       text: 'h-3.5 w-full rounded',
