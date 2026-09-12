@@ -91,3 +91,6 @@ apps/mobile-*/fastlane/report.xml
 apps/mobile-*/fastlane/README.md
 # Swift Package Manager symlinks that `cap sync ios` makes on this machine (absolute paths); CI makes its own.
 apps/mobile-*/ios/App/CapApp-SPM/symlinks/
+
+# Downloaded sources of the Western medicine pipeline (scripts/medicine); the compiled corpus is what is committed.
+.cache/

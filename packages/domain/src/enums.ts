@@ -620,3 +620,17 @@ export type ShopCategory = (typeof SHOP_CATEGORIES)[number];
 /** The kind of measurement in a product's size: 0.25×40 mm, 50 g, 250 ml, 30 mm, 5 %. */
 export const SHOP_SIZE_KINDS = ['dims', 'mass', 'vol', 'len', 'pct'] as const;
 export type ShopSizeKind = (typeof SHOP_SIZE_KINDS)[number];
+
+/**
+ * The Western medicine reference (med_entries): what an entry is, how far it
+ * has been checked, and how two entries relate. Mirrored by the CHECK
+ * constraints in migration 42.
+ */
+export const MED_KINDS = ['condition', 'symptom', 'drug'] as const;
+export type MedKind = (typeof MED_KINDS)[number];
+
+export const MED_STATUSES = ['draft', 'cross_checked', 'verified'] as const;
+export type MedStatus = (typeof MED_STATUSES)[number];
+
+export const MED_RELATIONS = ['treats', 'symptom_of', 'side_effect', 'class', 'related'] as const;
+export type MedRelation = (typeof MED_RELATIONS)[number];

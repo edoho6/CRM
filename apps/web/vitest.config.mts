@@ -11,6 +11,10 @@ export default defineConfig({
       '@shop': fileURLToPath(new URL('../../supabase/functions/_shared/shop-prices', import.meta.url)),
     },
   },
+  // Next compiles JSX itself, so the tsconfig says `preserve`; a test that
+  // renders a component (features/medicine/medicine-body.test.ts) needs
+  // vitest to compile it instead.
+  oxc: { jsx: { runtime: 'automatic', importSource: 'react' } },
   test: {
     environment: 'node',
     include: ['**/*.test.ts'],

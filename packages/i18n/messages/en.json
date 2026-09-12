@@ -348,7 +348,8 @@
     "forms": "Forms",
     "assistant": "Ask about the data",
     "reports": "Reports",
-    "userMenu": "User menu — {name}"
+    "userMenu": "User menu — {name}",
+    "medicine": "Western medicine"
   },
   "auth": {
     "signup": {
@@ -2331,7 +2332,123 @@
       "herb": "Herb",
       "formula": "Formula",
       "point": "Acupuncture point",
-      "total": "Total {amount} {unit}"
+      "total": "Total {amount} {unit}",
+      "medicine": "Western medicine"
+    }
+  },
+  "medicine": {
+    "title": "Western medicine",
+    "single": "Western medicine entry",
+    "count": "{count, plural, =0 {No entries} one {One entry} other {# entries}}",
+    "searchPlaceholder": "Search a condition, symptom or drug, in Hebrew or English",
+    "empty": "The reference is still empty",
+    "emptyBody": "Entries appear here after the first load.",
+    "kindFilter": "Kind of entry",
+    "allKinds": "All",
+    "kind": {
+      "condition": "Condition",
+      "symptom": "Symptom",
+      "drug": "Drug"
+    },
+    "kinds": {
+      "condition": "Conditions",
+      "symptom": "Symptoms",
+      "drug": "Drugs"
+    },
+    "table": {
+      "kind": "Kind",
+      "identifiers": "Identifiers",
+      "status": "Status"
+    },
+    "status": {
+      "draft": "Not yet cross-checked",
+      "cross_checked": "{count, plural, one {Cross-checked with one source} other {Cross-checked across # sources}}",
+      "verified": "Verified"
+    },
+    "statusHint": {
+      "draft": "The information comes from one source, or the sources have not yet been checked against each other.",
+      "cross_checked": "At least two independent sources agree on the central facts.",
+      "verified": "A professional has read the entry and approved it."
+    },
+    "hebrewNote": {
+      "manual": "The Hebrew text was written by hand from the sources below and has not yet been verified by a professional.",
+      "auto": "The Hebrew text was written automatically from the sources below and has not yet been verified by a professional.",
+      "wikidata": "The Hebrew summary comes from Wikidata; the detail is still English only, in the sources below.",
+      "none": "This entry has no Hebrew text yet. The English sources are below.",
+      "verified": "The Hebrew text has been verified by a professional."
+    },
+    "fields": {
+      "identifiers": "Identifiers",
+      "aliases": "Other names"
+    },
+    "ids": {
+      "icd10": "ICD-10",
+      "icd10cm": "ICD-10-CM",
+      "mesh": "MeSH",
+      "doid": "DOID",
+      "atc": "ATC",
+      "rxcui": "RxNorm",
+      "medlineplus": "MedlinePlus",
+      "nhs": "NHS"
+    },
+    "sections": {
+      "overview": "Overview",
+      "symptoms": "Symptoms",
+      "causes": "Causes and risk factors",
+      "diagnosis": "Diagnosis",
+      "treatment": "Treatment",
+      "urgent": "When to seek help",
+      "self_care": "What you can do",
+      "possible_causes": "Possible causes",
+      "what_for": "What it is for",
+      "how_to_take": "Dosage and how to take it",
+      "side_effects": "Side effects",
+      "who_cannot": "Contraindications and warnings",
+      "interactions": "Interactions",
+      "pregnancy": "Pregnancy and breastfeeding"
+    },
+    "links": {
+      "title": "Links in the reference",
+      "treats_out": "Treats",
+      "treats_in": "Drugs used to treat it",
+      "symptom_of_in": "Symptoms",
+      "symptom_of_out": "A symptom of",
+      "side_effect_out": "Side effects with an entry of their own",
+      "side_effect_in": "A side effect of",
+      "class_out": "Belongs to",
+      "class_in": "Kinds",
+      "related_out": "Related to",
+      "related_in": "Related to"
+    },
+    "quotes": {
+      "title": "From the source, in English",
+      "hint": "The passages are quoted word for word from the source, with its date and licence. A Hebrew dose or side effect is checked against them.",
+      "reviewed": "Source last reviewed: {date}",
+      "retrieved": "Read: {date}"
+    },
+    "sources": {
+      "title": "Sources",
+      "basis": "The entry was written from",
+      "furtherReading": "Further reading",
+      "licence": "Licence: {licence}",
+      "open": "Source page",
+      "names": {
+        "wikidata": "Wikidata",
+        "medlineplus": "MedlinePlus (US National Library of Medicine)",
+        "fda": "FDA label (openFDA / DailyMed)",
+        "nhs": "NHS website (UK)",
+        "wikipedia-he": "Hebrew Wikipedia",
+        "wikipedia-en": "English Wikipedia"
+      }
+    },
+    "nhs": {
+      "attribution": "The English content is supplied by the NHS website",
+      "link": "Source page on the NHS website"
+    },
+    "disclaimer": {
+      "title": "Please note",
+      "body": "This is general information from public sources in the UK and the US. It does not replace the Israeli leaflet, a pharmacist or a doctor. Doses are quoted from the source and are not a recommendation.",
+      "registry": "Find the Israeli leaflet in the Ministry of Health drug registry"
     }
   },
   "accessibility": {

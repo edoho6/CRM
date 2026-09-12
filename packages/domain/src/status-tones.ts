@@ -1,4 +1,4 @@
-import type { AppointmentStatus, ShopStoreStatus, TreatmentStatus } from './enums';
+import type { AppointmentStatus, MedStatus, ShopStoreStatus, TreatmentStatus } from './enums';
 
 /**
  * One colour per meaning, for the whole product.
@@ -33,6 +33,18 @@ export const SHOP_STORE_STATUS_TONES: Record<ShopStoreStatus, StatusTone> = {
   paused: 'warning',
   awaiting_permission: 'neutral',
   unsupported: 'muted',
+};
+
+/**
+ * An entry of the Western medicine reference: compiled from one source,
+ * agreed on by two, or read and approved by a person. Blue, not green, for
+ * the middle state — two sources agreeing is a fact about the sources, not
+ * a verdict; green waits for the person.
+ */
+export const MED_STATUS_TONES: Record<MedStatus, StatusTone> = {
+  draft: 'neutral',
+  cross_checked: 'info',
+  verified: 'success',
 };
 
 export const TREATMENT_STATUS_TONES: Record<TreatmentStatus, StatusTone> = {

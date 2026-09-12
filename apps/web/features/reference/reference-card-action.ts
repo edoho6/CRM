@@ -1,8 +1,9 @@
 'use server';
 
-import type { AcupuncturePoint, Herb, HerbFormulaWithItems } from '@clinic/db/types';
+import type { AcupuncturePoint, Herb, HerbFormulaWithItems, MedEntry, MedLinkedEntry } from '@clinic/db/types';
 import { getClinicScope } from '@/lib/session';
 import { actionError, actionOk, type ActionResult } from '@/lib/errors';
+import { loadMedicineEntry, loadMedicineLinks } from '@/features/medicine/queries';
 
 /**
  * What a chip on the treatment page points at.
@@ -15,12 +16,14 @@ import { actionError, actionOk, type ActionResult } from '@/lib/errors';
 export type ReferenceTarget =
   | { kind: 'herb'; id?: string | null; pinyin?: string | null; name?: string | null; label?: string }
   | { kind: 'formula'; id?: string | null; name?: string | null; label?: string }
-  | { kind: 'point'; id?: string | null; code?: string | null; label?: string };
+  | { kind: 'point'; id?: string | null; code?: string | null; label?: string }
+  | { kind: 'medicine'; id?: string | null; slug?: string | null; name?: string | null; label?: string };
 
 export type ReferenceCard =
   | { kind: 'herb'; herb: Herb }
   | { kind: 'formula'; formula: HerbFormulaWithItems }
-  | { kind: 'point'; point: AcupuncturePoint };
+  | { kind: 'point'; point: AcupuncturePoint }
+  | { kind: 'medicine'; entry: MedEntry; links: MedLinkedEntry[] };
 
 const UUID = /^[0-9a-f-]{36}$/i;
 
@@ -79,6 +82,34 @@ export async function loadReferenceCard(target: ReferenceTarget): Promise<Action
       if (data) return actionOk({ kind: 'formula', formula: data });
     }
     return actionError(new Error('not_found'));
+  }
+
+  if (target.kind === 'medicine') {
+    const byId = target.id && UUID.test(target.id) ? target.id : null;
+    const slug = term(target.slug);
+    const name = term(target.name);
+    let entry = byId ? await loadMedicineEntry(db, { id: byId }) : null;
+    if (!entry && slug) entry = await loadMedicineEntry(db, { slug: slug.toLowerCase() });
+    if (!entry && name) {
+      // A name typed into a record: the Hebrew or English name first, then
+      // the search text, which holds every alias in both languages.
+      for (const column of ['name_he', 'name_en'] as const) {
+        const { data, error } = await db.from('med_entries').select('*').ilike(column, name).limit(1).maybeSingle<MedEntry>();
+        if (error) return actionError(new Error(error.message));
+        if (data) {
+          entry = data;
+          break;
+        }
+      }
+      if (!entry) {
+        const { data, error } = await db.from('med_entries').select('*').ilike('search_text', `%${name}%`).limit(1).maybeSingle<MedEntry>();
+        if (error) return actionError(new Error(error.message));
+        entry = data;
+      }
+    }
+    if (!entry) return actionError(new Error('not_found'));
+    const links = await loadMedicineLinks(db, entry.id);
+    return actionOk({ kind: 'medicine', entry, links });
   }
 
   const byId = target.id && UUID.test(target.id) ? target.id : null;

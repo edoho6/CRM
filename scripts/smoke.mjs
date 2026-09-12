@@ -1316,6 +1316,7 @@ const STATIC_ROUTES = [
   '/', '/patients', '/patients/new', '/calendar', '/calendar?view=day', '/calendar?view=month',
   '/calendar?view=range', '/tasks', '/messages', '/encounters', '/encounters/new', '/forms',
   '/forms/new', '/reference/herbs', '/reference/formulas', '/reference/points', '/reference/compare',
+  '/reference/medicine', '/reference/medicine?kind=drug',
   '/inventory', '/inventory?tab=low', '/inventory/batches', '/inventory/batches/receive',
   '/inventory/suppliers', '/prices', '/prices?cat=needles&min=2', '/prices/credits', '/billing', '/billing/new',
   '/billing/settings', '/reports', '/assistant',
@@ -1396,7 +1397,7 @@ async function main() {
     current.context = context;
 
     // Dynamic ids, read off the list pages while signed in.
-    const [patientIds, encounterIds, invoiceIds, formIds, herbIds, formulaIds, pointIds] = await Promise.all([
+    const [patientIds, encounterIds, invoiceIds, formIds, herbIds, formulaIds, pointIds, medicineSlugs] = await Promise.all([
       collectIds(context, '/patients', '/patients/([0-9a-f-]{36})$'),
       collectIds(context, '/encounters', '/encounters/([0-9a-f-]{36})$'),
       collectIds(context, '/billing', '/billing/([0-9a-f-]{36})$'),
@@ -1404,6 +1405,8 @@ async function main() {
       collectIds(context, '/reference/herbs', '/reference/herbs/([0-9a-f-]{36})$'),
       collectIds(context, '/reference/formulas', '/reference/formulas/([0-9a-f-]{36})$'),
       collectIds(context, '/reference/points', '/reference/points/([0-9a-f-]{36})$'),
+      // Entries are addressed by slug; none are listed until the reference has been loaded.
+      collectIds(context, '/reference/medicine', '/reference/medicine/([a-z0-9-]+)$'),
     ]);
     const skipped = [];
     const dynamic = [];
@@ -1417,6 +1420,7 @@ async function main() {
     add('reference/herbs/[id]/edit', herbIds, (id) => `/reference/herbs/${id}/edit`);
     add('reference/formulas/[id]', formulaIds, (id) => `/reference/formulas/${id}`);
     add('reference/points/[id]', pointIds, (id) => `/reference/points/${id}`);
+    add('reference/medicine/[slug]', medicineSlugs, (slug) => `/reference/medicine/${slug}`);
     if (herbIds.length >= 2) dynamic.push(`/reference/compare?kind=herb&ids=${herbIds.join(',')}`);
 
     for (const locale of locales) for (const width of widths) {

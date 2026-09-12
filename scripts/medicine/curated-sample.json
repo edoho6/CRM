@@ -1,0 +1,52 @@
+{
+  "condition": [
+    "hypertension",
+    "type 2 diabetes",
+    "asthma",
+    "migraine",
+    "gastroesophageal reflux disease",
+    "hypothyroidism",
+    "major depressive disorder",
+    "generalized anxiety disorder",
+    "osteoarthritis",
+    "low back pain",
+    "irritable bowel syndrome",
+    "allergic rhinitis",
+    "atopic dermatitis",
+    "iron-deficiency anemia",
+    "urinary tract infection",
+    "influenza"
+  ],
+  "symptom": [
+    "fever",
+    "headache",
+    "cough",
+    "fatigue",
+    "nausea",
+    "dizziness",
+    "insomnia",
+    "chest pain",
+    "shortness of breath",
+    "constipation",
+    "diarrhea",
+    "abdominal pain"
+  ],
+  "drug": [
+    "metformin",
+    "amlodipine",
+    "atorvastatin",
+    "levothyroxine",
+    "omeprazole",
+    "ibuprofen",
+    "paracetamol",
+    "amoxicillin",
+    "sertraline",
+    "salbutamol",
+    "warfarin",
+    "aspirin",
+    "prednisone",
+    "losartan",
+    "metoprolol",
+    "sumatriptan"
+  ]
+}

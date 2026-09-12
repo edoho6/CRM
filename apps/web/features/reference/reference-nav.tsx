@@ -3,18 +3,23 @@
 import { useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
 import { usePathname } from '@clinic/i18n/navigation';
+import { FlaskConical, MapPin, Sprout, Stethoscope } from 'lucide-react';
 import { SegmentedLinks } from '@/components/segmented-links';
 
 /**
  * Sub-navigation for the reference library.
  *
- * Three catalogues, none of which knows anything about stock: what a herb is,
- * what a formula is made of, where a point sits.
+ * Four catalogues, none of which knows anything about stock: what a herb is,
+ * what a formula is made of, where a point sits — and, apart from the three
+ * of Chinese medicine, the Western medicine reference of conditions,
+ * symptoms and drugs. Each tab carries an icon, because the fourth is a
+ * different discipline and should look like one before its name is read.
  */
 const SECTIONS = [
-  { href: '/reference/herbs', labelKey: 'herbs' },
-  { href: '/reference/formulas', labelKey: 'formulas' },
-  { href: '/reference/points', labelKey: 'points' },
+  { href: '/reference/herbs', labelKey: 'herbs', Icon: Sprout },
+  { href: '/reference/formulas', labelKey: 'formulas', Icon: FlaskConical },
+  { href: '/reference/points', labelKey: 'points', Icon: MapPin },
+  { href: '/reference/medicine', labelKey: 'medicine', Icon: Stethoscope },
 ] as const;
 
 /** On the compare page the catalogue is in the query, not the path. */
@@ -42,10 +47,11 @@ export function ReferenceNav({ compact = false }: { compact?: boolean }) {
       as="nav"
       label={t('reference')}
       size={compact ? 'sm' : 'md'}
-      items={SECTIONS.map((section) => ({
-        href: section.href,
-        label: t(section.labelKey),
-        active: pathname.startsWith(section.href) || comparing === section.href,
+      items={SECTIONS.map(({ href, labelKey, Icon }) => ({
+        href,
+        label: t(labelKey),
+        icon: <Icon className={compact ? 'h-3.5 w-3.5' : 'h-4 w-4'} aria-hidden />,
+        active: pathname.startsWith(href) || comparing === href,
       }))}
     />
   );

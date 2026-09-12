@@ -1,15 +1,17 @@
 'use client';
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { usePathname } from '@clinic/i18n/navigation';
 import { useFormatter, useTranslations } from 'next-intl';
 import { BookOpen } from 'lucide-react';
-import { Alert, Button, Dash, DetailRow, Dialog, DialogContent, Spinner, cn } from '@clinic/ui';
+import { Alert, Button, Dash, DetailRow, Dialog, DialogContent, Spinner } from '@clinic/ui';
 import { Link } from '@clinic/i18n/navigation';
 import type { AcupuncturePoint, HerbFormulaWithItems } from '@clinic/db/types';
 import { formulaChineseName, formulaPrimaryName, herbBotanicalName, herbChineseName, herbPrimaryName } from '@/lib/display';
 import { HerbMonographBody } from '@/features/inventory/herb-monograph-sheet';
+import { MedicineBody } from '@/features/medicine/medicine-body';
 import { loadReferenceCard, type ReferenceCard, type ReferenceTarget } from './reference-card-action';
+import { ReferenceChip, ReferenceSheetContext, useReferenceSheet } from './reference-context';
 
 /**
  * The reference, one click from wherever a name appears.
@@ -24,21 +26,23 @@ import { loadReferenceCard, type ReferenceCard, type ReferenceTarget } from './r
  * it to open. A chip rendered with no provider above it is just its text.
  */
 
-interface ReferenceSheetApi {
-  open: (target: ReferenceTarget) => void;
-}
-
-const ReferenceSheetContext = createContext<ReferenceSheetApi | null>(null);
-
-export function useReferenceSheet(): ReferenceSheetApi | null {
-  return useContext(ReferenceSheetContext);
-}
+// The context and the chip live in reference-context.tsx, so a card body
+// that draws chips of its own (the medicine entry) can import them without
+// importing this file back. Every other caller still reaches them from here.
+export { ReferenceChip, useReferenceSheet };
 
 /** Cards already read this page, so reopening one costs nothing. */
 const loaded = new Map<string, ReferenceCard>();
 
 function cacheKey(target: ReferenceTarget): string {
-  return JSON.stringify([target.kind, target.id ?? '', 'pinyin' in target ? target.pinyin ?? '' : '', 'name' in target ? target.name ?? '' : '', 'code' in target ? target.code ?? '' : '']);
+  return JSON.stringify([
+    target.kind,
+    target.id ?? '',
+    'pinyin' in target ? target.pinyin ?? '' : '',
+    'name' in target ? target.name ?? '' : '',
+    'code' in target ? target.code ?? '' : '',
+    'slug' in target ? target.slug ?? '' : '',
+  ]);
 }
 
 export function ReferenceSheetProvider({ children }: { children: React.ReactNode }) {
@@ -92,49 +96,6 @@ export function ReferenceSheetProvider({ children }: { children: React.ReactNode
   );
 }
 
-/** A name that opens its card. Plain text when there is no sheet to open it in. */
-export function ReferenceChip({
-  target,
-  children,
-  className,
-  dir,
-}: {
-  target: ReferenceTarget;
-  children: React.ReactNode;
-  className?: string;
-  dir?: 'ltr' | 'rtl' | 'auto';
-}) {
-  const sheet = useReferenceSheet();
-  const t = useTranslations('reference.sheet');
-  if (!sheet) {
-    return (
-      <span className={className} dir={dir}>
-        {children}
-      </span>
-    );
-  }
-  return (
-    <button
-      type="button"
-      dir={dir}
-      aria-haspopup="dialog"
-      title={t('open')}
-      onClick={(event) => {
-        // Inside a row that is itself a button or a link, the chip wins.
-        event.stopPropagation();
-        event.preventDefault();
-        sheet.open(target);
-      }}
-      className={cn(
-        'rounded text-start underline decoration-jade-400 decoration-dotted underline-offset-4 hover:decoration-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus',
-        className,
-      )}
-    >
-      {children}
-    </button>
-  );
-}
-
 function ReferenceDialog({
   target,
   card,
@@ -156,7 +117,9 @@ function ReferenceDialog({
         ? formulaPrimaryName(card.formula)
         : card?.kind === 'point'
           ? card.point.code
-          : (target?.label ?? (target ? t(target.kind) : ''));
+          : card?.kind === 'medicine'
+            ? (card.entry.name_he ?? card.entry.name_en)
+            : (target?.label ?? (target ? t(target.kind) : ''));
 
   const description =
     card?.kind === 'herb' ? (
@@ -167,6 +130,8 @@ function ReferenceDialog({
       <span dir="ltr">
         {[card.point.pinyin_name, card.point.chinese_name, card.point.english_name].filter(Boolean).join(' · ')}
       </span>
+    ) : card?.kind === 'medicine' ? (
+      <span dir="ltr">{card.entry.name_en}</span>
     ) : target ? (
       t(target.kind)
     ) : undefined;
@@ -186,6 +151,18 @@ function ReferenceDialog({
             <HerbMonographBody herb={card.herb} />
           ) : card.kind === 'formula' ? (
             <FormulaBody formula={card.formula} />
+          ) : card.kind === 'medicine' ? (
+            <div className="space-y-4">
+              <MedicineBody entry={card.entry} links={card.links} headingLevel="h3" />
+              <div className="flex justify-end">
+                <Button asChild variant="secondary">
+                  <Link href={`/reference/medicine/${card.entry.slug}`}>
+                    <BookOpen className="h-4 w-4" aria-hidden />
+                    {t('fullPage')}
+                  </Link>
+                </Button>
+              </div>
+            </div>
           ) : (
             <PointBody point={card.point} />
           )}

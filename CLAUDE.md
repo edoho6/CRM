@@ -411,6 +411,23 @@
   ב-`features/prices/shop-images.json`, `shopImageFor()` בוחר, הקרדיט המלא ב-`/prices/credits`. כל תמונה
   נבדקת בעין לפני commit — חיפוש לפי מילה מביא גם קטלוג זרעים מ-1901, מיצג על תעלה בשם "tdp" ואיור של אוזן;
   קטגוריה בלי תמונה ראויה נשארת בלי תמונה
+- **רפואה מערבית (מאגר מידע ← רפואה מערבית):** `med_entries` / `med_links` (migration 42) הן טבלאות משותפות
+  **בלי `clinic_id`**, כמו `shop_*`: קריאה לחבר קליניקה, אין policies לכתיבה, והטעינה רק דרך `med_import`
+  (אדמין פלטפורמה) — `med_refresh_quotes` ל-service role בלבד, `revoke execute … from anon, authenticated`
+  במפורש. הזהות של ערך היא Wikidata QID והכתובת היא `slug`. **שתי שכבות טקסט:** `quotes` — ציטוטים באנגלית
+  מהמקור מילה במילה (MedlinePlus נחלת הכלל, openFDA CC0, NHS OGL v3) עם תאריך ורישיון, ושם חיים המינונים
+  ותופעות הלוואי, **לעולם לא מנוסחים מחדש**; `sections.he` — הערך שלנו, שנכתב מהחומר הזה בלבד
+  (`scripts/medicine/hebrew.mjs`, או ביד ב-`supabase/seed/medicine/hebrew-manual.json` שגובר), ומסומן על המסך
+  "נכתב מהמקורות; טרם אומת" עד ש-`status = 'verified'`. `status` = `draft` → `cross_checked` (שני מקורות מסכימים,
+  `lib/cross-check.mjs`) → `verified` (אדם); הצבע מ-`MED_STATUS_TONES`. ויקיפדיה רק כקישור (share-alike); לא
+  ICD-11, SNOMED, DrugBank ולא עלונים ישראליים — רק קישור למאגר משרד הבריאות בהצהרה שבכל ערך. עלון FDA נבחר
+  רק לתכשיר **חד-רכיבי** (`singleIngredient` ב-`openfda.mjs`; הריצה הראשונה הביאה בוטלביטל-אספירין-קפאין
+  ל"אספירין"). התאמת MedlinePlus: MeSH, ואז שם של 5 אותיות ומעלה שאינו ראשי תיבות. בממשק: הלשונית הרביעית של
+  `ReferenceNav` (כל הלשוניות עם אייקון; `Stethoscope`), `features/medicine/medicine-body.tsx` הוא הגוף המשותף
+  לדף ולחלון (`loadReferenceCard` kind `'medicine'`, chip בקו כחול מ-`reference-context.tsx`), אייקון לפי סוג
+  (`Activity`/`Thermometer`/`Pill`), גוון `sky` במקום ירקן. תוכן NHS מחייב לוגו + קישור בכל דף (`NhsAttribution`;
+  הלוגו הרשמי ב-`public/medicine/nhs-logo.svg`, לא מצויר מחדש) ורענון כל 7 ימים. הצנרת והפקודות ב-
+  `scripts/medicine/README.md`; הייבוא מתחבר בפרטי האדמין ממשתני סביבה של הפקודה בלבד
 - **CSS משותף:** כללים שאינם טוקנים (מיקוד, placeholder, `select.ui-select`, `.table-cards`,
   `[data-table-size]`, הדפסה בסיסית) ב-`packages/ui/src/base.css`, מיובא בשני
   ה-`globals.css`; ה-`@theme` נשאר לכל אפליקציה בנפרד

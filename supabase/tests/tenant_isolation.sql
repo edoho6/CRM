@@ -47,6 +47,7 @@ declare
   v_shop_store uuid;
   v_shop_product uuid;
   v_shop_fp    text := 'iso|' || gen_random_uuid();  -- the product's fingerprint, shared with its offer
+  v_med        uuid;                                   -- one entry of the Western medicine reference
   v_user_c     uuid := gen_random_uuid();  -- a stranger with an account and no clinic
   v_invite_a   uuid;
   v_invite_b   uuid;
@@ -246,6 +247,11 @@ begin
 
   insert into public.shop_offers (store_id, product_id, external_id, raw_name, url, fingerprint, price)
   values (v_shop_store, v_shop_product, 'iso-1', 'Iso needle', 'https://example.test/p/1', v_shop_fp, 42);
+
+  -- The Western medicine reference is shared the same way as the shops.
+  insert into public.med_entries (kind, slug, name_en, name_he, status)
+  values ('drug', 'iso-drug', 'Iso drug', 'תרופת בדיקה', 'draft')
+  returning id into v_med;
 
   -- An open invitation in each clinic. The link is the whole secret.
   insert into public.clinic_invitations (clinic_id, role, invitee_name, invited_by)
@@ -502,6 +508,43 @@ begin
   end;
   raise notice 'ok   shop prices are readable by every member and writable by none';
 
+  -- The Western medicine reference: every member reads it, nobody writes to
+  -- it from the app, and the import, the verification and the refresh are
+  -- the platform admin's and the service role's alone (the lesson of
+  -- migration 36: a function is open to every signed-in user until it is
+  -- revoked from them explicitly).
+  select count(*) into v_count from public.med_entries where id = v_med;
+  if v_count <> 1 then raise exception 'FAIL: a clinic member cannot read the medicine reference'; end if;
+  begin
+    insert into public.med_entries (kind, slug, name_en) values ('drug', 'iso-injected-drug', 'Injected');
+    raise exception 'FAIL: a clinic member inserted a medicine entry';
+  exception
+    when insufficient_privilege then null;
+  end;
+  update public.med_entries set name_en = 'Changed' where id = v_med;
+  if found then raise exception 'FAIL: a clinic member changed a medicine entry'; end if;
+  delete from public.med_entries where id = v_med;
+  if found then raise exception 'FAIL: a clinic member deleted a medicine entry'; end if;
+  begin
+    perform public.med_import('[]'::jsonb, '[]'::jsonb);
+    raise exception 'FAIL: a clinic member ran the medicine import';
+  exception
+    when insufficient_privilege then null;
+  end;
+  begin
+    perform public.med_set_status(v_med, 'verified');
+    raise exception 'FAIL: a clinic member verified a medicine entry';
+  exception
+    when insufficient_privilege then null;
+  end;
+  begin
+    perform public.med_refresh_quotes('[]'::jsonb);
+    raise exception 'FAIL: a clinic member ran the medicine refresh function';
+  exception
+    when insufficient_privilege then null;
+  end;
+  raise notice 'ok   the medicine reference is readable by every member and writable by none';
+
   -- Invitations belong to the owner who made them, and the last owner stays.
   select count(*) into v_count from public.clinic_invitations;
   if v_count <> 1 then raise exception 'FAIL: clinic A saw % invitation(s), expected only its own', v_count; end if;
@@ -665,7 +708,9 @@ begin
   -- The price comparison is the clinic's tool, not the patient's.
   select count(*) into v_count from public.shop_stores;
   if v_count <> 0 then raise exception 'FAIL: the portal patient read % shop row(s)', v_count; end if;
-  raise notice 'ok   shop prices are hidden from the portal';
+  select count(*) into v_count from public.med_entries;
+  if v_count <> 0 then raise exception 'FAIL: the portal patient read % medicine entr(ies)', v_count; end if;
+  raise notice 'ok   shop prices and the medicine reference are hidden from the portal';
 
   -- The headline safety property: no policy on tcm_notes mentions patients at all.
   select count(*) into v_count from public.tcm_notes;
@@ -734,6 +779,8 @@ begin
   if v_count <> 0 then raise exception 'FAIL: anonymous read returned % clinic row(s)', v_count; end if;
   select count(*) into v_count from public.shop_offers;
   if v_count <> 0 then raise exception 'FAIL: anonymous read returned % shop price(s)', v_count; end if;
+  select count(*) into v_count from public.med_entries;
+  if v_count <> 0 then raise exception 'FAIL: anonymous read returned % medicine entr(ies)', v_count; end if;
   select count(*) into v_count from public.clinic_invitations;
   if v_count <> 0 then raise exception 'FAIL: anonymous read returned % invitation(s)', v_count; end if;
   select count(*) into v_count from public.encounter_signatures;

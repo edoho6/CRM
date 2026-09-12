@@ -1,4 +1,7 @@
 import type {
+  MedKind,
+  MedRelation,
+  MedStatus,
   AppointmentStatus,
   ConfirmationResponse,
   RemindChannel,
@@ -1348,4 +1351,78 @@ export interface ShopProductPrice extends ShopProduct {
   min_price_store_id: string | null;
   max_price: number | null;
   last_seen_at: string | null;
+}
+
+/** A passage quoted from a source word for word: where doses and side effects live. */
+export interface MedQuote {
+  source: string;
+  field: string;
+  text: string;
+  url: string | null;
+  source_reviewed_at: string | null;
+  retrieved_at: string;
+  licence: string;
+}
+
+/** One source an entry was compiled from, or a place to read further. */
+export interface MedSource {
+  source: string;
+  url: string;
+  title: string | null;
+  licence: string;
+  retrieved_at: string | null;
+  role: 'basis' | 'further_reading';
+}
+
+/** An entry of the Western medicine reference: a condition, a symptom or a drug, shared by every clinic. */
+export interface MedEntry {
+  id: string;
+  kind: MedKind;
+  slug: string;
+  wikidata_id: string | null;
+  name_en: string;
+  name_he: string | null;
+  aliases_en: string[];
+  aliases_he: string[];
+  identifiers: Record<string, string>;
+  summary_en: string | null;
+  summary_he: string | null;
+  /** {he: {...}, en: {...}} — the keys depend on the kind. */
+  sections: { he?: Record<string, string> | null; en?: Record<string, string> | null };
+  quotes: MedQuote[];
+  sources: MedSource[];
+  status: MedStatus;
+  cross_check: { sources: number; agree: string[]; conflicts: string[] } | null;
+  hebrew_meta: { model: string; generated_at: string; basis: string[] } | null;
+  hebrew_stale: boolean;
+  image: {
+    file: string;
+    title: string | null;
+    source: string;
+    author: string | null;
+    page: string | null;
+    licence: string;
+    licenceUrl: string;
+    creditRequired: boolean;
+  } | null;
+  search_text: string;
+  created_at: string;
+  updated_at: string;
+}
+
+/** A link between two entries, with the source that made the claim. */
+export interface MedLink {
+  from_id: string;
+  to_id: string;
+  relation: MedRelation;
+  source: string;
+}
+
+/** A link as the entry page reads it: the other end, named. */
+export interface MedLinkedEntry {
+  relation: MedRelation;
+  source: string;
+  /** `out`: this entry makes the claim (a drug treats…); `in`: the other entry does (…is treated by this drug). */
+  direction: 'out' | 'in';
+  entry: Pick<MedEntry, 'id' | 'slug' | 'kind' | 'name_he' | 'name_en'>;
 }
