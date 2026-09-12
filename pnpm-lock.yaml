@@ -35,6 +35,9 @@ importers:
 
   apps/mobile-clinic:
     dependencies:
+      '@capacitor-firebase/messaging':
+        specifier: 8.5.1
+        version: 8.5.1(@capacitor/core@8.5.2)
       '@capacitor/android':
         specifier: ^8.5.2
         version: 8.5.2(@capacitor/core@8.5.2)
@@ -66,6 +69,9 @@ importers:
 
   apps/mobile-portal:
     dependencies:
+      '@capacitor-firebase/messaging':
+        specifier: 8.5.1
+        version: 8.5.1(@capacitor/core@8.5.2)
       '@capacitor/android':
         specifier: ^8.5.2
         version: 8.5.2(@capacitor/core@8.5.2)
@@ -126,7 +132,7 @@ importers:
         version: 16.3.4(@types/node@26.4.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       next-intl:
         specifier: ^4.14.2
-        version: 4.14.2(@swc/helpers@0.5.23)(next@16.3.4(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8)
+        version: 4.14.2(@swc/helpers@0.5.23)(next@16.3.4(@types/node@26.4.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8)
       react:
         specifier: ^19.2.8
         version: 19.2.8
@@ -217,7 +223,7 @@ importers:
         version: 16.3.4(@types/node@26.4.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       next-intl:
         specifier: ^4.14.2
-        version: 4.14.2(@swc/helpers@0.5.23)(next@16.3.4(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8)
+        version: 4.14.2(@swc/helpers@0.5.23)(next@16.3.4(@types/node@26.4.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8)
       react:
         specifier: ^19.2.8
         version: 19.2.8
@@ -315,7 +321,7 @@ importers:
         version: link:../domain
       next-intl:
         specifier: ^4.14.2
-        version: 4.14.2(@swc/helpers@0.5.23)(next@16.3.4(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8)
+        version: 4.14.2(@swc/helpers@0.5.23)(next@16.3.4(@types/node@26.4.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8)
     devDependencies:
       '@clinic/config':
         specifier: workspace:*
@@ -332,6 +338,9 @@ importers:
 
   packages/native:
     dependencies:
+      '@capacitor-firebase/messaging':
+        specifier: 8.5.1
+        version: 8.5.1(@capacitor/core@8.5.2)
       '@capacitor/app':
         specifier: ^8.1.1
         version: 8.1.1(@capacitor/core@8.5.2)
@@ -434,6 +443,15 @@ packages:
   '@bramus/specificity@2.4.2':
     resolution: {integrity: sha512-ctxtJ/eA+t+6q2++vj5j7FYX3nRu311q1wfYH3xjlLOsczhlhxAg2FWNUXhpGvAw3BWo1xBcvOV6/YLc2r5FJw==}
     hasBin: true
+
+  '@capacitor-firebase/messaging@8.5.1':
+    resolution: {integrity: sha512-8eo5RanMG/BUAklU9zi9/Zj/97pEQkrPQlQbG2o/l+BL4dE3BkGoY3369op9jtfb274auMaT3OPbD1a0uFxv2Q==}
+    peerDependencies:
+      '@capacitor/core': '>=8.0.0'
+      firebase: ^12.6.0
+    peerDependenciesMeta:
+      firebase:
+        optional: true
 
   '@capacitor/android@8.5.2':
     resolution: {integrity: sha512-rtiaz78egCcS+vs29wkWCL3C+RhazKMSygXcjutwWP8NmO6r5UBxOvGf3Wjz5+ahobyQ723tn9gCePwRwcNDZQ==}
@@ -3638,6 +3656,10 @@ snapshots:
     dependencies:
       css-tree: 3.2.1
 
+  '@capacitor-firebase/messaging@8.5.1(@capacitor/core@8.5.2)':
+    dependencies:
+      '@capacitor/core': 8.5.2
+
   '@capacitor/android@8.5.2(@capacitor/core@8.5.2)':
     dependencies:
       '@capacitor/core': 8.5.2
@@ -5731,7 +5753,7 @@ snapshots:
 
   next-intl-swc-plugin-extractor@4.14.2: {}
 
-  next-intl@4.14.2(@swc/helpers@0.5.23)(next@16.3.4(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8):
+  next-intl@4.14.2(@swc/helpers@0.5.23)(next@16.3.4(@types/node@26.4.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8):
     dependencies:
       '@eloqnt/config': 0.1.0
       '@eloqnt/format-json': 0.1.0

@@ -19,6 +19,10 @@
 	<string>To photograph the tongue for a treatment record.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>To attach a photo or a document to a patient's file.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 	<key>UIRequiresFullScreen</key>
 	<false/>
 	<key>CFBundleExecutable</key>

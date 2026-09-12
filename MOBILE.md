@@ -187,6 +187,32 @@ Settings ← Secrets and variables ← Actions ← לשונית **Variables** �
 
 ---
 
+## 6.5 · Firebase — חובה לפני הבנייה הראשונה
+
+האפליקציות מקבלות התראות (תזכורת לתור למטופל, תזכורת למשימה למטפל) דרך Firebase של גוגל,
+בשתי הפלטפורמות. בלי הקבצים של Firebase הבנייה נעצרת — אז זה בא לפני ההרצה הראשונה.
+
+1. [console.firebase.google.com](https://console.firebase.google.com) ← **Create a project** ← שם "Herbalist",
+   בלי Google Analytics. חינם.
+2. **Project settings** (גלגל השיניים) ← **Your apps** ← **Add app** ארבע פעמים:
+   - Android, package `il.co.herbalist.clinic` ← Register ← **Download google-services.json**.
+   - Android, package `il.co.herbalist.portal` ← אותו דבר.
+   - iOS, bundle `il.co.herbalist.clinic` ← Register ← **Download GoogleService-Info.plist**.
+   - iOS, bundle `il.co.herbalist.portal` ← אותו דבר.
+   את שלבי "Add Firebase SDK" בכל אשף מדלגים (Next) — הקוד כבר מכיל אותם.
+3. **Cloud Messaging** (באותו Project settings) ← **Apple app configuration** ← **APNs Authentication Key** ←
+   Upload: קובץ ה-`.p8` מסעיף 2 (מפתח ה-APNs), ה-Key ID שלו וה-Team ID. לשתי אפליקציות ה-iOS.
+4. ה-secrets ב-GitHub — **תוכן הקובץ כפי שהוא** (לפתוח בפנקס, להעתיק הכול):
+   - `FIREBASE_ANDROID_CLINIC_JSON`, `FIREBASE_ANDROID_PORTAL_JSON` — שני קובצי ה-`google-services.json`.
+   - `FIREBASE_IOS_CLINIC_PLIST`, `FIREBASE_IOS_PORTAL_PLIST` — שני קובצי ה-`GoogleService-Info.plist`.
+5. **Service accounts** (באותו Project settings) ← **Generate new private key** ← הקובץ שיורד הוא ה-secret
+   `FCM_SERVICE_ACCOUNT_JSON` **ב-Supabase** (Edge Functions ← Secrets), לא ב-GitHub — זה מה שמאפשר לשרת
+   לשלוח (`DEPLOY.md`, "התראות בטלפון").
+
+הקבצים האלה מזהים את הפרויקט ולא נכנסים ל-git (ה-`.gitignore` חוסם אותם).
+
+---
+
 ## 7 · הבדיקה הסגורה (גוגל בלבד)
 
 Play Console ← Testing ← **Closed testing** ← Create track "בטא" ← Testers ← רשימת מיילים
@@ -225,10 +251,9 @@ Play Console ← Testing ← **Closed testing** ← Create track "בטא" ← Te
 
 ## מה עוד לא כאן
 
-- **התראות בטלפון** (Firebase) — צד השרת מוכן (מסד הנתונים והשולח; `DEPLOY.md`, "התראות בטלפון");
-  צד האפליקציה בהמשך. ה-secrets ב-GitHub מוכנים בשם: `FIREBASE_ANDROID_CLINIC_JSON`,
-  `FIREBASE_ANDROID_PORTAL_JSON` (תוכן `google-services.json`), `FIREBASE_IOS_CLINIC_PLIST`,
-  `FIREBASE_IOS_PORTAL_PLIST` (תוכן `GoogleService-Info.plist`); וב-Supabase — `FCM_SERVICE_ACCOUNT_JSON`.
+- **התראות בטלפון** — מוכן משני הצדדים (סעיף 6.5 להקמה). באפליקציה: איזור אישי ← "התראות בטלפון"
+  (צוות) ו"החשבון שלי" ← "תזכורות בטלפון" (מטופלים) — כפתור אחד שמבקש את ההרשאה. אחרי `33_push_devices_to_run.sql`
+  ב-SQL editor.
 - הורדת מסמכים, קובץ יומן והדפסה מתוך האפליקציה — בינתיים הכפתורים האלה מוסתרים
   באפליקציה ואומרים "זמין באתר".
 - קישורים עמוקים (קישור מהודעה שנפתח ישר באפליקציה), נעילה ביומטרית, iPad.

@@ -467,6 +467,17 @@
   במסך ההודעות שורת push מוצגת עם פעמון ובלי נמען; בדיאלוג המשימה "התראה בטלפון" זמינה רק כשיש טלפון רשום
   (שאילתה מהדפדפן, RLS של הבעלים). `tenant_isolation.sql` בודק שטלפון של קליניקה אחרת לא נראה
 
+- **התראות בטלפון — צד האפליקציה:** `packages/native/src/push.ts` עוטף את `@capacitor-firebase/messaging` (נטען דינמית,
+  רק במעטפת). `PushRegistration` יושב בשני ה-frames המחוברים (`(app)/layout.tsx`, `portal-shell.tsx`) עם ה-server
+  action של האפליקציה (`registerPushDevice` / `registerPortalPushDevice` → `register_push_device`): רושם את הטוקן
+  כשההרשאה כבר ניתנה, מאזין לרוטציה של טוקן, ועוקב אחרי לחיצה על התראה רק לכתובת באותו origin. ההרשאה נשאלת
+  **רק** מהכרטיס "התראות בטלפון" (`PushSettings`, ב-`/account` של שתי האפליקציות) — לא בהפעלה. הטוקן נשמר גם
+  בעוגייה `herbalist-push-token`, וה-sign-out (`handleSignOut`, `portalSignOut`) קורא ממנה ומבטל את הרישום לפני
+  היציאה. במעטפות: `App.entitlements` (`aps-environment`), `UIBackgroundModes`, שלושת ה-hooks ב-`AppDelegate`,
+  `GoogleService-Info.plist` / `google-services.json` **לא ב-git** — ה-workflows כותבים אותם מ-secrets ונכשלים
+  בלעדיהם; `experimental.ios.spm.packageOptions` ב-config בגלל התנגשות זהות ב-SPM; באנדרואיד האייקון הקטן הוא
+  `ic_launcher_foreground` והערוץ `reminders`
+
 ## לפני commit
 
 ```

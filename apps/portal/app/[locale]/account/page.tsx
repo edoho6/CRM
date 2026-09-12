@@ -6,6 +6,8 @@ import type { Locale } from '@clinic/domain';
 import { Link } from '@clinic/i18n/navigation';
 import { PortalShell } from '../portal-shell';
 import { DeleteAccountForm } from './delete-account-form';
+import { PushSettings } from '@clinic/native';
+import { registerPortalPushDevice } from './push-actions';
 
 /**
  * The patient's account: the address they sign in with, the documents that
@@ -75,6 +77,28 @@ export default async function PortalAccountPage({ params }: { params: Promise<{ 
               </Link>
             </li>
           </ul>
+        </CardBody>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('push.title')}</CardTitle>
+        </CardHeader>
+        <CardBody className="space-y-3">
+          <p className="text-sm leading-relaxed text-ink-700">{t('push.subtitle')}</p>
+          <PushSettings
+            locale={locale}
+            register={registerPortalPushDevice}
+            labels={{
+              unsupported: t('push.unsupported'),
+              prompt: t('push.prompt'),
+              granted: t('push.granted'),
+              denied: t('push.denied'),
+              enable: t('push.enable'),
+              enabling: t('push.enabling'),
+              failed: t('push.failed'),
+            }}
+          />
         </CardBody>
       </Card>
 

@@ -20,6 +20,15 @@
             </intent-filter>
         </activity>
 
+        <!-- The small icon of a notification: white on nothing, as Android
+             wants it — the leaf alone. And the channel the sender addresses. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@mipmap/ic_launcher_foreground" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="reminders" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"

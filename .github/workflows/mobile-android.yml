@@ -68,13 +68,15 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      # Firebase names the project the app talks to; the file is a secret
-      # per app, written only for the build (phase 2 — push notifications).
-      - name: Firebase configuration, if any
+      # Firebase names the project the app talks to (notifications); the
+      # file is a secret per app, written only for the build. Required: the
+      # app would crash at launch without it.
+      - name: Firebase configuration
         env:
           FILE: ${{ secrets[format('FIREBASE_ANDROID_{0}_JSON', matrix.key)] }}
-        if: env.FILE != ''
-        run: printf '%s' "$FILE" > "apps/mobile-${{ matrix.app }}/android/app/google-services.json"
+        run: |
+          test -n "$FILE" || { echo "FIREBASE_ANDROID_${{ matrix.key }}_JSON is not set (see MOBILE.md, Firebase)"; exit 1; }
+          printf '%s' "$FILE" > "apps/mobile-${{ matrix.app }}/android/app/google-services.json"
 
       - name: Sync the shell
         run: pnpm --filter "@clinic/mobile-${{ matrix.app }}" sync:android

@@ -56,11 +56,14 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - name: Firebase configuration, if any
+      # Required: the Firebase file is a bundled resource, and the app
+      # would not build (nor launch) without it.
+      - name: Firebase configuration
         env:
           FILE: ${{ secrets[format('FIREBASE_IOS_{0}_PLIST', matrix.key)] }}
-        if: env.FILE != ''
-        run: printf '%s' "$FILE" > "apps/mobile-${{ matrix.app }}/ios/App/App/GoogleService-Info.plist"
+        run: |
+          test -n "$FILE" || { echo "FIREBASE_IOS_${{ matrix.key }}_PLIST is not set (see MOBILE.md, Firebase)"; exit 1; }
+          printf '%s' "$FILE" > "apps/mobile-${{ matrix.app }}/ios/App/App/GoogleService-Info.plist"
 
       - name: Sync the shell
         run: pnpm --filter "@clinic/mobile-${{ matrix.app }}" sync:ios

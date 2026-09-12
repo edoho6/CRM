@@ -1737,6 +1737,18 @@
         "confirmBody": "This is final. To use the portal again, the clinic will have to invite you anew.",
         "confirmButton": "Delete the account",
         "button": "Delete the account"
+      },
+      "push": {
+        "title": "Reminders on the phone",
+        "subtitle": "An appointment reminder arrives as a notification on this phone, instead of a message.",
+        "unsupported": "Available in the phone app.",
+        "prompt": "This phone does not receive reminders yet.",
+        "granted": "This phone receives appointment reminders.",
+        "denied": "Notifications are off in the phone’s settings. To allow them: phone Settings → Herbalist → Notifications.",
+        "enable": "Turn on phone reminders",
+        "enabling": "One moment…",
+        "failed": "The phone could not be registered. Try again in a moment.",
+        "channelName": "Reminders"
       }
     }
   },
@@ -2518,6 +2530,18 @@
         "clinic_has_records": "This account is the only owner of a clinic with patient files, so it cannot be deleted right now: the records must stay with someone. Invite a team member, make them an owner and come back here, or contact us to close the clinic properly. The request has been recorded.",
         "clinic_needs_owner": "There are other team members in the clinic and no other owner. First make one of them an owner (Settings → Team), then come back here. The request has been recorded."
       }
+    },
+    "push": {
+      "title": "Phone notifications",
+      "subtitle": "A task marked \"phone notification\" reaches this phone, even with the app closed.",
+      "unsupported": "Available in the phone app. Once it is installed, this card switches notifications on.",
+      "prompt": "This phone does not receive Herbalist notifications yet.",
+      "granted": "This phone receives notifications. Tasks marked \"phone notification\" will arrive here.",
+      "denied": "Notifications are off in the phone’s settings. To allow them: phone Settings → Herbalist → Notifications.",
+      "enable": "Turn on notifications",
+      "enabling": "One moment…",
+      "failed": "The phone could not be registered. Try again in a moment.",
+      "channelName": "Reminders"
     }
   },
   "forms": {

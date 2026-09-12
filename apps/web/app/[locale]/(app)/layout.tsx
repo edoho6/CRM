@@ -1,6 +1,8 @@
 import { redirect } from '@clinic/i18n/navigation';
 import { PREF_KEYS } from '@/lib/prefs';
 import { InstallHint } from '@clinic/ui';
+import { PushRegistration } from '@clinic/native';
+import { registerPushDevice, unregisterPushDeviceFromCookie } from '@/features/settings/push-actions';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { isSupabaseConfigured } from '@clinic/db';
 import type { Locale } from '@clinic/domain';
@@ -35,6 +37,7 @@ export default async function AppLayout({
   const { locale } = await params;
   setRequestLocale(locale);
   const tInstall = await getTranslations({ locale, namespace: 'common.install' });
+  const tPush = await getTranslations({ locale, namespace: 'account.push' });
 
   if (!isSupabaseConfigured()) {
     redirect({ href: '/setup', locale: locale as Locale });
@@ -61,6 +64,8 @@ export default async function AppLayout({
 
   async function handleSignOut() {
     'use server';
+    // The phone this session is leaving stops getting this person's alerts.
+    await unregisterPushDeviceFromCookie();
     await signOutAction(locale as Locale);
   }
 
@@ -79,6 +84,9 @@ export default async function AppLayout({
       onSignOut={handleSignOut}
     >
       <ReferenceSheetProvider>{children}</ReferenceSheetProvider>
+      {/* Inside the store app only: keeps this phone registered for alerts
+          while someone is signed in, and follows a tapped notification. */}
+      <PushRegistration locale={locale} channelName={tPush('channelName')} register={registerPushDevice} />
       {/* The home-screen hint, on a phone, until it is dismissed or the app
           runs from the home screen. Fixed above the tab bar: nothing shifts. */}
       <InstallHint

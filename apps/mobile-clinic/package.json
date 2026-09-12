@@ -12,6 +12,7 @@
     "clean": "rimraf .turbo node_modules"
   },
   "dependencies": {
+    "@capacitor-firebase/messaging": "8.5.1",
     "@capacitor/android": "^8.5.2",
     "@capacitor/app": "^8.1.1",
     "@capacitor/core": "^8.5.2",

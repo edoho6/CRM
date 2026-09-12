@@ -1,6 +1,8 @@
-import { getTranslations } from 'next-intl/server';
+import { getLocale, getTranslations } from 'next-intl/server';
 import { LogOut, UserRound } from 'lucide-react';
 import { InstallHint, Button } from '@clinic/ui';
+import { PushRegistration } from '@clinic/native';
+import { registerPortalPushDevice } from './account/push-actions';
 import { Link } from '@clinic/i18n/navigation';
 import { LanguageSwitcher } from './language-switcher';
 import { PortalNav } from './portal-nav';
@@ -29,6 +31,8 @@ export async function PortalShell({
   const tNav = await getTranslations('nav');
   const tInstall = await getTranslations('common.install');
   const tLegal = await getTranslations('legal');
+  const tPush = await getTranslations('portal.account.push');
+  const locale = await getLocale();
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-2xl flex-col px-4 pt-5 pb-[calc(env(safe-area-inset-bottom)+1.5rem)] sm:px-6 sm:pt-8">
@@ -44,6 +48,10 @@ export async function PortalShell({
         {title ? <h1 className="text-2xl font-semibold text-ink-900">{title}</h1> : null}
         <PortalNav current={current} />
       </header>
+
+      {/* Inside the store app only: this phone stays registered for the
+          appointment reminders while the patient is signed in. */}
+      <PushRegistration locale={locale} channelName={tPush('channelName')} register={registerPortalPushDevice} />
 
       {/* `tabIndex={-1}` so the skip link can move focus here. */}
       <main id="main-content" tabIndex={-1} className="flex-1 space-y-5 focus:outline-none">

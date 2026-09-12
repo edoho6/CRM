@@ -9,6 +9,7 @@ import {
   Palette,
   ShieldCheck,
   Trash2,
+  BellRing,
 } from 'lucide-react';
 import { Collapsible, PageBody } from '@clinic/ui';
 import { Link } from '@clinic/i18n/navigation';
@@ -30,6 +31,8 @@ import { LocationsManager } from '@/features/settings/locations-manager';
 import { RoomsManager } from '@/features/settings/rooms-manager';
 import { TwoFactorSettings } from '@/features/settings/two-factor-settings';
 import { DeleteAccountPanel } from '@/features/settings/delete-account';
+import { PushSettings } from '@clinic/native';
+import { registerPushDevice } from '@/features/settings/push-actions';
 import { verifiedTotpFactor } from '@/lib/second-factor';
 import { pageTitle } from '@/lib/page-title';
 
@@ -235,6 +238,28 @@ export default async function AccountPage({ params }: { params: Promise<{ locale
           >
             {t('toSettings')}
           </Link>
+        </Collapsible>
+
+        {/* Alerts on this phone: only inside the store app is there anything
+            to switch on; in a browser the card says so. */}
+        <Collapsible
+          title={t('push.title')}
+          description={t('push.subtitle')}
+          icon={<BellRing className="h-4 w-4" aria-hidden />}
+        >
+          <PushSettings
+            locale={locale}
+            register={registerPushDevice}
+            labels={{
+              unsupported: t('push.unsupported'),
+              prompt: t('push.prompt'),
+              granted: t('push.granted'),
+              denied: t('push.denied'),
+              enable: t('push.enable'),
+              enabling: t('push.enabling'),
+              failed: t('push.failed'),
+            }}
+          />
         </Collapsible>
 
         {/* Last, and closed: the one thing nobody comes here for, with what it

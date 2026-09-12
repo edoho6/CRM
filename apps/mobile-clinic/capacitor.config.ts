@@ -40,7 +40,21 @@ const config: CapacitorConfig = {
   android: {
     appendUserAgent: `HerbalistShell/${version} (clinic; android)`,
   },
+  // The messaging plugin's own note: without this, Swift Package Manager
+  // trips over two packages with one identity.
+  experimental: {
+    ios: {
+      spm: {
+        packageOptions: {
+          '@capacitor-firebase/messaging': { symlink: true },
+        },
+      },
+    },
+  },
   plugins: {
+    FirebaseMessaging: {
+      presentationOptions: ['alert', 'badge', 'sound'],
+    },
     SplashScreen: {
       // Up until the first page has painted (the bridge hides it), and no
       // longer than this if the page never gets there.

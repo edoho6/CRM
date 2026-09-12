@@ -5,6 +5,7 @@ import { redirect } from '@clinic/i18n/navigation';
 import { createServerSupabase, isSupabaseConfigured, siteUrl } from '@clinic/db';
 import { checkRateLimit, clearAttempts, recordFailure } from '@clinic/db/rate-limit';
 import type { Locale } from '@clinic/domain';
+import { unregisterPortalPushDeviceFromCookie } from '../account/push-actions';
 
 export interface MagicLinkState {
   status: 'idle' | 'sent' | 'error' | 'notConfigured';
@@ -150,6 +151,8 @@ export async function signInWithPassword(
 
 export async function portalSignOut(): Promise<void> {
   if (!isSupabaseConfigured()) return;
+  // The phone this session is leaving stops getting this person's reminders.
+  await unregisterPortalPushDeviceFromCookie();
   const supabase = await createServerSupabase();
   await supabase.auth.signOut();
 }
