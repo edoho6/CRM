@@ -20,6 +20,7 @@ import { SortLinkTh } from '@/components/sort-link-th';
 import { compareComputed, parseSort, type SortState } from '@/lib/sort-params';
 import { TcmChip, TcmChips } from '@/components/tcm-chip';
 import { pageTitle } from '@/lib/page-title';
+import { doseRangeLabel } from '@/features/inventory/dose-range';
 
 export const generateMetadata = pageTitle('inventory.herbs', 'title');
 
@@ -245,12 +246,7 @@ export default async function HerbsPage({
                 const botanical = herbBotanicalName(herb);
                 const tastes = herb.tastes ?? [];
                 const stock = stockByHerb.get(herb.id);
-                const dose =
-                  herb.dosage_min_g !== null || herb.dosage_max_g !== null
-                    ? `${herb.dosage_min_g !== null ? format.number(Number(herb.dosage_min_g)) : '?'}–${
-                        herb.dosage_max_g !== null ? format.number(Number(herb.dosage_max_g)) : '?'
-                      } g`
-                    : null;
+                const dose = doseRangeLabel(herb, (n) => format.number(n), tUnit('gram'));
                 return (
                   <Tr
                     key={herb.id}>

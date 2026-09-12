@@ -20,11 +20,11 @@ export default async function SettingsPage({ params }: { params: Promise<{ local
   return (
     <>
       <PageHeader title={t('title')} description={t('subtitle')} below={<SettingsNav />} />
-      <ClinicSettingsForm
-        name={scope.context.clinic.name}
-        tracksInventory={scope.context.clinic.tracks_inventory !== false}
-      />
-      <PageBody width="narrow" className="mt-6">
+      <PageBody width="narrow">
+        <ClinicSettingsForm
+          name={scope.context.clinic.name}
+          tracksInventory={scope.context.clinic.tracks_inventory !== false}
+        />
         <ReminderTemplateForm
           template={scope.context.clinic.reminder_template ?? null}
           enabled={scope.context.clinic.reminders_enabled !== false}

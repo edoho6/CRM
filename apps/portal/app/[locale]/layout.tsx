@@ -79,6 +79,7 @@ export default async function PortalLocaleLayout({
                       openCalendar: t('dateInput.openCalendar'),
                       invalid: t('dateInput.invalid'),
                     },
+                    dialog: { close: t('close') },
                   }}
                 >
                   {children}

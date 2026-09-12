@@ -102,6 +102,7 @@ export function OpenFilesBar() {
                 type="button"
                 onClick={() => handleClose(file, isActive)}
                 aria-label={t('closeFile', { name: file.label })}
+                title={t('closeFile', { name: file.label })}
                 className="me-1 rounded p-1 text-ink-500 transition-colors hover:bg-ink-200 hover:text-ink-900"
               >
                 <X className="h-3.5 w-3.5" />

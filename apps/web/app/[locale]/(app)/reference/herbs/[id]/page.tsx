@@ -46,6 +46,7 @@ import { referenceImageFor } from '@/features/inventory/herb-reference-image';
 import { OrderDialog } from '@/features/inventory/order-dialog';
 import { formatDate } from '@clinic/i18n';
 import { pageTitle } from '@/lib/page-title';
+import { doseRangeLabel } from '@/features/inventory/dose-range';
 
 export const generateMetadata = pageTitle('inventory.herbs', 'single');
 
@@ -157,12 +158,7 @@ export default async function HerbDetailPage({
   const tastes = herb.tastes ?? [];
   const channels = herb.channels ?? [];
 
-  const dosage =
-    herb.dosage_min_g !== null || herb.dosage_max_g !== null
-      ? `${herb.dosage_min_g !== null ? format.number(Number(herb.dosage_min_g)) : '?'}–${
-          herb.dosage_max_g !== null ? format.number(Number(herb.dosage_max_g)) : '?'
-        } g`
-      : null;
+  const dosage = doseRangeLabel(herb, (n) => format.number(n), tUnit('gram'));
 
   return (
     <>

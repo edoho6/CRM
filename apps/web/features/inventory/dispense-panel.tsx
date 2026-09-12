@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState, useTransition } from 'react';
 import { useFormatter, useLocale, useTranslations } from 'next-intl';
 import { Check, Columns2, Plus, Printer, Sprout, X } from 'lucide-react';
 import {
-  Dash,
   Alert,
   Badge,
   Button,
@@ -15,20 +14,22 @@ import {
   Checkbox,
   Collapsible,
   Combobox,
+  type ComboboxOption,
+  type ComboboxValue,
+  Dash,
   Dialog,
   DialogContent,
+  EmptyNote,
   Field,
   LtrInput,
-  Select,
   SegmentedControl,
+  Select,
   Spinner,
   Table,
   TableWrapper,
   Td,
-  Th,
   Textarea,
-  type ComboboxOption,
-  type ComboboxValue,
+  Th,
 } from '@clinic/ui';
 import {
   DOSE_TIMINGS,
@@ -582,6 +583,7 @@ export function DispensePanel({
                       <button
                         type="button"
                         aria-label={tc('delete')}
+                        title={tc('delete')}
                         onClick={() => setRows(rows.filter((_, position) => position !== index))}
                         className="mb-1 rounded-md p-2 text-ink-500 transition-colors hover:bg-red-50 hover:text-red-700"
                       >
@@ -808,7 +810,7 @@ export function DispensePanel({
         </CardHeader>
         <CardBody className="p-0">
           {records.length === 0 ? (
-            <p className="px-4 py-6 text-center text-sm text-ink-500">{t('empty')}</p>
+            <EmptyNote className="px-4 py-6 text-center">{t('empty')}</EmptyNote>
           ) : (
             <>
               {comparing ? (

@@ -2,6 +2,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import type { TreatmentProtocol } from '@clinic/db/types';
 import { PageBody } from '@clinic/ui';
 import { PageHeader } from '@/components/app-shell';
+import { HeaderToolsSlot } from '@/components/header-tools';
 import { SettingsNav } from '@/features/settings/settings-nav';
 import { getClinicScope } from '@/lib/session';
 import { ProtocolsManager } from '@/features/encounters/protocols-manager';
@@ -40,7 +41,12 @@ export default async function ProtocolsPage({
 
   return (
     <>
-      <PageHeader title={t('title')} description={t('subtitle')} below={<SettingsNav />} />
+      <PageHeader
+        title={t('title')}
+        description={t('subtitle')}
+        actions={<HeaderToolsSlot id="protocols-header-tools" />}
+        below={<SettingsNav />}
+      />
       <PageBody width="narrow">
         <ProtocolsManager protocols={data ?? []} />
       </PageBody>

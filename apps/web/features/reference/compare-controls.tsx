@@ -100,6 +100,7 @@ export function CompareTray() {
                 type="button"
                 onClick={() => toggle(item)}
                 aria-label={t('remove', { name: item.label })}
+                title={t('remove', { name: item.label })}
                 className="rounded p-0.5 text-ink-500 transition-colors hover:bg-ink-200 hover:text-ink-900"
               >
                 <X className="h-3 w-3" />

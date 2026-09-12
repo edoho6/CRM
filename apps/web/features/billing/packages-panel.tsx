@@ -11,6 +11,7 @@ import {
   CardBody,
   CardHeader,
   CardTitle,
+  EmptyNote,
   Field,
   FieldGrid,
   Input,
@@ -137,7 +138,7 @@ export function PackagesPanel({
         {errorKey ? <Alert tone="danger">{renderError()}</Alert> : null}
 
         {balances.length === 0 ? (
-          <p className="text-sm text-ink-600">{t('none')}</p>
+          <EmptyNote>{t('none')}</EmptyNote>
         ) : (
           <ul className="space-y-3">
             {balances.map((balance) => {
@@ -195,6 +196,7 @@ export function PackagesPanel({
                       <button
                         type="button"
                         aria-label={tc('delete')}
+                        title={tc('delete')}
                         disabled={isPending}
                         onClick={async () => {
                           const confirmed = await confirm({

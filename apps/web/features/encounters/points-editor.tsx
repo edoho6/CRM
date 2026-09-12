@@ -11,7 +11,7 @@ import {
   Search,
   X,
 } from 'lucide-react';
-import { FloatingList, inputClasses, useAnchoredPosition } from '@clinic/ui';
+import { EmptyNote, FloatingList, inputClasses, useAnchoredPosition } from '@clinic/ui';
 import { cn } from '@clinic/ui/cn';
 import { useReferenceSheet } from '@/features/reference/reference-sheet';
 import {
@@ -390,7 +390,7 @@ export function PointsEditor({
         ) : null}
 
         {rows.length === 0 && disabled ? (
-          <p className="py-1 text-xs text-ink-500">{t('none')}</p>
+          <EmptyNote className="py-1">{t('none')}</EmptyNote>
         ) : null}
 
         <ul
@@ -414,6 +414,7 @@ export function PointsEditor({
                   type="button"
                   onClick={() => remove(index)}
                   aria-label={t('remove')}
+                  title={t('remove')}
                   className="ms-auto rounded p-1 text-ink-500 transition-colors hover:bg-red-50 hover:text-red-700"
                 >
                   <X className="h-3.5 w-3.5" />

@@ -110,6 +110,14 @@ export function Combobox({
   const [open, setOpen] = React.useState(false);
   const [highlight, setHighlight] = React.useState(0);
   const inputRef = React.useRef<HTMLInputElement>(null);
+  const blurClose = React.useRef<number | null>(null);
+  const cancelBlurClose = () => {
+    if (blurClose.current !== null) {
+      window.clearTimeout(blurClose.current);
+      blurClose.current = null;
+    }
+  };
+  React.useEffect(() => cancelBlurClose, []);
   const fieldRef = React.useRef<HTMLDivElement>(null);
   const listRef = React.useRef<HTMLUListElement>(null);
   const reactId = React.useId();
@@ -201,6 +209,11 @@ export function Combobox({
         // moment it is reached hides the form behind it. Typing, or Down
         // for the keyboard, opens the list.
         onFocus={(event) => {
+          // Back within the blur delay: the pending close must not fire on
+          // text typed after the return. Focus that leaves and comes straight
+          // back — a Tab too far and a Shift+Tab, a click beside the field —
+          // used to lose the first word typed, 140 ms later.
+          cancelBlurClose();
           event.currentTarget.select();
         }}
         // The delay lets a click on an option land before the list unmounts.
@@ -208,12 +221,14 @@ export function Combobox({
         // what the field shows is always what the value is — a half-typed
         // name over a different, still-selected patient was a wrong booking
         // waiting to happen.
-        onBlur={() =>
-          window.setTimeout(() => {
+        onBlur={() => {
+          cancelBlurClose();
+          blurClose.current = window.setTimeout(() => {
+            blurClose.current = null;
             setOpen(false);
             if (!allowCustom) setTerm('');
-          }, 140)
-        }
+          }, 140);
+        }}
         onKeyDown={(event) => {
           if (event.key === 'ArrowDown') {
             event.preventDefault();
@@ -249,6 +264,7 @@ export function Combobox({
           type="button"
           onClick={clear}
           aria-label={`${label} — ✕`}
+          title={`${label} — ✕`}
           className="absolute inset-y-0 end-1 my-auto h-8 w-8 rounded-md text-ink-500 transition-colors hover:bg-ink-100 hover:text-ink-800 active:bg-ink-200"
         >
           <X className="mx-auto h-4 w-4" aria-hidden />

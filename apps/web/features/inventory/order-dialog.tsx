@@ -170,7 +170,7 @@ export function OrderDialog({
             </Button>
             <Button type="button" size="sm" onClick={() => submit(close)} disabled={isPending}>
               {isPending ? (
-                <Spinner className="h-3.5 w-3.5" />
+                <Spinner />
               ) : (
                 <ShoppingCart className="h-3.5 w-3.5" />
               )}

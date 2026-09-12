@@ -889,8 +889,17 @@ const flows = {
 /** Cleanup only: opens a block with the mouse and deletes it through the confirmation. */
 async function deleteBlockByMouse(page, block) {
   await block.click();
+  const details = page.locator('[role="dialog"]').first();
+  await details.waitFor({ timeout: 5_000 });
+  // A block opens its details first; the delete button is on the edit form
+  // behind "edit". Without this step a leftover booking stayed forever and
+  // every later run failed on it.
+  const editButton = details.locator('button', { hasText: /עריכת התור/ }).first();
+  if ((await editButton.count()) > 0) {
+    await editButton.click();
+    await page.locator('[role="dialog"] button', { hasText: /^מחיקה$/ }).first().waitFor({ timeout: 5_000 });
+  }
   const edit = page.locator('[role="dialog"]').first();
-  await edit.waitFor({ timeout: 5_000 });
   await edit.locator('button', { hasText: /^מחיקה$/ }).first().click();
   await page.locator('[role="dialog"]').last().locator('button', { hasText: /^מחיקה$/ }).last().click();
   await toast(page, /התור נמחק/);

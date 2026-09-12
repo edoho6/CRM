@@ -400,7 +400,6 @@ export function AppShell({
                   settings: press it, drag, press it again. */}
               <span data-sidebar-expanded-only className="ms-auto flex shrink-0">
                 <ArrangeToggle
-                  iconOnly
                   editing={navEditing}
                   onToggle={() => setNavEditing((value) => !value)}
                   arrangeLabel={t('arrangeMenu')}

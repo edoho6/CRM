@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { useFormatter, useTranslations } from 'next-intl';
-import { CreditCard, ExternalLink, Plus, Trash2, Wallet } from 'lucide-react';
+import { CreditCard, ExternalLink, Plus, Trash2 } from 'lucide-react';
 import {
   Alert,
   Badge,
@@ -223,6 +223,7 @@ export function InvoiceEditor({ invoice }: { invoice: InvoiceWithDetails }) {
                           <button
                             type="button"
                             aria-label={tc('delete')}
+                            title={tc('delete')}
                             disabled={isPending}
                             onClick={async () => {
                               // One click used to drop the line and re-total
@@ -382,7 +383,6 @@ export function InvoiceEditor({ invoice }: { invoice: InvoiceWithDetails }) {
                   onClick={handleManualPayment}
                   disabled={isPending}
                 >
-                  <Wallet className="h-4 w-4" />
                   {tc('save')}
                 </Button>
               </div>

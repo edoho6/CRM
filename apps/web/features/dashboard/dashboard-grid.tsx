@@ -170,26 +170,25 @@ export function DashboardGrid({
 
   const toolbar = (
     <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-      <div className="flex flex-wrap items-center gap-2">
-        <AddWidgetDialog layout={layout} onAdd={handleAdd} />
-        {/* A pencil, not a labelled button: the one control that changes how
-            the whole grid behaves should look like a switch beside it, and
-            "edit" is the icon everyone already reads. The name is still there
-            for a screen reader and on hover. */}
-        <ArrangeToggle
-          editing={isEditing}
-          onToggle={() => setIsEditing((value) => !value)}
-          arrangeLabel={t('editLayout')}
-          doneLabel={t('doneEditing')}
-        />
+      <AddWidgetDialog layout={layout} onAdd={handleAdd} />
+      {/* The switch sits last, in the far corner of the grid it arranges —
+          where the menu's, the tiles' and the treatment page's sit — with the
+          hint and the reset appearing beside it only while arranging. */}
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        {isEditing ? <p className="text-xs text-ink-500">{t('editHint')}</p> : null}
         {isEditing ? (
           <Button variant="ghost" size="sm" onClick={handleReset}>
             <RotateCcw className="h-4 w-4" />
             {t('resetLayout')}
           </Button>
         ) : null}
+        <ArrangeToggle
+          editing={isEditing}
+          onToggle={() => setIsEditing((value) => !value)}
+          arrangeLabel={t('editLayout')}
+          doneLabel={t('doneEditing')}
+        />
       </div>
-      {isEditing ? <p className="text-xs text-ink-500">{t('editHint')}</p> : null}
     </div>
   );
 
@@ -212,37 +211,37 @@ export function DashboardGrid({
 
   return (
     <DashboardProvider value={{ tracksInventory, timeZone, initialData }}>
-    <div>
-      {toolbar}
+      <div>
+        {toolbar}
 
-      {saveError ? (
-        <Alert tone="danger" className="mb-3">
-          {t('saveFailed')}
-        </Alert>
-      ) : null}
+        {saveError ? (
+          <Alert tone="danger" className="mb-3">
+            {t('saveFailed')}
+          </Alert>
+        ) : null}
 
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        <SortableContext items={ids} strategy={rectSortingStrategy}>
-          <div
-            className={cn(
-              'grid grid-cols-1 gap-4 md:grid-cols-6 xl:grid-cols-12',
-              isEditing && 'dashboard-editing',
-            )}
-          >
-            {layout.map((item) => (
-              <SortableWidget
-                key={item.id}
-                item={item}
-                isEditing={isEditing}
-                onRemove={() => handleRemove(item.id)}
-                onResize={() => handleResize(item.id)}
-                onConfigChange={(config) => handleConfigChange(item.id, config)}
-              />
-            ))}
-          </div>
-        </SortableContext>
-      </DndContext>
-    </div>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={ids} strategy={rectSortingStrategy}>
+            <div
+              className={cn(
+                'grid grid-cols-1 gap-4 md:grid-cols-6 xl:grid-cols-12',
+                isEditing && 'dashboard-editing',
+              )}
+            >
+              {layout.map((item) => (
+                <SortableWidget
+                  key={item.id}
+                  item={item}
+                  isEditing={isEditing}
+                  onRemove={() => handleRemove(item.id)}
+                  onResize={() => handleResize(item.id)}
+                  onConfigChange={(config) => handleConfigChange(item.id, config)}
+                />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
+      </div>
     </DashboardProvider>
   );
 }

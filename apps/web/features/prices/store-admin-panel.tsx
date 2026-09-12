@@ -196,18 +196,18 @@ export function StoreAdminPanel({
                       {store.status === 'active' ? (
                         <>
                           <Button size="sm" variant="secondary" disabled={busy || running} onClick={() => refresh(store)}>
-                            <RefreshCw className="h-3.5 w-3.5" aria-hidden />
+                            <RefreshCw className="h-4 w-4" aria-hidden />
                             {t('refresh')}
                           </Button>
                           <Button size="sm" variant="secondary" disabled={busy} onClick={() => openStatus(store, 'paused')}>
-                            <Pause className="h-3.5 w-3.5" aria-hidden />
+                            <Pause className="h-4 w-4" aria-hidden />
                             {t('pause')}
                           </Button>
                         </>
                       ) : null}
                       {store.status === 'paused' || store.status === 'awaiting_permission' ? (
                         <Button size="sm" variant="secondary" disabled={busy} onClick={() => openStatus(store, 'active')}>
-                          <Play className="h-3.5 w-3.5" aria-hidden />
+                          <Play className="h-4 w-4" aria-hidden />
                           {t('activate')}
                         </Button>
                       ) : null}

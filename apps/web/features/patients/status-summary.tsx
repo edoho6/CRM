@@ -2,18 +2,8 @@
 
 import { useEffect, useLayoutEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import {
-  ChartColumn,
-  Check,
-  ChevronLeft,
-  Eye,
-  EyeOff,
-  LayoutGrid,
-  RotateCcw,
-  Rows3,
-  Settings2,
-} from 'lucide-react';
-import { SegmentedControl, cn } from '@clinic/ui';
+import { ChartColumn, ChevronLeft, Eye, EyeOff, LayoutGrid, RotateCcw, Rows3 } from 'lucide-react';
+import { ArrangeToggle, Button, SegmentedControl, cn } from '@clinic/ui';
 import { usePathname, useRouter } from '@clinic/i18n/navigation';
 import { useSearchParams } from 'next/navigation';
 import { TREATMENT_STATUSES, type TreatmentStatus } from '@clinic/domain';
@@ -215,28 +205,7 @@ export function PatientStatusSummary({ counts }: { counts: StatusCounts }) {
   const visibleOutcomes = outcomes.filter((item) => !isHidden(item));
 
   const switcher = (
-    <div className="flex shrink-0 items-center gap-1 self-end sm:self-auto">
-      {mode !== 'hidden' ? (
-        <button
-          type="button"
-          aria-pressed={arranging}
-          title={arranging ? t('kpi.arrangeDone') : t('kpi.arrange')}
-          aria-label={arranging ? t('kpi.arrangeDone') : t('kpi.arrange')}
-          onClick={() => setArranging((current) => !current)}
-          className={cn(
-            'rounded-md border p-1.5 transition-colors',
-            arranging
-              ? 'border-jade-500 bg-jade-50 text-jade-800'
-              : 'border-ink-200 bg-white text-ink-600 hover:bg-ink-50 hover:text-ink-900',
-          )}
-        >
-          {arranging ? (
-            <Check className="h-4 w-4" aria-hidden />
-          ) : (
-            <Settings2 className="h-4 w-4" aria-hidden />
-          )}
-        </button>
-      ) : null}
+    <div className="flex shrink-0 items-center gap-2 self-end sm:self-auto">
       <SegmentedControl
         iconOnly
         label={t('kpi.view')}
@@ -251,6 +220,16 @@ export function PatientStatusSummary({ counts }: { counts: StatusCounts }) {
           };
         })}
       />
+      {/* The same switch as the dashboard's, the menu's and the treatment
+          page's, and in the same place: last, in the far corner. */}
+      {mode !== 'hidden' ? (
+        <ArrangeToggle
+          editing={arranging}
+          onToggle={() => setArranging((current) => !current)}
+          arrangeLabel={t('kpi.arrange')}
+          doneLabel={t('kpi.arrangeDone')}
+        />
+      ) : null}
     </div>
   );
 
@@ -263,18 +242,18 @@ export function PatientStatusSummary({ counts }: { counts: StatusCounts }) {
           {mode === 'tiles' ? (
             <div data-kpi-tiles>
               <TileRow
-              items={arranging ? ordered : visible}
-              arranging={arranging}
-              hidden={layout.hidden}
-              onMove={(key, step) => saveLayout(moveTile(all, layout, key, step))}
-              onToggleHidden={(key) => saveLayout(toggleTileHidden(layout, key))}
-              labels={{
-                earlier: t('kpi.moveEarlier'),
-                later: t('kpi.moveLater'),
-                hide: t('kpi.hideTile'),
-                show: t('kpi.showTile'),
-              }}
-            />
+                items={arranging ? ordered : visible}
+                arranging={arranging}
+                hidden={layout.hidden}
+                onMove={(key, step) => saveLayout(moveTile(all, layout, key, step))}
+                onToggleHidden={(key) => saveLayout(toggleTileHidden(layout, key))}
+                labels={{
+                  earlier: t('kpi.moveEarlier'),
+                  later: t('kpi.moveLater'),
+                  hide: t('kpi.hideTile'),
+                  show: t('kpi.showTile'),
+                }}
+              />
             </div>
           ) : mode === 'pills' ? (
             <div className="flex flex-wrap items-center gap-1">
@@ -301,26 +280,14 @@ export function PatientStatusSummary({ counts }: { counts: StatusCounts }) {
       {arranging ? (
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-dashed border-jade-300 bg-jade-50/50 px-3 py-1.5 text-xs text-ink-700">
           <span>{t('kpi.arrangeHint')}</span>
-          <span className="flex items-center gap-2">
-            {layout.order.length > 0 || layout.hidden.length > 0 ? (
-              <button
-                type="button"
-                onClick={() => saveLayout(EMPTY_TILE_LAYOUT)}
-                className="inline-flex items-center gap-1 underline-offset-2 hover:underline"
-              >
-                <RotateCcw className="h-3.5 w-3.5" aria-hidden />
-                {t('kpi.resetOrder')}
-              </button>
-            ) : null}
-            <button
-              type="button"
-              onClick={() => setArranging(false)}
-              className="inline-flex items-center gap-1 font-medium text-jade-800 underline-offset-2 hover:underline"
-            >
-              <Check className="h-3.5 w-3.5" aria-hidden />
-              {t('kpi.arrangeDone')}
-            </button>
-          </span>
+          {/* Finishing is the switch above, as on every other screen; only
+              the reset lives here, beside the hint that explains the mode. */}
+          {layout.order.length > 0 || layout.hidden.length > 0 ? (
+            <Button variant="ghost" size="sm" onClick={() => saveLayout(EMPTY_TILE_LAYOUT)}>
+              <RotateCcw className="h-4 w-4" aria-hidden />
+              {t('kpi.resetOrder')}
+            </Button>
+          ) : null}
         </div>
       ) : null}
     </div>
@@ -351,7 +318,9 @@ function TileRow({
         const isHidden = hidden.includes(item.key);
         const face = (
           <>
-            <span className={cn('block text-base leading-none font-semibold tabular-nums', style.text)}>
+            <span
+              className={cn('block text-base leading-none font-semibold tabular-nums', style.text)}
+            >
               {item.value}
             </span>
             <span className="mt-1 block text-xs leading-tight text-ink-600">{item.label}</span>
@@ -478,7 +447,8 @@ function TextStat({ item }: { item: Item }) {
         item.active ? 'font-semibold text-ink-900' : 'text-ink-600',
       )}
     >
-      {item.label} <span className={cn('font-semibold tabular-nums', style.text)}>{item.value}</span>
+      {item.label}{' '}
+      <span className={cn('font-semibold tabular-nums', style.text)}>{item.value}</span>
     </button>
   );
 }
@@ -505,7 +475,10 @@ function StackedBar({ items }: { items: Item[] }) {
                   key={item.key}
                   title={`${item.label}: ${item.value}`}
                   style={{ flexGrow: item.value, flexBasis: 0 }}
-                  className={cn('block min-w-[3px] border-e border-white last:border-e-0', TONES[item.tone].fill)}
+                  className={cn(
+                    'block min-w-[3px] border-e border-white last:border-e-0',
+                    TONES[item.tone].fill,
+                  )}
                 />
               ))
           : null}

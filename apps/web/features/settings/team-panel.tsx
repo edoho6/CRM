@@ -12,6 +12,7 @@ import {
   CardHeader,
   CardTitle,
   Dash,
+  EmptyNote,
   Field,
   FieldGrid,
   Input,
@@ -251,10 +252,12 @@ export function TeamPanel({
                   <Input id="invite-name" value={inviteeName} onChange={(event) => setInviteeName(event.target.value)} maxLength={80} disabled={isPending} />
                 </Field>
               </FieldGrid>
-              <Button type="submit" disabled={isPending}>
-                <Link2 className="h-4 w-4" aria-hidden />
-                {t('create')}
-              </Button>
+              <div className="flex justify-end">
+                <Button type="submit" disabled={isPending}>
+                  <Link2 className="h-4 w-4" aria-hidden />
+                  {t('create')}
+                </Button>
+              </div>
             </form>
           </CardBody>
         </Card>
@@ -270,7 +273,7 @@ export function TeamPanel({
           </CardHeader>
           <CardBody className="space-y-3">
             {open.length === 0 ? (
-              <p className="text-sm text-ink-600">{t('none')}</p>
+              <EmptyNote>{t('none')}</EmptyNote>
             ) : (
               <ul className="space-y-3">
                 {open.map((invitation) => {
@@ -300,7 +303,7 @@ export function TeamPanel({
                           onFocus={(event) => event.currentTarget.select()}
                         />
                         <Button type="button" size="sm" variant="secondary" onClick={() => copy(invitation.token)} disabled={!link}>
-                          {isFresh ? <Check className="h-3.5 w-3.5" aria-hidden /> : <Copy className="h-3.5 w-3.5" aria-hidden />}
+                          {isFresh ? <Check className="h-4 w-4" aria-hidden /> : <Copy className="h-4 w-4" aria-hidden />}
                           {t('copy')}
                         </Button>
                         <Button

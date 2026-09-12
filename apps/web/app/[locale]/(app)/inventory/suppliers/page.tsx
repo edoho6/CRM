@@ -11,6 +11,7 @@ import {
   Td,
   Tr,
 } from '@clinic/ui';
+import { switchTone } from '@clinic/domain';
 import type { Supplier } from '@clinic/db/types';
 import { PageHeader } from '@/components/app-shell';
 import { Pagination, pageFrom, pageRange } from '@/components/pagination';
@@ -99,7 +100,7 @@ export default async function SuppliersPage({
                   <Td>{supplier.email ? <span dir="ltr">{supplier.email}</span> : <Dash />}</Td>
                   <Td>{supplier.payment_terms ? supplier.payment_terms : <Dash />}</Td>
                   <Td>
-                    <Badge tone={supplier.is_active ? 'success' : 'muted'}>
+                    <Badge tone={switchTone(supplier.is_active)}>
                       {supplier.is_active ? tc('active') : tc('inactive')}
                     </Badge>
                   </Td>

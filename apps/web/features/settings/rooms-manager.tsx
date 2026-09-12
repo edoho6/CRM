@@ -8,6 +8,7 @@ import {
   Button,
   Card,
   CardBody,
+  EmptyNote,
   Field,
   Input,
   Select,
@@ -119,7 +120,7 @@ export function RoomsManager({ rooms, locations }: { rooms: Room[]; locations: L
     <div className="space-y-3">
       <p className="text-sm text-ink-600">{t('intro')}</p>
       {error ? <Alert tone="danger">{error}</Alert> : null}
-      {drafts.length === 0 ? <p className="text-sm text-ink-500">{t('empty')}</p> : null}
+      {drafts.length === 0 ? <EmptyNote>{t('empty')}</EmptyNote> : null}
 
       {drafts.map((draft, index) => (
         <Card key={draft.id ?? `new-${index}`}>

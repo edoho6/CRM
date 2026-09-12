@@ -42,6 +42,7 @@ export function Toggle({
       role="switch"
       aria-checked={checked}
       aria-label={label}
+      title={label}
       disabled={disabled}
       onClick={() => onChange(!checked)}
       className={cn(

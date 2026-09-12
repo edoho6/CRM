@@ -7,6 +7,8 @@ import {
   Button,
   Card,
   CardBody,
+  CardHeader,
+  CardTitle,
   Checkbox,
   Field,
   FieldGrid,
@@ -54,10 +56,13 @@ export function GrowSettingsForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-2xl space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
       {status === 'error' ? <Alert tone="danger">{tc('errorGeneric')}</Alert> : null}
 
       <Card>
+        <CardHeader>
+          <CardTitle>{t('title')}</CardTitle>
+        </CardHeader>
         <CardBody className="space-y-4">
           <p className="text-sm text-ink-600">{t('intro')}</p>
 
@@ -101,22 +106,22 @@ export function GrowSettingsForm({
             />
             {t('isActive')}
           </label>
+
+          <Alert tone="info" title={t('webhookTitle')}>
+            <p className="mt-1 font-mono text-xs break-all" dir="ltr">
+              {webhookUrl}
+            </p>
+            <p className="mt-2">{t('webhookBody')}</p>
+          </Alert>
+
+          <div className="flex justify-end">
+            <Button type="submit" disabled={isPending}>
+              {isPending ? <Spinner /> : null}
+              {isPending ? tc('saving') : tc('save')}
+            </Button>
+          </div>
         </CardBody>
       </Card>
-
-      <Alert tone="info" title={t('webhookTitle')}>
-        <p className="mt-1 font-mono text-xs break-all" dir="ltr">
-          {webhookUrl}
-        </p>
-        <p className="mt-2">{t('webhookBody')}</p>
-      </Alert>
-
-      <div className="flex justify-end">
-        <Button type="submit" disabled={isPending}>
-          {isPending ? <Spinner /> : null}
-          {isPending ? tc('saving') : tc('save')}
-        </Button>
-      </div>
     </form>
   );
 }

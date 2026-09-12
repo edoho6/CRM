@@ -228,6 +228,7 @@ function ToastItem({
       <button
         type="button"
         aria-label={closeLabel}
+        title={closeLabel}
         onClick={onDismiss}
         className={cn(
           '-me-2 -my-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-md opacity-70 transition-opacity hover:opacity-100',

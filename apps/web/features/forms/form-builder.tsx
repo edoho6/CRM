@@ -197,6 +197,7 @@ export function FormBuilder({
                   onClick={() => move(index, -1)}
                   disabled={index === 0}
                   aria-label={t('moveUp')}
+                  title={t('moveUp')}
                   className="rounded p-1.5 text-ink-600 hover:bg-ink-100 disabled:opacity-30"
                 >
                   <ChevronUp className="h-4 w-4" />
@@ -206,6 +207,7 @@ export function FormBuilder({
                   onClick={() => move(index, 1)}
                   disabled={index === fields.length - 1}
                   aria-label={t('moveDown')}
+                  title={t('moveDown')}
                   className="rounded p-1.5 text-ink-600 hover:bg-ink-100 disabled:opacity-30"
                 >
                   <ChevronDown className="h-4 w-4" />
@@ -214,6 +216,7 @@ export function FormBuilder({
                   type="button"
                   onClick={() => duplicate(index)}
                   aria-label={tc('duplicate')}
+                  title={tc('duplicate')}
                   className="rounded p-1.5 text-ink-600 hover:bg-ink-100"
                 >
                   <Copy className="h-4 w-4" />
@@ -224,6 +227,7 @@ export function FormBuilder({
                     setFields((current) => current.filter((_, position) => position !== index))
                   }
                   aria-label={tc('delete')}
+                  title={tc('delete')}
                   className="rounded p-1.5 text-ink-500 hover:bg-red-50 hover:text-red-700"
                 >
                   <Trash2 className="h-4 w-4" />
@@ -275,6 +279,7 @@ export function FormBuilder({
                         })
                       }
                       aria-label={tc('delete')}
+                      title={tc('delete')}
                       className="rounded p-1.5 text-ink-500 hover:bg-red-50 hover:text-red-700"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -287,7 +292,7 @@ export function FormBuilder({
                   size="sm"
                   onClick={() => update(index, { options: [...field.options, ''] })}
                 >
-                  <Plus className="h-3.5 w-3.5" />
+                  <Plus className="h-4 w-4" />
                   {t('addOption')}
                 </Button>
               </div>
@@ -344,7 +349,8 @@ export function FormBuilder({
         </Card>
       ))}
 
-      <div className={cn('flex flex-wrap items-center gap-2', fields.length === 0 && 'pt-2')}>
+      {/* At the end of the line, where every card keeps its "add" action. */}
+      <div className={cn('flex flex-wrap items-center justify-end gap-2', fields.length === 0 && 'pt-2')}>
         <Button
           type="button"
           variant="secondary"

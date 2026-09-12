@@ -324,6 +324,7 @@ export function FormulaForm({ formula, herbs }: { formula?: HerbFormulaWithItems
                   <button
                     type="button"
                     aria-label={t('removeItem')}
+                    title={t('removeItem')}
                     onClick={() => setItems(items.filter((_, position) => position !== index))}
                     className="rounded-md p-2 text-ink-500 transition-colors hover:bg-red-50 hover:text-red-700"
                   >

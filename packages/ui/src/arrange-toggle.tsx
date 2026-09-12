@@ -8,26 +8,25 @@ import { cn } from './cn';
 /**
  * The switch that lets a list be rearranged by dragging.
  *
- * The sidebar, the dashboard and the treatment page's side column all had
- * their own version — two different icons, three sizes, and a bare icon on
- * the treatment page that read as a sort control. One switch, one icon, and a
- * visible word whenever there is room for it: "arrange" is not something an
- * icon alone says.
+ * The sidebar, the dashboard, the patient tiles and the treatment page's
+ * side column all had their own version — three icons, three sizes, and a
+ * labelled button on the dashboard beside bare icons everywhere else. One
+ * switch, the same everywhere: the grip the draggable rows themselves carry,
+ * a tick while arranging, no visible word — the name is on hover and for the
+ * screen reader — and always the last control in the far corner of the area
+ * it arranges. Learning it once on any screen is learning it on all of them.
  */
 export function ArrangeToggle({
   editing,
   onToggle,
   arrangeLabel,
   doneLabel,
-  iconOnly = false,
   className,
 }: {
   editing: boolean;
   onToggle: () => void;
   arrangeLabel: string;
   doneLabel: string;
-  /** For a rail or a narrow column; the label stays for the screen reader. */
-  iconOnly?: boolean;
   className?: string;
 }) {
   const label = editing ? doneLabel : arrangeLabel;
@@ -36,15 +35,14 @@ export function ArrangeToggle({
     <Button
       type="button"
       variant={editing ? 'primary' : 'secondary'}
-      size={iconOnly ? 'icon-sm' : 'sm'}
+      size="icon-sm"
       aria-pressed={editing}
-      aria-label={iconOnly ? label : undefined}
-      title={iconOnly ? label : undefined}
+      aria-label={label}
+      title={label}
       onClick={onToggle}
       className={className}
     >
       <Icon className="h-4 w-4" aria-hidden />
-      {iconOnly ? null : label}
     </Button>
   );
 }

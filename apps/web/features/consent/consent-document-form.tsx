@@ -49,10 +49,12 @@ export function ConsentDocumentForm({ kind, locale }: { kind: ConsentKind; local
 
   if (!open) {
     return (
-      <Button type="button" variant="secondary" size="sm" onClick={() => setOpen(true)}>
-        <Plus className="h-4 w-4" />
-        {t('publishNew')}
-      </Button>
+      <div className="flex justify-end">
+        <Button type="button" variant="secondary" size="sm" onClick={() => setOpen(true)}>
+          <Plus className="h-4 w-4" />
+          {t('publishNew')}
+        </Button>
+      </div>
     );
   }
 

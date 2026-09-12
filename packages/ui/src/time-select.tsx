@@ -77,12 +77,17 @@ export function TimeSelect({
   const empty = allowEmpty && value === '';
   const { hour, minute } = empty ? { hour: '', minute: '' } : split(value);
 
+  // Hour on the left and minute on the right in either language, by reversing
+  // the row in Hebrew rather than by making the group left-to-right: Chromium
+  // paints the text of a restyled <select> twice when its direction differs
+  // from the document's, and the digits came out doubled on every Hebrew
+  // screen. The boxes keep the page's direction, so they look like every
+  // other select — arrow at the end, text at the start.
   return (
     <span
       role="group"
       aria-label={label}
-      className={cn('flex w-full max-w-[12rem] items-center gap-1', className)}
-      dir="ltr"
+      className={cn('flex w-full max-w-[12rem] items-center gap-1 rtl:flex-row-reverse', className)}
     >
       <Select
         aria-label={`${label} · ${hourLabel}`}

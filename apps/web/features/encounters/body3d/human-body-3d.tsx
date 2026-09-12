@@ -221,6 +221,7 @@ export function HumanBody3D({
                     <button
                       type="button"
                       aria-label={t('markerLabel', { code: instance.code, side: sideLabel(instance.side) })}
+                      title={t('markerLabel', { code: instance.code, side: sideLabel(instance.side) })}
                       onFocus={() => setActiveKey(instance.key)}
                       onBlur={() => setActiveKey((current) => (current === instance.key ? null : current))}
                       onMouseEnter={() => setActiveKey(instance.key)}

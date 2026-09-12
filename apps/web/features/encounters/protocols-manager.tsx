@@ -20,6 +20,7 @@ import {
   useConfirm,
   useToast,
 } from '@clinic/ui';
+import { HeaderTools } from '@/components/header-tools';
 import { useRouter } from '@clinic/i18n/navigation';
 import type { TreatmentProtocol } from '@clinic/db/types';
 import {
@@ -150,12 +151,13 @@ export function ProtocolsManager({ protocols }: { protocols: TreatmentProtocol[]
     <div className="space-y-4">
       {error ? <Alert tone="danger">{tc('errorGeneric')}</Alert> : null}
 
-      <div className="flex justify-end">
-        <Button type="button" variant="secondary" onClick={openCreate}>
+      {/* The primary action in the page header, where every list keeps it. */}
+      <HeaderTools slotId="protocols-header-tools" fallbackClassName="flex justify-end">
+        <Button type="button" onClick={openCreate}>
           <Plus className="h-4 w-4" />
           {t('newProtocol')}
         </Button>
-      </div>
+      </HeaderTools>
 
       {protocols.length === 0 ? (
         <EmptyState
@@ -178,9 +180,7 @@ export function ProtocolsManager({ protocols }: { protocols: TreatmentProtocol[]
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <h3 className="text-sm font-semibold text-ink-900">{protocol.name}</h3>
-                      {!protocol.is_active ? (
-                        <Badge tone="neutral">{t('retired')}</Badge>
-                      ) : null}
+                      {!protocol.is_active ? <Badge tone="neutral">{t('retired')}</Badge> : null}
                       {/* What is actually in it, so a protocol can be told apart
                           from another with a similar name without opening it. */}
                       {protocol.points_used.length > 0 ? (
@@ -208,6 +208,7 @@ export function ProtocolsManager({ protocols }: { protocols: TreatmentProtocol[]
                     <button
                       type="button"
                       aria-label={tc('edit')}
+                      title={tc('edit')}
                       onClick={() => openEdit(protocol)}
                       disabled={isPending}
                       className="rounded-md p-2 text-ink-600 transition-colors hover:bg-ink-100 hover:text-ink-900"
@@ -231,6 +232,7 @@ export function ProtocolsManager({ protocols }: { protocols: TreatmentProtocol[]
                     <button
                       type="button"
                       aria-label={tc('delete')}
+                      title={tc('delete')}
                       onClick={() => remove(protocol)}
                       disabled={isPending}
                       className="rounded-md p-2 text-ink-500 transition-colors hover:bg-red-50 hover:text-red-700"
@@ -260,7 +262,11 @@ export function ProtocolsManager({ protocols }: { protocols: TreatmentProtocol[]
                 onChange={(event) => setName(event.target.value)}
               />
             </Field>
-            <Field label={t('indications')} htmlFor="manager_indications" hint={t('indicationsHint')}>
+            <Field
+              label={t('indications')}
+              htmlFor="manager_indications"
+              hint={t('indicationsHint')}
+            >
               <Textarea
                 id="manager_indications"
                 rows={2}

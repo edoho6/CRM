@@ -175,7 +175,7 @@ export function PaymentAction({
           {summary.invoiceId ? (
             <Button size="sm" variant="secondary" asChild>
               <Link href={`/billing/${summary.invoiceId}`} onClick={close}>
-                <FileText className="h-3.5 w-3.5" />
+                <FileText className="h-4 w-4" />
                 {summary.invoiceNumber
                   ? t('openInvoiceNumbered', { number: summary.invoiceNumber })
                   : t('viewInvoice')}

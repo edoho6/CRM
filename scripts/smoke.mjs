@@ -216,6 +216,15 @@ async function inspect(page) {
       if (cutX || cutY) clipped.push(describe(element));
       if (clipped.length >= 8) break;
     }
+    // A message key on the screen: `t(\`region.${x}\`)` with an `x` the
+    // message file never had. check:i18n cannot see a key built at runtime,
+    // so the page is read for anything shaped like one — three dotted
+    // segments, letters only, not part of an address or a file name.
+    const keyLeaks = [];
+    for (const match of (main?.innerText ?? '').matchAll(/(?:^|[\s(])([a-z][a-zA-Z0-9]*(?:\.[a-zA-Z][a-zA-Z0-9_]*){2,})(?=$|[\s).,:;])/gm)) {
+      if (!keyLeaks.includes(match[1])) keyLeaks.push(match[1]);
+      if (keyLeaks.length >= 5) break;
+    }
     return {
       overlay,
       emptyMain,
@@ -226,6 +235,7 @@ async function inspect(page) {
       synthetic: body.includes('סביבת פיתוח'),
       overflowX,
       clipped,
+      keyLeaks,
     };
   }, ERROR_TEXTS);
 }
@@ -350,6 +360,7 @@ async function visitOnce(context, { route, locale, width, label = route, expect4
     inspection?.emptyMain ? 'empty <main>' : null,
     inspection?.errorText && !(expect404 && notFound) ? `error text: ${inspection.errorText}` : null,
     inspection?.devError ? `boundary: ${inspection.devError}` : null,
+    inspection?.keyLeaks?.length ? `message key on screen: ${inspection.keyLeaks.join(', ')}` : null,
     flow && flow.ok === false ? `flow: ${flow.detail}` : null,
     zoom && inspection?.overflowX > 8 ? `zoom: the page scrolls sideways by ${inspection.overflowX}px` : null,
     zoom && inspection?.clipped?.length ? `zoom: text cut off in ${inspection.clipped.length} box(es): ${inspection.clipped.slice(0, 4).join(' · ')}` : null,

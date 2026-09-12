@@ -2,6 +2,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import type { ClinicTaskWithPatient } from '@clinic/db/types';
 import { PageBody } from '@clinic/ui';
 import { PageHeader } from '@/components/app-shell';
+import { HeaderToolsSlot } from '@/components/header-tools';
 import { getClinicScope } from '@/lib/session';
 import { TasksBoard } from '@/features/tasks/tasks-board';
 import { pageTitle } from '@/lib/page-title';
@@ -56,7 +57,11 @@ export default async function TasksPage({ params }: { params: Promise<{ locale: 
 
   return (
     <>
-      <PageHeader title={t('title')} description={t('subtitle')} />
+      <PageHeader
+        title={t('title')}
+        description={t('subtitle')}
+        actions={<HeaderToolsSlot id="tasks-header-tools" />}
+      />
       <PageBody width="narrow">
         <TasksBoard
           open={openResult.data ?? []}

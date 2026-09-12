@@ -321,6 +321,7 @@ export function GlobalSearch() {
               type="button"
               onClick={dismiss}
               aria-label={tc('clear')}
+              title={tc('clear')}
               className="absolute inset-y-0 end-1 my-auto flex h-8 w-8 items-center justify-center rounded-md text-ink-500 transition-colors hover:bg-ink-100 hover:text-ink-700"
             >
               <X className="h-3.5 w-3.5" />

@@ -41,7 +41,7 @@ export default async function SetupPage({ params }: { params: Promise<{ locale: 
                   <p className="text-sm font-medium text-ink-900">
                     {index + 1}. {step.title}
                   </p>
-                  <p className="mt-0.5 text-sm text-ink-600">{step.body}</p>
+                  <p className="mt-0.5 text-sm break-words text-ink-600">{step.body}</p>
                 </div>
               </CardBody>
             </Card>

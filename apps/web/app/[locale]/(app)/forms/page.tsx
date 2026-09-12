@@ -11,6 +11,7 @@ import {
   Td,
   Tr,
 } from '@clinic/ui';
+import { switchTone } from '@clinic/domain';
 import { Link } from '@clinic/i18n/navigation';
 import type { FormTemplate } from '@clinic/db/types';
 import { PageHeader } from '@/components/app-shell';
@@ -146,7 +147,7 @@ export default async function FormsPage({
                       </span>
                     </Td>
                     <Td>
-                      <Badge tone={template.is_active ? 'success' : 'muted'}>
+                      <Badge tone={switchTone(template.is_active)}>
                         {template.is_active ? tc('active') : tc('inactive')}
                       </Badge>
                     </Td>

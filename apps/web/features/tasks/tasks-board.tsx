@@ -2,8 +2,29 @@
 
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { AlertTriangle, Bell, BellRing, ListChecks, Pencil, Plus, RotateCcw, Trash2 } from 'lucide-react';
-import { Button, Card, CardBody, CardHeader, CardTitle, Collapsible, EmptyState, cn, useConfirm, useToast } from '@clinic/ui';
+import {
+  AlertTriangle,
+  Bell,
+  BellRing,
+  ListChecks,
+  Pencil,
+  Plus,
+  RotateCcw,
+  Trash2,
+} from 'lucide-react';
+import {
+  Button,
+  Card,
+  CardBody,
+  CardHeader,
+  CardTitle,
+  Collapsible,
+  EmptyState,
+  cn,
+  useConfirm,
+  useToast,
+} from '@clinic/ui';
+import { HeaderTools } from '@/components/header-tools';
 import { formatDate, formatDateTime } from '@clinic/i18n';
 import { Link, useRouter } from '@clinic/i18n/navigation';
 import type { ClinicTaskWithPatient } from '@clinic/db/types';
@@ -252,14 +273,14 @@ export function TasksBoard({
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <Button type="button" onClick={() => edit(null)}>
-          <Plus className="h-4 w-4" aria-hidden />
-          {t('new')}
-        </Button>
-
-        {/* The browser's own permission, asked for from here and nowhere
-            else: a prompt that appears on its own is a prompt people refuse. */}
+      {/* In the page header, where every page keeps its actions — the
+          primary last, in the far corner. The browser's own permission is
+          asked for from here and nowhere else: a prompt that appears on its
+          own is a prompt people refuse. */}
+      <HeaderTools
+        slotId="tasks-header-tools"
+        fallbackClassName="flex flex-wrap items-center justify-end gap-2"
+      >
         <div className="flex items-center gap-2 text-xs text-ink-600">
           {permission === 'granted' ? (
             <span className="inline-flex items-center gap-1 text-jade-800">
@@ -271,13 +292,17 @@ export function TasksBoard({
           ) : permission === 'unsupported' ? (
             <span>{t('browserUnsupported')}</span>
           ) : (
-            <Button type="button" size="sm" variant="secondary" onClick={enableBrowser}>
+            <Button type="button" variant="secondary" onClick={enableBrowser}>
               <Bell className="h-4 w-4" aria-hidden />
               {t('enableBrowser')}
             </Button>
           )}
         </div>
-      </div>
+        <Button type="button" onClick={() => edit(null)}>
+          <Plus className="h-4 w-4" aria-hidden />
+          {t('new')}
+        </Button>
+      </HeaderTools>
 
       {shown.open.length === 0 ? (
         <EmptyState

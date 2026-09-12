@@ -146,7 +146,7 @@ function TasksWidget() {
           className="h-9"
         />
         <Button type="submit" size="sm" disabled={isPending || !title.trim()}>
-          {isPending ? <Spinner className="h-3.5 w-3.5" /> : <Plus className="h-4 w-4" />}
+          {isPending ? <Spinner /> : <Plus className="h-4 w-4" />}
           <span className="sr-only">{t('newTask')}</span>
         </Button>
       </form>
@@ -222,6 +222,7 @@ function TasksWidget() {
                 <button
                   type="button"
                   aria-label={t('deleteTaskOf', { title: task.title })}
+                  title={t('deleteTaskOf', { title: task.title })}
                   disabled={busyIds.has(task.id)}
                   onClick={() => settle(task.id, () => deleteTask(task.id))}
                   className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-ink-500 transition-colors hover:bg-red-50 hover:text-red-700 active:bg-red-100"

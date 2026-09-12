@@ -91,6 +91,16 @@ export function EmptyState({
   );
 }
 
+/**
+ * "Nothing here yet" inside a card or a panel that is otherwise full of
+ * controls: one quiet line, not the dashed box of EmptyState, which is for a
+ * whole screen with nothing on it. Six panels each had their own shade and
+ * size for this line; this is the one they share.
+ */
+export function EmptyNote({ children, className }: { children: React.ReactNode; className?: string }) {
+  return <p className={cn('text-sm text-ink-500', className)}>{children}</p>;
+}
+
 export function Spinner({ className }: { className?: string }) {
   return (
     <span

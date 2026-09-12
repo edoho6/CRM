@@ -14,6 +14,7 @@ import {
 import { ReferenceNav } from '@/features/reference/reference-nav';
 import { CompareTable, type CompareColumn, type CompareRow } from '@/features/reference/compare-table';
 import { pageTitle } from '@/lib/page-title';
+import { doseRangeLabel } from '@/features/inventory/dose-range';
 
 export const generateMetadata = pageTitle('reference.compare', 'title');
 
@@ -45,6 +46,7 @@ export default async function ComparePage({
   const tPoint = await getTranslations('reference.points.fields');
   const tTcm = await getTranslations('inventory.tcmCategory');
   const tTemp = await getTranslations('inventory.temperature');
+  const tUnit = await getTranslations('inventory.unit');
   const tTaste = await getTranslations('inventory.taste');
   const tChannel = await getTranslations('inventory.channel');
   const tPointChannel = await getTranslations('reference.pointChannel');
@@ -127,13 +129,7 @@ export default async function ComparePage({
       },
       {
         label: tHerb('dosageRange'),
-        values: herbs.map((h) =>
-          h.dosage_min_g !== null || h.dosage_max_g !== null
-            ? `${h.dosage_min_g !== null ? format.number(Number(h.dosage_min_g)) : '?'}–${
-                h.dosage_max_g !== null ? format.number(Number(h.dosage_max_g)) : '?'
-              } g`
-            : null,
-        ),
+        values: herbs.map((h) => doseRangeLabel(h, (n) => format.number(n), tUnit('gram'))),
         ltr: true,
       },
       { label: tHerb('functions'), values: herbs.map((h) => h.functions) },

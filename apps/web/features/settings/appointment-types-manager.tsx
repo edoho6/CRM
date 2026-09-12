@@ -252,7 +252,7 @@ export function AppointmentTypesManager({ types }: { types: AppointmentType[] })
                   {tc('delete')}
                 </Button>
                 <Button type="button" size="sm" onClick={() => save(index)} disabled={isPending}>
-                  {isPending ? <Spinner className="h-3.5 w-3.5" /> : null}
+                  {isPending ? <Spinner /> : null}
                   {tc('save')}
                 </Button>
               </span>

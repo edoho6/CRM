@@ -6,6 +6,10 @@ import { CalendarOff, Plus, Trash2 } from 'lucide-react';
 import {
   Alert,
   Button,
+  Card,
+  CardBody,
+  CardHeader,
+  CardTitle,
   Field,
   Input,
   LtrInput,
@@ -191,248 +195,258 @@ export function ScheduleForm({
     <div className="space-y-5">
       {error ? <Alert tone="danger">{error}</Alert> : null}
 
-      <section className="space-y-2">
-        <h3 className="text-sm font-semibold text-ink-900">{t('workingHours')}</h3>
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('workingHours')}</CardTitle>
+        </CardHeader>
+        <CardBody className="space-y-3">
+          <ul className="divide-y divide-ink-100 rounded-lg border border-ink-200">
+            {WEEKDAYS.map((weekday) => {
+              const dayBlocks = blocks.filter((block) => block.weekday === weekday);
+              const on = dayBlocks.length > 0;
 
-        <ul className="divide-y divide-ink-100 rounded-lg border border-ink-200">
-          {WEEKDAYS.map((weekday) => {
-            const dayBlocks = blocks.filter((block) => block.weekday === weekday);
-            const on = dayBlocks.length > 0;
-
-            return (
-              <li key={weekday} className="flex flex-wrap items-start gap-x-3 gap-y-2 p-3">
-                <span className="flex w-32 shrink-0 items-center gap-2.5 pt-1">
-                  <Toggle
-                    checked={on}
-                    onChange={(next) => toggleDay(weekday, next)}
-                    label={tWeekday(String(weekday))}
-                    disabled={isPending}
-                  />
-                  <span className="text-sm font-medium text-ink-800">
-                    {tWeekday(String(weekday))}
+              return (
+                <li key={weekday} className="flex flex-wrap items-start gap-x-3 gap-y-2 p-3">
+                  <span className="flex w-32 shrink-0 items-center gap-2.5 pt-1">
+                    <Toggle
+                      checked={on}
+                      onChange={(next) => toggleDay(weekday, next)}
+                      label={tWeekday(String(weekday))}
+                      disabled={isPending}
+                    />
+                    <span className="text-sm font-medium text-ink-800">
+                      {tWeekday(String(weekday))}
+                    </span>
                   </span>
-                </span>
 
-                {on ? (
-                  <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-                    {dayBlocks.map((block) => (
-                      <div key={block.key} className="flex flex-wrap items-center gap-1.5">
-                        <TimeSelect
-                          value={block.start_time}
-                          onChange={(value) => setBlockTime(block.key, 'start_time', value)}
-                          disabled={isPending}
-                          label={t('startTime')}
-                          hourLabel={t('hour')}
-                          minuteLabel={t('minute')}
-                        />
-                        <span aria-hidden className="text-ink-500">
-                          –
-                        </span>
-                        <TimeSelect
-                          value={block.end_time}
-                          onChange={(value) => setBlockTime(block.key, 'end_time', value)}
-                          disabled={isPending}
-                          label={t('endTime')}
-                          hourLabel={t('hour')}
-                          minuteLabel={t('minute')}
-                        />
-                        {dayBlocks.length > 1 ? (
-                          <button
-                            type="button"
-                            aria-label={tc('delete')}
+                  {on ? (
+                    <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+                      {dayBlocks.map((block) => (
+                        <div key={block.key} className="flex flex-wrap items-center gap-1.5">
+                          <TimeSelect
+                            value={block.start_time}
+                            onChange={(value) => setBlockTime(block.key, 'start_time', value)}
                             disabled={isPending}
-                            onClick={() =>
-                              setBlocks((current) =>
-                                current.filter((entry) => entry.key !== block.key),
-                              )
-                            }
-                            className="rounded-md p-2 text-ink-500 transition-colors hover:bg-red-50 hover:text-red-700"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        ) : null}
-                      </div>
-                    ))}
+                            label={t('startTime')}
+                            hourLabel={t('hour')}
+                            minuteLabel={t('minute')}
+                          />
+                          <span aria-hidden className="text-ink-500">
+                            –
+                          </span>
+                          <TimeSelect
+                            value={block.end_time}
+                            onChange={(value) => setBlockTime(block.key, 'end_time', value)}
+                            disabled={isPending}
+                            label={t('endTime')}
+                            hourLabel={t('hour')}
+                            minuteLabel={t('minute')}
+                          />
+                          {dayBlocks.length > 1 ? (
+                            <button
+                              type="button"
+                              aria-label={tc('delete')}
+                              title={tc('delete')}
+                              disabled={isPending}
+                              onClick={() =>
+                                setBlocks((current) =>
+                                  current.filter((entry) => entry.key !== block.key),
+                                )
+                              }
+                              className="rounded-md p-2 text-ink-500 transition-colors hover:bg-red-50 hover:text-red-700"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          ) : null}
+                        </div>
+                      ))}
 
-                    {/* A second range is a midday break — the gap between them is
+                      {/* A second range is a midday break — the gap between them is
                         the closed part, which one start and one end cannot say. */}
-                    {dayBlocks.length < 3 ? (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        disabled={isPending}
-                        onClick={() => addBlock(weekday)}
-                        className="self-start"
-                      >
-                        <Plus className="h-4 w-4" />
-                        {t('addBreak')}
-                      </Button>
-                    ) : null}
-                  </div>
-                ) : (
-                  <span className="pt-2 text-sm text-ink-500">{t('closed')}</span>
-                )}
-              </li>
-            );
-          })}
-        </ul>
+                      {dayBlocks.length < 3 ? (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          disabled={isPending}
+                          onClick={() => addBlock(weekday)}
+                          className="self-start"
+                        >
+                          <Plus className="h-4 w-4" />
+                          {t('addBreak')}
+                        </Button>
+                      ) : null}
+                    </div>
+                  ) : (
+                    <span className="pt-2 text-sm text-ink-500">{t('closed')}</span>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
 
-        <div className="flex justify-end">
-          <Button type="button" onClick={saveHours} disabled={isPending}>
-            {isPending ? <Spinner /> : null}
-            {tc('save')}
-          </Button>
-        </div>
-      </section>
+          <div className="flex justify-end">
+            <Button type="button" onClick={saveHours} disabled={isPending}>
+              {isPending ? <Spinner /> : null}
+              {tc('save')}
+            </Button>
+          </div>
+        </CardBody>
+      </Card>
 
-      <section className="space-y-3 border-t border-ink-100 pt-5">
-        <div>
-          <h3 className="flex items-center gap-2 text-sm font-semibold text-ink-900">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
             <CalendarOff className="h-4 w-4 text-ink-600" aria-hidden />
             {t('closures')}
-          </h3>
-          <p className="mt-0.5 text-xs text-ink-600">{t('closuresHint')}</p>
-        </div>
+          </CardTitle>
+        </CardHeader>
+        <CardBody className="space-y-3">
+          <p className="text-sm text-ink-600">{t('closuresHint')}</p>
 
-        {periods.length > 0 ? (
-          <ul className="divide-y divide-ink-100 rounded-lg border border-ink-200">
-            {periods.map((period) => (
-              <li
-                key={`${period.from}:${period.to}`}
-                className="flex flex-wrap items-center gap-2 p-2.5 text-sm"
-              >
-                <span dir="ltr" className="shrink-0 tabular-nums text-ink-800">
-                  {period.from === period.to
-                    ? formatDate(period.from)
-                    : `${formatDate(period.from)} – ${formatDate(period.to)}`}
-                </span>
-                <span className="text-xs text-ink-600">
-                  {t('dayCount', { count: period.days })}
-                </span>
-                {/* Whole-day or shortened, in words. Two rows that differ only
-                    by a tint are two rows nobody tells apart. */}
-                <span className="text-xs text-ink-700">
-                  {period.isClosed ? (
-                    t('allDay')
-                  ) : (
-                    <span dir="ltr" className="tabular-nums">
-                      {period.startTime}–{period.endTime}
-                    </span>
-                  )}
-                </span>
-                {period.reason ? (
-                  <span className="min-w-0 truncate text-ink-700" dir="auto">
-                    · {period.reason}
-                  </span>
-                ) : null}
-                <button
-                  type="button"
-                  aria-label={t('reopen')}
-                  title={t('reopen')}
-                  disabled={isPending}
-                  onClick={() =>
-                    startTransition(async () => {
-                      await reopenDiaryPeriod(period.from, period.to);
-                      router.refresh();
-                    })
-                  }
-                  className="ms-auto rounded-md p-1.5 text-ink-500 transition-colors hover:bg-red-50 hover:text-red-700"
+          {periods.length > 0 ? (
+            <ul className="divide-y divide-ink-100 rounded-lg border border-ink-200">
+              {periods.map((period) => (
+                <li
+                  key={`${period.from}:${period.to}`}
+                  className="flex flex-wrap items-center gap-2 p-2.5 text-sm"
                 >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-sm text-ink-600">{t('noClosures')}</p>
-        )}
+                  <span dir="ltr" className="shrink-0 tabular-nums text-ink-800">
+                    {period.from === period.to
+                      ? formatDate(period.from)
+                      : `${formatDate(period.from)} – ${formatDate(period.to)}`}
+                  </span>
+                  <span className="text-xs text-ink-600">
+                    {t('dayCount', { count: period.days })}
+                  </span>
+                  {/* Whole-day or shortened, in words. Two rows that differ only
+                    by a tint are two rows nobody tells apart. */}
+                  <span className="text-xs text-ink-700">
+                    {period.isClosed ? (
+                      t('allDay')
+                    ) : (
+                      <span dir="ltr" className="tabular-nums">
+                        {period.startTime}–{period.endTime}
+                      </span>
+                    )}
+                  </span>
+                  {period.reason ? (
+                    <span className="min-w-0 truncate text-ink-700" dir="auto">
+                      · {period.reason}
+                    </span>
+                  ) : null}
+                  <button
+                    type="button"
+                    aria-label={t('reopen')}
+                    title={t('reopen')}
+                    disabled={isPending}
+                    onClick={() =>
+                      startTransition(async () => {
+                        await reopenDiaryPeriod(period.from, period.to);
+                        router.refresh();
+                      })
+                    }
+                    className="ms-auto rounded-md p-1.5 text-ink-500 transition-colors hover:bg-red-50 hover:text-red-700"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-ink-600">{t('noClosures')}</p>
+          )}
 
-        <div className="grid gap-3 sm:grid-cols-3">
-          <Field label={t('closeFrom')} htmlFor="closure_from" density="compact">
-            <DateInput
-              id="closure_from"
-              value={from}
-              onChange={(event) => {
-                const next = event.target.value;
-                setFrom(next);
-                // One day is the common case, so the end follows the start until
-                // it is deliberately set past it.
-                if (!to || to < next) setTo(next);
-              }}
-            />
-          </Field>
-          <Field label={t('closeTo')} htmlFor="closure_to" density="compact">
-            <DateInput
-              id="closure_to"
-              min={from}
-              value={to}
-              onChange={(event) => setTo(event.target.value)}
-            />
-          </Field>
-          <Field label={t('reason')} htmlFor="closure_reason" density="compact">
-            <Input
-              id="closure_reason"
-              value={reason}
-              onChange={(event) => setReason(event.target.value)}
-              placeholder={t('reasonPlaceholder')}
-            />
-          </Field>
-        </div>
-
-        <label className="flex items-center gap-2 text-sm text-ink-800">
-          <input
-            type="checkbox"
-            checked={wholeDay}
-            onChange={(event) => setWholeDay(event.target.checked)}
-            className="h-4 w-4 rounded border-ink-300 accent-jade-700"
-          />
-          {t('allDay')}
-        </label>
-
-        {!wholeDay ? (
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-sm text-ink-700">{t('openOnlyBetween')}</span>
-            <TimeSelect
-              value={closeFromTime}
-              onChange={setCloseFromTime}
-              disabled={isPending}
-              label={t('startTime')}
-              hourLabel={t('hour')}
-              minuteLabel={t('minute')}
-            />
-            <span aria-hidden className="text-ink-500">
-              –
-            </span>
-            <TimeSelect
-              value={closeToTime}
-              onChange={setCloseToTime}
-              disabled={isPending}
-              label={t('endTime')}
-              hourLabel={t('hour')}
-              minuteLabel={t('minute')}
-            />
+          <div className="grid gap-3 sm:grid-cols-3">
+            <Field label={t('closeFrom')} htmlFor="closure_from" density="compact">
+              <DateInput
+                id="closure_from"
+                value={from}
+                onChange={(event) => {
+                  const next = event.target.value;
+                  setFrom(next);
+                  // One day is the common case, so the end follows the start until
+                  // it is deliberately set past it.
+                  if (!to || to < next) setTo(next);
+                }}
+              />
+            </Field>
+            <Field label={t('closeTo')} htmlFor="closure_to" density="compact">
+              <DateInput
+                id="closure_to"
+                min={from}
+                value={to}
+                onChange={(event) => setTo(event.target.value)}
+              />
+            </Field>
+            <Field label={t('reason')} htmlFor="closure_reason" density="compact">
+              <Input
+                id="closure_reason"
+                value={reason}
+                onChange={(event) => setReason(event.target.value)}
+                placeholder={t('reasonPlaceholder')}
+              />
+            </Field>
           </div>
-        ) : null}
 
-        <div className="flex justify-end">
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={closePeriod}
-            disabled={
-              isPending ||
-              !from ||
-              !to ||
-              to < from ||
-              (!wholeDay && closeToTime <= closeFromTime)
-            }
-          >
-            {isPending ? <Spinner className="h-3.5 w-3.5" /> : <CalendarOff className="h-4 w-4" />}
-            {t('closeDiary')}
-          </Button>
-        </div>
-      </section>
+          <label className="flex items-center gap-2 text-sm text-ink-800">
+            <input
+              type="checkbox"
+              checked={wholeDay}
+              onChange={(event) => setWholeDay(event.target.checked)}
+              className="h-4 w-4 rounded border-ink-300 accent-jade-700"
+            />
+            {t('allDay')}
+          </label>
+
+          {!wholeDay ? (
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-sm text-ink-700">{t('openOnlyBetween')}</span>
+              <TimeSelect
+                value={closeFromTime}
+                onChange={setCloseFromTime}
+                disabled={isPending}
+                label={t('startTime')}
+                hourLabel={t('hour')}
+                minuteLabel={t('minute')}
+              />
+              <span aria-hidden className="text-ink-500">
+                –
+              </span>
+              <TimeSelect
+                value={closeToTime}
+                onChange={setCloseToTime}
+                disabled={isPending}
+                label={t('endTime')}
+                hourLabel={t('hour')}
+                minuteLabel={t('minute')}
+              />
+            </div>
+          ) : null}
+
+          <div className="flex justify-end">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={closePeriod}
+              disabled={
+                isPending ||
+                !from ||
+                !to ||
+                to < from ||
+                (!wholeDay && closeToTime <= closeFromTime)
+              }
+            >
+              {isPending ? (
+                <Spinner className="h-3.5 w-3.5" />
+              ) : (
+                <CalendarOff className="h-4 w-4" />
+              )}
+              {t('closeDiary')}
+            </Button>
+          </div>
+        </CardBody>
+      </Card>
     </div>
   );
 }

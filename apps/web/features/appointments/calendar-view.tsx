@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useFormatter, useLocale, useTranslations } from 'next-intl';
-import { CalendarPlus, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import type { Location, Room } from '@clinic/db/types';
 import { ConfirmationDot } from './confirmation-status';
 import { BlockDayDialog } from './block-day-dialog';
@@ -395,7 +395,7 @@ export function CalendarView({
         title={t('title')}
         actions={
           <Button onClick={openNew}>
-            <CalendarPlus className="h-4 w-4" />
+            <Plus className="h-4 w-4" />
             {t('new')}
           </Button>
         }
@@ -414,6 +414,7 @@ export function CalendarView({
                 size="icon"
                 onClick={() => navigate(-1)}
                 aria-label={t('previousPeriod')}
+                title={t('previousPeriod')}
               >
                 {isRtl ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
               </Button>
@@ -422,6 +423,7 @@ export function CalendarView({
                 size="icon"
                 onClick={() => navigate(1)}
                 aria-label={t('nextPeriod')}
+                title={t('nextPeriod')}
               >
                 {isRtl ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
               </Button>
@@ -635,6 +637,7 @@ export function CalendarView({
                             !working && 'bg-ink-100/70',
                           )}
                           aria-label={`${formatDate(day)} ${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}${working ? '' : ' · ' + t('outsideHours')}`}
+                          title={`${formatDate(day)} ${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}${working ? '' : ' · ' + t('outsideHours')}`}
                         />
                       );
                     })}

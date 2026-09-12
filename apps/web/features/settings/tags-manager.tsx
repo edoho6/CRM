@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useTranslations } from 'next-intl';
 import { Plus, Trash2 } from 'lucide-react';
-import { Alert, Button, Card, CardBody, Field, Input, cn, useConfirm, useToast } from '@clinic/ui';
+import { Alert, Button, Card, CardBody, cn, EmptyNote, Field, Input, useConfirm, useToast } from '@clinic/ui';
 import { Link, useRouter } from '@clinic/i18n/navigation';
 import { TAG_COLORS, type TagColor } from '@clinic/domain';
 import type { PatientTag } from '@clinic/db/types';
@@ -100,7 +100,7 @@ export function TagsManager({
       <p className="text-sm text-ink-600">{t('intro')}</p>
       {error ? <Alert tone="danger">{error}</Alert> : null}
 
-      {drafts.length === 0 ? <p className="text-sm text-ink-500">{t('empty')}</p> : null}
+      {drafts.length === 0 ? <EmptyNote>{t('empty')}</EmptyNote> : null}
 
       {drafts.map((draft, index) => {
         const count = draft.id ? (usage[draft.id] ?? 0) : 0;

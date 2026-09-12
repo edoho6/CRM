@@ -79,3 +79,13 @@ export const CONSENT_TONES = {
 export function statusTone(map: Record<string, StatusTone>, status: string | null | undefined): StatusTone {
   return (status && map[status]) || 'neutral';
 }
+
+/**
+ * The colour of a switch: something that is on or off — a template in use, a
+ * supplier still ordered from, a document shared with its patient. On is a
+ * good state, off is a closed one, so it follows the rule above: green for
+ * on, grey for off — never red, because off is not a failure.
+ */
+export function switchTone(on: boolean): StatusTone {
+  return on ? 'success' : 'muted';
+}

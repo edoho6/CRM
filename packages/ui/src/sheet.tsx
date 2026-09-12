@@ -4,6 +4,7 @@ import * as React from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { X } from 'lucide-react';
 import { cn } from './cn';
+import { useUiLabels } from './ui-labels';
 import { isInsideFloatingPanel } from './dialog';
 import { focusRing } from './focus';
 
@@ -30,7 +31,7 @@ export function SheetContent({
   children,
   title,
   description,
-  closeLabel = 'Close',
+  closeLabel,
   side = 'start',
   onOpenAutoFocus,
   onCloseAutoFocus,
@@ -43,6 +44,10 @@ export function SheetContent({
   closeLabel?: string;
   side?: 'start' | 'end';
 }) {
+  // The word comes from the app's labels when the caller has none of its
+  // own; the English fallback exists only for a kit used outside the apps.
+  const uiLabels = useUiLabels();
+  const closeText = closeLabel ?? uiLabels.dialog?.close ?? 'Close';
   // Same as DialogContent: the sheet is opened through `open` state, not a
   // trigger, so Radix would return focus to nothing when it closes.
   const openerRef = React.useRef<HTMLElement | null>(null);
@@ -94,7 +99,7 @@ export function SheetContent({
             {description ?? title}
           </DialogPrimitive.Description>
           <DialogPrimitive.Close
-            aria-label={closeLabel}
+            aria-label={closeText}
             className={cn(
               '-my-2 -me-2 flex h-10 w-10 items-center justify-center rounded-md text-ink-500 transition-colors hover:bg-ink-100 hover:text-ink-800 active:bg-ink-200',
               focusRing,

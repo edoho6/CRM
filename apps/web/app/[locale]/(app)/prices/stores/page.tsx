@@ -1,8 +1,6 @@
 import { notFound } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { Button } from '@clinic/ui';
 import type { ShopFetchRun, ShopStore } from '@clinic/db/types';
-import { Link } from '@clinic/i18n/navigation';
 import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
 import { StoreAdminPanel, type StoreStats } from '@/features/prices/store-admin-panel';
@@ -39,15 +37,7 @@ export default async function PriceStoresPage({ params }: { params: Promise<{ lo
 
   return (
     <>
-      <PageHeader
-        title={t('title')}
-        description={t('subtitle')}
-        actions={
-          <Button asChild variant="secondary">
-            <Link href="/prices">{t('backToList')}</Link>
-          </Button>
-        }
-      />
+      <PageHeader title={t('title')} description={t('subtitle')} />
       <StoreAdminPanel
         stores={storesResult.data ?? []}
         stats={(Array.isArray(statsResult.data) ? statsResult.data : []) as StoreStats[]}

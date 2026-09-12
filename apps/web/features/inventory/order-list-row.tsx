@@ -174,6 +174,7 @@ export function OrderListRowControls({
               type="button"
               onClick={() => save({ status: 'pending' })}
               aria-label={t('status.pending')}
+              title={t('status.pending')}
               className="flex h-8 w-8 items-center justify-center rounded-md text-ink-500 transition-colors hover:bg-ink-100 hover:text-ink-700 active:bg-ink-200"
             >
               <Undo2 className="h-4 w-4" />
@@ -183,6 +184,7 @@ export function OrderListRowControls({
             type="button"
             onClick={remove}
             aria-label={tc('delete')}
+            title={tc('delete')}
             className="flex h-8 w-8 items-center justify-center rounded-md text-ink-500 transition-colors hover:bg-red-50 hover:text-red-700 active:bg-red-100"
           >
             <Trash2 className="h-4 w-4" />

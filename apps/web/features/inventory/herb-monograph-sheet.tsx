@@ -9,6 +9,7 @@ import { Link } from '@clinic/i18n/navigation';
 import { TcmChip, TcmChips } from '@/components/tcm-chip';
 import { herbBotanicalName, herbChineseName, herbPrimaryName } from '@/lib/display';
 import { loadHerbMonograph } from './herb-monograph-action';
+import { doseRangeLabel } from './dose-range';
 
 /** Where a chip sends you: the herb list, filtered by that value. */
 const HERBS_PATH = '/reference/herbs';
@@ -117,13 +118,9 @@ export function HerbMonographBody({ herb }: { herb: Herb }) {
   const tTemp = useTranslations('inventory.temperature');
   const tTaste = useTranslations('inventory.taste');
   const tChannel = useTranslations('inventory.channel');
+  const tUnit = useTranslations('inventory.unit');
   const format = useFormatter();
-  const dosage =
-    herb.dosage_min_g !== null || herb.dosage_max_g !== null
-      ? `${herb.dosage_min_g !== null ? format.number(Number(herb.dosage_min_g)) : '?'}–${
-          herb.dosage_max_g !== null ? format.number(Number(herb.dosage_max_g)) : '?'
-        } g`
-      : null;
+  const dosage = doseRangeLabel(herb, (n) => format.number(n), tUnit('gram'));
 
   return (
     <div data-monograph-loaded className="space-y-4">

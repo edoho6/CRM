@@ -19,6 +19,7 @@ import type {
   TreatmentProtocol,
 } from '@clinic/db/types';
 import { PageHeader } from '@/components/app-shell';
+import { HeaderToolsSlot } from '@/components/header-tools';
 import { getClinicScope } from '@/lib/session';
 import { logRecordAccess } from '@/lib/access-log';
 import { EncounterForm } from '@/features/encounters/encounter-form';
@@ -442,7 +443,7 @@ export default async function EncounterPage({
             {/* The switch that arranges both columns lands here, last — the
                 far corner of the header — so the columns start level with
                 each other and the switch is out of the way of the record. */}
-            <span id="encounter-header-tools" className="inline-flex items-center" />
+            <HeaderToolsSlot id="encounter-header-tools" />
           </>
         }
       />

@@ -1,9 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState, useTransition } from 'react';
-import { createPortal } from 'react-dom';
+import { useCallback, useMemo, useState, useTransition } from 'react';
 import { useFormatter, useTranslations } from 'next-intl';
-import { BookmarkPlus, Lock, MoreHorizontal, Save } from 'lucide-react';
+import { BookmarkPlus, Lock, MoreHorizontal } from 'lucide-react';
 import {
   Alert,
   ArrangeToggle,
@@ -31,6 +30,7 @@ import { toPointPlacement, type BodyView, type TreatmentModality } from '@clinic
 import { useRouter } from '@clinic/i18n/navigation';
 import type { TcmNote, TreatmentProtocol } from '@clinic/db/types';
 import { useAutosave } from '@/lib/use-autosave';
+import { HeaderTools } from '@/components/header-tools';
 import type { MappedPoint } from '@/features/reference/body-map';
 import { HumanBody3D } from './body3d/human-body-3d';
 import { PointsEditor, type PointOption, type PointRow } from './points-editor';
@@ -175,18 +175,12 @@ export function EncounterForm({
   const router = useRouter();
   const referenceSheet = useReferenceSheet();
 
-  // One switch arranges both columns. It lives in the page header, reached
-  // through a portal, so the columns start level with each other and the
-  // switch is out of the way of the record. Without the slot it sits above
-  // the form.
+  // One switch arranges both columns. It lives in the page header, sent
+  // there through the shared slot, so the columns start level with each
+  // other and the switch is out of the way of the record.
   const [arranging, setArranging] = useState(false);
-  const [toolsSlot, setToolsSlot] = useState<HTMLElement | null>(null);
-  useEffect(() => {
-    setToolsSlot(document.getElementById('encounter-header-tools'));
-  }, []);
   const arrangeToggle = (
     <ArrangeToggle
-      iconOnly
       editing={arranging}
       onToggle={() => setArranging((value) => !value)}
       arrangeLabel={tPanels('arrange')}
@@ -217,9 +211,7 @@ export function EncounterForm({
    * skip the render, which is what keeps a panel that republishes on every
    * keystroke from re-rendering the whole form on every keystroke.
    */
-  const [currentPrescription, setCurrentPrescription] = useState<CurrentPrescription | null>(
-    null,
-  );
+  const [currentPrescription, setCurrentPrescription] = useState<CurrentPrescription | null>(null);
   const publishPrescription = useCallback((next: CurrentPrescription | null) => {
     setCurrentPrescription((previous) =>
       JSON.stringify(previous) === JSON.stringify(next) ? previous : next,
@@ -533,354 +525,366 @@ export function EncounterForm({
 
   return (
     <CurrentPrescriptionProvider value={prescriptionContext}>
-    {/* The side column is a little wider than a third: tongue, pulse and the
+      {/* The side column is a little wider than a third: tongue, pulse and the
         comparison were cramped at a third, and the fields lose nothing. */}
-    <div className="grid gap-5 xl:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
-      <div className="min-w-0 space-y-4">
-        {toolsSlot ? createPortal(arrangeToggle, toolsSlot) : <div className="flex justify-end">{arrangeToggle}</div>}
-        {arranging ? <p className="text-xs text-ink-600">{tPanels('hint')}</p> : null}
-        {isSigned ? <Alert tone="info" title={t('lockedNotice')} /> : null}
-        {/* Reopened after a signature: said on the record itself, with the
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
+        <div className="min-w-0 space-y-4">
+          <HeaderTools slotId="encounter-header-tools" fallbackClassName="flex justify-end">
+            {arrangeToggle}
+          </HeaderTools>
+          {arranging ? <p className="text-xs text-ink-600">{tPanels('hint')}</p> : null}
+          {isSigned ? <Alert tone="info" title={t('lockedNotice')} /> : null}
+          {/* Reopened after a signature: said on the record itself, with the
             reason, until it is signed again. */}
-        {!isSigned && reopened ? (
-          <Alert tone="warning" title={t('reopenedNotice.title')}>
-            {t('reopenedNotice.body', {
-              signedAt: formatDateTime(new Date(reopened.signed_at)),
-              reopenedAt: formatDateTime(new Date(reopened.reopened_at)),
-              reason: reopened.reason,
-            })}
-          </Alert>
-        ) : null}
-        {status === 'error' ? (
-          <Alert tone="danger">
-            {errorKey === 'errors.encounterLocked'
-              ? tErrors('encounterLocked')
-              : tc('errorGeneric')}
-          </Alert>
-        ) : null}
+          {!isSigned && reopened ? (
+            <Alert tone="warning" title={t('reopenedNotice.title')}>
+              {t('reopenedNotice.body', {
+                signedAt: formatDateTime(new Date(reopened.signed_at)),
+                reopenedAt: formatDateTime(new Date(reopened.reopened_at)),
+                reason: reopened.reason,
+              })}
+            </Alert>
+          ) : null}
+          {status === 'error' ? (
+            <Alert tone="danger">
+              {errorKey === 'errors.encounterLocked'
+                ? tErrors('encounterLocked')
+                : tc('errorGeneric')}
+            </Alert>
+          ) : null}
 
-        {/* The record's own fields, each a block that can be moved above or
+          {/* The record's own fields, each a block that can be moved above or
             below the others — a practitioner who writes the history before
             the complaint puts it there once. Grouping headings are gone: the
             field labels say everything they said. */}
-        <Card>
-          <CardBody>
-            <SidePanels
-              storageKey="herbalist-encounter-fields"
-              editing={arranging}
-              resizable={false}
-              className="space-y-5"
-              panels={[
-                {
-                  id: 'chief_complaint',
-                  title: tf('chiefComplaint'),
-                  node: (
-                    <Field label={tf('chiefComplaint')} htmlFor="chief_complaint">
-                      <Textarea
-                        id="chief_complaint"
-                        rows={2}
-                        disabled={disabled}
-                        value={state.chief_complaint}
-                        onChange={(event) => set('chief_complaint', event.target.value)}
-                      />
-                    </Field>
-                  ),
-                },
-                {
-                  id: 'history',
-                  title: tf('historyOfPresentIllness'),
-                  node: (
-                    <Field label={tf('historyOfPresentIllness')} htmlFor="history_of_present_illness">
-                      <Textarea
-                        id="history_of_present_illness"
-                        rows={3}
-                        disabled={disabled}
-                        value={state.history_of_present_illness}
-                        onChange={(event) => set('history_of_present_illness', event.target.value)}
-                      />
-                    </Field>
-                  ),
-                },
-                {
-                  id: 'pattern',
-                  title: tf('tcmPatternDiagnosis'),
-                  node: (
-                    <Field label={tf('tcmPatternDiagnosis')} htmlFor="tcm_pattern_diagnosis">
-                      <Textarea
-                        id="tcm_pattern_diagnosis"
-                        rows={2}
-                        disabled={disabled}
-                        value={state.tcm_pattern_diagnosis}
-                        onChange={(event) => set('tcm_pattern_diagnosis', event.target.value)}
-                      />
-                    </Field>
-                  ),
-                },
-                {
-                  id: 'western_principle',
-                  title: `${tf('westernDiagnosis')} · ${tf('treatmentPrinciple')}`,
-                  node: (
-                    <FieldGrid>
-                      <Field label={tf('westernDiagnosis')} htmlFor="western_diagnosis">
+          <Card>
+            <CardBody>
+              <SidePanels
+                storageKey="herbalist-encounter-fields"
+                editing={arranging}
+                resizable={false}
+                className="space-y-5"
+                panels={[
+                  {
+                    id: 'chief_complaint',
+                    title: tf('chiefComplaint'),
+                    node: (
+                      <Field label={tf('chiefComplaint')} htmlFor="chief_complaint">
                         <Textarea
-                          id="western_diagnosis"
+                          id="chief_complaint"
                           rows={2}
                           disabled={disabled}
-                          value={state.western_diagnosis}
-                          onChange={(event) => set('western_diagnosis', event.target.value)}
+                          value={state.chief_complaint}
+                          onChange={(event) => set('chief_complaint', event.target.value)}
                         />
                       </Field>
-                      <Field label={tf('treatmentPrinciple')} htmlFor="treatment_principle">
+                    ),
+                  },
+                  {
+                    id: 'history',
+                    title: tf('historyOfPresentIllness'),
+                    node: (
+                      <Field
+                        label={tf('historyOfPresentIllness')}
+                        htmlFor="history_of_present_illness"
+                      >
                         <Textarea
-                          id="treatment_principle"
+                          id="history_of_present_illness"
+                          rows={3}
+                          disabled={disabled}
+                          value={state.history_of_present_illness}
+                          onChange={(event) =>
+                            set('history_of_present_illness', event.target.value)
+                          }
+                        />
+                      </Field>
+                    ),
+                  },
+                  {
+                    id: 'pattern',
+                    title: tf('tcmPatternDiagnosis'),
+                    node: (
+                      <Field label={tf('tcmPatternDiagnosis')} htmlFor="tcm_pattern_diagnosis">
+                        <Textarea
+                          id="tcm_pattern_diagnosis"
                           rows={2}
                           disabled={disabled}
-                          value={state.treatment_principle}
-                          onChange={(event) => set('treatment_principle', event.target.value)}
+                          value={state.tcm_pattern_diagnosis}
+                          onChange={(event) => set('tcm_pattern_diagnosis', event.target.value)}
                         />
                       </Field>
-                    </FieldGrid>
-                  ),
-                },
-                {
-                  id: 'points',
-                  title: tf('pointsUsed'),
-                  // The nine modality checkboxes that used to open this block are
-                  // gone. They were nine clicks describing what the points and the
-                  // notes below already say. `modalities_used` is still stored and
-                  // still carried through a save, so older notes keep theirs.
-                  node: (
-                    <div>
-                      {/* The instruction sits under the heading rather than under
+                    ),
+                  },
+                  {
+                    id: 'western_principle',
+                    title: `${tf('westernDiagnosis')} · ${tf('treatmentPrinciple')}`,
+                    node: (
+                      <FieldGrid>
+                        <Field label={tf('westernDiagnosis')} htmlFor="western_diagnosis">
+                          <Textarea
+                            id="western_diagnosis"
+                            rows={2}
+                            disabled={disabled}
+                            value={state.western_diagnosis}
+                            onChange={(event) => set('western_diagnosis', event.target.value)}
+                          />
+                        </Field>
+                        <Field label={tf('treatmentPrinciple')} htmlFor="treatment_principle">
+                          <Textarea
+                            id="treatment_principle"
+                            rows={2}
+                            disabled={disabled}
+                            value={state.treatment_principle}
+                            onChange={(event) => set('treatment_principle', event.target.value)}
+                          />
+                        </Field>
+                      </FieldGrid>
+                    ),
+                  },
+                  {
+                    id: 'points',
+                    title: tf('pointsUsed'),
+                    // The nine modality checkboxes that used to open this block are
+                    // gone. They were nine clicks describing what the points and the
+                    // notes below already say. `modalities_used` is still stored and
+                    // still carried through a save, so older notes keep theirs.
+                    node: (
+                      <div>
+                        {/* The instruction sits under the heading rather than under
                           the grid: it explains what to type, so it has to be read
                           before the fields, not after them. */}
-                      <h2 className="text-sm font-medium text-ink-700">{tf('pointsUsed')}</h2>
-                      <p className="mt-0.5 mb-2 text-xs text-ink-600">{t('points.hint')}</p>
+                        <h2 className="text-sm font-medium text-ink-700">{tf('pointsUsed')}</h2>
+                        <p className="mt-0.5 mb-2 text-xs text-ink-600">{t('points.hint')}</p>
 
-                      {/* Above the grid rather than beside it: a protocol is chosen
+                        {/* Above the grid rather than beside it: a protocol is chosen
                           before the points are typed, not after. */}
-                      {!isSigned ? (
-                        <div className="mb-3">
-                          <ProtocolPicker
-                            protocols={protocols}
-                            disabled={disabled}
-                            onApply={applyProtocol}
-                            label={tProtocols('applyPoints')}
-                          />
-                        </div>
-                      ) : null}
+                        {!isSigned ? (
+                          <div className="mb-3">
+                            <ProtocolPicker
+                              protocols={protocols}
+                              disabled={disabled}
+                              onApply={applyProtocol}
+                              label={tProtocols('applyPoints')}
+                            />
+                          </div>
+                        ) : null}
 
-                      {/* Pulled taller or shorter from the corner, like the text
+                        {/* Pulled taller or shorter from the corner, like the text
                           boxes: a long list of points, or a chart that wants room. */}
-                      <div className="grid min-h-40 resize-y gap-4 overflow-auto lg:grid-cols-[minmax(0,5fr)_minmax(0,2fr)]">
-                        <PointsEditor
-                          value={state.points_used}
-                          catalogue={pointCatalogue}
-                          disabled={disabled}
-                          onChange={(rows) => set('points_used', rows)}
-                        />
-                        {/* The chart is a mirror of the list, not a second input: it
+                        <div className="grid min-h-40 resize-y gap-4 overflow-auto lg:grid-cols-[minmax(0,5fr)_minmax(0,2fr)]">
+                          <PointsEditor
+                            value={state.points_used}
+                            catalogue={pointCatalogue}
+                            disabled={disabled}
+                            onChange={(rows) => set('points_used', rows)}
+                          />
+                          {/* The chart is a mirror of the list, not a second input: it
                           reflects what has been chosen so a gap in the prescription
                           is visible rather than deduced. A point on it opens the
                           point's card over the page; the page itself stays. */}
-                        <HumanBody3D
-                          points={mappedPoints}
-                          onSelect={(point) => {
-                            if (referenceSheet) referenceSheet.open({ kind: 'point', id: point.pointId, label: point.code });
-                            else router.push(`/reference/points/${point.pointId}`);
-                          }}
-                        />
+                          <HumanBody3D
+                            points={mappedPoints}
+                            onSelect={(point) => {
+                              if (referenceSheet)
+                                referenceSheet.open({
+                                  kind: 'point',
+                                  id: point.pointId,
+                                  label: point.code,
+                                });
+                              else router.push(`/reference/points/${point.pointId}`);
+                            }}
+                          />
+                        </div>
                       </div>
-                    </div>
-                  ),
-                },
-                {
-                  id: 'treatment_notes',
-                  title: tf('treatmentNotes'),
-                  node: (
-                    <Field label={tf('treatmentNotes')} htmlFor="treatment_notes">
-                      <Textarea
-                        id="treatment_notes"
-                        rows={3}
-                        disabled={disabled}
-                        value={state.treatment_notes}
-                        onChange={(event) => set('treatment_notes', event.target.value)}
-                      />
-                    </Field>
-                  ),
-                },
-                {
-                  id: 'follow_up',
-                  title: `${tf('recommendations')} · ${tf('followUpPlan')}`,
-                  node: (
-                    <FieldGrid>
-                      <Field label={tf('recommendations')} htmlFor="recommendations">
+                    ),
+                  },
+                  {
+                    id: 'treatment_notes',
+                    title: tf('treatmentNotes'),
+                    node: (
+                      <Field label={tf('treatmentNotes')} htmlFor="treatment_notes">
                         <Textarea
-                          id="recommendations"
+                          id="treatment_notes"
                           rows={3}
                           disabled={disabled}
-                          value={state.recommendations}
-                          onChange={(event) => set('recommendations', event.target.value)}
+                          value={state.treatment_notes}
+                          onChange={(event) => set('treatment_notes', event.target.value)}
                         />
                       </Field>
-                      <Field label={tf('followUpPlan')} htmlFor="follow_up_plan">
-                        <Textarea
-                          id="follow_up_plan"
-                          rows={3}
-                          disabled={disabled}
-                          value={state.follow_up_plan}
-                          onChange={(event) => set('follow_up_plan', event.target.value)}
-                        />
-                      </Field>
-                    </FieldGrid>
-                  ),
-                },
-              ]}
-            />
-          </CardBody>
-        </Card>
+                    ),
+                  },
+                  {
+                    id: 'follow_up',
+                    title: `${tf('recommendations')} · ${tf('followUpPlan')}`,
+                    node: (
+                      <FieldGrid>
+                        <Field label={tf('recommendations')} htmlFor="recommendations">
+                          <Textarea
+                            id="recommendations"
+                            rows={3}
+                            disabled={disabled}
+                            value={state.recommendations}
+                            onChange={(event) => set('recommendations', event.target.value)}
+                          />
+                        </Field>
+                        <Field label={tf('followUpPlan')} htmlFor="follow_up_plan">
+                          <Textarea
+                            id="follow_up_plan"
+                            rows={3}
+                            disabled={disabled}
+                            value={state.follow_up_plan}
+                            onChange={(event) => set('follow_up_plan', event.target.value)}
+                          />
+                        </Field>
+                      </FieldGrid>
+                    ),
+                  },
+                ]}
+              />
+            </CardBody>
+          </Card>
 
-        {!isSigned ? (
-          /* Stuck to the bottom of the window. This is the longest page in the
+          {!isSigned ? (
+            /* Stuck to the bottom of the window. This is the longest page in the
              app, and the buttons that save and sign it were at the foot of a
              column that ended below a 3D body and a dispensing table — a
              consultation's worth of scrolling away from where the typing is. */
-          <FormActionBar
-            // What the autosave is doing, stated rather than assumed. A form
-            // that saves itself silently is indistinguishable from one that
-            // does not, and the whole reassurance is in seeing the last time.
-            status={
-              autosave.state === 'saving'
-                ? tc('saving')
-                : autosave.state === 'error'
-                  ? t('autosaveFailed')
-                  : autosave.lastSavedAt
-                    ? t('autosavedAt', {
-                        time: format.dateTime(autosave.lastSavedAt, 'time'),
-                      })
-                    : t('autosaveOn')
-            }
-          >
-            {/* The rare action behind a menu; the two everyday ones as buttons.
+            <FormActionBar
+              // What the autosave is doing, stated rather than assumed. A form
+              // that saves itself silently is indistinguishable from one that
+              // does not, and the whole reassurance is in seeing the last time.
+              status={
+                autosave.state === 'saving'
+                  ? tc('saving')
+                  : autosave.state === 'error'
+                    ? t('autosaveFailed')
+                    : autosave.lastSavedAt
+                      ? t('autosavedAt', {
+                          time: format.dateTime(autosave.lastSavedAt, 'time'),
+                        })
+                      : t('autosaveOn')
+              }
+            >
+              {/* The rare action behind a menu; the two everyday ones as buttons.
                 Save is the primary: it is pressed twenty times a visit, while
                 signing happens once and locks the record, so it must never be
                 the button the hand reaches for by habit. */}
-            {/* Not modal, and closed by hand when its item opens the dialog. A
+              {/* Not modal, and closed by hand when its item opens the dialog. A
                 modal menu left open under the dialog kept the page unclickable
                 after the dialog was dismissed, until a second Escape. */}
-            <DropdownMenu open={moreOpen} onOpenChange={setMoreOpen} modal={false}>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  disabled={isPending}
-                  aria-label={tc('more')}
-                  title={tc('more')}
-                >
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                {/* preventDefault keeps Radix from closing the menu in the same tick
+              <DropdownMenu open={moreOpen} onOpenChange={setMoreOpen} modal={false}>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    disabled={isPending}
+                    aria-label={tc('more')}
+                    title={tc('more')}
+                  >
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  {/* preventDefault keeps Radix from closing the menu in the same tick
                     the dialog opens (a race that left the page unclickable); the
                     menu is closed here instead, once the dialog is on its way. */}
-                <DropdownMenuItem
-                  onSelect={(event) => {
-                    event.preventDefault();
-                    setProtocolOpen(true);
-                    setMoreOpen(false);
-                  }}
-                >
-                  <BookmarkPlus className="h-4 w-4" />
-                  {tProtocols('saveFromTreatment')}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <Button variant="secondary" onClick={handleSign} disabled={isPending}>
-              <Lock className="h-4 w-4" />
-              {t('sign')}
-            </Button>
-            <Button onClick={handleSave} disabled={isPending}>
-              {isPending ? <Spinner /> : <Save className="h-4 w-4" />}
-              {isPending ? tc('saving') : tc('save')}
-            </Button>
-          </FormActionBar>
-        ) : null}
-      </div>
-
-      <Dialog open={protocolOpen} onOpenChange={setProtocolOpen}>
-        <DialogContent title={tProtocols('saveFromTreatment')} closeLabel={tc('close')}>
-          <div className="space-y-4">
-            <p className="text-sm text-ink-700">{tProtocols('saveFromTreatmentBody')}</p>
-            <Field label={tProtocols('name')} htmlFor="protocol_name" required>
-              <Input
-                id="protocol_name"
-                value={protocolName}
-                onChange={(event) => setProtocolName(event.target.value)}
-              />
-            </Field>
-            <Field label={tProtocols('description')} htmlFor="protocol_description">
-              <Textarea
-                id="protocol_description"
-                rows={2}
-                value={protocolDescription}
-                onChange={(event) => setProtocolDescription(event.target.value)}
-              />
-            </Field>
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => setProtocolOpen(false)}
-                disabled={isPending}
-              >
-                {tc('cancel')}
+                  <DropdownMenuItem
+                    onSelect={(event) => {
+                      event.preventDefault();
+                      setProtocolOpen(true);
+                      setMoreOpen(false);
+                    }}
+                  >
+                    <BookmarkPlus className="h-4 w-4" />
+                    {tProtocols('saveFromTreatment')}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <Button variant="secondary" onClick={handleSign} disabled={isPending}>
+                <Lock className="h-4 w-4" />
+                {t('sign')}
               </Button>
-              <Button
-                type="button"
-                onClick={handleSaveAsProtocol}
-                disabled={isPending || !protocolName.trim()}
-              >
+              <Button onClick={handleSave} disabled={isPending}>
                 {isPending ? <Spinner /> : null}
-                {tc('save')}
+                {isPending ? tc('saving') : tc('save')}
               </Button>
-            </DialogFooter>
-          </div>
-        </DialogContent>
-      </Dialog>
+            </FormActionBar>
+          ) : null}
+        </div>
 
-      {/* Side column: what you observe at the couch, and what you hand over
+        <Dialog open={protocolOpen} onOpenChange={setProtocolOpen}>
+          <DialogContent title={tProtocols('saveFromTreatment')} closeLabel={tc('close')}>
+            <div className="space-y-4">
+              <p className="text-sm text-ink-700">{tProtocols('saveFromTreatmentBody')}</p>
+              <Field label={tProtocols('name')} htmlFor="protocol_name" required>
+                <Input
+                  id="protocol_name"
+                  value={protocolName}
+                  onChange={(event) => setProtocolName(event.target.value)}
+                />
+              </Field>
+              <Field label={tProtocols('description')} htmlFor="protocol_description">
+                <Textarea
+                  id="protocol_description"
+                  rows={2}
+                  value={protocolDescription}
+                  onChange={(event) => setProtocolDescription(event.target.value)}
+                />
+              </Field>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => setProtocolOpen(false)}
+                  disabled={isPending}
+                >
+                  {tc('cancel')}
+                </Button>
+                <Button
+                  type="button"
+                  onClick={handleSaveAsProtocol}
+                  disabled={isPending || !protocolName.trim()}
+                >
+                  {isPending ? <Spinner /> : null}
+                  {tc('save')}
+                </Button>
+              </DialogFooter>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Side column: what you observe at the couch, and what you hand over
           because of it — in whatever order this practitioner keeps them. */}
-      <SidePanels
-        storageKey="herbalist-encounter-panels-v2"
-        editing={arranging}
-        panels={[
-          { id: 'examination', title: tPanels('examination'), node: examinationCard },
-          // The wrappers are not decoration: `dispensePanel` and `formsPanel`
-          // are elements built by the page and handed in as props, and each
-          // needs a parent of its own so it is a single child rather than an
-          // entry React asks a key for.
-          { id: 'dispensing', title: tPanels('dispensing'), node: <div>{dispensePanel}</div> },
-          {
-            id: 'compare',
-            title: tPanels('compare'),
-            // Inside the form rather than passed in as a prop, because the diff
-            // is against the points being typed right now — an element built by
-            // the page could only ever compare against what is already saved.
-            node: (
-              <EncounterCompare
-                previous={previousEncounters}
-                currentPoints={state.points_used
-                  .filter((row) => row.point.trim())
-                  .map((row) => ({ point: row.point, region: row.region }))}
-                currentPrescription={currentPrescription}
-              />
-            ),
-          },
-          { id: 'forms', title: tPanels('forms'), node: <div>{formsPanel}</div> },
-        ]}
-      />
-    </div>
+        <SidePanels
+          storageKey="herbalist-encounter-panels-v2"
+          editing={arranging}
+          panels={[
+            { id: 'examination', title: tPanels('examination'), node: examinationCard },
+            // The wrappers are not decoration: `dispensePanel` and `formsPanel`
+            // are elements built by the page and handed in as props, and each
+            // needs a parent of its own so it is a single child rather than an
+            // entry React asks a key for.
+            { id: 'dispensing', title: tPanels('dispensing'), node: <div>{dispensePanel}</div> },
+            {
+              id: 'compare',
+              title: tPanels('compare'),
+              // Inside the form rather than passed in as a prop, because the diff
+              // is against the points being typed right now — an element built by
+              // the page could only ever compare against what is already saved.
+              node: (
+                <EncounterCompare
+                  previous={previousEncounters}
+                  currentPoints={state.points_used
+                    .filter((row) => row.point.trim())
+                    .map((row) => ({ point: row.point, region: row.region }))}
+                  currentPrescription={currentPrescription}
+                />
+              ),
+            },
+            { id: 'forms', title: tPanels('forms'), node: <div>{formsPanel}</div> },
+          ]}
+        />
+      </div>
     </CurrentPrescriptionProvider>
   );
 }

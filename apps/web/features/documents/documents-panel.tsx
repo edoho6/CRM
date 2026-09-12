@@ -25,7 +25,7 @@ import {
   useConfirm,
   useToast,
 } from '@clinic/ui';
-import { DOCUMENT_CATEGORIES, type Locale } from '@clinic/domain';
+import { DOCUMENT_CATEGORIES, switchTone, type Locale } from '@clinic/domain';
 import { useRouter } from '@clinic/i18n/navigation';
 import type { PatientDocument } from '@clinic/db/types';
 import { deleteDocument, setDocumentShared, uploadDocument } from './actions';
@@ -250,7 +250,7 @@ export function DocumentsPanel({
                         className="disabled:opacity-50"
                         title={t('sharedWithPatientHint')}
                       >
-                        <Badge tone={document.shared_with_patient ? 'success' : 'muted'}>
+                        <Badge tone={switchTone(document.shared_with_patient)}>
                           {document.shared_with_patient ? t('shared') : t('private')}
                         </Badge>
                       </button>

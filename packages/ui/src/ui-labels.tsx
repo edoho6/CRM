@@ -25,6 +25,10 @@ export interface UiLabels {
     openCalendar: string;
     invalid: string;
   };
+  /** The close button of every dialog and sheet that is not handed its own word. */
+  dialog?: {
+    close: string;
+  };
 }
 
 const UiLabelsContext = React.createContext<UiLabels>({});

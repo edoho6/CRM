@@ -27,6 +27,7 @@ export { ArrangeToggle } from './arrange-toggle';
 export {
   Badge,
   Alert,
+  EmptyNote,
   EmptyState,
   Spinner,
   DetailRow,

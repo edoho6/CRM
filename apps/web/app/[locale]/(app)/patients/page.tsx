@@ -1,5 +1,5 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { CalendarX2, UserPlus, Users, X } from 'lucide-react';
+import { CalendarX2, Plus, Users, X } from 'lucide-react';
 import {
   Button,
   EmptyState,
@@ -210,7 +210,7 @@ export default async function PatientsPage({
         actions={
           <Button asChild>
             <Link href="/patients/new">
-              <UserPlus className="h-4 w-4" />
+              <Plus className="h-4 w-4" />
               {t('new')}
             </Link>
           </Button>

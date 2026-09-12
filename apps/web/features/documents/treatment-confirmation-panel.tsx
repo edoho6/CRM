@@ -203,6 +203,7 @@ export function TreatmentConfirmationPanel({
                       type="button"
                       onClick={() => setManual((current) => current.filter((d) => d !== date))}
                       aria-label={tc('delete')}
+                      title={tc('delete')}
                       className="rounded p-0.5 text-ink-500 hover:bg-ink-200 hover:text-ink-900"
                     >
                       <Trash2 className="h-3 w-3" />
@@ -272,6 +273,7 @@ export function TreatmentConfirmationPanel({
                     <button
                       type="button"
                       aria-label={tc('delete')}
+                      title={tc('delete')}
                       disabled={isPending}
                       onClick={async () => {
                         const confirmed = await confirm({

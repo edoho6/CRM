@@ -4,6 +4,7 @@ import * as React from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { X } from 'lucide-react';
 import { cn } from './cn';
+import { useUiLabels } from './ui-labels';
 import { focusRing } from './focus';
 import { useSwipeDismiss } from './use-swipe-dismiss';
 
@@ -26,7 +27,7 @@ export function DialogContent({
   children,
   title,
   description,
-  closeLabel = 'Close',
+  closeLabel,
   onOpenAutoFocus,
   onCloseAutoFocus,
   onPointerDownOutside,
@@ -37,6 +38,10 @@ export function DialogContent({
   description?: React.ReactNode;
   closeLabel?: string;
 }) {
+  // The word comes from the app's labels when the caller has none of its
+  // own; the English fallback exists only for a kit used outside the apps.
+  const uiLabels = useUiLabels();
+  const closeText = closeLabel ?? uiLabels.dialog?.close ?? 'Close';
   /*
    * Focus lands on the first field, not on the ✕.
    *
@@ -162,7 +167,7 @@ export function DialogContent({
               header the height it was. */}
           <DialogPrimitive.Close
             ref={closeRef}
-            aria-label={closeLabel}
+            aria-label={closeText}
             className={cn(
               '-my-2 -me-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-ink-500 transition-colors hover:bg-ink-100 hover:text-ink-800 active:bg-ink-200',
               focusRing,

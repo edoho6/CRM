@@ -160,6 +160,7 @@ export default async function LocaleLayout({
                       openCalendar: t('dateInput.openCalendar'),
                       invalid: t('dateInput.invalid'),
                     },
+                    dialog: { close: t('close') },
                   }}
                 >
                   {children}

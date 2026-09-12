@@ -1,7 +1,6 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Images } from 'lucide-react';
-import { Badge, Button, EmptyState, PageBody } from '@clinic/ui';
-import { Link } from '@clinic/i18n/navigation';
+import { Badge, EmptyState, PageBody } from '@clinic/ui';
 import { PageHeader } from '@/components/app-shell';
 import { ExternalLink } from '@/components/external-link';
 import { getClinicScope } from '@/lib/session';
@@ -30,15 +29,7 @@ export default async function PriceCreditsPage({ params }: { params: Promise<{ l
 
   return (
     <>
-      <PageHeader
-        title={t('title')}
-        description={t('subtitle')}
-        actions={
-          <Button asChild variant="secondary">
-            <Link href="/prices">{t('backToList')}</Link>
-          </Button>
-        }
-      />
+      <PageHeader title={t('title')} description={t('subtitle')} />
       <PageBody width="narrow">
         {credits.length === 0 ? (
           <EmptyState icon={<Images className="h-8 w-8" />} title={t('none')} />

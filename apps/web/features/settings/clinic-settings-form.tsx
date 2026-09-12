@@ -3,7 +3,19 @@
 import { useState, useTransition } from 'react';
 import { useTranslations } from 'next-intl';
 import { Boxes, Check } from 'lucide-react';
-import { Alert, Button, Card, CardBody, Field, FormActionBar, Input, Section, Spinner, useToast } from '@clinic/ui';
+import {
+  Alert,
+  Button,
+  Card,
+  CardBody,
+  CardHeader,
+  CardTitle,
+  Field,
+  Input,
+  Section,
+  Spinner,
+  useToast,
+} from '@clinic/ui';
 import { cn } from '@clinic/ui/cn';
 import { useRouter } from '@clinic/i18n/navigation';
 import { saveClinicSettings } from '@/features/inventory/actions';
@@ -53,20 +65,23 @@ export function ClinicSettingsForm({
   ];
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-3xl space-y-5">
+    <form onSubmit={handleSubmit} className="space-y-5">
       {status === 'error' ? <Alert tone="danger">{tc('errorGeneric')}</Alert> : null}
 
+      {/* The same card as every other settings form: a titled header, the
+          fields, and the save button last inside the card. */}
       <Card>
+        <CardHeader>
+          <CardTitle>{t('sections.clinic')}</CardTitle>
+        </CardHeader>
         <CardBody className="space-y-6">
-          <Section title={t('sections.clinic')}>
-            <Field label={t('fields.name')} htmlFor="clinic_name">
-              <Input
-                id="clinic_name"
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-              />
-            </Field>
-          </Section>
+          <Field label={t('fields.name')} htmlFor="clinic_name">
+            <Input
+              id="clinic_name"
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+            />
+          </Field>
 
           <Section title={t('sections.inventory')} description={t('inventoryIntro')}>
             <div className="grid gap-3 sm:grid-cols-2">
@@ -101,15 +116,15 @@ export function ClinicSettingsForm({
             </div>
             <p className="mt-3 text-xs text-ink-500">{t('inventoryReversible')}</p>
           </Section>
+
+          <div className="flex justify-end">
+            <Button type="submit" disabled={isPending}>
+              {isPending ? <Spinner /> : null}
+              {isPending ? tc('saving') : tc('save')}
+            </Button>
+          </div>
         </CardBody>
       </Card>
-
-      <FormActionBar>
-        <Button type="submit" disabled={isPending}>
-          {isPending ? <Spinner /> : null}
-          {isPending ? tc('saving') : tc('save')}
-        </Button>
-      </FormActionBar>
     </form>
   );
 }

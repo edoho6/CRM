@@ -129,7 +129,7 @@ const mensHealthIntake: FormTemplateValues = {
     yn('surg_varicocele', 'ניתוח וריקוצלה (דליות בורידי האשך)'),
     yn('surg_bypass', 'ניתוח מעקפים/לב פתוח'),
     yn('surg_cath', 'צנתור לב/צנתור כליות'),
-    yn('surg_prostate', 'ניתוח באיזור הערמונית (הסרה/אידוי/כל ניתוח אחר)'),
+    yn('surg_prostate', 'ניתוח באזור הערמונית (הסרה/אידוי/כל ניתוח אחר)'),
     yn('surg_hernia', 'ניתוח בקע מפשעתי/סרעפתי'),
     yn('surg_bariatric', 'ניתוח בריאטרי (קיצור קיבה, שרוול, מעקף)'),
     yn('surg_back', 'ניתוח גב'),
