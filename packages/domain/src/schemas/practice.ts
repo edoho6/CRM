@@ -227,6 +227,8 @@ export const reminderSettingsSchema = z.object({
   reminders_enabled: z.boolean().default(true),
   reminder_hours_before: z.coerce.number().int().min(1).max(168).default(24),
   reminder_channel: z.enum(['sms', 'whatsapp', 'email']).default('whatsapp'),
+  // A patient with the app gets the reminder as a phone notification instead.
+  reminder_push_enabled: z.boolean().default(true),
 });
 
 export type ReminderSettingsValues = z.input<typeof reminderSettingsSchema>;

@@ -89,6 +89,15 @@ select cron.schedule(
 
 ---
 
+## התראות בטלפון — כשיש אפליקציה בחנויות
+
+הפונקציה ששולחת (`dispatch-messages`) יודעת לשלוח גם התראות לאפליקציות בטלפון, דרך Firebase.
+מה צריך: פרויקט Firebase (`MOBILE.md`, שלב ההתראות) ← **Project settings ← Service accounts ←
+Generate new private key** ← הקובץ שיורד. ב-Supabase ← **Edge Functions ← Secrets** ← secret בשם
+`FCM_SERVICE_ACCOUNT_JSON` שהערך שלו הוא **כל תוכן הקובץ** כפי שהוא. אחר כך לפרוס מחדש את הפונקציה
+(`supabase functions deploy dispatch-messages --no-verify-jwt`). בלי ה-secret, שורות ההתראה נשארות בתור
+והתזכורת יוצאת בערוץ הרגיל בשעה הבאה — שום דבר לא הולך לאיבוד.
+
 ## השוואת מחירים — הקורא של החנויות
 
 המסך "השוואת מחירים" מציג מחירים שנקראים מדפי המוצר הציבוריים של החנויות, פעם ביום

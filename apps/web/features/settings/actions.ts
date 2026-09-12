@@ -493,6 +493,7 @@ export async function saveReminderSettings(input: unknown): Promise<ActionResult
       reminders_enabled: parsed.data.reminders_enabled,
       reminder_hours_before: parsed.data.reminder_hours_before,
       reminder_channel: parsed.data.reminder_channel,
+      reminder_push_enabled: parsed.data.reminder_push_enabled,
     })
     .eq('id', scope.context.clinic.id);
 

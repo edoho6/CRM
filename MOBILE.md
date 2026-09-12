@@ -225,9 +225,10 @@ Play Console ← Testing ← **Closed testing** ← Create track "בטא" ← Te
 
 ## מה עוד לא כאן
 
-- **התראות בטלפון** (Firebase) — שלב 2. ה-secrets מוכנים בשם: `FIREBASE_ANDROID_CLINIC_JSON`,
+- **התראות בטלפון** (Firebase) — צד השרת מוכן (מסד הנתונים והשולח; `DEPLOY.md`, "התראות בטלפון");
+  צד האפליקציה בהמשך. ה-secrets ב-GitHub מוכנים בשם: `FIREBASE_ANDROID_CLINIC_JSON`,
   `FIREBASE_ANDROID_PORTAL_JSON` (תוכן `google-services.json`), `FIREBASE_IOS_CLINIC_PLIST`,
-  `FIREBASE_IOS_PORTAL_PLIST` (תוכן `GoogleService-Info.plist`).
+  `FIREBASE_IOS_PORTAL_PLIST` (תוכן `GoogleService-Info.plist`); וב-Supabase — `FCM_SERVICE_ACCOUNT_JSON`.
 - הורדת מסמכים, קובץ יומן והדפסה מתוך האפליקציה — בינתיים הכפתורים האלה מוסתרים
   באפליקציה ואומרים "זמין באתר".
 - קישורים עמוקים (קישור מהודעה שנפתח ישר באפליקציה), נעילה ביומטרית, iPad.

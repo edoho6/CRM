@@ -24,6 +24,7 @@ import {
   type ComboboxValue,
 } from '@clinic/ui';
 import { REMIND_CHANNELS, REMIND_OFFSETS, type RemindChannel } from '@clinic/domain';
+import { getBrowserClient } from '@clinic/db/browser';
 import { DateInput } from '@/components/date-input';
 import { useRouter } from '@clinic/i18n/navigation';
 import { describeActionError } from '@/lib/action-error';
@@ -58,6 +59,27 @@ export function TaskDialog({
   const tc = useTranslations('common');
   const tAll = useTranslations();
   const tSchedule = useTranslations('schedule');
+  // Whether this person has a phone signed in to the store app: the push
+  // option is offered only then. Asked once per opening, from the browser,
+  // because the dialog opens from five places and none of them knows.
+  const [hasDevice, setHasDevice] = useState(false);
+  useEffect(() => {
+    if (!open) return;
+    const supabase = getBrowserClient();
+    if (!supabase) return;
+    let cancelled = false;
+    supabase
+      .from('device_push_tokens')
+      .select('id')
+      .eq('app', 'clinic')
+      .limit(1)
+      .then(({ data }) => {
+        if (!cancelled) setHasDevice(Boolean(data && data.length > 0));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
   const router = useRouter();
   const confirm = useConfirm();
   const { toast } = useToast();
@@ -246,8 +268,9 @@ export function TaskDialog({
             <legend className="text-sm font-medium text-ink-700">{t('remindVia')}</legend>
             <div className="flex flex-wrap gap-3">
               {REMIND_CHANNELS.map((option) => {
-                // Only the in-app channel has anything behind it today.
-                const available = option === 'app';
+                // The in-app channel always; the phone when one is signed in;
+                // email and SMS wait for a sending provider.
+                const available = option === 'app' || (option === 'push' && hasDevice);
                 return (
                   <label
                     key={option}

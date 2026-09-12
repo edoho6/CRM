@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition } from 'react';
 import { useTranslations } from 'next-intl';
-import { Check, Copy, Mail, MessageCircle, RefreshCw, Smartphone, X } from 'lucide-react';
+import { Bell, Check, Copy, Mail, MessageCircle, RefreshCw, Smartphone, X } from 'lucide-react';
 import { Badge, Button, Card, CardBody, Collapsible, EmptyState, cn, useToast } from '@clinic/ui';
 import { formatDateTime } from '@clinic/i18n';
 import { Link, useRouter } from '@clinic/i18n/navigation';
@@ -16,7 +16,7 @@ export type QueueRow = MessageLogEntry & {
   appointment: { id: string; start_at: string } | null;
 };
 
-const CHANNEL_ICONS = { sms: Smartphone, whatsapp: MessageCircle, email: Mail } as const;
+const CHANNEL_ICONS = { sms: Smartphone, whatsapp: MessageCircle, email: Mail, push: Bell } as const;
 
 const STATUS_TONES = {
   queued: 'warning',
@@ -142,10 +142,14 @@ export function MessageQueue({ queued, history }: { queued: QueueRow[]; history:
                       ) : (
                         <span className="font-medium text-ink-900">{t('toMe')}</span>
                       )}
-                      {row.recipient ? (
+                      {/* A push row's recipient is a user id, not a number: nothing to show. */}
+                      {row.recipient && row.channel !== 'push' ? (
                         <span dir="ltr" className="text-ink-600 tabular-nums">
                           {row.recipient}
                         </span>
+                      ) : null}
+                      {row.channel === 'push' ? (
+                        <span className="text-xs text-ink-500">{t('pushQueued')}</span>
                       ) : null}
                       {row.appointment ? (
                         <span className="text-xs text-ink-500">

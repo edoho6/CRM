@@ -27,9 +27,17 @@ instead.
 | `DISPATCH_SECRET` | Any long random string. The schedule sends it; the function refuses without it. |
 | `RESEND_API_KEY` | Enables email through resend.com. |
 | `EMAIL_FROM` | The sender, e.g. `Herbalist <reminders@your-domain>`. |
+| `FCM_SERVICE_ACCOUNT_JSON` | Enables phone notifications through Firebase Cloud Messaging: the service-account JSON file Firebase hands out (Project settings → Service accounts → Generate new private key), pasted whole. |
 
 SMS and WhatsApp have no provider yet. When one is chosen, `smsProvider()` /
 `whatsappProvider()` in `index.ts` are the only places that change.
+
+Phone notifications (`push` rows, migration 41): the row's `recipient` is a
+user id and the phones are looked up in `device_push_tokens` here. A token
+the service no longer knows is deleted, so the next hourly queue run sees no
+phone and queues the reminder on the clinic's channel instead — the fallback
+needs no extra machinery. The notification carries the clinic's name, the
+date and the hour, never the patient's name.
 
 ### Schedule (SQL editor, once, with `pg_cron` and `pg_net` enabled)
 

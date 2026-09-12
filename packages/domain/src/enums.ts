@@ -566,11 +566,12 @@ export const TAG_COLORS = ['ink', 'jade', 'sky', 'amber', 'red'] as const;
 export type TagColor = (typeof TAG_COLORS)[number];
 
 /**
- * How a task tells its owner that its moment has come. Only `app` can fire
- * today — the bell in the header and a browser notification. The other two
- * are kept as a choice for when a sending provider is connected.
+ * How a task tells its owner that its moment has come. `app` is the bell in
+ * the header and a browser notification; `push` is a notification on the
+ * phone, for whoever has the store app signed in. Email and SMS are kept as
+ * a choice for when a sending provider is connected.
  */
-export const REMIND_CHANNELS = ['app', 'email', 'sms'] as const;
+export const REMIND_CHANNELS = ['app', 'email', 'sms', 'push'] as const;
 export type RemindChannel = (typeof REMIND_CHANNELS)[number];
 
 /**

@@ -30,6 +30,7 @@ export default async function SettingsPage({ params }: { params: Promise<{ local
           enabled={scope.context.clinic.reminders_enabled !== false}
           hoursBefore={scope.context.clinic.reminder_hours_before ?? 24}
           channel={scope.context.clinic.reminder_channel ?? 'whatsapp'}
+          pushEnabled={scope.context.clinic.reminder_push_enabled !== false}
           clinicName={scope.context.clinic.name}
         />
       </PageBody>

@@ -64,14 +64,16 @@
     "channels": {
       "sms": "SMS",
       "whatsapp": "WhatsApp",
-      "email": "Email"
+      "email": "Email",
+      "push": "Phone notification"
     },
     "status": {
       "queued": "Waiting",
       "sent": "Sent",
       "failed": "Failed",
       "skipped": "Not sent"
-    }
+    },
+    "pushQueued": "Reaches the phone app within minutes; nothing to send by hand."
   },
   "platform": {
     "title": "All clinics",
@@ -160,9 +162,10 @@
     "channels": {
       "app": "In-app alert",
       "email": "Email",
-      "sms": "SMS"
+      "sms": "SMS",
+      "push": "Phone notification"
     },
-    "channelHint": "An in-app alert shows in the bell, and in the browser if you allowed it. Email and SMS are coming.",
+    "channelHint": "An in-app alert shows in the bell, and in the browser if you allowed it. A phone notification, once the app is installed and signed in on your phone. Email and SMS are coming.",
     "sections": {
       "overdue": "Overdue",
       "today": "Today",
@@ -2049,7 +2052,9 @@
       "template": "Wording",
       "placeholders": "You can use '{name}' '{date}' '{time}' '{clinic}' '{link}' — they are filled in from the booking.",
       "preview": "How it will read",
-      "sampleName": "Dana"
+      "sampleName": "Dana",
+      "pushEnabled": "A phone notification for whoever installed the app",
+      "pushHint": "A patient with our app installed and signed in gets the reminder as a phone notification, with no message on the channel above. If the notification cannot be delivered, the message goes out on the usual channel an hour later."
     },
     "title": "Settings",
     "subtitle": "Clinic-wide preferences",

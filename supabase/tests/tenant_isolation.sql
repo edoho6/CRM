@@ -98,6 +98,11 @@ begin
   insert into public.herbs (clinic_id, pinyin_name) values (v_clinic_a, 'Iso Test Herb A');
   insert into public.herbs (clinic_id, pinyin_name) values (v_clinic_b, 'Iso Test Herb B');
 
+  -- A phone registered for notifications in each clinic.
+  insert into public.device_push_tokens (user_id, clinic_id, app, platform, token)
+  values (v_user_a, v_clinic_a, 'clinic', 'ios', 'iso-token-a-' || v_user_a::text),
+         (v_user_b, v_clinic_b, 'clinic', 'ios', 'iso-token-b-' || v_user_b::text);
+
   insert into public.encounters (clinic_id, patient_id, practitioner_id)
   values (v_clinic_a, v_patient_a, v_user_a) returning id into v_encounter;
 
@@ -291,6 +296,17 @@ begin
   select count(*) into v_count from public.herbs where clinic_id = v_clinic_b;
   if v_count <> 0 then raise exception 'FAIL: herb catalogue leaked across clinics'; end if;
   raise notice 'ok   herb catalogue isolated';
+
+  -- A phone is its owner's: the other clinic's tokens are invisible, and
+  -- registering one binds it to the caller and the caller's clinic.
+  select count(*) into v_count from public.device_push_tokens;
+  if v_count <> 1 then raise exception 'FAIL: clinic A sees % push devices, expected only its own', v_count; end if;
+  select count(*) into v_count from public.device_push_tokens where user_id = v_user_b;
+  if v_count <> 0 then raise exception 'FAIL: clinic B''s push device leaked'; end if;
+  perform public.register_push_device('iso-token-a2-' || v_user_a::text, 'android', 'clinic', 'he');
+  select count(*) into v_count from public.device_push_tokens where user_id = v_user_a and clinic_id = v_clinic_a;
+  if v_count <> 2 then raise exception 'FAIL: register_push_device did not bind the phone to clinic A'; end if;
+  raise notice 'ok   push devices are the person''s own';
 
   -- A protocol is a practitioner's own clinical material. Reading a colleague's
   -- across a tenant boundary is reading how they treat.

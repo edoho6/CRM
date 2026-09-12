@@ -76,6 +76,8 @@ export interface Clinic {
   /** How long before the appointment the reminder is queued. */
   reminder_hours_before: number;
   reminder_channel: MessageChannel;
+  /** A patient with the phone app gets the reminder as a notification instead of a message. */
+  reminder_push_enabled: boolean;
   /** The public booking page: whether it is on, and under which handle. */
   booking_enabled: boolean;
   booking_slug: string | null;
@@ -304,7 +306,7 @@ export interface ScheduleBlock {
   created_at: string;
 }
 
-export type MessageChannel = 'sms' | 'whatsapp' | 'email';
+export type MessageChannel = 'sms' | 'whatsapp' | 'email' | 'push';
 export type MessageStatus = 'queued' | 'sent' | 'failed' | 'skipped';
 
 /** One message to a patient or practitioner: queued by the hourly job, sent by a provider or by hand. */
@@ -316,6 +318,8 @@ export interface MessageLogEntry {
   recipient: string | null;
   body: string;
   subject: string | null;
+  /** For a push row: where a tap on the notification lands. */
+  link_url: string | null;
   patient_id: string | null;
   appointment_id: string | null;
   task_id: string | null;
@@ -325,6 +329,19 @@ export interface MessageLogEntry {
   error_code: string | null;
   created_at: string;
   sent_at: string | null;
+}
+
+/** A phone registered for notifications: the owner's own row, written only by register_push_device. */
+export interface DevicePushToken {
+  id: string;
+  user_id: string;
+  clinic_id: string | null;
+  app: 'clinic' | 'portal';
+  platform: 'ios' | 'android';
+  token: string;
+  locale: 'he' | 'en';
+  created_at: string;
+  last_seen_at: string;
 }
 
 /** A signature a treatment record carried before it was reopened for editing. */

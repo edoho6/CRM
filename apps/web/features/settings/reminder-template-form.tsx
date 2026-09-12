@@ -38,12 +38,14 @@ export function ReminderTemplateForm({
   enabled,
   hoursBefore,
   channel,
+  pushEnabled,
   clinicName,
 }: {
   template: string | null;
   enabled: boolean;
   hoursBefore: number;
   channel: MessageChannel;
+  pushEnabled: boolean;
   clinicName: string;
 }) {
   const t = useTranslations('settings.reminders');
@@ -55,6 +57,7 @@ export function ReminderTemplateForm({
   const [on, setOn] = useState(enabled);
   const [hours, setHours] = useState(String(hoursBefore));
   const [via, setVia] = useState<MessageChannel>(channel);
+  const [push, setPush] = useState(pushEnabled);
   const [isPending, startTransition] = useTransition();
 
   // The built-in wording lives with the reminder itself, so the dialog that
@@ -74,6 +77,7 @@ export function ReminderTemplateForm({
         reminders_enabled: on,
         reminder_hours_before: hours,
         reminder_channel: via,
+        reminder_push_enabled: push,
       });
       if (!result.ok) {
         toast({ tone: 'danger', title: tc('errorGeneric') });
@@ -119,6 +123,13 @@ export function ReminderTemplateForm({
             </Select>
           </Field>
         </FieldGrid>
+
+        {/* The phone comes first when it can: a patient with the app gets a
+            notification and no message on the channel above. */}
+        <div className="space-y-1">
+          <Toggle checked={push} onChange={setPush} label={t('pushEnabled')} showLabel disabled={!on} />
+          <p className="text-xs text-ink-500">{t('pushHint')}</p>
+        </div>
 
         <Field label={t('template')} htmlFor="reminder_template" hint={t('placeholders')}>
           <Textarea

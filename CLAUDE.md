@@ -454,6 +454,19 @@
   ואז `portal_password_login_allowed()` — אמת רק כשהקליניקה `is_synthetic`, אחרת signOut והודעה. שני המסלולים מוגבלים
   בקצב דרך `@clinic/db/rate-limit` (הועבר מ-`apps/web/lib/rate-limit.ts`, שנשאר re-export)
 
+- **התראות בטלפון (migration 41):** `device_push_tokens` (טלפון = שורה של הבעלים; נכתבת רק ב-`register_push_device`,
+  שקושר את השורה למי שקרא ולקליניקה שלו; `unregister_push_device` ביציאה). `message_log.channel` קיבל `'push'` —
+  ה-`recipient` הוא user id (לא מספר) ו-`link_url` הוא היעד של הלחיצה; `clinic_tasks.remind_via` קיבל `'push'`;
+  `clinics.reminder_push_enabled`. **ההחלטה ב-SQL:** `enqueue_due_reminders` שולח push כשלמטופל יש טלפון רשום
+  (`patient_portal_access.user_id` → `device_push_tokens` עם `app = 'portal'`) והקליניקה מסכימה, אחרת בערוץ
+  הקליניקה; הגוף הוא `render_push_reminder` — **בלי שם המטופל** (עובר דרך Google/Apple). `enqueue_due_task_alerts`
+  שולח push לטלפון של יוצר המשימה (`app = 'clinic'`), ובלי טלפון — `skipped` עם `no_device`. השולח
+  (`supabase/functions/dispatch-messages`, adapter `fcm`: FCM HTTP v1, JWT ב-WebCrypto, ה-secret
+  `FCM_SERVICE_ACCOUNT_JSON`) מוחק טוקן שהשירות לא מכיר, וכך הריצה השעתית הבאה נופלת לערוץ הרגיל בלי מנגנון נוסף.
+  `mark_message_sent` מקבל גם את ה-service role — בלי זה כל שליחה אוטומטית הייתה נשארת `queued` ויוצאת שוב.
+  במסך ההודעות שורת push מוצגת עם פעמון ובלי נמען; בדיאלוג המשימה "התראה בטלפון" זמינה רק כשיש טלפון רשום
+  (שאילתה מהדפדפן, RLS של הבעלים). `tenant_isolation.sql` בודק שטלפון של קליניקה אחרת לא נראה
+
 ## לפני commit
 
 ```
