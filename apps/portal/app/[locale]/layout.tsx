@@ -6,6 +6,8 @@ import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server
 import { getDirection, isLocale, locales } from '@clinic/i18n';
 import type { Viewport } from 'next';
 import { ConfirmProvider, ToastProvider, UiDirectionProvider, UiLabelsProvider } from '@clinic/ui';
+import { shellInitScript } from '@clinic/domain/shell';
+import { NativeShellBridge } from '@clinic/native';
 import '../globals.css';
 
 /* The same font as the staff app, declared separately because these are two
@@ -60,6 +62,12 @@ export default async function PortalLocaleLayout({
   return (
     <html lang={locale} dir={dir} className={assistant.variable} suppressHydrationWarning>
       <body className="min-h-dvh text-base antialiased" suppressHydrationWarning>
+        {/* Marks the document when the page is inside the store app, before
+            anything paints, so the status bar has its room in the first
+            frame. Raw markup for the reason the staff app's theme script is:
+            a script React renders runs after the paint it should precede. */}
+        <div suppressHydrationWarning dangerouslySetInnerHTML={{ __html: `<script>${shellInitScript}</script>` }} />
+        <NativeShellBridge />
         <NextIntlClientProvider messages={messages}>
           <UiDirectionProvider dir={dir}>
             {/* Same providers as the staff app, for parity: a portal screen that

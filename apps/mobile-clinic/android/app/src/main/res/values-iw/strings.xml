@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">הרבליסט</string>
+    <string name="title_activity_main">הרבליסט</string>
+    <string name="package_name">il.co.herbalist.clinic</string>
+    <string name="custom_url_scheme">il.co.herbalist.clinic</string>
+</resources>

@@ -18,7 +18,7 @@ export function PrintButton() {
   const t = useTranslations('confirmations.document');
 
   return (
-    <div className="no-print flex justify-end">
+    <div className="no-print flex justify-end" data-native-download>
       <Button type="button" variant="secondary" size="sm" onClick={() => window.print()}>
         <Printer className="h-4 w-4" />
         {t('print')}

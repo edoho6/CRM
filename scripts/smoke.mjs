@@ -20,7 +20,7 @@
  * The browser is the Edge already installed on Windows (`channel: 'msedge'`);
  * set PW_CHANNEL=chromium after `npx playwright install chromium` to use that.
  *
- * Usage:  node scripts/smoke.mjs [--public-only] [--desktop-only] [--he-only] [--write] [--zoom] [--dark]
+ * Usage:  node scripts/smoke.mjs [--public-only] [--desktop-only] [--he-only] [--write] [--zoom] [--dark] [--shell]
  * --write adds flows that save, then remove, a patient edit, a task and an
  * appointment — the paths a screenshot cannot judge. Sandbox clinic only.
  * Output: test-results/smoke/<timestamp>/{report.json, summary.md, screenshots/}
@@ -38,6 +38,13 @@ const desktopOnly = args.has('--desktop-only');
 const heOnly = args.has('--he-only');
 /** --write also runs the flows that create and delete rows (sandbox clinic only). */
 const writeFlows = args.has('--write');
+/**
+ * --shell adds the store app's visits: the same screens opened with the user
+ * agent the iOS shell appends, on a phone — the front door must be the
+ * sign-in form, the document must carry the shell mark before paint, the
+ * install hint must not show, and downloads must step aside.
+ */
+const shellVisits = args.has('--shell');
 /** --only=/reports,/patients limits the walk to routes containing one of these. */
 const only = [...args].find((arg) => arg.startsWith('--only='))?.slice(7).split(',').filter(Boolean) ?? null;
 
@@ -53,6 +60,10 @@ const widths = desktopOnly ? [{ name: '1280', width: 1280, height: 900 }] : [
   { name: '1280', width: 1280, height: 900 },
   { name: '390', width: 390, height: 844 },
 ];
+
+/** What the iOS shell of each app sends, on an iPhone (see packages/domain/src/shell.ts). */
+const shellUserAgent = (app) =>
+  `Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 HerbalistShell/1.0.0 (${app}; ios)`;
 
 /** Text that only the error surfaces render. */
 const ERROR_TEXTS = ['אירעה שגיאה', 'משהו השתבש', 'Something went wrong', 'Page not found', 'הדף לא נמצא'];
@@ -409,8 +420,8 @@ async function collectIds(context, route, pattern, limit = 2) {
   return ids;
 }
 
-async function login(browser) {
-  const context = await browser.newContext({ locale: 'he-IL', timezoneId: 'Asia/Jerusalem' });
+async function login(browser, contextOptions = {}) {
+  const context = await browser.newContext({ locale: 'he-IL', timezoneId: 'Asia/Jerusalem', ...contextOptions });
   const page = await context.newPage();
   await page.goto(`${baseUrl}/he/login`, { waitUntil: 'networkidle' });
   await page.fill('#email', email);
@@ -437,6 +448,43 @@ async function login(browser) {
 const sandbox = { bookingSlug: null };
 
 const flows = {
+  /** The store app's front door: signed out, `/` is the sign-in form, not the brochure. */
+  async shellFrontDoor(page) {
+    const url = page.url();
+    const shell = await page.evaluate(() => document.documentElement.dataset.shell ?? null);
+    return { ok: url.includes('/login') && !url.includes('/about') && shell === 'ios', detail: `${url} shell=${shell}` };
+  },
+  /** Inside the shell: the document is marked before paint, the hint never shows, the bar has its rule. */
+  async shellChrome(page) {
+    // The hint, were it coming, would be here by now.
+    await page.waitForTimeout(2200);
+    const state = await page.evaluate(() => ({
+      shell: document.documentElement.dataset.shell ?? null,
+      hint: document.querySelector('[data-install-hint]') !== null,
+      rule: [...document.styleSheets].some((sheet) => {
+        try {
+          return [...sheet.cssRules].some((rule) => rule.selectorText?.includes('html[data-shell] [data-top-bar]'));
+        } catch {
+          return false;
+        }
+      }),
+    }));
+    return { ok: state.shell === 'ios' && !state.hint && state.rule, detail: JSON.stringify(state) };
+  },
+  /** Downloads and printing step aside in the shell, and the note says where they are. */
+  async shellDownloads(page) {
+    const state = await page.evaluate(() => {
+      const downloads = [...document.querySelectorAll('[data-native-download]')].map((el) => getComputedStyle(el).display);
+      const notes = [...document.querySelectorAll('[data-native-note]')].map((el) => getComputedStyle(el).display);
+      return {
+        downloads: downloads.length,
+        allHidden: downloads.every((display) => display === 'none'),
+        notes: notes.length,
+        notesShown: notes.every((display) => display !== 'none'),
+      };
+    });
+    return { ok: state.downloads > 0 && state.allHidden && state.notes > 0 && state.notesShown, detail: JSON.stringify(state) };
+  },
   async quickCreate(page) {
     const trigger = page.locator('button[aria-label="יצירה מהירה"], button[aria-label="Quick create"]').first();
     await trigger.click();
@@ -1298,6 +1346,26 @@ async function main() {
       }
     } else {
       console.log(`portal not running at ${portalUrl} — its login page was not opened`);
+    }
+
+    if (shellVisits) {
+      // The store app: the same site, told apart by its user agent, on a phone.
+      const shellPhone = widths.find((width) => width.name === '390') ?? widths[0];
+      const stranger = await browser.newContext({ locale: 'he-IL', userAgent: shellUserAgent('clinic') });
+      await visit(stranger, { route: '/', locale: 'he', width: shellPhone, label: 'shell front door', after: flows.shellFrontDoor });
+      await stranger.close();
+      const shellContext = await login(browser, { userAgent: shellUserAgent('clinic') });
+      await visit(shellContext, { route: '/', locale: 'he', width: shellPhone, label: 'shell dashboard', after: flows.shellChrome });
+      const shellPatients = await collectIds(shellContext, '/patients', '/patients/([0-9a-f-]{36})$', 1);
+      if (shellPatients[0]) {
+        await visit(shellContext, { route: `/patients/${shellPatients[0]}?tab=consent`, locale: 'he', width: shellPhone, label: 'shell downloads', after: flows.shellDownloads });
+      }
+      await shellContext.close();
+      if (portalUp) {
+        const portalStranger = await browser.newContext({ locale: 'he-IL', userAgent: shellUserAgent('portal') });
+        await visit(portalStranger, { route: '/login', locale: 'he', width: shellPhone, label: 'shell portal login', origin: portalUrl, after: flows.shellChrome });
+        await portalStranger.close();
+      }
     }
     // Search engines: the app lets them index the booking page and nothing
     // else, the confirmation page says noindex itself, the portal allows nothing.

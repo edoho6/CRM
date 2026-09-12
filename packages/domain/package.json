@@ -9,7 +9,8 @@
     ".": "./src/index.ts",
     "./widgets": "./src/widgets.ts",
     "./ics": "./src/ics.ts",
-    "./forms/steps": "./src/forms/steps.ts"
+    "./forms/steps": "./src/forms/steps.ts",
+    "./shell": "./src/shell.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

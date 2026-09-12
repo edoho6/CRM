@@ -1,3 +1,4 @@
+import { shellInitScript } from '@clinic/domain/shell';
 import { KPI_MODES, PREF_KEYS, TABLE_SIZES } from './prefs';
 
 /**
@@ -46,4 +47,4 @@ try{var t=localStorage.getItem('${PREF_KEYS.tableSize}');if(${JSON.stringify(TAB
 try{var p=localStorage.getItem('${PREF_KEYS.kpiMode}');if(${JSON.stringify(KPI_MODES)}.indexOf(p)>=0)d.kpiMode=p;}catch(e){}
 try{if(localStorage.getItem('${PREF_KEYS.gettingStartedHidden}')==='1')d.gettingStarted='hidden';}catch(e){}
 try{var o=sessionStorage.getItem('${PREF_KEYS.openFiles}');if(o&&o!=='[]')d.openFiles='1';}catch(e){}
-})();`;
+})();${shellInitScript}`;

@@ -1,0 +1,2 @@
+# The lanes live in one place for both shells; this file only says where.
+import "../../../scripts/fastlane/Fastfile"

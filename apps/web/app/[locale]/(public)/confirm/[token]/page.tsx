@@ -111,7 +111,7 @@ export default async function ConfirmPage({
           {!cancelled ? (
             <div className="grid grid-cols-2 gap-2">
               <Button asChild variant="secondary">
-                <a href={`/api/confirm/${token}/ics`}>
+                <a href={`/api/confirm/${token}/ics`} data-native-download>
                   <CalendarPlus className="h-4 w-4" aria-hidden />
                   {t('addToCalendar')}
                 </a>

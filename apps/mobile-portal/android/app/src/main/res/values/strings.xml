@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Herbalist Patients</string>
+    <string name="title_activity_main">Herbalist Patients</string>
+    <string name="package_name">il.co.herbalist.portal</string>
+    <string name="custom_url_scheme">il.co.herbalist.portal</string>
+</resources>

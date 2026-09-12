@@ -66,7 +66,7 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   // Workspace packages ship TypeScript source rather than a build artefact, so Next
   // compiles them itself. That keeps `pnpm dev` a single step with no watch-build.
-  transpilePackages: ['@clinic/ui', '@clinic/i18n', '@clinic/db', '@clinic/domain'],
+  transpilePackages: ['@clinic/ui', '@clinic/i18n', '@clinic/db', '@clinic/domain', '@clinic/native'],
   // Server headers are not part of the page, so they cannot leak the framework
   // version to anyone probing.
   poweredByHeader: false,

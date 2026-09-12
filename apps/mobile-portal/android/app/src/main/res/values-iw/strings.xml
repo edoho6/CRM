@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">הרבליסט מטופלים</string>
+    <string name="title_activity_main">הרבליסט מטופלים</string>
+    <string name="package_name">il.co.herbalist.portal</string>
+    <string name="custom_url_scheme">il.co.herbalist.portal</string>
+</resources>

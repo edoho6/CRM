@@ -6,6 +6,7 @@ import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server
 import { getDirection, isLocale, locales } from '@clinic/i18n';
 import type { Viewport } from 'next';
 import { ConfirmProvider, ToastProvider, UiDirectionProvider, UiLabelsProvider } from '@clinic/ui';
+import { NativeShellBridge } from '@clinic/native';
 import { THEME_COLORS, themeInitScript } from '@/lib/theme';
 import '../globals.css';
 
@@ -133,6 +134,9 @@ export default async function LocaleLayout({
           suppressHydrationWarning
           dangerouslySetInnerHTML={{ __html: `<script>${themeInitScript}</script>` }}
         />
+        {/* Inside the store app only — the status bar, the back button, the
+            splash. In a browser it renders nothing and loads nothing. */}
+        <NativeShellBridge />
         <NextIntlClientProvider messages={messages}>
           <UiDirectionProvider dir={dir}>
             {/* Toasts and the confirm dialog live at the root so any screen can

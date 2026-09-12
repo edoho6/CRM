@@ -1,0 +1,2 @@
+app_identifier("il.co.herbalist.clinic")
+team_id(ENV["APPLE_TEAM_ID"])

@@ -1,0 +1,91 @@
+name: Store apps · iOS
+
+# Builds the iOS shells on a macOS runner and uploads them to TestFlight.
+# This is the Mac: certificates, signing, the archive and the upload all
+# happen here through fastlane (scripts/fastlane/Fastfile). Only on demand
+# or on a `mobile-v*` tag — macOS minutes cost ten times Linux ones.
+#
+# Before the first run: the App IDs, the API key, the `match` repository and
+# the secrets named in MOBILE.md. The first run is started with "create
+# certificates" on, once; after that the certificates only get read.
+on:
+  workflow_dispatch:
+    inputs:
+      app:
+        description: Which shell
+        default: both
+        type: choice
+        options: [both, clinic, portal]
+      create_certificates:
+        description: First run only — let match create the certificates
+        default: false
+        type: boolean
+  push:
+    tags: ['mobile-v*']
+
+jobs:
+  ios:
+    name: ${{ matrix.app }}
+    runs-on: macos-15
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        app: ${{ fromJSON(inputs.app == 'clinic' && '["clinic"]' || inputs.app == 'portal' && '["portal"]' || '["clinic","portal"]') }}
+        include:
+          - app: clinic
+            key: CLINIC
+          - app: portal
+            key: PORTAL
+
+    env:
+      HERBALIST_APP_URL: ${{ vars.HERBALIST_APP_URL }}
+      HERBALIST_PORTAL_URL: ${{ vars.HERBALIST_PORTAL_URL }}
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 9.15.4
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Firebase configuration, if any
+        env:
+          FILE: ${{ secrets[format('FIREBASE_IOS_{0}_PLIST', matrix.key)] }}
+        if: env.FILE != ''
+        run: printf '%s' "$FILE" > "apps/mobile-${{ matrix.app }}/ios/App/App/GoogleService-Info.plist"
+
+      - name: Sync the shell
+        run: pnpm --filter "@clinic/mobile-${{ matrix.app }}" sync:ios
+
+      - name: Build and upload to TestFlight
+        working-directory: apps/mobile-${{ matrix.app }}
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8_B64: ${{ secrets.ASC_KEY_P8_B64 }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
+          MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          MATCH_READONLY: ${{ inputs.create_certificates && 'false' || 'true' }}
+          BUILD_NUMBER: ${{ github.run_number }}
+          FASTLANE_SKIP_UPDATE_CHECK: 1
+          FASTLANE_HIDE_CHANGELOG: 1
+        run: |
+          export SHELL_VERSION=$(node -p "require('./package.json').version")
+          fastlane ios beta
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ${{ matrix.app }}-ios-${{ github.run_number }}
+          path: apps/mobile-${{ matrix.app }}/ios/App/build/App.ipa
+          if-no-files-found: ignore

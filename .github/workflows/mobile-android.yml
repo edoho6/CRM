@@ -1,0 +1,118 @@
+name: Store apps · Android
+
+# Builds the Android shells (apps/mobile-clinic, apps/mobile-portal) as signed
+# release bundles and, when asked, uploads them to Google Play's internal
+# track. Only on demand or on a `mobile-v*` tag: the shells change rarely —
+# the site inside them updates on its own with every deploy — and a run that
+# nobody asked for is minutes spent for nothing.
+#
+# The first upload of each app is done by hand in the Play Console (the
+# upload here fails until the app exists there); every later one goes through.
+on:
+  workflow_dispatch:
+    inputs:
+      app:
+        description: Which shell
+        default: both
+        type: choice
+        options: [both, clinic, portal]
+      upload:
+        description: Upload to Google Play (internal track)
+        default: true
+        type: boolean
+  push:
+    tags: ['mobile-v*']
+
+jobs:
+  android:
+    name: ${{ matrix.app }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        app: ${{ fromJSON(inputs.app == 'clinic' && '["clinic"]' || inputs.app == 'portal' && '["portal"]' || '["clinic","portal"]') }}
+        include:
+          - app: clinic
+            key: CLINIC
+            package: il.co.herbalist.clinic
+          - app: portal
+            key: PORTAL
+            package: il.co.herbalist.portal
+
+    env:
+      # The addresses the shells open. Repository variables, not secrets: they
+      # are public addresses, and a variable is readable in the log when a
+      # build opens the wrong site.
+      HERBALIST_APP_URL: ${{ vars.HERBALIST_APP_URL }}
+      HERBALIST_PORTAL_URL: ${{ vars.HERBALIST_PORTAL_URL }}
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 9.15.4
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: android-actions/setup-android@v3
+
+      - run: pnpm install --frozen-lockfile
+
+      # Firebase names the project the app talks to; the file is a secret
+      # per app, written only for the build (phase 2 — push notifications).
+      - name: Firebase configuration, if any
+        env:
+          FILE: ${{ secrets[format('FIREBASE_ANDROID_{0}_JSON', matrix.key)] }}
+        if: env.FILE != ''
+        run: printf '%s' "$FILE" > "apps/mobile-${{ matrix.app }}/android/app/google-services.json"
+
+      - name: Sync the shell
+        run: pnpm --filter "@clinic/mobile-${{ matrix.app }}" sync:android
+
+      - name: Signing key
+        env:
+          KEYSTORE_B64: ${{ secrets[format('ANDROID_KEYSTORE_{0}_B64', matrix.key)] }}
+        run: |
+          test -n "$KEYSTORE_B64" || { echo "ANDROID_KEYSTORE_${{ matrix.key }}_B64 is not set (see MOBILE.md)"; exit 1; }
+          printf '%s' "$KEYSTORE_B64" | base64 -d > "apps/mobile-${{ matrix.app }}/android/release.keystore"
+          chmod +x "apps/mobile-${{ matrix.app }}/android/gradlew"
+
+      - name: Build the release bundle
+        working-directory: apps/mobile-${{ matrix.app }}/android
+        env:
+          # Gradle reads ORG_GRADLE_PROJECT_* as project properties, so the
+          # passwords never appear on a command line.
+          ORG_GRADLE_PROJECT_RELEASE_STORE_FILE: ${{ github.workspace }}/apps/mobile-${{ matrix.app }}/android/release.keystore
+          ORG_GRADLE_PROJECT_RELEASE_STORE_PASSWORD: ${{ secrets[format('ANDROID_KEYSTORE_{0}_PASSWORD', matrix.key)] }}
+          ORG_GRADLE_PROJECT_RELEASE_KEY_ALIAS: ${{ secrets[format('ANDROID_KEY_{0}_ALIAS', matrix.key)] }}
+          ORG_GRADLE_PROJECT_RELEASE_KEY_PASSWORD: ${{ secrets[format('ANDROID_KEY_{0}_PASSWORD', matrix.key)] }}
+          ORG_GRADLE_PROJECT_versionCode: ${{ github.run_number }}
+        run: |
+          VERSION=$(node -p "require('../package.json').version")
+          ./gradlew bundleRelease -PversionName="$VERSION" --no-daemon
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.app }}-android-${{ github.run_number }}
+          path: apps/mobile-${{ matrix.app }}/android/app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+
+      - name: Upload to Google Play (internal track)
+        if: github.event_name == 'push' || inputs.upload
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: ${{ matrix.package }}
+          releaseFiles: apps/mobile-${{ matrix.app }}/android/app/build/outputs/bundle/release/app-release.aab
+          track: internal
+          status: completed

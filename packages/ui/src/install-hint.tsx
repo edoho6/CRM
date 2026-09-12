@@ -55,7 +55,10 @@ export function InstallHint({
       window.matchMedia('(display-mode: standalone)').matches ||
       (navigator as Navigator & { standalone?: boolean }).standalone === true;
     const phone = window.matchMedia('(max-width: 767px), (pointer: coarse)').matches;
-    if (dismissed || standalone || !phone) return;
+    // Inside the store app there is nothing to install: the pre-paint script
+    // marks the document, and the bridge's own global is the second witness.
+    const shell = Boolean(document.documentElement.dataset.shell) || 'Capacitor' in window;
+    if (dismissed || standalone || shell || !phone) return;
 
     const iOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
     if (iOS) setPlatform('ios');

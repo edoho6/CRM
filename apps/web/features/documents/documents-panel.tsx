@@ -192,6 +192,13 @@ export function DocumentsPanel({
 
       {listError ? <Alert tone="danger">{tc('errorGeneric')}</Alert> : null}
 
+      {/* Shown only inside the store app, where the download buttons are not. */}
+      {documents.length > 0 ? (
+        <p data-native-note className="hidden text-sm text-ink-600">
+          {tc('shell.documentsOnWebsite')}
+        </p>
+      ) : null}
+
       {documents.length === 0 ? (
         <EmptyState
           icon={<FileText className="h-8 w-8" />}
@@ -258,7 +265,12 @@ export function DocumentsPanel({
                     <Td>
                       <div className="flex items-center gap-1">
                         <Button variant="ghost" size="icon" asChild disabled={isRowPending}>
-                          <a href={`/api/documents/${document.id}`} title={t('download')} aria-label={t('download')}>
+                          <a
+                            href={`/api/documents/${document.id}`}
+                            title={t('download')}
+                            aria-label={t('download')}
+                            data-native-download
+                          >
                             <Download className="h-4 w-4" aria-hidden />
                           </a>
                         </Button>

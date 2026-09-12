@@ -76,3 +76,16 @@ botanical_migration_to_run.sql
 # Same reasoning: a one-off read-only diagnostic, not a schema change. It was
 # sent directly to the user rather than kept in the tree.
 0_status_check.sql
+
+# Store apps (apps/mobile-*): what sync or CI writes, and what must never be
+# committed — the signing keys, and the Firebase files that name the project.
+apps/mobile-*/www/config.js
+google-services.json
+GoogleService-Info.plist
+*.keystore
+*.jks
+keystore.properties
+apps/mobile-*/android/app/release/
+apps/mobile-*/ios/App/*.ipa
+apps/mobile-*/fastlane/report.xml
+apps/mobile-*/fastlane/README.md

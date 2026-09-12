@@ -1,0 +1,76 @@
+# The iOS lane both store apps share; each shell's fastlane/Fastfile imports
+# this one and its Appfile says which app it is. Runs on a GitHub macOS
+# runner (.github/workflows/mobile-ios.yml) — there is no Mac at the desk, so
+# everything a Mac would do is here: certificates, signing, the archive, the
+# upload to TestFlight.
+#
+# Secrets arrive as environment variables from the workflow and are never
+# written to the tree. `match` keeps the certificates in a private git repo,
+# encrypted with MATCH_PASSWORD; the first run (MATCH_READONLY=false) creates
+# them through the App Store Connect API key, and every later run only reads.
+
+default_platform(:ios)
+
+platform :ios do
+  desc "Build the shell and upload it to TestFlight"
+  lane :beta do
+    setup_ci
+
+    api_key = app_store_connect_api_key(
+      key_id: ENV.fetch("ASC_KEY_ID"),
+      issuer_id: ENV.fetch("ASC_ISSUER_ID"),
+      key_content: ENV.fetch("ASC_KEY_P8_B64"),
+      is_key_content_base64: true,
+      in_house: false
+    )
+
+    app_identifier = CredentialsManager::AppfileConfig.try_fetch_value(:app_identifier)
+
+    match(
+      type: "appstore",
+      app_identifier: app_identifier,
+      git_url: ENV.fetch("MATCH_GIT_URL"),
+      git_basic_authorization: ENV.fetch("MATCH_GIT_BASIC_AUTHORIZATION"),
+      readonly: ENV.fetch("MATCH_READONLY", "true") == "true",
+      api_key: api_key
+    )
+
+    profile_name = ENV.fetch("sigh_#{app_identifier}_appstore_profile-name")
+    update_code_signing_settings(
+      path: "ios/App/App.xcodeproj",
+      use_automatic_signing: false,
+      team_id: ENV.fetch("APPLE_TEAM_ID"),
+      code_sign_identity: "Apple Distribution",
+      profile_name: profile_name,
+      bundle_identifier: app_identifier,
+      targets: ["App"]
+    )
+
+    # The marketing version is the shell's package.json version; the build
+    # number climbs with every workflow run, so TestFlight never sees a repeat.
+    increment_version_number(
+      xcodeproj: "ios/App/App.xcodeproj",
+      version_number: ENV.fetch("SHELL_VERSION")
+    )
+    increment_build_number(
+      xcodeproj: "ios/App/App.xcodeproj",
+      build_number: ENV.fetch("BUILD_NUMBER")
+    )
+
+    build_app(
+      project: "ios/App/App.xcodeproj",
+      scheme: "App",
+      configuration: "Release",
+      export_method: "app-store",
+      output_directory: "ios/App/build",
+      output_name: "App.ipa",
+      xcargs: "-allowProvisioningUpdates"
+    )
+
+    upload_to_testflight(
+      api_key: api_key,
+      ipa: "ios/App/build/App.ipa",
+      skip_waiting_for_build_processing: true
+    )
+  end
+end

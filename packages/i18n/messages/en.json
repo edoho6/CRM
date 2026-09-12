@@ -171,6 +171,10 @@
     "editTaskOf": "Edit task \"{title}\""
   },
   "common": {
+    "shell": {
+      "exportOnWebsite": "The export is available on the website.",
+      "documentsOnWebsite": "Opening documents is available on the website."
+    },
     "opensInNewTab": "opens in a new tab",
     "dateInput": {
       "placeholder": "dd/mm/yyyy",

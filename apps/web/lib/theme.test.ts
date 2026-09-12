@@ -66,4 +66,20 @@ describe('the pre-paint script', () => {
     );
     expect(dataset).toEqual({ theme: 'light' });
   });
+
+  it('marks the store app from its user agent, before anything paints', () => {
+    const run = (userAgent: string) => {
+      const dataset: Record<string, string> = {};
+      new Function('document', 'localStorage', 'sessionStorage', 'window', 'navigator', themeInitScript)(
+        { documentElement: { dataset }, querySelector: () => null },
+        { getItem: () => null },
+        { getItem: () => null },
+        { matchMedia: () => ({ matches: false }) },
+        { userAgent },
+      );
+      return dataset;
+    };
+    expect(run('Mozilla/5.0 (iPhone) HerbalistShell/1.0.0 (clinic; ios)')).toEqual({ theme: 'light', shell: 'ios' });
+    expect(run('Mozilla/5.0 (iPhone) Safari/605.1.15')).toEqual({ theme: 'light' });
+  });
 });

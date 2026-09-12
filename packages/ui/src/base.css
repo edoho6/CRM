@@ -381,3 +381,40 @@ details[open]::details-content {
     content: none !important;
   }
 }
+
+
+/* ==========================================================================
+   The store apps.
+
+   Each is a native web view that loads this site edge to edge, so the
+   phone's status bar sits over the top of the page. The pre-paint script
+   marks `data-shell` on <html> from the shell's user agent
+   (packages/domain/src/shell.ts), and these rules make room for the bar:
+   the staff app's top bar grows by the inset and keeps its content where
+   it was, the sidebar likewise, and a page without a top bar — sign-in,
+   the portal — moves down as a whole. Outside a shell the attribute is
+   absent and none of this applies; in a browser the inset is zero anyway.
+   ========================================================================== */
+html[data-shell] [data-top-bar] {
+  padding-top: env(safe-area-inset-top);
+  /* 3.75rem is the bar's own `h-15` in app-shell.tsx; the two must agree. */
+  height: calc(3.75rem + env(safe-area-inset-top));
+}
+html[data-shell] [data-open-files-slot] {
+  top: calc(3.75rem + env(safe-area-inset-top));
+}
+html[data-shell] [data-sidebar-panel] {
+  padding-top: env(safe-area-inset-top);
+}
+html[data-shell] body:not(:has([data-top-bar])) {
+  padding-top: env(safe-area-inset-top);
+}
+/* A file that downloads, a calendar file, a print button: a web view has
+   nowhere to put them yet. The control steps aside and, where a note is
+   marked beside it, the note says the thing is on the website. */
+html[data-shell] [data-native-download] {
+  display: none !important;
+}
+html[data-shell] [data-native-note] {
+  display: revert;
+}

@@ -1,0 +1,4 @@
+/* The words iOS shows on the app's behalf, in English. */
+"CFBundleDisplayName" = "Herbalist";
+"NSCameraUsageDescription" = "To photograph the tongue for a treatment record.";
+"NSPhotoLibraryUsageDescription" = "To attach a photo or a document to a patient's file.";

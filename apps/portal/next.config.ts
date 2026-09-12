@@ -47,7 +47,7 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  transpilePackages: ['@clinic/ui', '@clinic/i18n', '@clinic/db', '@clinic/domain'],
+  transpilePackages: ['@clinic/ui', '@clinic/i18n', '@clinic/db', '@clinic/domain', '@clinic/native'],
   poweredByHeader: false,
   async headers() {
     return [{ source: '/:path*', headers: securityHeaders }];

@@ -1,0 +1,4 @@
+/* The words iOS shows on the app's behalf, in Hebrew. */
+"CFBundleDisplayName" = "הרבליסט";
+"NSCameraUsageDescription" = "לצילום הלשון לרשומת הטיפול.";
+"NSPhotoLibraryUsageDescription" = "לצירוף תמונה או מסמך לתיק המטופל.";

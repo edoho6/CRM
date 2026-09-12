@@ -160,7 +160,7 @@ export default async function PortalHomePage({
                 </div>
               </div>
               <Button asChild variant="secondary" size="lg" className="w-full">
-                <a href={`/api/appointments/${next.id}/ics`}>
+                <a href={`/api/appointments/${next.id}/ics`} data-native-download>
                   <CalendarPlus className="h-5 w-5" aria-hidden />
                   {t('addToCalendar')}
                 </a>

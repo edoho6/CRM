@@ -171,6 +171,10 @@
     "editTaskOf": "עריכת המשימה \"{title}\""
   },
   "common": {
+    "shell": {
+      "exportOnWebsite": "הייצוא זמין באתר.",
+      "documentsOnWebsite": "פתיחת מסמכים זמינה באתר."
+    },
     "opensInNewTab": "נפתח בחלון חדש",
     "dateInput": {
       "placeholder": "dd/mm/yyyy",

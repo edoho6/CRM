@@ -268,11 +268,15 @@ export function ConsentPanel({
           <Button asChild variant="secondary" size="sm" className="mt-3">
             {/* A plain link, not a fetch: the browser handles the download and
                 the file never passes through this component. */}
-            <a href={`/api/patients/${patientId}/export`} download>
+            <a href={`/api/patients/${patientId}/export`} download data-native-download>
               <Download className="h-4 w-4" />
               {t('exportButton', { name: patientName })}
             </a>
           </Button>
+          {/* Shown only inside the store app, where the button above is not. */}
+          <p data-native-note className="mt-3 hidden text-sm text-ink-600">
+            {tc('shell.exportOnWebsite')}
+          </p>
         </CardBody>
       </Card>
     </div>

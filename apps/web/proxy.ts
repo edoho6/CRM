@@ -2,6 +2,7 @@ import createIntlMiddleware from 'next-intl/middleware';
 import { NextResponse, type NextRequest } from 'next/server';
 import { routing } from '@clinic/i18n/routing';
 import { refreshSession } from '@clinic/db/middleware';
+import { parseShellUserAgent } from '@clinic/domain/shell';
 
 const intlMiddleware = createIntlMiddleware(routing);
 
@@ -24,9 +25,11 @@ export default async function proxy(request: NextRequest) {
 
   // Someone who types the address and is not signed in sees what this is,
   // not a sign-in form. Only the front door: a deep link still goes to
-  // sign-in and back to where it pointed, as before.
+  // sign-in and back to where it pointed, as before. The store app is the
+  // exception: whoever opens it has already chosen the app, and the page
+  // that sells it would be a strange first screen — it opens on sign-in.
   const root = request.nextUrl.pathname.match(ROOT);
-  if (!userId && root) {
+  if (!userId && root && !parseShellUserAgent(request.headers.get('user-agent'))) {
     const locale = root[1] ?? routing.defaultLocale;
     const redirect = NextResponse.redirect(new URL(`/${locale}/about`, request.url));
     for (const cookie of response.cookies.getAll()) redirect.cookies.set(cookie);

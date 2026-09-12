@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <title>הרבליסט</title>
+    <!-- The shell opens the live site (server.url in capacitor.config.ts);
+         this page is only what the web view holds before that, and it hands
+         over the moment the address is known. Kept as plain as it looks: no
+         build step touches it. -->
+    <style>
+      html { font: 16px/1.5 -apple-system, 'Segoe UI', system-ui, 'Noto Sans Hebrew', Arial, sans-serif; background: #f7f8f8; color: #23272a; }
+      @media (prefers-color-scheme: dark) { html { background: #14181a; color: #f1f4f5; } }
+      body { margin: 0; min-height: 100dvh; display: grid; place-items: center; padding: env(safe-area-inset-top) 1.5rem env(safe-area-inset-bottom); box-sizing: border-box; }
+      main { text-align: center; max-width: 22rem; }
+      .mark { width: 4rem; height: 4rem; border-radius: 1.25rem; background: #16a25c; display: inline-grid; place-items: center; margin-bottom: 1rem; }
+      p { margin: 0.25rem 0; color: inherit; opacity: 0.8; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <span class="mark" aria-hidden="true">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg>
+      </span>
+      <p lang="he">רק רגע…</p>
+      <p lang="en" dir="ltr">One moment…</p>
+    </main>
+    <script src="config.js"></script>
+    <script>
+      // The address is written at sync time (scripts/mobile-prepare.mjs).
+      if (window.HERBALIST_SITE) location.replace(window.HERBALIST_SITE + '/');
+    </script>
+  </body>
+</html>
