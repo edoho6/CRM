@@ -122,13 +122,13 @@ node scripts/medicine/import.mjs              # 8 · טעינה למסד (אדמ
 הפונקציה `med_import` (migration `20260912150000_medicine_reference.sql`, עותק להרצה
 `34_medicine_to_run.sql` בשורש) מקבלת את הערכים והקישורים, מעדכנת לפי QID, ושומרת על
 `verified` של ערך שאדם כבר אישר. רק אדמין הפלטפורמה רשאי לקרוא לה, ולכן הייבוא מתחבר
-בפרטי האדמין — **ממשתני סביבה של הפקודה, לא מקובץ ולא מהצ׳אט**:
+בפרטי האדמין — **הפקודה שואלת אותם בטרמינל (הסיסמה מוסתרת), לא מקובץ, לא משורת הפקודה ולא מהצ׳אט**:
 
 ```
-MED_IMPORT_EMAIL=... MED_IMPORT_PASSWORD=... node scripts/medicine/import.mjs
+node scripts/medicine/import.mjs
 ```
 
-ב-PowerShell: `$env:MED_IMPORT_EMAIL='...'; $env:MED_IMPORT_PASSWORD='...'; node scripts/medicine/import.mjs`.
+לריצה בלי אדם (CI): `MED_IMPORT_EMAIL` ו-`MED_IMPORT_PASSWORD` בסביבה עונים על השאלות.
 `--sandbox` מתחבר במקום זה בפרטי קליניקת הבדיקות (`.env.test.local`) — עובד רק אם החשבון
 הזה הוא אדמין פלטפורמה, וזה בדיוק מה שבדיקת הבידוד מוודאת שחבר רגיל **לא** יכול.
 

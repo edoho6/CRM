@@ -427,7 +427,8 @@
   לדף ולחלון (`loadReferenceCard` kind `'medicine'`, chip בקו כחול מ-`reference-context.tsx`), אייקון לפי סוג
   (`Activity`/`Thermometer`/`Pill`), גוון `sky` במקום ירקן. תוכן NHS מחייב לוגו + קישור בכל דף (`NhsAttribution`;
   הלוגו הרשמי ב-`public/medicine/nhs-logo.svg`, לא מצויר מחדש) ורענון כל 7 ימים. הצנרת והפקודות ב-
-  `scripts/medicine/README.md`; הייבוא מתחבר בפרטי האדמין ממשתני סביבה של הפקודה בלבד.
+  `scripts/medicine/README.md`; הייבוא (`import.mjs`) שואל את פרטי האדמין בטרמינל (הסיסמה מוסתרת, `lib/prompt.mjs`)
+  או לוקח אותם ממשתני סביבה — לעולם לא משורת הפקודה, כי PowerShell שומר אותה בקובץ היסטוריה.
   **הקורפוס המלא** (`wikidata.mjs --all`): מקורות הטקסט הם MedlinePlus, MedlinePlus Genetics (נחלת הכלל, מחלות
   נדירות; `genetics.mjs`), FDA ו-NHS — ערך בלי אף אחד מהם **לא נכנס** (נרשם בדוח, `--keep-thin` משאיר); פרקי
   ICD-10 V–Z יוצאים, פרק R הופך לתסמין, ATC V/Q יוצאים. **בדיקה כפולה:** זהות = קוד משותף לשני מקורות

@@ -3,16 +3,19 @@
 // this script holds none either: it signs in as a person who is on the
 // platform list, and the database checks that on every call.
 //
-//   MED_IMPORT_EMAIL=… MED_IMPORT_PASSWORD=… node scripts/medicine/import.mjs
+//   node scripts/medicine/import.mjs
 //
-// The address and password come from the environment of this one command,
-// never from a file in the tree and never from a chat. `--sandbox` uses the
-// smoke account from apps/web/.env.test.local instead, which only works if
-// that account is a platform admin. Entries go first, twenty-five at a time;
-// the links follow once every entry they point at exists.
+// The script asks for the address and the password at the terminal (the
+// password unseen), so they are never on a command line, never in a file in
+// the tree and never in a chat; MED_IMPORT_EMAIL / MED_IMPORT_PASSWORD in
+// the environment answer the questions for an unattended run. `--sandbox`
+// uses the smoke account from apps/web/.env.test.local instead, which only
+// works if that account is a platform admin. Entries go first, twenty-five
+// at a time; the links follow once every entry they point at exists.
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { args, datasetFile, env, log, readGzipJson, root } from './lib.mjs';
+import { ask } from './lib/prompt.mjs';
 
 const { createClient } = createRequire(path.join(root, 'apps', 'web', 'package.json'))('@supabase/supabase-js');
 
@@ -20,14 +23,15 @@ async function main() {
   const options = args();
   const url = env('NEXT_PUBLIC_SUPABASE_URL');
   const anonKey = env('NEXT_PUBLIC_SUPABASE_ANON_KEY');
-  const email = options.sandbox ? env('SMOKE_EMAIL') : process.env.MED_IMPORT_EMAIL;
-  const password = options.sandbox ? env('SMOKE_PASSWORD') : process.env.MED_IMPORT_PASSWORD;
   if (!url || !anonKey) throw new Error('NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY are not set (apps/web/.env.local)');
-  if (!email || !password) throw new Error('set MED_IMPORT_EMAIL and MED_IMPORT_PASSWORD for this command (a platform admin), or pass --sandbox');
 
   const dataset = readGzipJson(datasetFile);
   if (!dataset) throw new Error(`no dataset at ${datasetFile} — run build.mjs first`);
   log(`import: ${dataset.entries.length} entries, ${dataset.links.length} links (built ${dataset.generated_at})`);
+
+  const email = options.sandbox ? env('SMOKE_EMAIL') : process.env.MED_IMPORT_EMAIL || (await ask('Platform admin email: '));
+  const password = options.sandbox ? env('SMOKE_PASSWORD') : process.env.MED_IMPORT_PASSWORD || (await ask('Password (not shown): ', { hidden: true }));
+  if (!email || !password) throw new Error(options.sandbox ? 'SMOKE_EMAIL / SMOKE_PASSWORD are not set (apps/web/.env.test.local)' : 'an email and a password are needed (a platform admin)');
 
   const supabase = createClient(url, anonKey, { auth: { persistSession: false } });
   const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
