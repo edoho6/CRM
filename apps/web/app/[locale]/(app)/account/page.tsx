@@ -8,6 +8,7 @@ import {
   MapPin,
   Palette,
   ShieldCheck,
+  Trash2,
 } from 'lucide-react';
 import { Collapsible, PageBody } from '@clinic/ui';
 import { Link } from '@clinic/i18n/navigation';
@@ -28,6 +29,7 @@ import { PractitionerForm } from '@/features/settings/practitioner-form';
 import { LocationsManager } from '@/features/settings/locations-manager';
 import { RoomsManager } from '@/features/settings/rooms-manager';
 import { TwoFactorSettings } from '@/features/settings/two-factor-settings';
+import { DeleteAccountPanel } from '@/features/settings/delete-account';
 import { verifiedTotpFactor } from '@/lib/second-factor';
 import { pageTitle } from '@/lib/page-title';
 
@@ -233,6 +235,17 @@ export default async function AccountPage({ params }: { params: Promise<{ locale
           >
             {t('toSettings')}
           </Link>
+        </Collapsible>
+
+        {/* Last, and closed: the one thing nobody comes here for, with what it
+            means said in full before any button (the stores require it from
+            inside the app; migration 40 does it). */}
+        <Collapsible
+          title={t('deletion.title')}
+          description={t('deletion.subtitle')}
+          icon={<Trash2 className="h-4 w-4" aria-hidden />}
+        >
+          <DeleteAccountPanel clinicName={scope.context.clinic.name} />
         </Collapsible>
       </PageBody>
     </>

@@ -1,7 +1,7 @@
 import { redirect } from '@clinic/i18n/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { isSupabaseConfigured } from '@clinic/db';
-import { Card, CardBody } from '@clinic/ui';
+import { Alert, Card, CardBody } from '@clinic/ui';
 import type { Locale } from '@clinic/domain';
 import { Leaf } from 'lucide-react';
 import { LanguageSwitcher } from '@/components/language-switcher';
@@ -19,10 +19,10 @@ export default async function LoginPage({
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ join?: string }>;
+  searchParams: Promise<{ join?: string; deleted?: string }>;
 }) {
   const { locale } = await params;
-  const { join } = await searchParams;
+  const { join, deleted } = await searchParams;
   setRequestLocale(locale);
 
   if (!isSupabaseConfigured()) {
@@ -55,6 +55,12 @@ export default async function LoginPage({
             </Link>
           </div>
         </div>
+
+        {deleted ? (
+          <Alert tone="success">
+            {t('deletedNotice')}
+          </Alert>
+        ) : null}
 
         <Card>
           <CardBody className="space-y-4">

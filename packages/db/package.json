@@ -10,7 +10,8 @@
     "./server": "./src/client-server.ts",
     "./browser": "./src/client-browser.ts",
     "./middleware": "./src/client-middleware.ts",
-    "./types": "./src/types.ts"
+    "./types": "./src/types.ts",
+    "./rate-limit": "./src/rate-limit.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

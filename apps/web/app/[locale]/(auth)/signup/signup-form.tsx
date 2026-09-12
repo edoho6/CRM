@@ -89,7 +89,20 @@ export function SignupForm({
         />
       </Field>
 
-      <p className="text-xs text-ink-500">{t('terms')}</p>
+      <p className="text-xs text-ink-500">
+        {t.rich('terms', {
+          terms: (chunks) => (
+            <Link href="/terms" className="underline underline-offset-2 hover:text-ink-900">
+              {chunks}
+            </Link>
+          ),
+          privacy: (chunks) => (
+            <Link href="/privacy" className="underline underline-offset-2 hover:text-ink-900">
+              {chunks}
+            </Link>
+          ),
+        })}
+      </p>
 
       <Button type="submit" size="lg" className="w-full" disabled={isPending}>
         {isPending ? <Spinner /> : null}

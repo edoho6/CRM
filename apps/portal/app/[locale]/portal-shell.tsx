@@ -1,6 +1,7 @@
 import { getTranslations } from 'next-intl/server';
-import { LogOut } from 'lucide-react';
+import { LogOut, UserRound } from 'lucide-react';
 import { InstallHint, Button } from '@clinic/ui';
+import { Link } from '@clinic/i18n/navigation';
 import { LanguageSwitcher } from './language-switcher';
 import { PortalNav } from './portal-nav';
 import { portalSignOut } from './login/actions';
@@ -20,13 +21,14 @@ export async function PortalShell({
   title,
   children,
 }: {
-  current: 'home' | 'forms' | 'consent';
+  current: 'home' | 'forms' | 'consent' | 'account';
   title?: React.ReactNode;
   children: React.ReactNode;
 }) {
   const t = await getTranslations('portal');
   const tNav = await getTranslations('nav');
   const tInstall = await getTranslations('common.install');
+  const tLegal = await getTranslations('legal');
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-2xl flex-col px-4 pt-5 pb-[calc(env(safe-area-inset-bottom)+1.5rem)] sm:px-6 sm:pt-8">
@@ -69,14 +71,31 @@ export async function PortalShell({
         }
       />
 
-      <footer className="mt-10 flex flex-wrap items-center justify-between gap-3 border-t border-ink-200 pt-4">
-        <LanguageSwitcher />
-        <form action={portalSignOut}>
-          <Button type="submit" variant="ghost">
-            <LogOut className="h-4 w-4" aria-hidden />
-            {t('signOut')}
-          </Button>
-        </form>
+      <footer className="mt-10 space-y-3 border-t border-ink-200 pt-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <LanguageSwitcher />
+          <form action={portalSignOut}>
+            <Button type="submit" variant="ghost">
+              <LogOut className="h-4 w-4" aria-hidden />
+              {t('signOut')}
+            </Button>
+          </form>
+        </div>
+        {/* The account (and the way to delete it) and the documents, where a
+            foot is expected to hold them; none of the three is a place to
+            visit twice a year, so none is in the navigation above. */}
+        <nav aria-label={t('footer.nav')} className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-ink-500">
+          <Link href="/account" className="inline-flex min-h-11 items-center gap-1 underline-offset-2 hover:text-ink-900 hover:underline">
+            <UserRound className="h-3.5 w-3.5" aria-hidden />
+            {t('nav.account')}
+          </Link>
+          <Link href="/privacy" className="inline-flex min-h-11 items-center underline-offset-2 hover:text-ink-900 hover:underline">
+            {tLegal('privacy.title')}
+          </Link>
+          <Link href="/terms" className="inline-flex min-h-11 items-center underline-offset-2 hover:text-ink-900 hover:underline">
+            {tLegal('terms.title')}
+          </Link>
+        </nav>
       </footer>
     </div>
   );

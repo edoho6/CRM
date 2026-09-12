@@ -83,7 +83,28 @@
     "patients": "Patients",
     "appointments30d": "Bookings in 30 days",
     "lastBooking": "Last booking made",
-    "synthetic": "Sandbox"
+    "synthetic": "Sandbox",
+    "deletions": {
+      "title": "Account deletion requests waiting",
+      "subtitle": "The only owner of a clinic asked to delete their account. Handled by hand — a call, a handover or closing the clinic — and then marked here as done.",
+      "empty": "No requests waiting.",
+      "requested": "Received",
+      "who": "Who",
+      "clinic": "Clinic",
+      "why": "Reason",
+      "kind": {
+        "staff": "Team member",
+        "patient": "Patient"
+      },
+      "blocker": {
+        "clinic_has_records": "Only owner, has files",
+        "clinic_needs_owner": "Only owner, has team"
+      },
+      "resolve": "Done",
+      "resolveTitle": "Mark the request as handled?",
+      "resolveBody": "The requester’s address is removed from the record. The request itself stays as a record.",
+      "resolved": "The request was marked as handled."
+    }
   },
   "confirm": {
     "booked": "Booked! The details are below, and you can confirm arrival right away.",
@@ -285,7 +306,8 @@
       "ios": "In Safari: the Share button, then \"Add to Home Screen\".",
       "other": "In the browser menu: \"Add to Home screen\" or \"Install app\".",
       "dismiss": "Not now"
-    }
+    },
+    "email": "Email"
   },
   "nav": {
     "prices": "Price comparison",
@@ -334,7 +356,7 @@
       "clinicNameHint": "As patients will see it — on reminders, prescriptions and confirmations.",
       "phone": "Clinic phone",
       "passwordHint": "At least 8 characters.",
-      "terms": "By opening an account you agree to the terms of use and the privacy policy.",
+      "terms": "Creating the account accepts the <terms>terms of use</terms> and the <privacy>privacy policy</privacy>.",
       "create": "Open the clinic",
       "creating": "Opening…",
       "checkEmailTitle": "Almost there",
@@ -395,6 +417,20 @@
       "submitting": "Checking…",
       "invalidCode": "That code was not accepted. Check the time on your phone and try the current code.",
       "tooManyAttempts": "Too many attempts. Try again in {minutes} minutes."
+    },
+    "deletedNotice": "The account has been deleted.",
+    "legalLinks": "Signing in accepts the <terms>terms of use</terms> and the <privacy>privacy policy</privacy>.",
+    "code": {
+      "label": "The code from the email",
+      "hint": "The same message as the link. You can type the digits instead of tapping it.",
+      "submit": "Sign in with the code",
+      "error": "The code was not accepted. Check the digits, or ask for a new link.",
+      "tooManyAttempts": "Too many attempts. Try again in {minutes} minutes."
+    },
+    "passwordDoor": {
+      "summary": "Sign in with a password",
+      "hint": "Test accounts only. Patients sign in with the link or the code from the email.",
+      "notAllowed": "Password sign-in is not available for this account. Use the link or the code sent by email."
     }
   },
   "setup": {
@@ -1622,7 +1658,8 @@
       "label": "Navigation",
       "home": "My appointments",
       "forms": "Questionnaires",
-      "consent": "Consents"
+      "consent": "Consents",
+      "account": "My account"
     },
     "forms": {
       "title": "Questionnaires",
@@ -1675,7 +1712,30 @@
     },
     "nextAppointment": "Your next appointment",
     "addToCalendar": "Add to calendar",
-    "moreAppointments": "More appointments"
+    "moreAppointments": "More appointments",
+    "footer": {
+      "nav": "Links"
+    },
+    "account": {
+      "title": "My account",
+      "signInTitle": "Your sign-in",
+      "documentsTitle": "The documents that govern the service",
+      "deletion": {
+        "title": "Delete the account",
+        "body": "Deleting the account removes your sign-in to the portal. Your medical file stays with the clinic, as the law requires of it; requests about the file go to the clinic.",
+        "staysTitle": "What stays with the clinic",
+        "stays": {
+          "file": "The medical file: visits, prescriptions, documents and consents.",
+          "invoices": "Invoices and receipts."
+        },
+        "reasonLabel": "Why? (optional)",
+        "reasonHint": "A few words. Kept with the request only.",
+        "confirmTitle": "Delete the account?",
+        "confirmBody": "This is final. To use the portal again, the clinic will have to invite you anew.",
+        "confirmButton": "Delete the account",
+        "button": "Delete the account"
+      }
+    }
   },
   "site": {
     "meta": {
@@ -1747,7 +1807,10 @@
       "note": "Herbalist · clinic management for Chinese medicine",
       "nav": "Links",
       "about": "About the system",
-      "accessibility": "Accessibility statement"
+      "accessibility": "Accessibility statement",
+      "privacy": "Privacy policy",
+      "terms": "Terms of use",
+      "deleteAccount": "Delete account"
     }
   },
   "prices": {
@@ -2420,6 +2483,36 @@
       "disabledToast": "Two-step verification is off.",
       "failed": "Something went wrong. Please try again.",
       "lostDevice": "If the phone is lost: whoever installs the system can remove the factor from the account (see GO-LIVE.md). Until then there is no way in."
+    },
+    "deletion": {
+      "title": "Delete the account",
+      "subtitle": "Your sign-in is deleted. What the clinic must keep, stays.",
+      "body": "Deleting the account removes your sign-in and your membership of the clinic. Records you signed stay with the clinic under your professional name, because a medical record must say who treated.",
+      "goesTitle": "What is deleted",
+      "goes": {
+        "signIn": "The email, the password and the second factor: no more signing in.",
+        "contact": "Phone and picture.",
+        "memberships": "Membership of the clinic, or clinics.",
+        "preferences": "Personal preferences."
+      },
+      "staysTitle": "What stays",
+      "stays": {
+        "records": "Treatment records, appointments and prescriptions you signed, with the name, title and licence number.",
+        "invoices": "Invoices and payments, as tax law requires.",
+        "access": "The access log of the files: who opened what, and when."
+      },
+      "publicPage": "The full explanation of account deletion",
+      "reasonLabel": "Why? (optional)",
+      "reasonHint": "A few words that help us improve. Kept with the request only.",
+      "confirmField": "To confirm, type the clinic’s name: {clinic}",
+      "confirmTitle": "Delete the account?",
+      "confirmBody": "This is final. Afterwards this account cannot sign in.",
+      "confirmButton": "Delete the account",
+      "button": "Delete the account",
+      "blocker": {
+        "clinic_has_records": "This account is the only owner of a clinic with patient files, so it cannot be deleted right now: the records must stay with someone. Invite a team member, make them an owner and come back here, or contact us to close the clinic properly. The request has been recorded.",
+        "clinic_needs_owner": "There are other team members in the clinic and no other owner. First make one of them an owner (Settings → Team), then come back here. The request has been recorded."
+      }
     }
   },
   "forms": {
@@ -2761,5 +2854,272 @@
     "portalAccount": "This is a patient-portal account, not a staff account. Staff accounts are created with a different email.",
     "failed": "Joining did not work. Try again, or ask for a new link.",
     "home": "To the dashboard"
+  },
+  "legal": {
+    "updated": "Last updated: {date}",
+    "operator": {
+      "title": "Service operator",
+      "name": "Name: [operator’s name and business number]",
+      "email": "Email: [address for privacy enquiries]",
+      "warning": "The details in brackets are waiting to be filled in, and the whole text is waiting for a lawyer’s approval. Until then it is a faithful description of what the system does, not a final legal document."
+    },
+    "privacy": {
+      "title": "Privacy policy",
+      "subtitle": "What is collected, why, who sees it, how long it is kept, and your rights",
+      "sections": {
+        "scope": {
+          "title": "What this covers",
+          "body": [
+            "Herbalist is a practice-management system for Chinese medicine clinics: a diary, patient files, treatment records, prescriptions, billing, a patient portal and phone apps. This document explains what information is collected, why, who sees it, how long it is kept and what your rights are.",
+            "It applies to clinic staff who use the system, to patients who use the portal, the booking page and the arrival confirmations, and to the phone apps of both."
+          ]
+        },
+        "roles": {
+          "title": "Who is responsible for medical information",
+          "body": [
+            "The clinic treating you is the owner of the database holding your medical file, and is responsible for it under the Protection of Privacy Law and the Patient’s Rights Law. We, the operators of the system, process the information for the clinic and on its instructions, and use it for no other purpose.",
+            "Enquiries about your file go to the clinic. Enquiries about the system itself go to us, at the details at the end of this document."
+          ]
+        },
+        "collected": {
+          "title": "What is collected",
+          "body": [
+            "What is entered into the system by the clinic, by its staff or by you:",
+            {
+              "items": [
+                "Clinic staff: name, email, phone, title and licence number, the clinic’s details and personal settings.",
+                "Patients: identifying and contact details — name, ID number, date of birth, phone, email and address; appointments; treatment records, diagnoses, prescriptions and images (a photograph of the tongue, for instance); documents and questionnaires; consents with a timestamp and version; invoices and payments.",
+                "Payments: card numbers never pass through us and are never stored by us. Payment is taken by a licensed payment provider; we keep only the amount, the date and a reference.",
+                "Use and security: an access log (who opened which file and when), sign-in events and failed attempts, network address and browser — for security only.",
+                "The phone app: the device type and a notification identifier, only if you turn notifications on."
+              ]
+            }
+          ]
+        },
+        "purposes": {
+          "title": "What it is used for",
+          "body": [
+            {
+              "items": [
+                "Providing the service: the diary, the file, the records, billing and the portal.",
+                "Reminders and arrival confirmations, on the channel the clinic chose: SMS, WhatsApp, email or a phone notification.",
+                "Security and access monitoring: knowing who accessed what, and spotting unusual use.",
+                "Legal duties: keeping medical records and accounting documents.",
+                "Improving the system, from aggregate data that identifies nobody."
+              ]
+            },
+            "There is no advertising and no sale of information. Marketing messages are sent only with separate consent, which can be withdrawn at any time."
+          ]
+        },
+        "sharing": {
+          "title": "Who has access",
+          "body": [
+            "Your clinic — its staff, according to their role. On our side — only whoever maintains the system, and only when needed. And the subcontractors that run parts of the service for us:",
+            {
+              "items": [
+                "Supabase — the database and storage.",
+                "Vercel — hosting of the site and the apps.",
+                "An email delivery provider — sign-in links, verifications and documents sent to you.",
+                "The messaging provider the clinic chose (SMS or WhatsApp) — receives only the number and the message.",
+                "Google (Firebase) and Apple — phone notifications; they receive a device identifier and a short message with no medical details."
+              ]
+            },
+            "Each provider receives only what its role requires and is contractually bound to protect the information. Some servers are outside Israel."
+          ]
+        },
+        "security": {
+          "title": "How the information is protected",
+          "body": [
+            {
+              "items": [
+                "Encryption in transit and at rest, and encrypted backups.",
+                "Separation between clinics at the database level: one clinic never sees another’s information.",
+                "An access log that cannot be altered or deleted.",
+                "A second factor for staff, and a limit on sign-in attempts."
+              ]
+            },
+            "No system is completely immune. If a security incident concerning your information is discovered, the clinic and we will notify as the law requires."
+          ]
+        },
+        "retention": {
+          "title": "How long it is kept",
+          "body": [
+            {
+              "items": [
+                "Medical records — at least the period set by the Patient’s Rights Law and its regulations, after treatment ends too, under the clinic’s responsibility.",
+                "Invoices and receipts — seven years, under tax law.",
+                "A user account — until you ask to delete it.",
+                "The access log — as long as the file exists, because it is part of protecting it."
+              ]
+            }
+          ]
+        },
+        "rights": {
+          "title": "Your rights",
+          "body": [
+            {
+              "items": [
+                "Access and a copy — the clinic produces a complete “patient file” at a click.",
+                "Correction of wrong details.",
+                "Withdrawal of marketing consent, at any time.",
+                "Deletion of the sign-in account — see “Delete account”.",
+                "Deletion of information from the file — subject to the clinic’s duty to keep records.",
+                "A complaint to the Privacy Protection Authority."
+              ]
+            },
+            "Rights are exercised with the clinic, or through us where the system itself is concerned."
+          ]
+        },
+        "cookies": {
+          "title": "Cookies and browser storage",
+          "body": [
+            "The system uses a sign-in cookie only, to recognise you from page to page. Display preferences — colour theme, screen arrangement — are kept in your browser and are not sent to us. There are no advertising cookies, no cross-site tracking and no third-party analytics."
+          ]
+        },
+        "minors": {
+          "title": "Minors",
+          "body": [
+            "The system is for clinics. A minor’s file is opened by the clinic with the consent of the parent or guardian, who is also the one given access to the portal."
+          ]
+        },
+        "changes": {
+          "title": "Changes and contact",
+          "body": [
+            "A material change to this policy is announced at sign-in, and the date at the foot of the page is updated. Questions and requests go to the details at the end of the document.",
+            "This policy is subject to the Protection of Privacy Law, 5741-1981, and the Protection of Privacy (Data Security) Regulations."
+          ]
+        }
+      }
+    },
+    "terms": {
+      "title": "Terms of use",
+      "subtitle": "What the service is, who is responsible for what, and what happens when it ends",
+      "sections": {
+        "service": {
+          "title": "The service",
+          "body": [
+            "Herbalist is practice-management software: a diary, patient files, treatment records, prescriptions, stock, billing and a patient portal — on the web and in phone apps. Using it is acceptance of these terms and of the privacy policy."
+          ]
+        },
+        "notMedical": {
+          "title": "Not medical advice",
+          "body": [
+            "The system is a tool for recording and managing. The reference of herbs, formulas, acupuncture points and doses is supporting material and no substitute for professional judgement. Every clinical decision is the practitioner’s, and their responsibility."
+          ]
+        },
+        "accounts": {
+          "title": "Accounts and passwords",
+          "body": [
+            {
+              "items": [
+                "An account is personal and cannot be transferred.",
+                "The password and the second factor are your responsibility; every action from the account counts as yours.",
+                "Inviting team members and their permissions are the clinic owner’s responsibility."
+              ]
+            }
+          ]
+        },
+        "data": {
+          "title": "The clinic’s information",
+          "body": [
+            "Information the clinic enters belongs to the clinic. We process it under the privacy policy only. The clinic is responsible for obtaining its patients’ consent, for registering a database as the law requires, and for complying with the Patient’s Rights Law. The clinic can export its information at any time."
+          ]
+        },
+        "use": {
+          "title": "Acceptable use",
+          "body": [
+            {
+              "items": [
+                "Do not enter information about people without the authority to do so.",
+                "Do not try to reach another clinic’s information, and do not circumvent the security mechanisms.",
+                "Do not overload or disrupt the service.",
+                "Do not use the service in a way that breaks the law."
+              ]
+            }
+          ]
+        },
+        "availability": {
+          "title": "Availability and support",
+          "body": [
+            "We work for high availability and back the information up, but do not promise uninterrupted availability. Planned maintenance is announced in advance where possible. It is the clinic’s responsibility to keep a copy of what is essential to it, such as exported patient files and invoices."
+          ]
+        },
+        "payment": {
+          "title": "Payment",
+          "body": [
+            "Pricing, the term of the engagement and its termination are set in a separate service agreement. [To complete: the pricing model]"
+          ]
+        },
+        "termination": {
+          "title": "Ending",
+          "body": [
+            "You can stop using the service at any time. Closing a clinic that holds patient files is done in coordination, because the records must be kept by law: the clinic receives its information, and then it is deleted on our side.",
+            "We may suspend an account that breaches these terms or endangers the service, with notice — except in an emergency."
+          ]
+        },
+        "liability": {
+          "title": "Liability",
+          "body": [
+            "The service is provided as is. We are responsible for taking reasonable security measures and for keeping to the privacy policy. We are not liable for indirect or consequential loss; for any other loss, liability is limited to the fees paid for the service in the twelve months before the event. Nothing here limits rights that cannot be waived by law."
+          ]
+        },
+        "changes": {
+          "title": "Changes and governing law",
+          "body": [
+            "A material change to these terms is announced in advance; continued use after the date of the change is acceptance. These terms are governed by the law of Israel, and the competent courts of Israel have exclusive jurisdiction."
+          ]
+        }
+      }
+    },
+    "deleteAccount": {
+      "title": "Delete account",
+      "subtitle": "How to delete, what is deleted, what stays and why",
+      "sections": {
+        "how": {
+          "title": "How to delete an account",
+          "body": [
+            {
+              "items": [
+                "Clinic staff: in the system, Personal area → “Delete the account” (the last card). Type the clinic’s name to confirm and press the button.",
+                "Patients: in the portal, “My account” (at the foot of the page) → “Delete the account”.",
+                "Without access to the account: send a request from the registered email address to the address at the end of this page. After verification, the account is deleted within 30 days."
+              ]
+            }
+          ]
+        },
+        "goes": {
+          "title": "What is deleted",
+          "body": [
+            {
+              "items": [
+                "The sign-in details: email, password and second factor. No more signing in.",
+                "Phone and picture.",
+                "Membership of the clinic, and personal preferences.",
+                "Patients: the link between the portal sign-in and the file. Signing in again requires a new invitation from the clinic."
+              ]
+            }
+          ]
+        },
+        "stays": {
+          "title": "What stays, and why",
+          "body": [
+            "Patients: the medical file stays with the clinic. The Patient’s Rights Law requires the clinic to keep medical records, and deleting the portal account does not change that. Requests about the file go to the clinic.",
+            "Staff: treatment records, appointments and prescriptions you signed stay with the name, title and licence number — a medical record must say who treated. Invoices are kept under tax law. The access log stays, because it is what protects the files."
+          ]
+        },
+        "owner": {
+          "title": "Clinic owners",
+          "body": [
+            "The only owner of a clinic that holds patient files cannot delete their account at once: the records must stay with someone. Make another team member an owner and then delete, or contact us to close the clinic properly — the clinic receives its information, and then it is deleted on our side."
+          ]
+        },
+        "timing": {
+          "title": "When it happens",
+          "body": [
+            "Deletion from the app is immediate. Encrypted backups are deleted in the normal backup cycle, within 30 days at most."
+          ]
+        }
+      }
+    }
   }
 }

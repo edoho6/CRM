@@ -4,7 +4,14 @@ import { useActionState, useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Alert, Button, Field, LtrInput, Spinner } from '@clinic/ui';
 import type { Locale } from '@clinic/domain';
-import { sendMagicLink, type MagicLinkState } from './actions';
+import {
+  sendMagicLink,
+  signInWithCode,
+  signInWithPassword,
+  type CodeState,
+  type MagicLinkState,
+  type PasswordState,
+} from './actions';
 
 /** How long the "send again" button waits: long enough for the first mail to land. */
 const RESEND_SECONDS = 60;
@@ -16,11 +23,24 @@ const RESEND_SECONDS = 60;
  * whose mail took a minute, had nothing to do but reload and guess. Now the
  * address is shown back, the link can be sent again after a minute, and a
  * wrong address is one tap from the form.
+ *
+ * The same mail carries a code; the "sent" screen takes it, for whoever reads
+ * the mail somewhere else. And at the foot of the form, folded away, a
+ * password sign-in — for the stores' reviewers on the sandbox clinic, and
+ * refused by the database to everyone else.
  */
 export function PortalLoginForm({ locale, expired = false }: { locale: Locale; expired?: boolean }) {
   const t = useTranslations('auth');
   const [state, formAction, isPending] = useActionState<MagicLinkState, FormData>(
     sendMagicLink.bind(null, locale),
+    { status: 'idle' },
+  );
+  const [codeState, codeAction, isCodePending] = useActionState<CodeState, FormData>(
+    signInWithCode.bind(null, locale),
+    { status: 'idle' },
+  );
+  const [passwordState, passwordAction, isPasswordPending] = useActionState<PasswordState, FormData>(
+    signInWithPassword.bind(null, locale),
     { status: 'idle' },
   );
   const [email, setEmail] = useState('');
@@ -44,6 +64,34 @@ export function PortalLoginForm({ locale, expired = false }: { locale: Locale; e
     return (
       <div className="space-y-4">
         <Alert tone="success">{t('sentTo', { email: sentTo })}</Alert>
+
+        {/* The code from that same mail, for a mailbox read on another device. */}
+        <form action={codeAction} className="space-y-3">
+          <input type="hidden" name="email" value={sentTo} />
+          {codeState.status === 'error' ? <Alert tone="danger">{t('code.error')}</Alert> : null}
+          {codeState.status === 'tooManyAttempts' ? (
+            <Alert tone="danger">
+              {t('code.tooManyAttempts', { minutes: Math.max(1, Math.ceil((codeState.retryAfterSeconds ?? 60) / 60)) })}
+            </Alert>
+          ) : null}
+          <Field label={t('code.label')} htmlFor="code" hint={t('code.hint')}>
+            <LtrInput
+              id="code"
+              name="code"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              pattern="[0-9 ]*"
+              maxLength={9}
+              required
+              disabled={isCodePending}
+            />
+          </Field>
+          <Button type="submit" size="lg" className="w-full" disabled={isCodePending}>
+            {isCodePending ? <Spinner /> : null}
+            {t('code.submit')}
+          </Button>
+        </form>
+
         <form action={formAction} className="space-y-3">
           <input type="hidden" name="email" value={sentTo} />
           <Button
@@ -73,33 +121,68 @@ export function PortalLoginForm({ locale, expired = false }: { locale: Locale; e
   }
 
   return (
-    <form action={formAction} className="space-y-4">
-      {expired && state.status === 'idle' ? (
-        <Alert tone="warning">{t('magicLinkExpired')}</Alert>
-      ) : null}
-      {state.status === 'error' ? <Alert tone="danger">{t('magicLinkError')}</Alert> : null}
-      {state.status === 'notConfigured' ? (
-        <Alert tone="warning">{t('notConfigured')}</Alert>
-      ) : null}
+    <div className="space-y-4">
+      <form action={formAction} className="space-y-4">
+        {expired && state.status === 'idle' ? (
+          <Alert tone="warning">{t('magicLinkExpired')}</Alert>
+        ) : null}
+        {state.status === 'error' ? <Alert tone="danger">{t('magicLinkError')}</Alert> : null}
+        {state.status === 'notConfigured' ? (
+          <Alert tone="warning">{t('notConfigured')}</Alert>
+        ) : null}
 
-      <Field label={t('email')} htmlFor="email" required>
-        <LtrInput
-          id="email"
-          name="email"
-          type="email"
-          autoComplete="email"
-          inputMode="email"
-          required
-          disabled={isPending}
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
-        />
-      </Field>
+        <Field label={t('email')} htmlFor="email" required>
+          <LtrInput
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            inputMode="email"
+            required
+            disabled={isPending}
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+          />
+        </Field>
 
-      <Button type="submit" size="lg" className="w-full" disabled={isPending}>
-        {isPending ? <Spinner /> : null}
-        {isPending ? t('sendingMagicLink') : t('sendMagicLink')}
-      </Button>
-    </form>
+        <Button type="submit" size="lg" className="w-full" disabled={isPending}>
+          {isPending ? <Spinner /> : null}
+          {isPending ? t('sendingMagicLink') : t('sendMagicLink')}
+        </Button>
+      </form>
+
+      {/* Folded away: a patient never needs it, and the database refuses it
+          to everyone but the sandbox clinic's accounts. */}
+      <details className="group rounded-lg border border-ink-200 bg-ink-50 px-3 py-2 text-sm">
+        <summary className="cursor-pointer select-none font-medium text-ink-700 marker:text-ink-400">
+          {t('passwordDoor.summary')}
+        </summary>
+        <form action={passwordAction} className="mt-3 space-y-3">
+          <p className="text-xs text-ink-600">{t('passwordDoor.hint')}</p>
+          {passwordState.status === 'invalidCredentials' ? (
+            <Alert tone="danger">{t('invalidCredentials')}</Alert>
+          ) : null}
+          {passwordState.status === 'notAllowed' ? (
+            <Alert tone="warning">{t('passwordDoor.notAllowed')}</Alert>
+          ) : null}
+          {passwordState.status === 'tooManyAttempts' ? (
+            <Alert tone="danger">
+              {t('tooManyAttempts', { minutes: Math.max(1, Math.ceil((passwordState.retryAfterSeconds ?? 60) / 60)) })}
+            </Alert>
+          ) : null}
+          {passwordState.status === 'notConfigured' ? <Alert tone="warning">{t('notConfigured')}</Alert> : null}
+          <Field label={t('email')} htmlFor="password-email" required>
+            <LtrInput id="password-email" name="email" type="email" autoComplete="username" inputMode="email" required disabled={isPasswordPending} />
+          </Field>
+          <Field label={t('password')} htmlFor="password" required>
+            <LtrInput id="password" name="password" type="password" autoComplete="current-password" required disabled={isPasswordPending} />
+          </Field>
+          <Button type="submit" variant="secondary" className="w-full" disabled={isPasswordPending}>
+            {isPasswordPending ? <Spinner /> : null}
+            {t('signIn')}
+          </Button>
+        </form>
+      </details>
+    </div>
   );
 }

@@ -18,7 +18,8 @@ import he from '@clinic/i18n/messages/he.json';
  * code — which is worse than not checking, because it gets switched off.
  */
 
-type Messages = { [key: string]: string | Messages };
+/** A message, a namespace, or a list of either — the legal pages keep their paragraphs as lists. */
+type Messages = { [key: string]: string | Messages | Array<string | Messages> };
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const webRoot = path.resolve(here, '..');
@@ -44,10 +45,10 @@ const NAMESPACE_RE =
 const CALL_RE = /\b(\w+)\(\s*'([A-Za-z0-9_.]+)'/g;
 
 function has(messages: Messages, dotted: string): boolean {
-  let node: string | Messages | undefined = messages;
+  let node: string | Messages | Array<string | Messages> | undefined = messages;
   for (const segment of dotted.split('.')) {
     if (typeof node !== 'object' || node === null) return false;
-    node = node[segment];
+    node = (node as Messages)[segment];
     if (node === undefined) return false;
   }
   // A namespace is not a message. `t('fields')` where `fields` is an object

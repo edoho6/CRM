@@ -1,6 +1,7 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Leaf } from 'lucide-react';
-import { Card, CardBody } from '@clinic/ui';
+import { Alert, Card, CardBody } from '@clinic/ui';
+import { Link } from '@clinic/i18n/navigation';
 import type { Locale } from '@clinic/domain';
 import { PortalLoginForm } from './login-form';
 
@@ -9,10 +10,10 @@ export default async function PortalLoginPage({
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; deleted?: string }>;
 }) {
   const { locale } = await params;
-  const { error } = await searchParams;
+  const { error, deleted } = await searchParams;
   setRequestLocale(locale);
 
   const t = await getTranslations('auth');
@@ -28,6 +29,12 @@ export default async function PortalLoginPage({
           <h1 className="text-lg font-semibold text-ink-900">{tc('appName')}</h1>
         </div>
 
+        {deleted ? (
+          <Alert tone="success">
+            {t('deletedNotice')}
+          </Alert>
+        ) : null}
+
         <Card>
           <CardBody className="space-y-4">
             <div>
@@ -39,6 +46,22 @@ export default async function PortalLoginPage({
             <PortalLoginForm locale={locale as Locale} expired={error === 'expired'} />
           </CardBody>
         </Card>
+
+        {/* What signing in agrees to, readable before doing it. */}
+        <p className="text-center text-xs leading-relaxed text-ink-500">
+          {t.rich('legalLinks', {
+            terms: (chunks) => (
+              <Link href="/terms" className="underline underline-offset-2 hover:text-ink-900">
+                {chunks}
+              </Link>
+            ),
+            privacy: (chunks) => (
+              <Link href="/privacy" className="underline underline-offset-2 hover:text-ink-900">
+                {chunks}
+              </Link>
+            ),
+          })}
+        </p>
       </div>
     </main>
   );

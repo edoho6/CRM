@@ -15,7 +15,7 @@ import { Link } from '@clinic/i18n/navigation';
  * `current` is passed rather than read from the pathname, because the pages that
  * use it are Server Components that already know which one they are.
  */
-export function PortalNav({ current }: { current: 'home' | 'forms' | 'consent' }) {
+export function PortalNav({ current }: { current: 'home' | 'forms' | 'consent' | 'account' }) {
   const t = useTranslations('portal');
 
   const items = [

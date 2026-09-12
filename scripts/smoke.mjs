@@ -1322,7 +1322,7 @@ const STATIC_ROUTES = [
   '/settings', '/settings/team', '/settings/access', '/settings/booking', '/settings/consent', '/settings/tags',
   '/account', '/account/protocols', '/account/schedule', '/accessibility', '/verify',
 ];
-const PUBLIC_ROUTES = ['/about', '/accessibility', '/login', '/signup', '/setup', '/join/00000000-0000-4000-8000-000000000000'];
+const PUBLIC_ROUTES = ['/about', '/accessibility', '/privacy', '/terms', '/delete-account', '/login', '/signup', '/setup', '/join/00000000-0000-4000-8000-000000000000'];
 
 async function main() {
   await waitForServer();
@@ -1341,8 +1341,8 @@ async function main() {
     // The portal's public face, if a portal is running beside the app.
     const portalUp = await fetch(`${portalUrl}/he/login`, { redirect: 'manual' }).then((r) => r.status < 500).catch(() => false);
     if (portalUp) {
-      for (const locale of locales) for (const width of widths) {
-        await visit(anonymous, { route: '/login', locale, width, label: 'portal /login', origin: portalUrl });
+      for (const locale of locales) for (const width of widths) for (const route of ['/login', '/privacy', '/terms']) {
+        await visit(anonymous, { route, locale, width, label: `portal ${route}`, origin: portalUrl });
       }
     } else {
       console.log(`portal not running at ${portalUrl} — its login page was not opened`);

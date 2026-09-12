@@ -15,7 +15,8 @@ import he from '@clinic/i18n/messages/he.json';
  * key-name comparison would catch.
  */
 
-type Messages = { [key: string]: string | Messages };
+/** A message, a namespace, or a list of either — the legal pages keep their paragraphs as lists. */
+type Messages = { [key: string]: string | Messages | Array<string | Messages> };
 
 /** Every leaf, as `a.b.c` → the string. */
 function flatten(messages: Messages, prefix = ''): Map<string, string> {
@@ -23,7 +24,7 @@ function flatten(messages: Messages, prefix = ''): Map<string, string> {
   for (const [key, value] of Object.entries(messages)) {
     const path = prefix ? `${prefix}.${key}` : key;
     if (typeof value === 'string') out.set(path, value);
-    else for (const [k, v] of flatten(value, path)) out.set(k, v);
+    else for (const [k, v] of flatten(value as Messages, path)) out.set(k, v);
   }
   return out;
 }

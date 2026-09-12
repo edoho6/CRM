@@ -6,6 +6,7 @@ import { formatDate, formatDateTime } from '@clinic/i18n';
 import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
 import { pageTitle } from '@/lib/page-title';
+import { DeletionRequests, type DeletionRequestRow } from './deletion-requests';
 
 export const generateMetadata = pageTitle('platform', 'title');
 
@@ -40,8 +41,12 @@ export default async function PlatformPage({ params }: { params: Promise<{ local
   const t = await getTranslations('platform');
   const tc = await getTranslations('common');
 
-  const { data } = await scope.supabase.rpc('platform_clinics');
+  const [{ data }, requestsResult] = await Promise.all([
+    scope.supabase.rpc('platform_clinics'),
+    scope.supabase.rpc('platform_deletion_requests'),
+  ]);
   const rows = (Array.isArray(data) ? data : []) as PlatformClinicRow[];
+  const requests = (Array.isArray(requestsResult.data) ? requestsResult.data : []) as DeletionRequestRow[];
 
   return (
     <>
@@ -111,6 +116,10 @@ export default async function PlatformPage({ params }: { params: Promise<{ local
           </SortableTable>
         </TableWrapper>
       )}
+
+      <div className="mt-6">
+        <DeletionRequests rows={requests} />
+      </div>
     </>
   );
 }

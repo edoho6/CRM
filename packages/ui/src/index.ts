@@ -87,3 +87,4 @@ export {
   type SortDirection,
   type SortState,
 } from './sort-compare';
+export { LegalArticle, legalSectionsFrom, type LegalSection, type LegalSectionsMessage } from './legal-article';

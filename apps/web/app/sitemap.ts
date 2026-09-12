@@ -6,7 +6,7 @@ import type { MetadataRoute } from 'next';
  * listed here, because listing it would take a read of every clinic's
  * settings that the public site has no business making.
  */
-const PAGES = ['about', 'accessibility'] as const;
+const PAGES = ['about', 'accessibility', 'privacy', 'terms', 'delete-account'] as const;
 const LOCALES = ['he', 'en'] as const;
 
 export default function sitemap(): MetadataRoute.Sitemap {
@@ -14,7 +14,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   return PAGES.flatMap((page) =>
     LOCALES.map((locale) => ({
       url: `${base}/${locale}/${page}`,
-      lastModified: new Date('2026-09-11'),
+      lastModified: new Date('2026-09-12'),
       changeFrequency: 'monthly' as const,
       priority: page === 'about' ? 1 : 0.5,
       alternates: { languages: Object.fromEntries(LOCALES.map((l) => [l, `${base}/${l}/${page}`])) },

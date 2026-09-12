@@ -1,0 +1,89 @@
+import 'server-only';
+
+/**
+ * A small in-process rate limiter for the sign-in form.
+ *
+ * Two honest limitations, stated here rather than discovered later:
+ *
+ * It is per-process. On one server it is a real control; behind several
+ * instances an attacker gets one budget per instance. That is a meaningful
+ * weakening but not a defeat, and the alternative — a shared store — is not
+ * worth adding before there is a second instance to share it with.
+ *
+ * It is memory only, so a restart clears it. Again: it raises the cost of
+ * guessing, which is what it is for. Supabase applies its own limits underneath
+ * this, so neither layer is load-bearing alone.
+ *
+ * When this app is deployed behind more than one instance, replace the Map with
+ * the shared store and delete this comment.
+ */
+
+interface Attempt {
+  count: number;
+  firstAt: number;
+  blockedUntil: number;
+}
+
+const attempts = new Map<string, Attempt>();
+
+/** Failures allowed inside the window before the key is locked out. */
+const MAX_ATTEMPTS = 8;
+const WINDOW_MS = 15 * 60 * 1000;
+const BLOCK_MS = 15 * 60 * 1000;
+/** Nothing is remembered for longer than this, so the map cannot grow forever. */
+const SWEEP_AFTER_MS = 60 * 60 * 1000;
+
+function sweep(now: number) {
+  if (attempts.size < 500) return;
+  for (const [key, entry] of attempts) {
+    if (now - entry.firstAt > SWEEP_AFTER_MS && now > entry.blockedUntil) attempts.delete(key);
+  }
+}
+
+export interface RateLimitResult {
+  allowed: boolean;
+  /** Seconds until the caller may try again. Zero when allowed. */
+  retryAfterSeconds: number;
+}
+
+/** Checks without recording anything: call before doing the work. */
+export function checkRateLimit(key: string): RateLimitResult {
+  const now = Date.now();
+  sweep(now);
+
+  const entry = attempts.get(key);
+  if (!entry) return { allowed: true, retryAfterSeconds: 0 };
+
+  if (now < entry.blockedUntil) {
+    return { allowed: false, retryAfterSeconds: Math.ceil((entry.blockedUntil - now) / 1000) };
+  }
+
+  // The window has rolled over; start again.
+  if (now - entry.firstAt > WINDOW_MS) {
+    attempts.delete(key);
+    return { allowed: true, retryAfterSeconds: 0 };
+  }
+
+  return { allowed: true, retryAfterSeconds: 0 };
+}
+
+/** Records one failure. Only failures count — a correct password is not suspicious. */
+export function recordFailure(key: string): void {
+  const now = Date.now();
+  const entry = attempts.get(key);
+
+  if (!entry || now - entry.firstAt > WINDOW_MS) {
+    attempts.set(key, { count: 1, firstAt: now, blockedUntil: 0 });
+    return;
+  }
+
+  entry.count += 1;
+  if (entry.count >= MAX_ATTEMPTS) {
+    entry.blockedUntil = now + BLOCK_MS;
+  }
+}
+
+/** Clears the record after a successful sign-in. */
+export function clearAttempts(key: string): void {
+  attempts.delete(key);
+}

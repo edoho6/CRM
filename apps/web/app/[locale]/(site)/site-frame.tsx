@@ -60,6 +60,15 @@ export async function SiteFrame({ children }: { children: React.ReactNode }) {
           <Link href="/accessibility" className="underline-offset-2 hover:text-ink-900 hover:underline">
             {t('footer.accessibility')}
           </Link>
+          <Link href="/privacy" className="underline-offset-2 hover:text-ink-900 hover:underline">
+            {t('footer.privacy')}
+          </Link>
+          <Link href="/terms" className="underline-offset-2 hover:text-ink-900 hover:underline">
+            {t('footer.terms')}
+          </Link>
+          <Link href="/delete-account" className="underline-offset-2 hover:text-ink-900 hover:underline">
+            {t('footer.deleteAccount')}
+          </Link>
           {context ? null : (
             <Link href="/login" className="underline-offset-2 hover:text-ink-900 hover:underline">
               {t('cta.login')}

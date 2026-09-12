@@ -433,6 +433,27 @@
   (14 יום בדיקה סגורה בגוגל, 4.2 של אפל) ב-`MOBILE.md`, שהוא המדריך למשתמש. גרסה בחנות = `version` ב-`package.json`
   של המעטפת; `versionCode`/build number = מספר ההרצה. ה-Firebase files וה-keystores לעולם לא ב-git
 
+- **מחיקת חשבון (migration 40):** `request_account_deletion(p_reason)` היא הדרך היחידה. מטופל בפורטל: משתמש ה-auth נמחק,
+  השורה ב-`patient_portal_access` משוחררת ונסגרת, התיק הרפואי נשאר אצל הקליניקה. איש צוות: **tombstone** — sessions,
+  identities, גורם האימות, האימייל והסיסמה נמחקים והחברות נמחקת, אבל שורת ה-`profiles` נשארת עם שם, תואר ומספר רישיון,
+  כי `practitioner_id … on delete restrict` ורשומה רפואית חייבת לומר מי טיפל (טלפון ותמונה נמחקים). בעלים יחיד עם
+  מטופלים → `needs_review` (`clinic_has_records`); עם צוות אחר ובלי בעלים נוסף → `clinic_needs_owner`; קליניקה ריקה →
+  נמחקת (הטריגר `memberships_keep_owner` מכבד את `herbalist.deleting_account` שהפונקציה מציבה). הבקשות ב-
+  `account_deletion_requests` (בלי FK ל-auth — השורה שורדת את המשתמש; אימייל נשמר רק לבקשה שממתינה), נקראות ונסגרות
+  ב-`/platform` (`platform_deletion_requests`, `platform_resolve_deletion_request`). UI: `features/settings/delete-account.tsx`
+  (איזור אישי, הכרטיס האחרון, אישור בהקלדת שם הקליניקה), בפורטל `/account` מהפוטר; הדף הציבורי `/delete-account`.
+  בדיקה: `supabase/tests/account_deletion.sql` — להריץ אחרי כל שינוי במחיקה או ב-FK ל-`profiles`
+- **דפים משפטיים:** `(site)/privacy`, `terms`, `delete-account` (ובפורטל `privacy`/`terms`, noindex, מקושרים מדף הכניסה
+  ומהפוטר). הטקסט כולו ב-`legal.*` במסרים: `sections.<id>.{title, body[]}`, ופסקה היא מחרוזת או `{items: []}` — מצויר
+  ב-`LegalArticle` מ-`@clinic/ui` דרך `legal-page.tsx` של כל אפליקציה. פרטי המפעיל בסוגריים מרובעים = placeholder
+  באמבר עם אזהרה, עד שהעו"ד מאשר (GO-LIVE.md §2) ומוחקים את הסוגריים. דף ציבורי חדש = `robots.ts` + `sitemap.ts` +
+  הפוטר ב-`site-frame.tsx` + `PUBLIC_ROUTES` ב-smoke + `ROUTES` ב-`check-a11y.mjs`. בדיקות המסרים מקבלות רשימות
+  (`Array<string | Messages>`) בגלל הפסקאות האלה
+- **דלת לבודקי החנויות בפורטל:** דף הכניסה מקבל גם את **הקוד** מאותו מייל (`signInWithCode` → `verifyOtp` type email;
+  תבנית ה-Magic Link ב-Supabase חייבת להכיל `{{ .Token }}`), ובתחתית `<details>` "כניסה עם סיסמה": `signInWithPassword`
+  ואז `portal_password_login_allowed()` — אמת רק כשהקליניקה `is_synthetic`, אחרת signOut והודעה. שני המסלולים מוגבלים
+  בקצב דרך `@clinic/db/rate-limit` (הועבר מ-`apps/web/lib/rate-limit.ts`, שנשאר re-export)
+
 ## לפני commit
 
 ```
