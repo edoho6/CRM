@@ -8,6 +8,7 @@ export const SECTION_KEYS = {
   condition: ['overview', 'symptoms', 'causes', 'diagnosis', 'treatment', 'urgent', 'self_care'],
   symptom: ['overview', 'possible_causes', 'urgent', 'self_care'],
   drug: ['what_for', 'how_to_take', 'side_effects', 'who_cannot', 'interactions', 'pregnancy'],
+  lab_test: ['overview', 'what_for', 'procedure', 'preparation', 'risks', 'results', 'more'],
 };
 
 export function materialFor(entry) {

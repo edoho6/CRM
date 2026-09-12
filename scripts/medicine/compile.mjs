@@ -12,8 +12,10 @@
 // Output: .cache/medicine/compiled.json — {entries, links, dropped}, still without Hebrew.
 import path from 'node:path';
 import { args, cacheDir, firstSentences, log, readJson, slugOf, today, writeJson } from './lib.mjs';
+import { cleanIcd } from './lib/icd.mjs';
 import { crossCheck, mentions, statusFor } from './lib/cross-check.mjs';
 import { cleanName } from './lib/drug-names.mjs';
+import { foldArticle } from './lib/wiki-sections.mjs';
 
 const LICENCES = {
   wikidata: 'CC0 1.0',
@@ -21,9 +23,19 @@ const LICENCES = {
   genetics: 'Public domain (US Government)',
   fda: 'CC0 1.0 (openFDA)',
   nhs: 'Open Government Licence v3.0',
+  loinc: 'LOINC, Regenstrief Institute — free with the licence acknowledged',
   'wikipedia-he': 'CC BY-SA 4.0',
   'wikipedia-en': 'CC BY-SA 4.0',
 };
+
+/**
+ * Wikipedia is the last source consulted and the only one that is
+ * share-alike: an entry whose text comes from it must say so and carry the
+ * same licence. So it fills what the others left empty and never replaces
+ * them, and a dose is never taken from it at all (lib/wiki-sections.mjs
+ * drops a dosage heading) — doses come from the labels, word for word.
+ */
+const WIKIPEDIA_MIN_CHARS = 200;
 
 /** A section of an entry keeps this much; the quote keeps more; the source keeps all. */
 const SECTION_CHARS = 2500;
@@ -71,6 +83,40 @@ const IDENTIFIER_KEYS = ['icd10', 'icd10cm', 'mesh', 'doid', 'atc', 'rxcui', 'un
  */
 const EXTERNAL_ICD = /^[VWXYZ]/i;
 const SYMPTOM_ICD = /^R/i;
+
+/**
+ * Abstractions, not entries. "Disease" has a Wikidata item, an ICD code and
+ * a Wikipedia article, and every text in the corpus mentions the word — it
+ * collected 513 incoming links before this list existed. A clinic looks up
+ * influenza, not "illness".
+ */
+const TOO_GENERAL = new Set([
+  'disease', 'syndrome', 'illness', 'disorder', 'medical condition', 'medical sign', 'symptom', 'infection',
+  'medication', 'drug', 'medicine', 'pharmaceutical drug', 'therapy', 'treatment', 'medical treatment', 'surgery',
+  'injury', 'wound', 'inflammation', 'diagnosis', 'medical diagnosis', 'patient', 'health', 'disease causative agent',
+]);
+
+/**
+ * Wikidata classes whose members are not conditions: an organism, a
+ * discipline, a personality trait, a protein. An item there stays only if
+ * a disease vocabulary filed it under a code — "rotavirus" is A08.0, the
+ * infection; "Staphylococcus aureus" is a bacterium. Drugs are not filtered
+ * this way: St John's wort is a taxon and a medicine.
+ */
+const NON_CLINICAL_CLASSES = new Set([
+  'Q16521', // taxon
+  'Q11862829', // academic discipline
+  'Q1047113', // field of study
+  'Q151885', // concept
+  'Q2393196', // personality trait
+  'Q2866472', // defence mechanism
+  'Q31338769', // alternative medicine
+  'Q2996394', // biological process
+  'Q112826905', // class of anatomical entity
+  'Q84467700', // group or class of proteins
+  'Q67015883', // group or class of enzymes
+  'Q3518464', // classification scheme (ICD-10 itself)
+]);
 
 /**
  * A drug is an item with a full, seven-character ATC code: a shorter code
@@ -207,6 +253,8 @@ async function main() {
   const nhsDir = path.join(cacheDir, 'nhs');
   const fdaDir = path.join(cacheDir, 'openfda');
   const rxnormDir = path.join(cacheDir, 'rxnorm');
+  const wikipediaDir = path.join(cacheDir, 'wikipedia');
+  const israelDir = path.join(cacheDir, 'israel');
   const records = corpus.entities;
   const curated = corpus.curated ?? {};
 
@@ -216,18 +264,49 @@ async function main() {
   const dropped = [];
   const all = [];
   const drugSet = new Set(corpus.selected.drug);
+  const tooGeneral = (qid) => TOO_GENERAL.has(String(records[qid]?.labels?.en ?? '').toLowerCase());
+  // ICD-10 first, ICD-10-CM when that is all the item has ("body piercing" and "screening" live in Z).
+  const icdOf = (qid) => cleanIcd((records[qid]?.claims?.icd10 ?? [])[0] ?? (records[qid]?.claims?.icd10cm ?? [])[0] ?? '');
+  const nonClinical = (qid) => (records[qid]?.claims?.instance_of ?? []).some((cls) => NON_CLINICAL_CLASSES.has(cls)) && !icdOf(qid);
   for (const qid of corpus.selected.condition) {
     if (drugSet.has(qid)) continue;
-    // ICD-10 first, ICD-10-CM when that is all the item has ("body piercing" and "screening" live in Z).
-    const code = (records[qid]?.claims?.icd10 ?? [])[0] ?? (records[qid]?.claims?.icd10cm ?? [])[0] ?? '';
+    if (tooGeneral(qid)) {
+      dropped.push({ qid, kind: 'condition', name: records[qid].labels.en, reason: 'too general to be an entry' });
+      continue;
+    }
+    if (nonClinical(qid)) {
+      dropped.push({ qid, kind: 'condition', name: records[qid].labels.en, reason: 'not a clinical entity (an organism, a discipline, a trait)' });
+      continue;
+    }
+    const code = icdOf(qid);
     if (EXTERNAL_ICD.test(code)) {
       dropped.push({ qid, kind: 'condition', name: records[qid].labels.en, reason: `ICD-10 chapter ${code[0].toUpperCase()}` });
       continue;
     }
+    // The whole classification, A00 to Z99, is one item on Wikidata.
+    if (/^A00-Z99$/i.test(code)) {
+      dropped.push({ qid, kind: 'condition', name: records[qid].labels.en, reason: 'the classification itself, not a condition' });
+      continue;
+    }
     all.push([qid, SYMPTOM_ICD.test(code) ? 'symptom' : 'condition']);
   }
-  for (const qid of corpus.selected.symptom) if (!drugSet.has(qid) && !all.some(([q]) => q === qid)) all.push([qid, 'symptom']);
+  for (const qid of corpus.selected.symptom) {
+    if (drugSet.has(qid) || all.some(([q]) => q === qid)) continue;
+    if (tooGeneral(qid)) {
+      dropped.push({ qid, kind: 'symptom', name: records[qid].labels.en, reason: 'too general to be an entry' });
+      continue;
+    }
+    if (nonClinical(qid)) {
+      dropped.push({ qid, kind: 'symptom', name: records[qid].labels.en, reason: 'not a clinical entity (an organism, a discipline, a trait)' });
+      continue;
+    }
+    all.push([qid, 'symptom']);
+  }
   for (const qid of corpus.selected.drug) {
+    if (tooGeneral(qid)) {
+      dropped.push({ qid, kind: 'drug', name: records[qid].labels.en, reason: 'too general to be an entry' });
+      continue;
+    }
     if (!isDrugOfInterest(records[qid])) {
       const codes = records[qid].claims.atc ?? [];
       dropped.push({ qid, kind: 'drug', name: records[qid].labels.en, reason: codes.every((c) => c.length < 7) ? 'a drug class, not a substance (ATC)' : 'ATC group V or Q only' });
@@ -254,6 +333,18 @@ async function main() {
   const conditionNames = byName('condition');
   const symptomNames = byName('symptom');
   const drugNames = byName('drug');
+
+  // The same maps in Hebrew, for the Hebrew Wikipedia text: its prose names
+  // סוכרת and שיעול, not diabetes and cough.
+  const namesHeOf = (qid) => dedupe([records[qid].labels.he, ...(records[qid].aliases.he ?? [])], 8).filter((n) => n && n.length >= 3);
+  const byNameHe = (kind) => {
+    const map = new Map();
+    for (const [qid, k] of all) if (k === kind) for (const name of namesHeOf(qid)) if (!map.has(name)) map.set(name, qid);
+    return map;
+  };
+  const conditionNamesHe = byNameHe('condition');
+  const symptomNamesHe = byNameHe('symptom');
+  const drugNamesHe = byNameHe('drug');
 
   // Wikidata's relations read from the other end: the conditions that name a
   // drug as their treatment (P2176), the conditions that name a symptom (P780).
@@ -282,6 +373,8 @@ async function main() {
     const sectionsEn = {};
     const evidence = {};
     const sourcesUsed = ['wikidata'];
+    /** What is registered in Israel for this substance; drugs only. */
+    let israel = null;
     const identity = {};
     const claimIdentity = (source, key) => {
       (identity[source] ??= []).push(key);
@@ -380,6 +473,25 @@ async function main() {
         sourcesUsed.push('rxnorm');
         claimIdentity('rxnorm', `rxcui:${rx.rxcui}`);
       }
+      const registry = readJson(path.join(israelDir, `${qid}.json`));
+      if (registry?.found && registry.products?.length) {
+        israel = {
+          products: registry.products,
+          leaflet: registry.leaflet ?? null,
+          registration_holder: registry.registration_holder ?? null,
+          retrieved_at: registry.retrieved_at?.slice(0, 10) ?? today(),
+        };
+        // The registry's ATC for the same name is a third opinion on identity.
+        if (registry.atc) claimIdentity('israel', `atc:${registry.atc}`);
+        sources.push({
+          source: 'israel',
+          url: 'https://israeldrugs.health.gov.il/',
+          title: 'מאגר התרופות של משרד הבריאות',
+          licence: 'Facts and links only',
+          retrieved_at: israel.retrieved_at,
+          role: 'further_reading',
+        });
+      }
       const treatsLabels = dedupe([
         ...(record.claims.treats ?? []).map((c) => (kindOf[c] ? nameOf(c) : records[c]?.labels?.en)),
         ...(treatedBy.get(qid) ?? []).map(nameOf),
@@ -415,12 +527,75 @@ async function main() {
       }
     }
 
-    // Where to read on, outside the corpus.
-    if (record.sitelinks.he) sources.push({ source: 'wikipedia-he', url: `https://he.wikipedia.org/wiki/${encodeURIComponent(record.sitelinks.he.replace(/ /g, '_'))}`, title: record.sitelinks.he, licence: LICENCES['wikipedia-he'], retrieved_at: null, role: 'further_reading' });
-    if (record.sitelinks.en) sources.push({ source: 'wikipedia-en', url: `https://en.wikipedia.org/wiki/${encodeURIComponent(record.sitelinks.en.replace(/ /g, '_'))}`, title: record.sitelinks.en, licence: LICENCES['wikipedia-en'], retrieved_at: null, role: 'further_reading' });
+    // English Wikipedia fills the sections the other sources left empty, and
+    // becomes a basis only for what it actually contributed.
+    const enArticle = readJson(path.join(wikipediaDir, 'en', `${qid}.json`));
+    if (enArticle && !enArticle.error && enArticle.text?.length >= WIKIPEDIA_MIN_CHARS) {
+      const folded = foldArticle(kind, enArticle.text, SECTION_CHARS);
+      const filled = [];
+      for (const [section, text] of Object.entries(folded.sections)) {
+        if (sectionsEn[section] || text.length < 80) continue;
+        sectionsEn[section] = text;
+        filled.push(section);
+        quotes.push({ source: 'wikipedia-en', lang: 'en', field: section, text, url: enArticle.url, source_reviewed_at: enArticle.timestamp?.slice(0, 10) ?? null, retrieved_at: enArticle.retrieved_at?.slice(0, 10) ?? today(), licence: LICENCES['wikipedia-en'] });
+      }
+      sources.push({ source: 'wikipedia-en', url: enArticle.url, title: enArticle.title, licence: LICENCES['wikipedia-en'], retrieved_at: enArticle.retrieved_at?.slice(0, 10) ?? null, role: filled.length ? 'basis' : 'further_reading', revision: enArticle.revid ?? null });
+      if (filled.length) sourcesUsed.push('wikipedia-en');
+    } else if (record.sitelinks.en) {
+      sources.push({ source: 'wikipedia-en', url: `https://en.wikipedia.org/wiki/${encodeURIComponent(record.sitelinks.en.replace(/ /g, '_'))}`, title: record.sitelinks.en, licence: LICENCES['wikipedia-en'], retrieved_at: null, role: 'further_reading' });
+    }
 
-    // Thin: nothing but Wikidata describes it. Out, unless asked to keep.
-    const hasText = Object.keys(sectionsEn).length > 0;
+    // The Hebrew article is the only source that is already in Hebrew. It is
+    // kept apart (build.mjs uses it only where no better Hebrew exists) and
+    // the entry that rests on it says so and carries its licence.
+    let wikipediaHe = null;
+    const heArticle = readJson(path.join(wikipediaDir, 'he', `${qid}.json`));
+    if (heArticle && !heArticle.error && heArticle.text?.length >= WIKIPEDIA_MIN_CHARS) {
+      const folded = foldArticle(kind, heArticle.text, SECTION_CHARS);
+      const sectionsHe = Object.fromEntries(Object.entries(folded.sections).filter(([, text]) => text.length >= 80));
+      if (Object.keys(sectionsHe).length) {
+        wikipediaHe = {
+          sections: sectionsHe,
+          title: heArticle.title,
+          url: heArticle.url,
+          revision: heArticle.revid ?? null,
+          revised_at: heArticle.timestamp ?? null,
+          retrieved_at: heArticle.retrieved_at ?? null,
+          licence: LICENCES['wikipedia-he'],
+        };
+        sourcesUsed.push('wikipedia-he');
+        for (const [section, text] of Object.entries(sectionsHe)) {
+          quotes.push({ source: 'wikipedia-he', lang: 'he', field: section, text, url: heArticle.url, source_reviewed_at: heArticle.timestamp?.slice(0, 10) ?? null, retrieved_at: heArticle.retrieved_at?.slice(0, 10) ?? today(), licence: LICENCES['wikipedia-he'] });
+        }
+        // Its prose is read for links the same way the English sources are.
+        const whole = Object.values(sectionsHe).join('\n');
+        if (kind === 'condition') {
+          const s = mentions(sectionsHe.symptoms ?? whole, [...symptomNamesHe.keys()]);
+          const d = mentions(sectionsHe.treatment ?? '', [...drugNamesHe.keys()]);
+          if (s.length) (evidence.symptom ??= {})['wikipedia-he'] = s.map((n) => nameOf(symptomNamesHe.get(n)));
+          if (d.length) (evidence.treats ??= {})['wikipedia-he'] = d.map((n) => nameOf(drugNamesHe.get(n)));
+          for (const name of s) addLink(symptomNamesHe.get(name), qid, 'symptom_of', 'wikipedia-he:text');
+          for (const name of d) addLink(drugNamesHe.get(name), qid, 'treats', 'wikipedia-he:text');
+        } else if (kind === 'drug') {
+          const c = mentions(sectionsHe.what_for ?? whole, [...conditionNamesHe.keys()]);
+          const s = mentions(sectionsHe.side_effects ?? '', [...symptomNamesHe.keys()]);
+          if (c.length) (evidence.treats ??= {})['wikipedia-he'] = c.map((n) => nameOf(conditionNamesHe.get(n)));
+          if (s.length) (evidence.side_effect ??= {})['wikipedia-he'] = s.map((n) => nameOf(symptomNamesHe.get(n)));
+          for (const name of c) addLink(qid, conditionNamesHe.get(name), 'treats', 'wikipedia-he:what_for');
+          for (const name of s) addLink(qid, symptomNamesHe.get(name), 'side_effect', 'wikipedia-he:side_effects');
+        } else {
+          const c = mentions(sectionsHe.possible_causes ?? whole, [...conditionNamesHe.keys()]);
+          if (c.length) (evidence.symptom_of ??= {})['wikipedia-he'] = c.map((n) => nameOf(conditionNamesHe.get(n)));
+          for (const name of c) addLink(qid, conditionNamesHe.get(name), 'symptom_of', 'wikipedia-he:text');
+        }
+      }
+      sources.push({ source: 'wikipedia-he', url: heArticle.url, title: heArticle.title, licence: LICENCES['wikipedia-he'], retrieved_at: heArticle.retrieved_at?.slice(0, 10) ?? null, role: wikipediaHe ? 'basis' : 'further_reading', revision: heArticle.revid ?? null });
+    } else if (record.sitelinks.he) {
+      sources.push({ source: 'wikipedia-he', url: `https://he.wikipedia.org/wiki/${encodeURIComponent(record.sitelinks.he.replace(/ /g, '_'))}`, title: record.sitelinks.he, licence: LICENCES['wikipedia-he'], retrieved_at: null, role: 'further_reading' });
+    }
+
+    // Thin: nothing describes it in either language. Out, unless asked to keep.
+    const hasText = Object.keys(sectionsEn).length > 0 || Boolean(wikipediaHe);
     if (!hasText && !options['keep-thin']) {
       dropped.push({ qid, kind, name: nameEn, reason: 'no text source' });
       continue;
@@ -448,7 +623,7 @@ async function main() {
 
     const identifiers = {};
     for (const [key, values] of Object.entries(record.claims)) {
-      if (IDENTIFIER_KEYS.includes(key)) identifiers[key] = values[0];
+      if (IDENTIFIER_KEYS.includes(key)) identifiers[key] = key === 'icd10' ? cleanIcd(values[0]) : values[0];
     }
 
     entries.push({
@@ -469,19 +644,97 @@ async function main() {
       cross_check: check,
       hebrew_meta: null,
       image: null,
+      israel,
       description_he: record.descriptions.he,
       image_file: record.claims.image?.[0] ?? null,
+      wikipedia_he: wikipediaHe,
+    });
+  }
+
+  // The lab tests are a corpus of their own: MedlinePlus explains the test,
+  // LOINC names the code it is ordered under, and MedlinePlus Connect is
+  // what joins the two — so a test whose code Connect confirms has its
+  // identity agreed by two sources, exactly like a drug's RxCUI.
+  const labFile = readJson(path.join(cacheDir, 'labtests', 'tests.json'));
+  for (const test of labFile?.tests ?? []) {
+    const sectionsEn = Object.fromEntries(Object.entries(test.sections).map(([key, text]) => [key, clip(text)]));
+    if (!Object.keys(sectionsEn).length) continue;
+    const slug = uniqueSlug(test.slug, taken, test.slug);
+    // A lab test has no Wikidata item, so its slug is what a link points at.
+    kindOf[slug] = 'lab_test';
+    const codes = test.loinc ?? [];
+    const quotes = Object.entries(sectionsEn).map(([field, text]) => ({
+      source: 'medlineplus',
+      lang: 'en',
+      field,
+      text,
+      url: test.url,
+      source_reviewed_at: null,
+      retrieved_at: test.retrieved_at?.slice(0, 10) ?? today(),
+      licence: LICENCES.medlineplus,
+    }));
+    const sources = [
+      { source: 'medlineplus', url: test.url, title: test.title, licence: LICENCES.medlineplus, retrieved_at: test.retrieved_at?.slice(0, 10) ?? today(), role: 'basis' },
+    ];
+    const evidence = {};
+    if (codes.length) {
+      sources.push({
+        source: 'loinc',
+        url: `https://loinc.org/${codes[0].code}`,
+        title: codes[0].long_name,
+        licence: LICENCES.loinc,
+        retrieved_at: labFile.retrieved_at?.slice(0, 10) ?? today(),
+        role: 'basis',
+      });
+      evidence.identity = { loinc: codes.map((c) => `loinc:${c.code}`), medlineplus: codes.map((c) => `loinc:${c.code}`) };
+    }
+
+    // What the test is for, read for the conditions it names.
+    const prose = [sectionsEn.what_for, sectionsEn.results].filter(Boolean).join('\n');
+    const named = mentions(prose, [...conditionNames.keys()]);
+    for (const name of named) addLink(slug, conditionNames.get(name), 'diagnoses', 'medlineplus:what_for');
+
+    const check = crossCheck({ sources: codes.length ? ['medlineplus', 'loinc'] : ['medlineplus'], evidence });
+    const identityAgreements = check.agree.filter((a) => a.startsWith('identity:'));
+    check.identity_confirmed = identityAgreements.length > 0;
+    check.identity = identityAgreements.map((a) => a.slice('identity:'.length));
+
+    entries.push({
+      wikidata_id: null,
+      kind: 'lab_test',
+      slug,
+      name_en: test.title,
+      name_he: null,
+      aliases_en: dedupe(codes.map((c) => c.consumer_name).filter(Boolean)),
+      aliases_he: [],
+      identifiers: codes.length ? { loinc: codes[0].code } : {},
+      summary_en: sectionsEn.overview ? firstSentences(sectionsEn.overview) : null,
+      summary_he: null,
+      sections: { en: sectionsEn, he: null },
+      quotes,
+      sources,
+      // A test is not a claim about the world, so there is nothing to agree
+      // on beyond its identity; it stays a draft until a person approves it.
+      status: 'draft',
+      cross_check: check,
+      hebrew_meta: null,
+      image: null,
+      israel: null,
+      description_he: null,
+      image_file: null,
+      wikipedia_he: null,
     });
   }
 
   // Links only between entries that made it into the corpus.
-  const kept = new Set(entries.map((e) => e.wikidata_id));
+  const kept = new Set(entries.map((e) => e.wikidata_id ?? e.slug));
   const linkList = [...links.values()].filter((l) => kept.has(l.from) && kept.has(l.to));
   writeJson(path.join(cacheDir, 'compiled.json'), { compiled_at: new Date().toISOString(), entries, links: linkList, dropped });
   const byStatus = entries.reduce((acc, e) => ((acc[e.status] = (acc[e.status] ?? 0) + 1), acc), {});
   const byKind = entries.reduce((acc, e) => ((acc[e.kind] = (acc[e.kind] ?? 0) + 1), acc), {});
   const confirmed = entries.filter((e) => e.cross_check.identity_confirmed).length;
-  log(`compile: ${entries.length} entries ${JSON.stringify(byKind)} (${JSON.stringify(byStatus)}, identity confirmed for ${confirmed}), ${linkList.length} links, ${dropped.length} dropped → .cache/medicine/compiled.json`);
+  const hebrew = entries.filter((e) => e.wikipedia_he).length;
+  log(`compile: ${entries.length} entries ${JSON.stringify(byKind)} (${JSON.stringify(byStatus)}, identity confirmed for ${confirmed}, ${hebrew} with Hebrew Wikipedia text), ${linkList.length} links, ${dropped.length} dropped → .cache/medicine/compiled.json`);
 }
 
 main().catch((error) => {

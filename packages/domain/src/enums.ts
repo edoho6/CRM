@@ -626,11 +626,11 @@ export type ShopSizeKind = (typeof SHOP_SIZE_KINDS)[number];
  * has been checked, and how two entries relate. Mirrored by the CHECK
  * constraints in migration 42.
  */
-export const MED_KINDS = ['condition', 'symptom', 'drug'] as const;
+export const MED_KINDS = ['condition', 'symptom', 'drug', 'lab_test'] as const;
 export type MedKind = (typeof MED_KINDS)[number];
 
 export const MED_STATUSES = ['draft', 'cross_checked', 'verified'] as const;
 export type MedStatus = (typeof MED_STATUSES)[number];
 
-export const MED_RELATIONS = ['treats', 'symptom_of', 'side_effect', 'class', 'related'] as const;
+export const MED_RELATIONS = ['treats', 'symptom_of', 'side_effect', 'class', 'diagnoses', 'related'] as const;
 export type MedRelation = (typeof MED_RELATIONS)[number];

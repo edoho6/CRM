@@ -9,28 +9,42 @@
 // outright, which the present sources rarely do; the field exists for the
 // ones that will.
 
-/** Lower-cased, punctuation-light, for matching names inside prose. */
+const HEBREW = /[֐-׿]/;
+
+/** Lower-cased, punctuation-light, for matching names inside prose — Latin or Hebrew. */
 export function normalizeName(text) {
   return String(text ?? '')
     .toLowerCase()
     .replace(/[’']/g, "'")
-    .replace(/[^a-z0-9' ]+/g, ' ')
+    .replace(/[^a-z0-9֐-׿' ]+/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 }
 
+const escapeRe = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 /**
- * Which of the given names appear in a text, as whole words. Names shorter
- * than four letters are ignored: "flu" inside "fluid" is not a mention, and
- * a rule that has to know that is a rule that fails elsewhere.
+ * Which of the given names appear in a text, as whole words. A Latin name
+ * shorter than four letters is ignored: "flu" inside "fluid" is not a
+ * mention, and a rule that has to know that is a rule that fails elsewhere.
+ *
+ * Hebrew needs two allowances. Its words are shorter (חום, כאב, שיעול), so
+ * three letters are enough; and it glues the article and the prepositions
+ * onto the front of a word — בשיעול, הסוכרת, ולחץ — so up to two of those
+ * letters before the name still count as the name.
  */
 export function mentions(text, names) {
   const haystack = ` ${normalizeName(text)} `;
   const found = [];
   for (const name of names) {
     const needle = normalizeName(name);
-    if (needle.length < 4) continue;
-    if (haystack.includes(` ${needle} `)) found.push(name);
+    const hebrew = HEBREW.test(needle);
+    if (needle.length < (hebrew ? 3 : 4)) continue;
+    if (haystack.includes(` ${needle} `)) {
+      found.push(name);
+      continue;
+    }
+    if (hebrew && new RegExp(` [בלהומשכ]{1,2}${escapeRe(needle)} `).test(haystack)) found.push(name);
   }
   return found;
 }

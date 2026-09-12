@@ -1358,6 +1358,8 @@ export interface MedQuote {
   source: string;
   field: string;
   text: string;
+  /** The language the passage is in; English unless the source is Hebrew (the Hebrew Wikipedia). */
+  lang?: 'he' | 'en';
   url: string | null;
   source_reviewed_at: string | null;
   retrieved_at: string;
@@ -1372,6 +1374,10 @@ export interface MedSource {
   licence: string;
   retrieved_at: string | null;
   role: 'basis' | 'further_reading';
+  /** How the source was joined to the entry: by a shared code, or by name. */
+  matched?: 'mesh' | 'omim' | 'icd10cm' | 'name';
+  /** The Wikipedia revision the text was read from. */
+  revision?: number | null;
 }
 
 /** An entry of the Western medicine reference: a condition, a symptom or a drug, shared by every clinic. */
@@ -1395,15 +1401,36 @@ export interface MedEntry {
   /** identity: codes two sources file the entry under (e.g. "mesh:D008687", "rxcui:6809") — the entry is the right thing, whatever the facts say. */
   cross_check: { sources: number; agree: string[]; conflicts: string[]; identity_confirmed?: boolean; identity?: string[] } | null;
   hebrew_meta: {
+    /** 'manual' (a person), a model id, or 'wikipedia-he' when the Hebrew is the article itself. */
     model: string;
     generated_at: string | null;
     basis: string[];
+    /** Set when the Hebrew is quoted rather than written: where it came from, and under which licence. */
+    source?: { title: string; url: string; revision: number | null; revised_at: string | null; licence: string } | null;
     /** The second reading: a separate pass that judged the Hebrew against the material. */
     review?: { faithful: boolean; issues: string[]; model: string; reviewed_at: string } | null;
     /** Every number in the Hebrew found in the sources, or the ones that were not. */
     numbers?: { ok: boolean; missing: string[] } | null;
   } | null;
   hebrew_stale: boolean;
+  /**
+   * What is registered in Israel for this substance (drugs only): the
+   * products, and the address of the Ministry's own leaflet. Facts and
+   * links — the leaflets themselves belong to the manufacturers.
+   */
+  israel: {
+    products: Array<{
+      name_he: string;
+      name_en: string;
+      registration: string;
+      dosage_form: string | null;
+      prescription: boolean;
+      in_basket: boolean;
+    }>;
+    leaflet: { url: string; language: string; updated_at: string | null } | null;
+    registration_holder: string | null;
+    retrieved_at: string;
+  } | null;
   image: {
     file: string;
     title: string | null;

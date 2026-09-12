@@ -25,7 +25,13 @@ const steps = [
   // The labels come through DailyMed (no daily ceiling); openfda.mjs is the same step for a run with an openFDA key.
   ['dailymed.mjs'],
   ['rxnorm.mjs'],
+  ['israel-drugs.mjs'],
   ['nhs.mjs'],
+  // Wikipedia is read last of the sources: it fills what they left empty.
+  ['wikipedia.mjs'],
+  // Lab tests: the LOINC zip is downloaded by hand (loinc.mjs says where); labtests.mjs reads MedlinePlus.
+  ['loinc.mjs'],
+  ['labtests.mjs'],
   ['compile.mjs'],
   ['hebrew.mjs'],
   ['hebrew.mjs', '--review'],

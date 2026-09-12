@@ -19,7 +19,7 @@ export const reportDir = path.join(root, 'test-results', 'medicine');
 export const datasetFile = path.join(seedDir, 'dataset.json.gz');
 
 /** Who we are to the services we read from; a contact address is what their policies ask for. */
-export const UA = 'herbalist-clinic-medicine/1.0 (open-licence medical reference for a clinic app; contact via the repository)';
+export const UA = 'herbalist-clinic-medicine/1.0 (open-licence medical reference for a clinic app; contact edoho6@gmail.com)';
 
 /** `KEY=value` lines from a dotenv file, quotes stripped; missing file → {}. */
 export function readEnv(file) {
@@ -89,22 +89,28 @@ export function args() {
  * A fetch that behaves: identifies itself, waits when told to (429/503),
  * retries a little — also when the connection itself drops, which a large
  * download from MedlinePlus did every other time — and never throws for a
- * status: the caller reads it.
+ * status: the caller reads it. A `method` and a `body` pass through, for the
+ * one service that answers only to POST (the Israeli drug registry).
  */
-export async function fetchPolite(url, { headers = {}, retries = 3, minDelayMs = 0 } = {}) {
+export async function fetchPolite(url, { headers = {}, retries = 3, minDelayMs = 0, method, body } = {}) {
   let attempt = 0;
   for (;;) {
     if (minDelayMs) await sleep(minDelayMs);
     let response;
     try {
-      response = await fetch(url, { headers: { 'User-Agent': UA, Accept: 'application/json, text/xml, */*', ...headers } });
+      response = await fetch(url, {
+        method: method ?? (body ? 'POST' : 'GET'),
+        body,
+        headers: { 'User-Agent': UA, Accept: 'application/json, text/xml, */*', ...headers },
+      });
     } catch (error) {
       if (attempt >= retries) throw error;
       attempt += 1;
       await sleep(2000 * attempt);
       continue;
     }
-    if ((response.status === 429 || response.status === 503) && attempt < retries) {
+    // 502 and 504 are the Israeli registry's way of saying "not now".
+    if ([429, 502, 503, 504].includes(response.status) && attempt < retries) {
       const wait = Number(response.headers.get('retry-after')) || 15;
       await sleep(wait * 1000);
       attempt += 1;

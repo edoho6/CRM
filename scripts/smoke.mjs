@@ -1316,7 +1316,7 @@ const STATIC_ROUTES = [
   '/', '/patients', '/patients/new', '/calendar', '/calendar?view=day', '/calendar?view=month',
   '/calendar?view=range', '/tasks', '/messages', '/encounters', '/encounters/new', '/forms',
   '/forms/new', '/reference/herbs', '/reference/formulas', '/reference/points', '/reference/compare',
-  '/reference/medicine', '/reference/medicine?kind=drug',
+  '/reference/medicine', '/reference/medicine?kind=drug', '/reference/medicine?kind=lab_test',
   '/inventory', '/inventory?tab=low', '/inventory/batches', '/inventory/batches/receive',
   '/inventory/suppliers', '/prices', '/prices?cat=needles&min=2', '/prices/credits', '/billing', '/billing/new',
   '/billing/settings', '/reports', '/assistant',

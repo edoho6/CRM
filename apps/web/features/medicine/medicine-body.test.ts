@@ -53,7 +53,7 @@ const byQid = (qid: string) => rows.find((row) => row.wikidata_id === qid)!;
 describe('MedicineBody with the seed corpus', () => {
   // The full corpus is over a thousand entries; rendering them all takes a
   // while, and is the point.
-  it('renders every entry of the dataset without a leaked message key', { timeout: 180_000 }, () => {
+  it('renders every entry of the dataset without a leaked message key', { timeout: 600_000 }, () => {
     expect(rows.length).toBeGreaterThan(40);
     for (const row of rows) {
       const html = render(row);
@@ -76,11 +76,39 @@ describe('MedicineBody with the seed corpus', () => {
     expect(html).toContain('israeldrugs.health.gov.il');
   });
 
+  it('shows a lab test with its LOINC code and the laboratory-range warning', () => {
+    const row = rows.find((entry) => entry.kind === 'lab_test' && entry.identifiers.loinc);
+    if (!row) return; // the corpus has no lab tests yet
+    const html = render(row);
+    expect(html).toContain('LOINC');
+    expect(html).toContain(row.identifiers.loinc);
+    expect(html).toContain('הטווח התקין משתנה בין מעבדות');
+  });
+
+  it('shows the Israeli products of a drug, and never a leaflet’s text', () => {
+    const row = rows.find((entry) => entry.israel?.products.length);
+    if (!row) return; // the Israeli layer has not been fetched
+    const html = render(row);
+    expect(html).toContain('התכשירים הרשומים בישראל');
+    expect(html).toContain(row.israel!.products[0].name_he);
+    if (row.israel!.leaflet) expect(html).toContain(row.israel!.leaflet.url);
+  });
+
+  it('marks Hebrew that is quoted from Wikipedia, with its licence', () => {
+    const row = rows.find((entry) => entry.hebrew_meta?.model === 'wikipedia-he');
+    if (!row) return;
+    const html = render(row);
+    expect(html).toContain('מצוטט מוויקיפדיה העברית');
+    expect(html).toContain('CC BY-SA 4.0');
+    expect(html).toContain(row.hebrew_meta!.source!.url);
+  });
+
   it('shows a condition with its MedlinePlus source and the cross-check label', () => {
     const html = render(byQid('Q2840'));
     expect(html).toContain('שפעת');
     expect(html).toContain('MedlinePlus');
-    expect(html).toContain('הוצלב בין שני מקורות');
+    // The wording counts the sources, and the corpus keeps gaining them.
+    expect(html).toMatch(/הוצלב (עם|בין)/);
     expect(html).not.toContain('israeldrugs.health.gov.il');
   });
 

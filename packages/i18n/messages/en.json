@@ -2348,12 +2348,14 @@
     "kind": {
       "condition": "Condition",
       "symptom": "Symptom",
-      "drug": "Drug"
+      "drug": "Drug",
+      "lab_test": "Lab test"
     },
     "kinds": {
       "condition": "Conditions",
       "symptom": "Symptoms",
-      "drug": "Drugs"
+      "drug": "Drugs",
+      "lab_test": "Lab tests"
     },
     "table": {
       "kind": "Kind",
@@ -2375,7 +2377,8 @@
       "auto": "The Hebrew text was written automatically from the sources below and has not yet been verified by a professional.",
       "wikidata": "The Hebrew summary comes from Wikidata; the detail is still English only, in the sources below.",
       "none": "This entry has no Hebrew text yet. The English sources are below.",
-      "verified": "The Hebrew text has been verified by a professional."
+      "verified": "The Hebrew text has been verified by a professional.",
+      "wikipedia": "The Hebrew text is quoted from the Hebrew Wikipedia and shown under its licence; it has not been verified by a professional. Doses are never taken from Wikipedia."
     },
     "fields": {
       "identifiers": "Identifiers",
@@ -2389,7 +2392,11 @@
       "atc": "ATC",
       "rxcui": "RxNorm",
       "medlineplus": "MedlinePlus",
-      "nhs": "NHS"
+      "nhs": "NHS",
+      "loinc": "LOINC",
+      "unii": "UNII",
+      "omim": "OMIM",
+      "orphanet": "Orphanet"
     },
     "sections": {
       "overview": "Overview",
@@ -2405,7 +2412,12 @@
       "side_effects": "Side effects",
       "who_cannot": "Contraindications and warnings",
       "interactions": "Interactions",
-      "pregnancy": "Pregnancy and breastfeeding"
+      "pregnancy": "Pregnancy and breastfeeding",
+      "procedure": "What happens during the test",
+      "preparation": "How to prepare",
+      "risks": "Risks",
+      "results": "What the results mean",
+      "more": "Anything else to know"
     },
     "links": {
       "title": "Links in the reference",
@@ -2418,7 +2430,9 @@
       "class_out": "Belongs to",
       "class_in": "Kinds",
       "related_out": "Related to",
-      "related_in": "Related to"
+      "related_in": "Related to",
+      "diagnoses_out": "Helps diagnose",
+      "diagnoses_in": "Lab tests"
     },
     "quotes": {
       "title": "From the source, in English",
@@ -2438,7 +2452,11 @@
         "fda": "FDA label (openFDA / DailyMed)",
         "nhs": "NHS website (UK)",
         "wikipedia-he": "Hebrew Wikipedia",
-        "wikipedia-en": "English Wikipedia"
+        "wikipedia-en": "English Wikipedia",
+        "israel": "Israeli Ministry of Health drug registry",
+        "genetics": "MedlinePlus Genetics (US National Library of Medicine)",
+        "rxnorm": "RxNorm (US National Library of Medicine)",
+        "loinc": "LOINC (Regenstrief Institute)"
       }
     },
     "nhs": {
@@ -2456,6 +2474,23 @@
       "reviewFailed": "Second reading: a mismatch with the sources was found, the entry will be rewritten",
       "numbersOk": "Numbers check: every number in the Hebrew exists in the source",
       "numbersFailed": "Numbers check: a number is not in the source, the entry will be rewritten"
+    },
+    "wikipedia": {
+      "attribution": "The Hebrew entry is based on the Hebrew Wikipedia and is shown under the {licence} licence, like its source.",
+      "revised": "Revision read: {date}"
+    },
+    "israel": {
+      "title": "Products registered in Israel",
+      "inBasket": "In the basket",
+      "prescription": "Prescription",
+      "otc": "Over the counter",
+      "source": "From the Israeli Ministry of Health drug registry. The names and status are read from it; the leaflet itself opens on their site.",
+      "leaflet": "Consumer leaflet ({language})",
+      "registry": "To the drug registry"
+    },
+    "labTest": {
+      "codes": "LOINC codes",
+      "ranges": "The normal range differs between laboratories and by age and sex. Always compare with the range printed on the report."
     }
   },
   "accessibility": {

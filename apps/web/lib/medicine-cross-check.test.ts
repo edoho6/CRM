@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { crossCheck, mentions, normalizeName, statusFor } from '../../../scripts/medicine/lib/cross-check.mjs';
 import { candidateNames, cleanName } from '../../../scripts/medicine/lib/drug-names.mjs';
+import { cleanIcd } from '../../../scripts/medicine/lib/icd.mjs';
 
 describe('drug names for the American sources', () => {
   it('drops the chemist prefixes and keeps the name', () => {
@@ -39,6 +40,14 @@ describe('medicine cross-check', () => {
     expect(mentions('indicated for TYPE 2 DIABETES mellitus', ['type 2 diabetes'])).toEqual(['type 2 diabetes']);
   });
 
+  it('finds a Hebrew name with the article or a preposition glued to it', () => {
+    // The Hebrew Wikipedia writes "בשיעול", "הסוכרת", "ולחץ" — the same word.
+    expect(mentions('התסמינים כוללים שיעול וקוצר נשימה', ['שיעול', 'קוצר נשימה'])).toEqual(['שיעול', 'קוצר נשימה']);
+    expect(mentions('טיפול בשיעול כרוני', ['שיעול'])).toEqual(['שיעול']);
+    expect(mentions('מטופלים עם הסוכרת מסוג 2', ['סוכרת'])).toEqual(['סוכרת']);
+    expect(mentions('דלקת ריאות חריפה', ['חום'])).toEqual([]);
+  });
+
   it('counts a claim as agreed only when two sources make it', () => {
     const check = crossCheck({
       sources: ['wikidata', 'fda'],
@@ -62,5 +71,21 @@ describe('medicine cross-check', () => {
 
   it('counts the same source once, however many times it contributed', () => {
     expect(crossCheck({ sources: ['fda', 'fda', 'wikidata'], evidence: {} }).sources).toBe(2);
+  });
+});
+
+describe('cleanIcd', () => {
+  it('undoes the doubled digits some Wikidata ICD-10 values carry', () => {
+    expect(cleanIcd('I10-I1515.')).toBe('I10-I15');
+    expect(cleanIcd('C3333.-C3434.')).toBe('C33-C34');
+    expect(cleanIcd('B2424.')).toBe('B24');
+    expect(cleanIcd('M33.033.0-M33.133.1')).toBe('M33.0-M33.1');
+  });
+
+  it('leaves a sound code alone', () => {
+    expect(cleanIcd('F45.0-F45.9')).toBe('F45.0-F45.9');
+    expect(cleanIcd('J45')).toBe('J45');
+    expect(cleanIcd('E11.9')).toBe('E11.9');
+    expect(cleanIcd(null)).toBe('');
   });
 });

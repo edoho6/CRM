@@ -13,9 +13,15 @@
 // Output: supabase/seed/medicine/dataset.json.gz and test-results/medicine/report.md
 import fs from 'node:fs';
 import path from 'node:path';
-import { cacheDir, datasetFile, log, readJson, reportDir, seedDir, writeGzipJson } from './lib.mjs';
+import { cacheDir, datasetFile, firstSentences, log, readJson, reportDir, seedDir, writeGzipJson } from './lib.mjs';
 import { hashOf, materialFor } from './lib/material.mjs';
 
+/**
+ * The Hebrew an entry carries, in order of preference: written by a person,
+ * written from the sources by the model, and only then the Hebrew Wikipedia
+ * article itself. The last is share-alike, so it is marked as such, and it
+ * is what gives the reference Hebrew at all until the model has run.
+ */
 function hebrewFor(entry, manual) {
   const hand = manual[entry.wikidata_id];
   if (hand) {
@@ -26,16 +32,29 @@ function hebrewFor(entry, manual) {
     };
   }
   const dir = path.join(cacheDir, 'hebrew');
-  if (!fs.existsSync(dir)) return null;
   // The Hebrew written from the material the entry has now; older Hebrew, from material that has since changed, is not used.
-  const file = path.join(dir, `${entry.wikidata_id}.${hashOf(materialFor(entry))}.json`);
-  const latest = readJson(file);
-  if (!latest) return null;
-  return {
-    summary_he: latest.summary_he ?? null,
-    sections_he: latest.sections_he ?? {},
-    hebrew_meta: { model: latest.model, generated_at: latest.generated_at, basis: latest.basis ?? [] },
-  };
+  const generated = fs.existsSync(dir) ? readJson(path.join(dir, `${entry.wikidata_id}.${hashOf(materialFor(entry))}.json`)) : null;
+  if (generated) {
+    return {
+      summary_he: generated.summary_he ?? null,
+      sections_he: generated.sections_he ?? {},
+      hebrew_meta: { model: generated.model, generated_at: generated.generated_at, basis: generated.basis ?? [] },
+    };
+  }
+  const wiki = entry.wikipedia_he;
+  if (wiki) {
+    return {
+      summary_he: wiki.sections.overview ? firstSentences(wiki.sections.overview) : null,
+      sections_he: wiki.sections,
+      hebrew_meta: {
+        model: 'wikipedia-he',
+        generated_at: wiki.retrieved_at ?? null,
+        basis: Object.keys(wiki.sections),
+        source: { title: wiki.title, url: wiki.url, revision: wiki.revision, revised_at: wiki.revised_at, licence: wiki.licence },
+      },
+    };
+  }
+  return null;
 }
 
 /** The second reading's verdict for the Hebrew the entry carries, if one was made. */
@@ -53,14 +72,16 @@ function main() {
 
   const entries = compiled.entries.map((entry) => {
     const he = hebrewFor(entry, manual);
-    const { description_he, image_file, ...rest } = entry;
+    const { description_he, image_file, wikipedia_he, ...rest } = entry;
     // A Hebrew name given by hand wins over Wikidata's label ("ליפיטור" is a
     // brand, "מתנת" is nobody's word for low back pain); the label stays as an alias.
     const handName = manual[entry.wikidata_id]?.name_he ?? null;
     const nameHe = handName ?? entry.name_he;
     const aliasesHe = [...new Set([...(entry.aliases_he ?? []), ...(handName && entry.name_he && entry.name_he !== handName ? [entry.name_he] : []), ...(manual[entry.wikidata_id]?.aliases_he ?? [])])];
-    const review = he ? reviewFor(entry) : null;
-    const numbers = he ? (flags[entry.wikidata_id] ? { ok: false, missing: flags[entry.wikidata_id].missing } : { ok: true, missing: [] }) : null;
+    // The model's Hebrew is reviewed and its numbers checked; text quoted
+    // from Wikipedia is not the model's to answer for.
+    const review = he && he.hebrew_meta.model !== 'wikipedia-he' ? reviewFor(entry) : null;
+    const numbers = review || (he && he.hebrew_meta.model !== 'wikipedia-he') ? (flags[entry.wikidata_id] ? { ok: false, missing: flags[entry.wikidata_id].missing } : { ok: true, missing: [] }) : null;
     return {
       ...rest,
       name_he: nameHe,
@@ -76,10 +97,11 @@ function main() {
 
   const byKind = {};
   for (const e of entries) {
-    const bucket = (byKind[e.kind] ??= { total: 0, draft: 0, cross_checked: 0, verified: 0, hebrew: 0, sources2: 0, identity: 0, reviewed: 0, faithful: 0, numbersOk: 0 });
+    const bucket = (byKind[e.kind] ??= { total: 0, draft: 0, cross_checked: 0, verified: 0, hebrew: 0, ownHebrew: 0, sources2: 0, identity: 0, reviewed: 0, faithful: 0, numbersOk: 0 });
     bucket.total += 1;
     bucket[e.status] += 1;
     if (e.sections.he) bucket.hebrew += 1;
+    if (e.sections.he && e.hebrew_meta?.model !== 'wikipedia-he') bucket.ownHebrew += 1;
     if ((e.cross_check?.sources ?? 0) >= 2) bucket.sources2 += 1;
     if (e.cross_check?.identity_confirmed) bucket.identity += 1;
     if (e.hebrew_meta?.review) bucket.reviewed += 1;
@@ -93,9 +115,9 @@ function main() {
     '',
     `${entries.length} entries, ${compiled.links.length} links; ${dropped.length} items left out.`,
     '',
-    '| kind | entries | draft | cross-checked | verified | ≥2 sources | identity confirmed | with Hebrew | Hebrew reviewed | faithful | numbers ok |',
-    '|---|---|---|---|---|---|---|---|---|---|---|',
-    ...Object.entries(byKind).map(([k, b]) => `| ${k} | ${b.total} | ${b.draft} | ${b.cross_checked} | ${b.verified} | ${b.sources2} | ${b.identity} | ${b.hebrew} | ${b.reviewed} | ${b.faithful} | ${b.numbersOk} |`),
+    '| kind | entries | draft | cross-checked | verified | ≥2 sources | identity confirmed | with Hebrew | Hebrew of our own | Hebrew reviewed | faithful | numbers ok |',
+    '|---|---|---|---|---|---|---|---|---|---|---|---|',
+    ...Object.entries(byKind).map(([k, b]) => `| ${k} | ${b.total} | ${b.draft} | ${b.cross_checked} | ${b.verified} | ${b.sources2} | ${b.identity} | ${b.hebrew} | ${b.ownHebrew} | ${b.reviewed} | ${b.faithful} | ${b.numbersOk} |`),
     '',
     '## Left out',
     '',

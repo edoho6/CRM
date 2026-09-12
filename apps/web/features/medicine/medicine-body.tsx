@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { Activity, Pill, Thermometer, type LucideIcon } from 'lucide-react';
+import { Activity, Pill, TestTube, Thermometer, type LucideIcon } from 'lucide-react';
 import { Alert, Badge, cn } from '@clinic/ui';
 import { formatDate } from '@clinic/i18n';
 import type { MedEntry, MedLinkedEntry, MedQuote, MedSource } from '@clinic/db/types';
@@ -24,6 +24,7 @@ const KIND_ICONS: Record<MedKind, LucideIcon> = {
   condition: Activity,
   symptom: Thermometer,
   drug: Pill,
+  lab_test: TestTube,
 };
 
 /** The order the sections read in, per kind; a section the entry lacks is skipped. */
@@ -31,13 +32,14 @@ const SECTION_ORDER: Record<MedKind, readonly string[]> = {
   condition: ['overview', 'symptoms', 'causes', 'diagnosis', 'treatment', 'urgent', 'self_care'],
   symptom: ['overview', 'possible_causes', 'urgent', 'self_care'],
   drug: ['what_for', 'how_to_take', 'side_effects', 'who_cannot', 'interactions', 'pregnancy'],
+  lab_test: ['overview', 'what_for', 'procedure', 'preparation', 'risks', 'results', 'more'],
 };
 
 /** Sections that warn rather than describe: a different edge, the same voice. */
 const WARNING_SECTIONS = new Set(['urgent', 'who_cannot']);
 
-const SOURCE_KEYS = new Set(['wikidata', 'medlineplus', 'fda', 'nhs', 'wikipedia-he', 'wikipedia-en']);
-const ID_KEYS = new Set(['icd10', 'icd10cm', 'mesh', 'doid', 'atc', 'rxcui', 'medlineplus', 'nhs']);
+const SOURCE_KEYS = new Set(['wikidata', 'medlineplus', 'genetics', 'fda', 'rxnorm', 'nhs', 'israel', 'wikipedia-he', 'wikipedia-en']);
+const ID_KEYS = new Set(['icd10', 'icd10cm', 'mesh', 'doid', 'atc', 'rxcui', 'unii', 'omim', 'orphanet', 'loinc', 'medlineplus', 'nhs']);
 
 /** Where the Israeli leaflet is found; the reference links there and copies nothing from it. */
 const MOH_DRUG_REGISTRY = 'https://israeldrugs.health.gov.il/';
@@ -103,13 +105,16 @@ export function MedicineBody({
   const order = SECTION_ORDER[entry.kind];
   const sectionKeys = shown ? [...order.filter((key) => shown[key]), ...Object.keys(shown).filter((key) => !order.includes(key))] : [];
 
+  const fromWikipedia = entry.hebrew_meta?.model === 'wikipedia-he' ? (entry.hebrew_meta.source ?? null) : null;
   const hebrewNote =
     entry.status === 'verified'
       ? t('hebrewNote.verified')
       : sectionsHe
-        ? entry.hebrew_meta?.model === 'manual'
-          ? t('hebrewNote.manual')
-          : t('hebrewNote.auto')
+        ? fromWikipedia
+          ? t('hebrewNote.wikipedia')
+          : entry.hebrew_meta?.model === 'manual'
+            ? t('hebrewNote.manual')
+            : t('hebrewNote.auto')
         : entry.summary_he
           ? t('hebrewNote.wikidata')
           : t('hebrewNote.none');
@@ -248,10 +253,16 @@ export function MedicineBody({
         </section>
       ) : null}
 
+      {entry.israel ? <IsraeliProducts israel={entry.israel} headingLevel={headingLevel} /> : null}
+
       {nhs ? <NhsAttribution url={nhs.url} /> : null}
+      {fromWikipedia ? <WikipediaAttribution source={fromWikipedia} /> : null}
 
       <Alert tone="warning" title={t('disclaimer.title')}>
         <span className="block">{t('disclaimer.body')}</span>
+        {/* A normal range belongs to the laboratory that ran the test, not to
+            a reference book; the entry says where to read it instead. */}
+        {entry.kind === 'lab_test' ? <span className="mt-1 block">{t('labTest.ranges')}</span> : null}
         {entry.kind === 'drug' ? (
           <ExternalLink href={MOH_DRUG_REGISTRY} newTabLabel={tc('opensInNewTab')} className="mt-1 underline-offset-2 hover:underline">
             {t('disclaimer.registry')}
@@ -276,7 +287,9 @@ function Quote({ quote, sourceLabel, fieldLabel }: { quote: MedQuote; sourceLabe
         ) : null}
       </summary>
       <div className="border-t border-ink-100 px-3 py-2">
-        <p dir="ltr" className="whitespace-pre-wrap text-start text-sm text-ink-800">
+        {/* The source's own words keep the source's direction: the American and
+            British texts read left to right, the Hebrew article right to left. */}
+        <p dir={quote.lang === 'he' ? undefined : 'ltr'} className="whitespace-pre-wrap text-start text-sm text-ink-800">
           {quote.text}
         </p>
         <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-600">
@@ -317,6 +330,70 @@ function SourceList({ sources, label, nameOf }: { sources: MedSource[]; label: s
           </li>
         ))}
       </ul>
+    </div>
+  );
+}
+
+/**
+ * What is on the shelf here: the products of this substance registered in
+ * Israel, under the names a patient says, and the leaflet in Hebrew. It sits
+ * above the sources because it is the part a clinic in Israel acts on, and
+ * it carries no text from the leaflet itself — only the link to it.
+ */
+function IsraeliProducts({ israel, headingLevel }: { israel: NonNullable<MedEntry['israel']>; headingLevel: 'h2' | 'h3' }) {
+  const t = useTranslations('medicine');
+  const tc = useTranslations('common');
+  return (
+    <section className="space-y-2">
+      <Heading level={headingLevel}>{t('israel.title')}</Heading>
+      <ul className="divide-y divide-ink-100 rounded-lg border border-ink-200 bg-white">
+        {israel.products.map((product) => (
+          <li key={product.registration} className="flex flex-wrap items-baseline gap-x-2 gap-y-1 px-3 py-2 text-sm">
+            <span className="font-medium text-ink-900">{product.name_he}</span>
+            <span className="text-xs text-ink-500" dir="ltr">
+              {product.name_en}
+            </span>
+            {product.dosage_form ? <span className="text-xs text-ink-600">{product.dosage_form}</span> : null}
+            <span className="ms-auto flex items-center gap-1.5">
+              {product.in_basket ? <Badge tone="success">{t('israel.inBasket')}</Badge> : null}
+              <Badge tone={product.prescription ? 'neutral' : 'muted'}>{product.prescription ? t('israel.prescription') : t('israel.otc')}</Badge>
+            </span>
+          </li>
+        ))}
+      </ul>
+      <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-600">
+        <span>{t('israel.source')}</span>
+        {israel.leaflet ? (
+          <ExternalLink href={israel.leaflet.url} newTabLabel={tc('opensInNewTab')} className="underline-offset-2 hover:underline">
+            {t('israel.leaflet', { language: israel.leaflet.language })}
+          </ExternalLink>
+        ) : null}
+        <ExternalLink href="https://israeldrugs.health.gov.il/" newTabLabel={tc('opensInNewTab')} className="underline-offset-2 hover:underline">
+          {t('israel.registry')}
+        </ExternalLink>
+      </p>
+    </section>
+  );
+}
+
+/**
+ * What a share-alike licence asks of a page that shows the text: name the
+ * article, link to it, name the licence — and say that this entry's Hebrew
+ * is under the same licence, which is the part that matters to a reader who
+ * wants to reuse it.
+ */
+function WikipediaAttribution({ source }: { source: NonNullable<NonNullable<MedEntry['hebrew_meta']>['source']> }) {
+  const t = useTranslations('medicine');
+  const tc = useTranslations('common');
+  return (
+    <div className="rounded-lg border border-ink-200 bg-white px-3 py-2 text-sm">
+      <p className="text-ink-800">{t('wikipedia.attribution', { licence: source.licence })}</p>
+      <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-ink-600">
+        <ExternalLink href={source.url} newTabLabel={tc('opensInNewTab')} className="underline-offset-2 hover:underline">
+          {source.title}
+        </ExternalLink>
+        {source.revised_at ? <span>· {t('wikipedia.revised', { date: formatDate(new Date(source.revised_at)) })}</span> : null}
+      </p>
     </div>
   );
 }

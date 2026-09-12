@@ -27,7 +27,7 @@
 
 create table if not exists public.med_entries (
   id uuid primary key default gen_random_uuid(),
-  kind text not null check (kind in ('condition', 'symptom', 'drug')),
+  kind text not null check (kind in ('condition', 'symptom', 'drug', 'lab_test')),
   -- The address of the entry; from the English name, unique for good.
   slug text not null unique,
   -- The identity every source is joined on. Null only for an entry with no
@@ -59,6 +59,11 @@ create table if not exists public.med_entries (
   -- The picture, as the herb manifest describes one: {file, title, source,
   -- author, page, licence, licenceUrl, creditRequired}. Null: no picture.
   image jsonb,
+  -- What is registered in Israel for this substance: product names in
+  -- Hebrew, registration numbers, forms, basket and prescription status,
+  -- and the address of the Ministry's own leaflet. Facts and links only —
+  -- the leaflets belong to the manufacturers and are never copied.
+  israel jsonb,
   -- Every name and alias in one lower-cased string, kept by trigger, so the
   -- catalogue search is one trigram index rather than five.
   search_text text not null default '',
@@ -108,7 +113,7 @@ create trigger med_entries_set_updated_at
 create table if not exists public.med_links (
   from_id uuid not null references public.med_entries(id) on delete cascade,
   to_id uuid not null references public.med_entries(id) on delete cascade,
-  relation text not null check (relation in ('treats', 'symptom_of', 'side_effect', 'class', 'related')),
+  relation text not null check (relation in ('treats', 'symptom_of', 'side_effect', 'class', 'diagnoses', 'related')),
   source text not null,
   primary key (from_id, to_id, relation)
 );
@@ -161,7 +166,7 @@ begin
   end if;
 
   for e in select * from jsonb_array_elements(p_entries) loop
-    if coalesce(e ->> 'kind', '') not in ('condition', 'symptom', 'drug')
+    if coalesce(e ->> 'kind', '') not in ('condition', 'symptom', 'drug', 'lab_test')
        or coalesce(e ->> 'slug', '') = ''
        or coalesce(e ->> 'name_en', '') = '' then
       raise exception 'bad_entry: %', left(e::text, 160) using errcode = '22023';
@@ -196,13 +201,14 @@ begin
              cross_check = e -> 'cross_check',
              hebrew_meta = e -> 'hebrew_meta',
              hebrew_stale = false,
-             image = e -> 'image'
+             image = e -> 'image',
+             israel = e -> 'israel'
        where id = v_existing.id
        returning id into v_id;
     else
       insert into public.med_entries
         (kind, slug, wikidata_id, name_en, name_he, aliases_en, aliases_he, identifiers,
-         summary_en, summary_he, sections, quotes, sources, status, cross_check, hebrew_meta, image)
+         summary_en, summary_he, sections, quotes, sources, status, cross_check, hebrew_meta, image, israel)
       values
         (e ->> 'kind', e ->> 'slug', e ->> 'wikidata_id', e ->> 'name_en', e ->> 'name_he',
          array(select jsonb_array_elements_text(coalesce(e -> 'aliases_en', '[]'::jsonb))),
@@ -210,7 +216,7 @@ begin
          coalesce(e -> 'identifiers', '{}'::jsonb),
          e ->> 'summary_en', e ->> 'summary_he',
          coalesce(e -> 'sections', '{}'::jsonb), coalesce(e -> 'quotes', '[]'::jsonb), coalesce(e -> 'sources', '[]'::jsonb),
-         v_status, e -> 'cross_check', e -> 'hebrew_meta', e -> 'image')
+         v_status, e -> 'cross_check', e -> 'hebrew_meta', e -> 'image', e -> 'israel')
       returning id into v_id;
     end if;
     v_entries := v_entries + 1;
@@ -226,7 +232,7 @@ begin
          or m.slug = x ->> 'slug');
 
   for l in select * from jsonb_array_elements(p_links) loop
-    if coalesce(l ->> 'relation', '') not in ('treats', 'symptom_of', 'side_effect', 'class', 'related') then
+    if coalesce(l ->> 'relation', '') not in ('treats', 'symptom_of', 'side_effect', 'class', 'diagnoses', 'related') then
       v_skipped := v_skipped + 1;
       continue;
     end if;

@@ -22,6 +22,7 @@ const MEDICINE_PATH = '/reference/medicine';
 const LISTED_IDS: Array<[key: string, label: string]> = [
   ['icd10', 'ICD-10'],
   ['atc', 'ATC'],
+  ['loinc', 'LOINC'],
 ];
 
 /**
