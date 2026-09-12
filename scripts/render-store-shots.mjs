@@ -129,8 +129,25 @@ async function signInPortal(context, locale) {
   return page;
 }
 
+/** The first signed record on a patient's history tab: the cards say "חתום" / "Signed". */
+async function signedRecordIn(page) {
+  const links = page.locator('main a[href*="/encounters/"]:not([href*="/new"])');
+  await links.first().waitFor({ timeout: 10_000 });
+  const count = await links.count();
+  for (let i = 0; i < count; i++) {
+    const link = links.nth(i);
+    const text = ((await link.locator('xpath=ancestor::tr[1]').textContent().catch(() => '')) ?? '').trim();
+    if (/חתום|Signed/.test(text)) return await link.getAttribute('href');
+  }
+  return await links.first().getAttribute('href');
+}
+
 /** The staff app's screens, in the order the listing tells its story. */
 async function staffScreens(page, locale, sunday) {
+  // The patient photographed third is the one whose signed record is
+  // photographed fourth: a seeded person's finished visit, never a test
+  // run's draft.
+  let patientPath = null;
   return [
     { screen: 'dashboard', go: () => open(page, `${baseUrl}/${locale}/`) },
     { screen: 'calendar', go: () => open(page, `${baseUrl}/${locale}/calendar?view=day&date=${sunday}`) },
@@ -138,14 +155,15 @@ async function staffScreens(page, locale, sunday) {
       screen: 'patient',
       go: async () => {
         await open(page, `${baseUrl}/${locale}/patients`);
-        await open(page, `${baseUrl}${new URL(await seededRecord(page, '/patients/'), baseUrl).pathname}?tab=encounters`);
+        patientPath = new URL(await seededRecord(page, '/patients/'), baseUrl).pathname;
+        await open(page, `${baseUrl}${patientPath}?tab=encounters`);
       },
     },
     {
       screen: 'treatment',
       go: async () => {
-        await open(page, `${baseUrl}/${locale}/encounters`);
-        await open(page, `${baseUrl}${new URL(await seededRecord(page, '/encounters/', (text) => /חתום|Signed/.test(text)), baseUrl).pathname}`);
+        await open(page, `${baseUrl}${patientPath}?tab=encounters`);
+        await open(page, `${baseUrl}${new URL(await signedRecordIn(page), baseUrl).pathname}`);
       },
     },
     { screen: 'tasks', go: () => open(page, `${baseUrl}/${locale}/tasks`) },
