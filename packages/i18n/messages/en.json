@@ -771,6 +771,13 @@
       "rooms": "Stripe — room:",
       "types": "Tint — treatment type:",
       "confirmation": "Attendance:"
+    },
+    "drag": {
+      "instructions": "Space lifts the appointment, the arrows move it by a quarter hour or a day, Space drops it and Escape cancels. Enter opens its details.",
+      "pickedUp": "Picked up the appointment of {patient}. Arrows move it, Space drops it.",
+      "dropped": "Dropped the appointment of {patient}.",
+      "cancelled": "Moving the appointment of {patient} was cancelled.",
+      "moved": "Moved to {date}, {time}"
     }
   },
   "encounters": {

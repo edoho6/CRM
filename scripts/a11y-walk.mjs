@@ -721,6 +721,40 @@ const flows = {
       await deleteBlockByMouse(page, blockAtTen());
       return finish(flow, context);
     }
+    // Moved by keyboard: Space lifts the block, two arrows are half an hour,
+    // Space drops it; the diary announces the move. Then back up, so the
+    // rest of the flow finds its 10:00 where it expects it.
+    // At a hand's pace: a key every so often, as a person presses them.
+    const pressSlowly = async (...keys) => {
+      for (const key of keys) {
+        await page.keyboard.press(key);
+        await page.waitForTimeout(150);
+      }
+    };
+    await pressSlowly('Space', 'ArrowDown', 'ArrowDown', 'Space');
+    if (!(await toast(page, /התור הוזז/))) issue(flow, 'appointment: Space, two arrows and Space did not move the block (no "moved" toast)');
+    else {
+      note(flow, 'appointment: moved half an hour down with Space, the arrows and Space');
+      const halfPast = page.locator('main button.absolute', { hasText: '10:30' }).first();
+      if (!(await halfPast.waitFor({ timeout: 15_000 }).then(() => true).catch(() => false))) issue(flow, 'appointment: the block did not redraw at 10:30');
+      await page.waitForTimeout(400);
+      const after = await active(page);
+      if (!(after.role === 'button' && after.name.includes('10:30'))) {
+        issue(flow, `appointment: after the drop, focus is on ${describeStop(after)} rather than the moved block`);
+        if (!(await tabTo(page, flow, (s) => s.role === 'button' && s.name.includes('10:30'), { where: 'calendar → the moved block', max: 300 }))) return finish(flow, context);
+      }
+      await pressSlowly('Space', 'ArrowUp', 'ArrowUp', 'Space');
+      if (!(await toast(page, /התור הוזז/))) issue(flow, 'appointment: the move back up gave no "moved" toast');
+      if (!(await blockAtTen().waitFor({ timeout: 15_000 }).then(() => true).catch(() => false))) {
+        issue(flow, 'appointment: the block did not return to 10:00');
+        return finish(flow, context);
+      }
+      await page.waitForTimeout(400);
+      const back = await active(page);
+      if (!(back.role === 'button' && back.name.includes('10:00'))) {
+        if (!(await tabTo(page, flow, (s) => s.role === 'button' && s.name.includes('10:00'), { where: 'calendar → the block, back at 10:00', max: 300 }))) return finish(flow, context);
+      }
+    }
     await page.keyboard.press('Enter');
     // The block opens its details first; the edit form is a button in there.
     if (!(await dialogChecks(page, flow, 'appointment details', { tabs: 12 }))) return finish(flow, context);

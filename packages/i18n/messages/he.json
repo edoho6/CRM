@@ -771,6 +771,13 @@
       "rooms": "פס צבע — חדר:",
       "types": "רקע — סוג טיפול:",
       "confirmation": "הגעה:"
+    },
+    "drag": {
+      "instructions": "רווח מרים את התור, החצים מזיזים אותו ברבע שעה או ביום, רווח מניח אותו ו-Escape מבטל. Enter פותח את פרטי התור.",
+      "pickedUp": "התור של {patient} הורם. חצים להזזה, רווח להנחה.",
+      "dropped": "התור של {patient} הונח.",
+      "cancelled": "ההזזה של התור של {patient} בוטלה.",
+      "moved": "התור הוזז ל{date}, {time}"
     }
   },
   "encounters": {

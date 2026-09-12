@@ -30,6 +30,14 @@ export const appointmentFormSchema = z
     path: ['end_at'],
   });
 
+/** A block dragged to another hour: only the times move, everything else stays. */
+export const appointmentMoveSchema = z
+  .object({ start_at: z.string().min(1), end_at: z.string().min(1) })
+  .refine((value) => new Date(value.end_at).getTime() > new Date(value.start_at).getTime(), {
+    error: 'end_must_be_after_start',
+    path: ['end_at'],
+  });
+
 export type AppointmentFormValues = z.input<typeof appointmentFormSchema>;
 export type AppointmentFormData = z.output<typeof appointmentFormSchema>;
 

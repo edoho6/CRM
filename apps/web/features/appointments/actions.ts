@@ -2,6 +2,7 @@
 
 import {
   appointmentFormSchema,
+  appointmentMoveSchema,
   appointmentSeriesSchema,
   type AppointmentStatus,
 } from '@clinic/domain';
@@ -160,6 +161,25 @@ export async function updateAppointment(id: string, input: unknown): Promise<Act
   if (!scope) return actionError(new Error('unauthorized'));
 
   const parsed = appointmentFormSchema.safeParse(input);
+  if (!parsed.success) return actionError(new Error('validation'));
+
+  const { error } = await scope.supabase.from('appointments').update(parsed.data).eq('id', id);
+
+  if (error) return actionError(error);
+  return actionOk();
+}
+
+/**
+ * A booking dragged to another hour or day: only the times change. The
+ * clash rules are the exclusion constraints, as for any other write — a
+ * drop on a taken hour comes back as the same overlap error the dialog
+ * shows, and the block returns to where it was.
+ */
+export async function moveAppointment(id: string, input: unknown): Promise<ActionResult> {
+  const scope = await getClinicScope();
+  if (!scope) return actionError(new Error('unauthorized'));
+
+  const parsed = appointmentMoveSchema.safeParse(input);
   if (!parsed.success) return actionError(new Error('validation'));
 
   const { error } = await scope.supabase.from('appointments').update(parsed.data).eq('id', id);

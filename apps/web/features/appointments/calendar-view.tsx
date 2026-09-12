@@ -1,16 +1,28 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useTransition } from 'react';
 import { useFormatter, useLocale, useTranslations } from 'next-intl';
+import {
+  DndContext,
+  MouseSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  type Announcements,
+  type DragEndEvent,
+} from '@dnd-kit/core';
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import type { Location, Room } from '@clinic/db/types';
+import { AppointmentBlock, DRAG_SNAP_MINUTES } from './appointment-block';
 import { ConfirmationDot } from './confirmation-status';
 import { BlockDayDialog } from './block-day-dialog';
 import { DayAddMenu } from './day-add-menu';
 import { NowLine } from './now-line';
-import { Button, PageHeader, SegmentedControl, cn } from '@clinic/ui';
+import { Button, PageHeader, SegmentedControl, cn, useToast } from '@clinic/ui';
+import { describeActionError } from '@/lib/action-error';
+import { moveAppointment } from './actions';
 import { DateInput } from '@/components/date-input';
-import { DEFAULT_ENTRY_COLOR, type Locale } from '@clinic/domain';
+import type { Locale } from '@clinic/domain';
 import { Link, usePathname, useRouter } from '@clinic/i18n/navigation';
 import type { AppointmentType, AppointmentWithRelations, Patient } from '@clinic/db/types';
 import { appointmentTypeName, patientFullName } from '@/lib/display';
@@ -114,9 +126,11 @@ function positionDay(
     const assignments = cluster.map((appointment) => {
       const start = new Date(appointment.start_at).getTime();
       const end = new Date(appointment.end_at).getTime();
-      const preferred = laneCount && appointment.room ? roomLane.get(appointment.room.id) : undefined;
+      const preferred =
+        laneCount && appointment.room ? roomLane.get(appointment.room.id) : undefined;
       let column =
-        preferred !== undefined && (columnEnds[preferred] === undefined || columnEnds[preferred] <= start)
+        preferred !== undefined &&
+        (columnEnds[preferred] === undefined || columnEnds[preferred] <= start)
           ? preferred
           : columnEnds.findIndex((value) => value === undefined || value <= start);
       if (column === -1) {
@@ -256,7 +270,10 @@ export function CalendarView({
   // form is a button inside it.
   const [details, setDetails] = useState<AppointmentWithRelations | null>(null);
   const roomLane = useMemo(
-    () => new Map(rooms.filter((room) => room.is_active !== false).map((room, index) => [room.id, index])),
+    () =>
+      new Map(
+        rooms.filter((room) => room.is_active !== false).map((room, index) => [room.id, index]),
+      ),
     [rooms],
   );
   const [draft, setDraft] = useState<AppointmentDraft | null>(
@@ -269,16 +286,187 @@ export function CalendarView({
       : null,
   );
 
+  // A block just dragged shows at its new hour before the server answers;
+  // the server's own list, when it arrives, replaces the guess.
+  const [moved, setMoved] = useState<Record<string, { start_at: string; end_at: string }>>({});
+  useEffect(() => setMoved({}), [appointments]);
+  const shown = useMemo(
+    () =>
+      appointments.map((appointment) =>
+        moved[appointment.id] ? { ...appointment, ...moved[appointment.id] } : appointment,
+      ),
+    [appointments, moved],
+  );
+
   const byDay = useMemo(() => {
     const map = new Map<string, AppointmentWithRelations[]>();
-    for (const appointment of appointments) {
+    for (const appointment of shown) {
       const key = toDateKey(new Date(appointment.start_at));
       const list = map.get(key);
       if (list) list.push(appointment);
       else map.set(key, [appointment]);
     }
     return map;
-  }, [appointments]);
+  }, [shown]);
+
+  // Dragging a block. The mouse needs a few pixels of intent so a click
+  // still opens the details; a finger needs a moment so a swipe still
+  // scrolls the day. The keyboard has a path of its own further down —
+  // Space lifts, the arrows step a quarter hour or a day, Space drops —
+  // kept out of dnd-kit's keyboard sensor, whose first arrow, pressed
+  // before it has measured the block, sent the block across the day.
+  const tAll = useTranslations();
+  const { toast } = useToast();
+  const [, startMove] = useTransition();
+  const dragSensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 8 } }),
+  );
+  const draggedName = (data: Record<string, unknown> | undefined) => {
+    const appointment = data?.appointment as AppointmentWithRelations | undefined;
+    return appointment ? patientFullName(appointment.patient) : '';
+  };
+  const dragAnnouncements: Announcements = {
+    onDragStart: ({ active }) => t('drag.pickedUp', { patient: draggedName(active.data.current) }),
+    onDragOver: () => undefined,
+    onDragEnd: ({ active }) => t('drag.dropped', { patient: draggedName(active.data.current) }),
+    onDragCancel: ({ active }) =>
+      t('drag.cancelled', { patient: draggedName(active.data.current) }),
+  };
+
+  /** How far a booking may move and stay on the grid: whole quarter hours, whole days. */
+  function moveBounds(appointment: AppointmentWithRelations) {
+    const start = new Date(appointment.start_at);
+    const duration = new Date(appointment.end_at).getTime() - start.getTime();
+    const startMinutes = minutesSinceMidnight(start);
+    const dayIndex = days.findIndex((day) => isSameDay(day, start));
+    return {
+      start,
+      duration,
+      minMinutes: DAY_START_HOUR * 60 - startMinutes,
+      maxMinutes: DAY_END_HOUR * 60 - duration / 60_000 - startMinutes,
+      minDays: dayIndex === -1 ? 0 : -dayIndex,
+      maxDays: dayIndex === -1 ? 0 : days.length - 1 - dayIndex,
+    };
+  }
+  const clamp = (value: number, low: number, high: number) => Math.max(low, Math.min(high, value));
+
+  /**
+   * Moves a booking by quarter hours and days: shown at once, written, and
+   * put back with the overlap message if the hour is taken.
+   */
+  function applyMove(appointment: AppointmentWithRelations, minuteDelta: number, dayDelta: number) {
+    const bounds = moveBounds(appointment);
+    const minutes = clamp(minuteDelta, bounds.minMinutes, bounds.maxMinutes);
+    const dayShift = clamp(dayDelta, bounds.minDays, bounds.maxDays);
+    const nextStart = addMinutes(addDays(bounds.start, dayShift), minutes);
+    if (nextStart.getTime() === bounds.start.getTime()) return;
+    const nextEnd = new Date(nextStart.getTime() + bounds.duration);
+
+    const times = { start_at: nextStart.toISOString(), end_at: nextEnd.toISOString() };
+    setMoved((current) => ({ ...current, [appointment.id]: times }));
+    startMove(async () => {
+      const result = await moveAppointment(appointment.id, times);
+      if (!result.ok) {
+        setMoved((current) => {
+          const { [appointment.id]: _dropped, ...rest } = current;
+          return rest;
+        });
+        toast({ tone: 'danger', title: describeActionError(tAll, result.error?.key) });
+        return;
+      }
+      toast({
+        tone: 'success',
+        title: t('drag.moved', {
+          date: formatDate(nextStart),
+          time: format.dateTime(nextStart, 'time'),
+        }),
+      });
+      router.refresh();
+    });
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    const data = event.active.data.current as
+      { appointment: AppointmentWithRelations; node: { current: HTMLElement | null } } | undefined;
+    const appointment = data?.appointment;
+    const column = data?.node.current?.closest<HTMLElement>('[data-day-column]');
+    if (!appointment || !column) return;
+    const rect = column.getBoundingClientRect();
+    const slotPx = rect.height / SLOT_COUNT;
+    const minuteDelta =
+      Math.round(((event.delta.y / slotPx) * SLOT_MINUTES) / DRAG_SNAP_MINUTES) * DRAG_SNAP_MINUTES;
+    // Columns run in reading order: a move to the left is a later day in Hebrew.
+    const dayDelta =
+      days.length > 1 && rect.width > 0
+        ? Math.round((isRtl ? -event.delta.x : event.delta.x) / rect.width)
+        : 0;
+    applyMove(appointment, minuteDelta, dayDelta);
+  }
+
+  // The keyboard's move: the lifted block, its offset so far, and a line
+  // the screen reader hears at every step.
+  const [keyMove, setKeyMove] = useState<{ id: string; minutes: number; days: number } | null>(
+    null,
+  );
+  const [liveText, setLiveText] = useState('');
+  function handleBlockKeyDown(
+    event: React.KeyboardEvent<HTMLButtonElement>,
+    appointment: AppointmentWithRelations,
+  ) {
+    const name = patientFullName(appointment.patient);
+    const current = keyMove?.id === appointment.id ? keyMove : null;
+    if (!current) {
+      // Enter is the button's: it opens the details. Space lifts.
+      if (event.key === ' ') {
+        event.preventDefault();
+        setKeyMove({ id: appointment.id, minutes: 0, days: 0 });
+        setLiveText(t('drag.pickedUp', { patient: name }));
+      }
+      return;
+    }
+    if (event.key === ' ' || event.key === 'Enter') {
+      event.preventDefault();
+      setKeyMove(null);
+      setLiveText(t('drag.dropped', { patient: name }));
+      applyMove(appointment, current.minutes, current.days);
+      return;
+    }
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      setKeyMove(null);
+      setLiveText(t('drag.cancelled', { patient: name }));
+      return;
+    }
+    // Reading order: the next day is to the left in Hebrew.
+    const later = isRtl ? 'ArrowLeft' : 'ArrowRight';
+    const earlier = isRtl ? 'ArrowRight' : 'ArrowLeft';
+    const bounds = moveBounds(appointment);
+    let next = current;
+    if (event.key === 'ArrowDown') {
+      next = {
+        ...current,
+        minutes: clamp(current.minutes + DRAG_SNAP_MINUTES, bounds.minMinutes, bounds.maxMinutes),
+      };
+    } else if (event.key === 'ArrowUp') {
+      next = {
+        ...current,
+        minutes: clamp(current.minutes - DRAG_SNAP_MINUTES, bounds.minMinutes, bounds.maxMinutes),
+      };
+    } else if (event.key === later && days.length > 1) {
+      next = { ...current, days: clamp(current.days + 1, bounds.minDays, bounds.maxDays) };
+    } else if (event.key === earlier && days.length > 1) {
+      next = { ...current, days: clamp(current.days - 1, bounds.minDays, bounds.maxDays) };
+    } else {
+      return;
+    }
+    event.preventDefault();
+    setKeyMove(next);
+    const at = addMinutes(addDays(bounds.start, next.days), next.minutes);
+    setLiveText(
+      next.days ? `${formatDate(at)} ${format.dateTime(at, 'time')}` : format.dateTime(at, 'time'),
+    );
+  }
 
   function navigate(direction: -1 | 1) {
     // Each view steps by its own unit: a day, a week, a month. The range view
@@ -355,7 +543,10 @@ export function CalendarView({
       const next = Math.ceil(minutesSinceMidnight(now) / SLOT_MINUTES) * SLOT_MINUTES;
       minutes = Math.max(dayStart, next);
     }
-    const clamped = Math.min(Math.max(minutes, DAY_START_HOUR * 60), DAY_END_HOUR * 60 - SLOT_MINUTES);
+    const clamped = Math.min(
+      Math.max(minutes, DAY_START_HOUR * 60),
+      DAY_END_HOUR * 60 - SLOT_MINUTES,
+    );
     openSlot(day, (clamped - DAY_START_HOUR * 60) / SLOT_MINUTES);
   }
 
@@ -400,394 +591,375 @@ export function CalendarView({
           </Button>
         }
       />
-    <div className="space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-wrap items-center gap-1">
-          {/* The range view is anchored to its own two dates, so stepping and
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-1">
+            {/* The range view is anchored to its own two dates, so stepping and
               "today" have nothing to act on and are hidden rather than left
               present and inert. */}
-          {view !== 'range' ? (
-            <>
-              {/* Chevrons point in reading order: "previous" is towards the start edge. */}
-              <Button
-                variant="secondary"
-                size="icon"
-                onClick={() => navigate(-1)}
-                aria-label={t('previousPeriod')}
-                title={t('previousPeriod')}
-              >
-                {isRtl ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-              </Button>
-              <Button
-                variant="secondary"
-                size="icon"
-                onClick={() => navigate(1)}
-                aria-label={t('nextPeriod')}
-                title={t('nextPeriod')}
-              >
-                {isRtl ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-              </Button>
-              <Button variant="secondary" onClick={goToday}>
-                {tc('today')}
-              </Button>
-              <span className="ms-2 text-sm font-medium text-ink-700">{rangeLabel}</span>
-              {/* A diary with no working hours looks exactly like one with them —
-                  nothing is shaded either way — so the difference is said here. */}
-              {availability.blocks.length === 0 && availability.exceptions.length === 0 ? (
-                <Link
-                  href="/account/schedule"
-                  className="ms-2 text-xs font-medium text-amber-700 underline-offset-2 hover:underline"
+            {view !== 'range' ? (
+              <>
+                {/* Chevrons point in reading order: "previous" is towards the start edge. */}
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  onClick={() => navigate(-1)}
+                  aria-label={t('previousPeriod')}
+                  title={t('previousPeriod')}
                 >
-                  {t('noHoursHint')}
-                </Link>
-              ) : null}
-            </>
-          ) : (
-            <div className="flex flex-wrap items-center gap-1.5">
-              <DateInput
-                compact={false}
-                aria-label={tFilters('from')}
-                value={rangeFrom ?? toDateKey(days[0]!)}
-                max={rangeTo ?? undefined}
-                onChange={(event) => setRangeBound('from', event.target.value)}
-              />
-              <span className="text-sm text-ink-600">–</span>
-              <DateInput
-                compact={false}
-                aria-label={tFilters('to')}
-                value={rangeTo ?? toDateKey(days[days.length - 1]!)}
-                min={rangeFrom ?? undefined}
-                onChange={(event) => setRangeBound('to', event.target.value)}
-              />
-              <span className="ms-1 text-sm text-ink-600">
-                {t('countInView', { count: totalInView })}
-              </span>
-            </div>
-          )}
-        </div>
+                  {isRtl ? (
+                    <ChevronRight className="h-4 w-4" />
+                  ) : (
+                    <ChevronLeft className="h-4 w-4" />
+                  )}
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  onClick={() => navigate(1)}
+                  aria-label={t('nextPeriod')}
+                  title={t('nextPeriod')}
+                >
+                  {isRtl ? (
+                    <ChevronLeft className="h-4 w-4" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4" />
+                  )}
+                </Button>
+                <Button variant="secondary" onClick={goToday}>
+                  {tc('today')}
+                </Button>
+                <span className="ms-2 text-sm font-medium text-ink-700">{rangeLabel}</span>
+                {/* A diary with no working hours looks exactly like one with them —
+                  nothing is shaded either way — so the difference is said here. */}
+                {availability.blocks.length === 0 && availability.exceptions.length === 0 ? (
+                  <Link
+                    href="/account/schedule"
+                    className="ms-2 text-xs font-medium text-amber-700 underline-offset-2 hover:underline"
+                  >
+                    {t('noHoursHint')}
+                  </Link>
+                ) : null}
+              </>
+            ) : (
+              <div className="flex flex-wrap items-center gap-1.5">
+                <DateInput
+                  compact={false}
+                  aria-label={tFilters('from')}
+                  value={rangeFrom ?? toDateKey(days[0]!)}
+                  max={rangeTo ?? undefined}
+                  onChange={(event) => setRangeBound('from', event.target.value)}
+                />
+                <span className="text-sm text-ink-600">–</span>
+                <DateInput
+                  compact={false}
+                  aria-label={tFilters('to')}
+                  value={rangeTo ?? toDateKey(days[days.length - 1]!)}
+                  min={rangeFrom ?? undefined}
+                  onChange={(event) => setRangeBound('to', event.target.value)}
+                />
+                <span className="ms-1 text-sm text-ink-600">
+                  {t('countInView', { count: totalInView })}
+                </span>
+              </div>
+            )}
+          </div>
 
-        <div className="flex flex-wrap items-center gap-1">
-          {/* Shown at every width. It was hidden on a phone, where the day
+          <div className="flex flex-wrap items-center gap-1">
+            {/* Shown at every width. It was hidden on a phone, where the day
               view was forced — now the phone merely starts on the day and
               can leave it. */}
-          <SegmentedControl
-            label={t('views.label')}
-            size="md"
-            value={view}
-            onChange={(next) => switchView(next)}
-            options={[
-              { value: 'day', label: t('views.day') },
-              { value: 'week', label: t('views.week') },
-              { value: 'month', label: t('views.month') },
-              { value: 'range', label: t('views.range') },
-            ]}
-          />
+            <SegmentedControl
+              label={t('views.label')}
+              size="md"
+              value={view}
+              onChange={(next) => switchView(next)}
+              options={[
+                { value: 'day', label: t('views.day') },
+                { value: 'week', label: t('views.week') },
+                { value: 'month', label: t('views.month') },
+                { value: 'range', label: t('views.range') },
+              ]}
+            />
+          </div>
         </div>
-      </div>
 
-      {isTimeGrid && (roomLane.size > 0 || appointmentTypes.length > 1) ? (
-        <CalendarLegend rooms={rooms} appointmentTypes={appointmentTypes} locale={locale} />
-      ) : null}
+        {isTimeGrid && (roomLane.size > 0 || appointmentTypes.length > 1) ? (
+          <CalendarLegend rooms={rooms} appointmentTypes={appointmentTypes} locale={locale} />
+        ) : null}
 
-      {!isTimeGrid ? (
-        <MonthOrRangeView
-          days={days}
-          view={view}
-          anchor={anchor}
-          byDay={byDay}
-          availability={availability}
-          locale={locale}
-          onOpen={setDetails}
-          onAddOn={(day) => openSlot(day, 4)}
-          onBlockOn={(day) => setBlockDay(day)}
-        />
-      ) : (
-        // The hours scroll inside this panel, under a day row that stays
-        // put, and the panel opens on the current time (NowLine scrolls it).
-        // It used to be as tall as the day, so on a phone the whole page
-        // scrolled and the day names left with it. The height is what the
-        // window leaves after the shell and the toolbar; the floor keeps a
-        // short window from squashing it to nothing. A week's grid is wider
-        // than a phone and scrolls sideways inside the same panel.
-        <div
-          data-time-grid
-          data-scroll-panel
-          className="max-h-[calc(100dvh-var(--bottom-bar,0px)-14rem)] min-h-[20rem] overflow-auto overscroll-contain rounded-card border border-ink-200 bg-white"
-        >
-          <div className={cn(days.length > 1 && 'min-w-[720px]')}>
-            {/* Header row: time gutter + one cell per day. */}
+        {!isTimeGrid ? (
+          <MonthOrRangeView
+            days={days}
+            view={view}
+            anchor={anchor}
+            byDay={byDay}
+            availability={availability}
+            locale={locale}
+            onOpen={setDetails}
+            onAddOn={(day) => openSlot(day, 4)}
+            onBlockOn={(day) => setBlockDay(day)}
+          />
+        ) : (
+          // The hours scroll inside this panel, under a day row that stays
+          // put, and the panel opens on the current time (NowLine scrolls it).
+          // It used to be as tall as the day, so on a phone the whole page
+          // scrolled and the day names left with it. The height is what the
+          // window leaves after the shell and the toolbar; the floor keeps a
+          // short window from squashing it to nothing. A week's grid is wider
+          // than a phone and scrolls sideways inside the same panel.
+          <DndContext
+            sensors={dragSensors}
+            onDragEnd={handleDragEnd}
+            accessibility={{
+              announcements: dragAnnouncements,
+              screenReaderInstructions: { draggable: t('drag.instructions') },
+            }}
+          >
             <div
-              className="sticky top-0 z-20 grid border-b border-ink-200 bg-white"
-              style={{ gridTemplateColumns: `4rem repeat(${days.length}, minmax(0, 1fr))` }}
+              data-time-grid
+              data-scroll-panel
+              className="max-h-[calc(100dvh-var(--bottom-bar,0px)-14rem)] min-h-[20rem] overflow-auto overscroll-contain rounded-card border border-ink-200 bg-white"
             >
-              <div className="border-e border-ink-100" />
-              {days.map((day) => {
-                const today = isSameDay(day, new Date());
-                return (
-                  <div
-                    key={day.toISOString()}
-                    className={cn(
-                      'relative border-e border-ink-100 px-2 py-1.5 text-center last:border-e-0',
-                      today && 'bg-jade-50',
-                    )}
-                  >
-                    <div
-                      className={cn(
-                        'text-xs font-medium',
-                        today ? 'text-jade-800' : 'text-ink-600',
-                      )}
-                    >
-                      {format.dateTime(day, { weekday: 'short' })}
-                    </div>
-                    <div
-                      className={cn(
-                        'text-base leading-tight tabular-nums',
-                        today ? 'font-semibold text-jade-900' : 'font-medium text-ink-800',
-                      )}
-                    >
-                      {format.dateTime(day, { day: 'numeric', month: 'numeric' })}
-                    </div>
-                    {/* Book someone on this day, or close it — in the corner,
+              {/* What the keyboard's move says, for a screen reader. */}
+              <p aria-live="assertive" role="status" className="sr-only">
+                {liveText}
+              </p>
+              <div className={cn(days.length > 1 && 'min-w-[720px]')}>
+                {/* Header row: time gutter + one cell per day. */}
+                <div
+                  className="sticky top-0 z-20 grid border-b border-ink-200 bg-white"
+                  style={{ gridTemplateColumns: `4rem repeat(${days.length}, minmax(0, 1fr))` }}
+                >
+                  <div className="border-e border-ink-100" />
+                  {days.map((day) => {
+                    const today = isSameDay(day, new Date());
+                    return (
+                      <div
+                        key={day.toISOString()}
+                        className={cn(
+                          'relative border-e border-ink-100 px-2 py-1.5 text-center last:border-e-0',
+                          today && 'bg-jade-50',
+                        )}
+                      >
+                        <div
+                          className={cn(
+                            'text-xs font-medium',
+                            today ? 'text-jade-800' : 'text-ink-600',
+                          )}
+                        >
+                          {format.dateTime(day, { weekday: 'short' })}
+                        </div>
+                        <div
+                          className={cn(
+                            'text-base leading-tight tabular-nums',
+                            today ? 'font-semibold text-jade-900' : 'font-medium text-ink-800',
+                          )}
+                        >
+                          {format.dateTime(day, { day: 'numeric', month: 'numeric' })}
+                        </div>
+                        {/* Book someone on this day, or close it — in the corner,
                         out of the way of the date. */}
-                    <DayAddMenu
-                      onNew={() => openSlot(day, 4)}
-                      onBlock={() => setBlockDay(day)}
-                      blocked={
-                        Boolean(closureFor(day, availability)) ||
-                        blockedWindowsFor(day, availability).length > 0
-                      }
-                      className="absolute top-1 end-1"
-                    />
-                  </div>
-                );
-              })}
-            </div>
+                        <DayAddMenu
+                          onNew={() => openSlot(day, 4)}
+                          onBlock={() => setBlockDay(day)}
+                          blocked={
+                            Boolean(closureFor(day, availability)) ||
+                            blockedWindowsFor(day, availability).length > 0
+                          }
+                          className="absolute top-1 end-1"
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
 
-            {/* Body: time gutter + day columns with absolutely-placed events.
+                {/* Body: time gutter + day columns with absolutely-placed events.
                 The top padding gives the first hour's label room under the
                 sticky row. */}
-            <div
-              className="grid pt-2"
-              style={{ gridTemplateColumns: `4rem repeat(${days.length}, minmax(0, 1fr))` }}
-            >
-              <div className="border-e border-ink-100">
-                {Array.from({ length: SLOT_COUNT }, (_, index) => {
-                  const minutes = DAY_START_HOUR * 60 + index * SLOT_MINUTES;
-                  const isHour = minutes % 60 === 0;
-                  return (
-                    <div
-                      key={index}
-                      style={{ height: slotsToRem(1) }}
-                      className={cn('relative', isHour && 'border-t border-ink-100')}
-                    >
-                      {isHour ? (
-                        <span
-                          className="absolute -top-2 end-1.5 text-xs font-medium text-ink-600 tabular-nums"
-                          dir="ltr"
+                <div
+                  className="grid pt-2"
+                  style={{ gridTemplateColumns: `4rem repeat(${days.length}, minmax(0, 1fr))` }}
+                >
+                  <div className="border-e border-ink-100">
+                    {Array.from({ length: SLOT_COUNT }, (_, index) => {
+                      const minutes = DAY_START_HOUR * 60 + index * SLOT_MINUTES;
+                      const isHour = minutes % 60 === 0;
+                      return (
+                        <div
+                          key={index}
+                          style={{ height: slotsToRem(1) }}
+                          className={cn('relative', isHour && 'border-t border-ink-100')}
                         >
-                          {String(Math.floor(minutes / 60)).padStart(2, '0')}:00
-                        </span>
-                      ) : null}
-                    </div>
-                  );
-                })}
-              </div>
+                          {isHour ? (
+                            <span
+                              className="absolute -top-2 end-1.5 text-xs font-medium text-ink-600 tabular-nums"
+                              dir="ltr"
+                            >
+                              {String(Math.floor(minutes / 60)).padStart(2, '0')}:00
+                            </span>
+                          ) : null}
+                        </div>
+                      );
+                    })}
+                  </div>
 
-              {days.map((day) => {
-                const key = toDateKey(day);
-                const dayAppointments = byDay.get(key) ?? [];
-                const positioned = positionDay(dayAppointments, roomLane);
-                const today = isSameDay(day, new Date());
-                // Undefined means no schedule has been set, which shades nothing.
-                const open = openMinutes.get(key);
+                  {days.map((day) => {
+                    const key = toDateKey(day);
+                    const dayAppointments = byDay.get(key) ?? [];
+                    const positioned = positionDay(dayAppointments, roomLane);
+                    const today = isSameDay(day, new Date());
+                    // Undefined means no schedule has been set, which shades nothing.
+                    const open = openMinutes.get(key);
 
-                return (
-                  <div
-                    key={key}
-                    className={cn(
-                      'relative border-e border-ink-100 last:border-e-0',
-                      today && 'bg-jade-50/40',
-                    )}
-                  >
-                    {/* Clickable background slots.
+                    return (
+                      <div
+                        key={key}
+                        data-day-column
+                        className={cn(
+                          'relative border-e border-ink-100 last:border-e-0',
+                          today && 'bg-jade-50/40',
+                        )}
+                      >
+                        {/* Clickable background slots.
 
                         Hours outside the working day are shaded rather than
                         removed: a practitioner does see someone at eight in the
                         evening, and a grid that will not let them book it is a
                         grid they work around. The shading says what the schedule
                         expects; the slot still takes a booking. */}
-                    {Array.from({ length: SLOT_COUNT }, (_, index) => {
-                      const minutes = DAY_START_HOUR * 60 + index * SLOT_MINUTES;
-                      const working =
-                        !open || open.some(({ start, end }) => minutes >= start && minutes < end);
-                      return (
-                        <button
-                          key={index}
-                          type="button"
-                          // Not a tab stop: 210 half-hour slots between the toolbar and
-                          // the next control. The day's "+" menu is the keyboard's way in.
-                          tabIndex={-1}
-                          onClick={() => openSlot(day, index)}
-                          style={{ height: slotsToRem(1) }}
-                          className={cn(
-                            'block w-full transition-colors hover:bg-jade-100/60',
-                            minutes % 60 === 0
-                              ? 'border-t border-ink-100'
-                              : 'border-t border-ink-50',
-                            !working && 'bg-ink-100/70',
-                          )}
-                          aria-label={`${formatDate(day)} ${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}${working ? '' : ' · ' + t('outsideHours')}`}
-                          title={`${formatDate(day)} ${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}${working ? '' : ' · ' + t('outsideHours')}`}
-                        />
-                      );
-                    })}
+                        {Array.from({ length: SLOT_COUNT }, (_, index) => {
+                          const minutes = DAY_START_HOUR * 60 + index * SLOT_MINUTES;
+                          const working =
+                            !open ||
+                            open.some(({ start, end }) => minutes >= start && minutes < end);
+                          return (
+                            <button
+                              key={index}
+                              type="button"
+                              // Not a tab stop: 210 half-hour slots between the toolbar and
+                              // the next control. The day's "+" menu is the keyboard's way in.
+                              tabIndex={-1}
+                              onClick={() => openSlot(day, index)}
+                              style={{ height: slotsToRem(1) }}
+                              className={cn(
+                                'block w-full transition-colors hover:bg-jade-100/60',
+                                minutes % 60 === 0
+                                  ? 'border-t border-ink-100'
+                                  : 'border-t border-ink-50',
+                                !working && 'bg-ink-100/70',
+                              )}
+                              aria-label={`${formatDate(day)} ${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}${working ? '' : ' · ' + t('outsideHours')}`}
+                              title={`${formatDate(day)} ${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}${working ? '' : ' · ' + t('outsideHours')}`}
+                            />
+                          );
+                        })}
 
-                    {/* Hours away, drawn over the slots with their reason. The
+                        {/* Hours away, drawn over the slots with their reason. The
                         slots stay clickable underneath: a block is a warning,
                         not a wall. */}
-                    {blockedWindowsFor(day, availability).map((window) => {
-                      const start = Math.max(0, window.start - DAY_START_HOUR * 60);
-                      const end = Math.min(TOTAL_MINUTES, window.end - DAY_START_HOUR * 60);
-                      if (end <= start) return null;
-                      return (
-                        <div
-                          key={window.id}
-                          aria-hidden
-                          className="pointer-events-none absolute inset-x-0 z-[1] overflow-hidden border-y border-ink-300/60 px-1.5 py-0.5 text-xs leading-tight text-ink-600"
-                          style={{
-                            top: slotsToRem(start / SLOT_MINUTES),
-                            height: slotsToRem((end - start) / SLOT_MINUTES),
-                            backgroundImage:
-                              // Mixed from the ink colour, not from black: black on a dark
-                              // surface is nothing, and a closed afternoon read as open.
-                              'repeating-linear-gradient(135deg, color-mix(in srgb, var(--color-ink-900) 6%, transparent) 0 6px, color-mix(in srgb, var(--color-ink-900) 13%, transparent) 6px 8px)',
-                          }}
-                        >
-                          <span className="truncate" dir="auto">
-                            {window.reason ?? t('blockDay')}
-                          </span>
-                        </div>
-                      );
-                    })}
-
-                    {today ? (
-                      <NowLine
-                        dayStartHour={DAY_START_HOUR}
-                        slotMinutes={SLOT_MINUTES}
-                        slotHeightRem={SLOT_HEIGHT_REM}
-                        slotCount={SLOT_COUNT}
-                      />
-                    ) : null}
-
-                    {positioned.map(({ appointment, top, height, column, columns }) => {
-                      const color = appointment.appointment_type?.color ?? DEFAULT_ENTRY_COLOR;
-                      const isCancelled = appointment.status === 'cancelled';
-                      const widthPercent = 100 / columns;
-                      // A week's column split into lanes leaves room for a
-                      // name and an hour, and nothing else: the room is the
-                      // lane and the stripe, the type is the tint, and the
-                      // rest is one click away in the details.
-                      const narrow = days.length > 1 && columns > 1;
-                      const roomColor = appointment.room?.color ?? null;
-                      return (
-                        <button
-                          key={appointment.id}
-                          type="button"
-                          aria-haspopup="dialog"
-                          onClick={() => setDetails(appointment)}
-                          style={{
-                            top: slotsToRem(top),
-                            height: slotsToRem(height),
-                            // Logical offsets keep events flowing in reading order.
-                            insetInlineStart: `calc(${column * widthPercent}% + 2px)`,
-                            width: `calc(${widthPercent}% - 4px)`,
-                            borderInlineStartColor: roomColor ?? color,
-                            backgroundColor: isCancelled ? undefined : `${color}1a`,
-                          }}
-                          className={cn(
-                            'absolute overflow-hidden rounded-md border-s-3 text-start transition-shadow hover:shadow-md',
-                            narrow ? 'px-1 py-0.5' : 'px-1.5 py-0.5',
-                            isCancelled ? 'bg-ink-100 text-ink-500 line-through' : 'text-ink-900',
-                          )}
-                        >
-                          <span className="flex items-center gap-1">
-                            {/* Whether the patient said they are coming, as a
-                                dot beside the hour: grey, amber, green, red. */}
-                            {!isCancelled ? (
-                              <ConfirmationDot appointment={appointment} className={narrow ? 'h-2 w-2' : undefined} />
-                            ) : null}
-                            <span
-                              className="block truncate text-xs font-semibold tabular-nums"
-                              dir="ltr"
+                        {blockedWindowsFor(day, availability).map((window) => {
+                          const start = Math.max(0, window.start - DAY_START_HOUR * 60);
+                          const end = Math.min(TOTAL_MINUTES, window.end - DAY_START_HOUR * 60);
+                          if (end <= start) return null;
+                          return (
+                            <div
+                              key={window.id}
+                              aria-hidden
+                              className="pointer-events-none absolute inset-x-0 z-[1] overflow-hidden border-y border-ink-300/60 px-1.5 py-0.5 text-xs leading-tight text-ink-600"
+                              style={{
+                                top: slotsToRem(start / SLOT_MINUTES),
+                                height: slotsToRem((end - start) / SLOT_MINUTES),
+                                backgroundImage:
+                                  // Mixed from the ink colour, not from black: black on a dark
+                                  // surface is nothing, and a closed afternoon read as open.
+                                  'repeating-linear-gradient(135deg, color-mix(in srgb, var(--color-ink-900) 6%, transparent) 0 6px, color-mix(in srgb, var(--color-ink-900) 13%, transparent) 6px 8px)',
+                              }}
                             >
-                              {format.dateTime(new Date(appointment.start_at), 'time')}
-                            </span>
-                            {appointment.room && !narrow ? (
-                              <span
-                                className="ms-auto max-w-[45%] truncate rounded px-1 text-xs font-medium leading-4"
-                                style={{
-                                  backgroundColor: `${appointment.room.color}33`,
-                                  color: 'inherit',
-                                }}
-                                title={appointment.room.name}
-                              >
-                                {appointment.room.name}
+                              <span className="truncate" dir="auto">
+                                {window.reason ?? t('blockDay')}
                               </span>
-                            ) : null}
-                          </span>
-                          <span
-                            className={cn(
-                              'block leading-tight',
-                              narrow ? 'line-clamp-2 text-xs font-medium' : 'truncate text-sm',
-                            )}
-                          >
-                            {patientFullName(appointment.patient)}
-                          </span>
-                          {height > 1.5 && !narrow ? (
-                            <span className="block truncate text-xs text-ink-500">
-                              {appointmentTypeName(appointment.appointment_type, locale)}
-                            </span>
-                          ) : null}
-                        </button>
-                      );
-                    })}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
+                            </div>
+                          );
+                        })}
 
-      <AppointmentDetails
-        appointment={details}
-        locale={locale}
-        onClose={() => setDetails(null)}
-        onEdit={(appointment) => {
-          setDetails(null);
-          openAppointment(appointment);
-        }}
-      />
-      <AppointmentDialog
-        availability={availability}
-        open={dialogOpen}
-        draft={draft}
-        patients={patients}
-        appointmentTypes={appointmentTypes}
-        rooms={rooms}
-        locations={locations}
-        reminderTemplate={reminderTemplate}
-        clinicName={clinicName}
-        practitionerId={practitionerId}
-        onOpenChange={setDialogOpen}
-      />
-      <BlockDayDialog
-        day={blockDay}
-        existing={blockDay ? (availability.exceptions.find((entry) => entry.date === toDateKey(blockDay)) ?? null) : null}
-        availability={availability}
-        onOpenChange={(open) => !open && setBlockDay(null)}
-      />
-    </div>
+                        {today ? (
+                          <NowLine
+                            dayStartHour={DAY_START_HOUR}
+                            slotMinutes={SLOT_MINUTES}
+                            slotHeightRem={SLOT_HEIGHT_REM}
+                            slotCount={SLOT_COUNT}
+                          />
+                        ) : null}
+
+                        {positioned.map(({ appointment, top, height, column, columns }) => (
+                          <AppointmentBlock
+                            key={appointment.id}
+                            appointment={appointment}
+                            top={top}
+                            height={height}
+                            column={column}
+                            columns={columns}
+                            // A week's column split into lanes leaves room for a
+                            // name and an hour, and nothing else: the room is the
+                            // lane and the stripe, the type is the tint, and the
+                            // rest is one click away in the details.
+                            narrow={days.length > 1 && columns > 1}
+                            locale={locale}
+                            slotHeightRem={SLOT_HEIGHT_REM}
+                            slotMinutes={SLOT_MINUTES}
+                            onOpen={() => setDetails(appointment)}
+                            keyOffset={keyMove?.id === appointment.id ? keyMove : null}
+                            onKeyDown={(event) => handleBlockKeyDown(event, appointment)}
+                            onBlur={() => {
+                              // Tabbing away mid-move is a cancel, said only by the block settling.
+                              if (keyMove?.id === appointment.id) setKeyMove(null);
+                            }}
+                          />
+                        ))}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </DndContext>
+        )}
+
+        <AppointmentDetails
+          appointment={details}
+          locale={locale}
+          onClose={() => setDetails(null)}
+          onEdit={(appointment) => {
+            setDetails(null);
+            openAppointment(appointment);
+          }}
+        />
+        <AppointmentDialog
+          availability={availability}
+          open={dialogOpen}
+          draft={draft}
+          patients={patients}
+          appointmentTypes={appointmentTypes}
+          rooms={rooms}
+          locations={locations}
+          reminderTemplate={reminderTemplate}
+          clinicName={clinicName}
+          practitionerId={practitionerId}
+          onOpenChange={setDialogOpen}
+        />
+        <BlockDayDialog
+          day={blockDay}
+          existing={
+            blockDay
+              ? (availability.exceptions.find((entry) => entry.date === toDateKey(blockDay)) ??
+                null)
+              : null
+          }
+          availability={availability}
+          onOpenChange={(open) => !open && setBlockDay(null)}
+        />
+      </div>
     </>
   );
 }
@@ -818,7 +990,11 @@ function CalendarLegend({
           <span className="font-medium text-ink-700">{t('rooms')}</span>
           {activeRooms.map((room) => (
             <span key={room.id} className="inline-flex items-center gap-1">
-              <span aria-hidden className="h-3 w-1 rounded-sm" style={{ backgroundColor: room.color }} />
+              <span
+                aria-hidden
+                className="h-3 w-1 rounded-sm"
+                style={{ backgroundColor: room.color }}
+              />
               {room.name}
             </span>
           ))}
@@ -1045,7 +1221,10 @@ function MonthOrRangeView({
                         onClick={() => onOpen(appointment)}
                         className="flex w-full items-baseline gap-1 rounded px-1 py-0.5 text-start text-xs hover:bg-ink-100"
                       >
-                        <ConfirmationDot appointment={appointment} className="h-2 w-2 self-center" />
+                        <ConfirmationDot
+                          appointment={appointment}
+                          className="h-2 w-2 self-center"
+                        />
                         <span dir="ltr" className="shrink-0 font-medium tabular-nums text-ink-700">
                           {format.dateTime(new Date(appointment.start_at), 'time')}
                         </span>

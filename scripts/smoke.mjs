@@ -287,6 +287,15 @@ async function visitOnce(context, { route, locale, width, label = route, expect4
   let flow = null;
   try {
     if (darkAll) await page.addInitScript(() => localStorage.setItem('herbalist-theme', 'dark'));
+    // The home-screen hint would sit on every phone screenshot; it is
+    // dismissed up front, except on the visit that is there to see it.
+    await page.addInitScript(() => {
+      // The keys outlive a visit (one page, many routes), so the visit that
+      // wants the hint clears what the earlier ones set.
+      const keys = ['herbalist-install-hint-hidden', 'herbalist-portal-install-hint-hidden'];
+      if (location.search.includes('install-hint')) keys.forEach((key) => localStorage.removeItem(key));
+      else keys.forEach((key) => localStorage.setItem(key, '1'));
+    });
     if (zoom) {
       // Before the first paint, as the browser's own font-size setting would be.
       await page.addInitScript(() => {
@@ -902,8 +911,25 @@ const flows = {
     // The diary redraws through a server refresh, which in dev takes a moment.
     const drawn = await blockAtTen().waitFor({ timeout: 15_000 }).then(() => true).catch(() => false);
     if (!drawn) return { ok: false, detail: 'booked, but the appointment is not drawn on the day within 15 s' };
-    const removed = await deleteBlock(blockAtTen());
-    return { ok: removed, detail: removed ? `booked ${chosen} at 10:00, saw it drawn, deleted it` : 'delete gave no toast' };
+
+    // Dragged an hour down with the mouse: the block lands on 11:00 and the
+    // diary says so. Two slots of the column's height, in small steps, so the
+    // sensor sees intent (six pixels) and then a move.
+    const block = blockAtTen();
+    const box = await block.boundingBox();
+    const columnBox = await block.locator('xpath=..').boundingBox();
+    if (!box || !columnBox) return { ok: false, detail: 'the block has no box to drag' };
+    const slotPx = columnBox.height / 30;
+    await page.mouse.move(box.x + box.width / 2, box.y + 10);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width / 2, box.y + 10 + slotPx * 2, { steps: 12 });
+    await page.mouse.up();
+    if (!(await toast(/התור הוזז/))) return { ok: false, detail: 'dragged the block an hour down, but no "moved" toast' };
+    const blockAtEleven = () => page.locator('main button.absolute', { hasText: '11:00' }).first();
+    const landed = await blockAtEleven().waitFor({ timeout: 15_000 }).then(() => true).catch(() => false);
+    if (!landed) return { ok: false, detail: 'the "moved" toast came, but no block at 11:00' };
+    const removed = await deleteBlock(blockAtEleven());
+    return { ok: removed, detail: removed ? `booked ${chosen} at 10:00, dragged it to 11:00, deleted it` : 'delete gave no toast' };
   },
   async patientTab(page) {
     const selected = await page.locator('[role="tab"][aria-selected="true"]').getAttribute('id');
@@ -924,6 +950,17 @@ const flows = {
   async darkModeApplied(page) {
     const theme = await page.evaluate(() => document.documentElement.dataset.theme);
     return { ok: theme === 'dark', detail: `data-theme=${theme}` };
+  },
+  async installHint(page) {
+    // On a phone, a moment after the page settles, the hint to put the app
+    // on the home screen: with a way to dismiss it that is remembered.
+    const hint = page.locator('[data-install-hint]');
+    if (!(await hint.waitFor({ timeout: 8_000 }).then(() => true).catch(() => false))) return { ok: false, detail: 'no install hint within 8 s' };
+    const text = (await hint.textContent()) ?? '';
+    await hint.locator('button', { hasText: /לא עכשיו|Not now/ }).first().click();
+    const gone = await hint.waitFor({ state: 'detached', timeout: 5_000 }).then(() => true).catch(() => false);
+    const remembered = await page.evaluate(() => localStorage.getItem('herbalist-install-hint-hidden') === '1');
+    return { ok: gone && remembered, detail: `hint said "${text.trim().slice(0, 40)}"; dismissed: ${gone}; remembered: ${remembered}` };
   },
   async phoneTabBar(page) {
     // Four tabs and "more" at the bottom of a phone's screen; "more" opens
@@ -1337,6 +1374,7 @@ async function main() {
     if (phone) await visit(context, { route: '/calendar?new=1', locale: 'he', width: phone, label: 'flow phone-dialog-drawer', after: flows.phoneDrawer });
     if (phone) {
       await visit(context, { route: '/', locale: 'he', width: phone, label: 'flow phone-tab-bar', after: flows.phoneTabBar });
+      await visit(context, { route: '/patients?install-hint=1', locale: 'he', width: phone, label: 'flow install-hint', after: flows.installHint });
       await visit(context, { route: '/patients', locale: 'en', width: phone, label: 'flow phone-tab-bar', after: flows.phoneTabBar });
       await visit(context, { route: '/reference/herbs', locale: 'he', width: phone, label: 'flow large-title-collapses', after: flows.largeTitleCollapses });
       await visit(context, { route: '/patients', locale: 'he', width: phone, label: 'flow phone-search-overlay', after: flows.phoneSearchOverlay });
