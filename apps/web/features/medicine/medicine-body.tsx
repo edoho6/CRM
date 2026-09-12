@@ -114,6 +114,15 @@ export function MedicineBody({
           ? t('hebrewNote.wikidata')
           : t('hebrewNote.none');
 
+  // What was checked, in words: the identity across sources, the second
+  // reading of the Hebrew, the numbers. Only what actually ran is shown.
+  const checks: string[] = [];
+  if (entry.cross_check?.identity_confirmed && entry.cross_check.identity?.length) {
+    checks.push(t('checks.identity', { codes: entry.cross_check.identity.map((code) => code.replace(':', ' ')).join(', ') }));
+  }
+  if (entry.hebrew_meta?.review) checks.push(entry.hebrew_meta.review.faithful ? t('checks.reviewOk') : t('checks.reviewFailed'));
+  if (entry.hebrew_meta?.numbers) checks.push(entry.hebrew_meta.numbers.ok ? t('checks.numbersOk') : t('checks.numbersFailed'));
+
   const identifiers = Object.entries(entry.identifiers ?? {}).filter(([, value]) => value);
   const basis = (entry.sources ?? []).filter((source) => source.role === 'basis');
   const furtherReading = (entry.sources ?? []).filter((source) => source.role === 'further_reading');
@@ -136,6 +145,15 @@ export function MedicineBody({
           <MedicineStatusBadge entry={entry} />
           <span className="text-xs text-ink-600">{hebrewNote}</span>
         </div>
+        {checks.length ? (
+          <ul className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-ink-600">
+            {checks.map((line) => (
+              <li key={line} dir="auto">
+                {line}
+              </li>
+            ))}
+          </ul>
+        ) : null}
         {entry.summary_he ? (
           <p className="text-base text-ink-900">{entry.summary_he}</p>
         ) : entry.summary_en ? (

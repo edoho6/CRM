@@ -8,7 +8,7 @@
 // The address and password come from the environment of this one command,
 // never from a file in the tree and never from a chat. `--sandbox` uses the
 // smoke account from apps/web/.env.test.local instead, which only works if
-// that account is a platform admin. Entries go first, a hundred at a time;
+// that account is a platform admin. Entries go first, twenty-five at a time;
 // the links follow once every entry they point at exists.
 import path from 'node:path';
 import { createRequire } from 'node:module';
@@ -35,7 +35,9 @@ async function main() {
 
   try {
     const totals = { entries: 0, links: 0, skipped_links: 0 };
-    const chunk = 100;
+    // Twenty-five at a time: a drug entry carries its label's sections as
+    // quotes, and a hundred of those is more than one request should hold.
+    const chunk = 25;
     for (let i = 0; i < dataset.entries.length; i += chunk) {
       const { data, error } = await supabase.rpc('med_import', { p_entries: dataset.entries.slice(i, i + chunk), p_links: [] });
       if (error) throw new Error(`med_import (entries ${i}–${i + chunk}): ${error.message}`);

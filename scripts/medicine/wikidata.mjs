@@ -39,6 +39,12 @@ const PROPS = {
   P18: 'image',
   P1995: 'specialty',
   P1050: 'medical_condition',
+  // Identity from a second angle: the FDA labels carry a UNII, RxNorm an
+  // RxCUI, MedlinePlus Genetics OMIM and ICD-10-CM codes.
+  P652: 'unii',
+  P492: 'omim',
+  P1550: 'orphanet',
+  P2892: 'umls',
 };
 
 const SYMPTOM_CLASSES = new Set(['Q169872', 'Q1441305']);
@@ -88,9 +94,15 @@ async function sparql(name, query) {
 function selectionQuery(kind, limit, offset = 0) {
   const body =
     kind === 'condition'
-      ? `?item wdt:P494 ?icd . ?item wikibase:sitelinks ?sitelinks .
+      // A condition is an item filed under any of the disease vocabularies —
+      // ICD-10, ICD-10-CM, Disease Ontology, Orphanet, OMIM, the NHS index —
+      // not only ICD-10: asthma, GERD and the irritable bowel have no P494.
+      // Genes carry OMIM ids too, so they are kept out by class.
+      ? `{ ?item wdt:P494 [] } UNION { ?item wdt:P4229 [] } UNION { ?item wdt:P699 [] } UNION { ?item wdt:P1550 [] } UNION { ?item wdt:P492 [] } UNION { ?item wdt:P7995 [] }
+         ?item wikibase:sitelinks ?sitelinks .
          ?item rdfs:label ?he FILTER(LANG(?he) = "he") .
-         FILTER NOT EXISTS { ?item wdt:P31 wd:Q169872 } FILTER NOT EXISTS { ?item wdt:P31 wd:Q1441305 }`
+         FILTER NOT EXISTS { ?item wdt:P31 wd:Q169872 } FILTER NOT EXISTS { ?item wdt:P31 wd:Q1441305 }
+         FILTER NOT EXISTS { ?item wdt:P31 wd:Q7187 } FILTER NOT EXISTS { ?item wdt:P31 wd:Q8054 }`
       : kind === 'symptom'
         ? `{ ?item wdt:P31 wd:Q169872 } UNION { ?item wdt:P31 wd:Q1441305 }
            ?item wikibase:sitelinks ?sitelinks .

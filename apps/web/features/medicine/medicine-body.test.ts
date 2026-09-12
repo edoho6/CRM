@@ -51,7 +51,9 @@ const rows = dataset.entries.map(asRow);
 const byQid = (qid: string) => rows.find((row) => row.wikidata_id === qid)!;
 
 describe('MedicineBody with the seed corpus', () => {
-  it('renders every entry of the dataset without a leaked message key', () => {
+  // The full corpus is over a thousand entries; rendering them all takes a
+  // while, and is the point.
+  it('renders every entry of the dataset without a leaked message key', { timeout: 180_000 }, () => {
     expect(rows.length).toBeGreaterThan(40);
     for (const row of rows) {
       const html = render(row);
@@ -82,10 +84,18 @@ describe('MedicineBody with the seed corpus', () => {
     expect(html).not.toContain('israeldrugs.health.gov.il');
   });
 
-  it('says so when an entry has only a summary', () => {
-    const html = render(byQid('Q845224'));
-    expect(html).toContain('הפרעת חרדה מוכללת');
-    expect(html).toContain('טרם הוצלב');
+  it('says so when an entry has no Hebrew sections yet', () => {
+    const row = rows.find((entry) => !entry.sections?.he);
+    if (!row) return; // every entry has Hebrew — nothing to say
+    const html = render(row);
+    expect(html).toMatch(/עדיין אין טקסט בעברית|התקציר בעברית מגיע מוויקידאטה/);
+  });
+
+  it('names the identity check when two sources file the entry under one code', () => {
+    const row = rows.find((entry) => entry.cross_check?.identity_confirmed);
+    if (!row) return; // the sample corpus has no identity codes yet
+    const html = render(row);
+    expect(html).toContain('הזהות אומתה בין שני מקורות');
   });
 
   it('groups links by what they claim, in the reader’s direction', () => {

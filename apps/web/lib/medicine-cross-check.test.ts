@@ -1,5 +1,25 @@
 import { describe, expect, it } from 'vitest';
 import { crossCheck, mentions, normalizeName, statusFor } from '../../../scripts/medicine/lib/cross-check.mjs';
+import { candidateNames, cleanName } from '../../../scripts/medicine/lib/drug-names.mjs';
+
+describe('drug names for the American sources', () => {
+  it('drops the chemist prefixes and keeps the name', () => {
+    expect(cleanName('rac-warfarin')).toBe('warfarin');
+    expect(cleanName('(RS)-metoprolol')).toBe('metoprolol');
+    expect(cleanName('levothyroxine (T4)')).toBe('levothyroxine');
+  });
+
+  it('tries the plain names before codes and formulas, and the American spelling first', () => {
+    const record = {
+      labels: { en: 'cytophosphane' },
+      aliases: { en: ['bis phosphoramide cyclic propanolamide ester', 'CPA-1', 'anhydrous cyclophosphamide', 'cyclophosphamide'] },
+    };
+    const names = candidateNames(record);
+    expect(names.slice(0, 3)).toEqual(['cytophosphane', 'cyclophosphamide', 'anhydrous cyclophosphamide']);
+    expect(candidateNames({ labels: { en: 'paracetamol' }, aliases: { en: [] } })).toEqual(['acetaminophen', 'paracetamol']);
+    expect(candidateNames({ labels: { en: 'rac-salbutamol' }, aliases: { en: ['(±)-salbutamol'] } }, 'salbutamol').slice(0, 2)).toEqual(['albuterol', 'salbutamol']);
+  });
+});
 
 /**
  * The part of the medicine pipeline that decides how far an entry has been

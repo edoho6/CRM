@@ -427,7 +427,15 @@
   לדף ולחלון (`loadReferenceCard` kind `'medicine'`, chip בקו כחול מ-`reference-context.tsx`), אייקון לפי סוג
   (`Activity`/`Thermometer`/`Pill`), גוון `sky` במקום ירקן. תוכן NHS מחייב לוגו + קישור בכל דף (`NhsAttribution`;
   הלוגו הרשמי ב-`public/medicine/nhs-logo.svg`, לא מצויר מחדש) ורענון כל 7 ימים. הצנרת והפקודות ב-
-  `scripts/medicine/README.md`; הייבוא מתחבר בפרטי האדמין ממשתני סביבה של הפקודה בלבד
+  `scripts/medicine/README.md`; הייבוא מתחבר בפרטי האדמין ממשתני סביבה של הפקודה בלבד.
+  **הקורפוס המלא** (`wikidata.mjs --all`): מקורות הטקסט הם MedlinePlus, MedlinePlus Genetics (נחלת הכלל, מחלות
+  נדירות; `genetics.mjs`), FDA ו-NHS — ערך בלי אף אחד מהם **לא נכנס** (נרשם בדוח, `--keep-thin` משאיר); פרקי
+  ICD-10 V–Z יוצאים, פרק R הופך לתסמין, ATC V/Q יוצאים. **בדיקה כפולה:** זהות = קוד משותף לשני מקורות
+  (MeSH/OMIM/ICD-10-CM/RxCUI דרך `rxnorm.mjs`/UNII) ב-`cross_check.identity`, לא התאמת שם; עובדות = `status`;
+  העברית = `hebrew.mjs --review` (קריאה שנייה נפרדת) + `verify-hebrew.mjs` (כל מספר בעברית קיים במקור), התוצאות
+  ב-`hebrew_meta.review/numbers` ומוצגות בדף; `--redo-flagged` כותב מחדש מה שנפסל. עלוני ה-FDA לקורפוס המלא
+  נקראים דרך DailyMed (`dailymed.mjs`: רשימה לפי שם, כותרת חד-רכיבית, מסמך SPL אחד; אותו רשומה כמו `openfda.mjs`) —
+  openFDA מחזיר מגה-בייטים לבקשה ומוגבל ל-1,000 ביום בלי מפתח. פריט עם קוד ATC קצר מ-7 תווים הוא קבוצה, לא תרופה
 - **CSS משותף:** כללים שאינם טוקנים (מיקוד, placeholder, `select.ui-select`, `.table-cards`,
   `[data-table-size]`, הדפסה בסיסית) ב-`packages/ui/src/base.css`, מיובא בשני
   ה-`globals.css`; ה-`@theme` נשאר לכל אפליקציה בנפרד

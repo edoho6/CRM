@@ -2449,6 +2449,13 @@
       "title": "Please note",
       "body": "This is general information from public sources in the UK and the US. It does not replace the Israeli leaflet, a pharmacist or a doctor. Doses are quoted from the source and are not a recommendation.",
       "registry": "Find the Israeli leaflet in the Ministry of Health drug registry"
+    },
+    "checks": {
+      "identity": "Identity confirmed across two sources ({codes})",
+      "reviewOk": "Second reading: the Hebrew matches the sources",
+      "reviewFailed": "Second reading: a mismatch with the sources was found, the entry will be rewritten",
+      "numbersOk": "Numbers check: every number in the Hebrew exists in the source",
+      "numbersFailed": "Numbers check: a number is not in the source, the entry will be rewritten"
     }
   },
   "accessibility": {

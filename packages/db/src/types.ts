@@ -1392,8 +1392,17 @@ export interface MedEntry {
   quotes: MedQuote[];
   sources: MedSource[];
   status: MedStatus;
-  cross_check: { sources: number; agree: string[]; conflicts: string[] } | null;
-  hebrew_meta: { model: string; generated_at: string; basis: string[] } | null;
+  /** identity: codes two sources file the entry under (e.g. "mesh:D008687", "rxcui:6809") — the entry is the right thing, whatever the facts say. */
+  cross_check: { sources: number; agree: string[]; conflicts: string[]; identity_confirmed?: boolean; identity?: string[] } | null;
+  hebrew_meta: {
+    model: string;
+    generated_at: string | null;
+    basis: string[];
+    /** The second reading: a separate pass that judged the Hebrew against the material. */
+    review?: { faithful: boolean; issues: string[]; model: string; reviewed_at: string } | null;
+    /** Every number in the Hebrew found in the sources, or the ones that were not. */
+    numbers?: { ok: boolean; missing: string[] } | null;
+  } | null;
   hebrew_stale: boolean;
   image: {
     file: string;

@@ -9,15 +9,28 @@
 
 | מקור | מה נלקח | רישיון | מה הרישיון דורש |
 |---|---|---|---|
-| Wikidata | זהות הערך (QID), שמות ותוארים בעברית ובאנגלית, המזהים (ICD-10, MeSH, ATC…), הקשרים בין ערכים, תמונה | CC0 | כלום |
-| MedlinePlus (NLM) | סיכומי מחלות ותסמינים באנגלית, "also called", MeSH | נחלת הכלל (ממשל ארה״ב) | ייחוס מנומס. **לא** נלקחות האנציקלופדיה (ADAM) ומונוגרפיות התרופות (ASHP) — הן מוגנות |
-| openFDA / DailyMed | לכל חומר פעיל העלון העדכני של תכשיר **חד-רכיבי**: התוויות, מינון, התוויות נגד, אזהרות, תופעות לוואי, אינטראקציות, הריון | CC0 | כלום |
+| Wikidata | זהות הערך (QID), שמות ותוארים בעברית ובאנגלית, המזהים (ICD-10, MeSH, ATC, RxCUI, UNII, OMIM…), הקשרים בין ערכים, תמונה | CC0 | כלום |
+| MedlinePlus (NLM) | סיכומי מחלות ותסמינים באנגלית, "also called", MeSH | נחלת הכלל (ממשל ארה״ב) | "Source: MedlinePlus, National Library of Medicine". **לא** נלקחות האנציקלופדיה (ADAM) ומונוגרפיות התרופות (ASHP) — הן מוגנות |
+| MedlinePlus Genetics (NLM) | כ־1,300 מחלות גנטיות ונדירות: תיאור, שמות נרדפים, דפוס תורשה, גנים, וקודי MeSH / OMIM / ICD-10-CM | נחלת הכלל | אותו ייחוס |
+| DailyMed / openFDA (עלוני ה-FDA) | לכל חומר פעיל העלון העדכני של תכשיר **חד-רכיבי**: התוויות, מינון, התוויות נגד, אזהרות, תופעות לוואי, אינטראקציות, הריון; וה־UNII של החומר. הקורפוס המלא נקרא דרך DailyMed (רשימה קטנה לכל שם ואז מסמך אחד, בלי מכסה יומית); openFDA הוא אותו צעד לריצה עם מפתח | CC0 (openFDA) / נחלת הכלל | כלום |
+| RxNorm / RxNav (NLM) | ה־RxCUI שהשם פותר אליו — דעה שנייה על זהות התרופה | נחלת הכלל | כלום |
 | אתר ה-NHS | טקסט פשוט לכל מחלה ותרופה (בריטניה) | Open Government Licence v3 דרך ה-API של האתר | לוגו NHS וקישור לדף המקור בכל דף שמציג את הטקסט; רענון לפחות כל 7 ימים |
 | ויקיפדיה (he/en) | **רק קישור** "לקריאה נוספת" | CC BY-SA | הטקסט לא מועתק, כי share-alike |
 
 שני דברים לא עושים אף פעם: לא מעתיקים טקסט ממקור מוגן (עלונים ישראליים של החברות, ICD-11,
 SNOMED, DrugBank), ולא מנסחים מחדש מינון או תופעת לוואי — הם מצוטטים מהעלון מילה במילה,
 והעברית נכתבת לצידם.
+
+## מה נכנס לקורפוס, ומה לא
+
+`wikidata.mjs --all` מביא כל פריט עם שם בעברית וקוד ICD-10 (מחלות), כל פריט שוויקידאטה מסווגת
+כתסמין או סימן קליני, וכל תרופה עם קוד ATC. `compile.mjs` מסנן:
+
+- פרקי ICD-10 V–Y (גורמים חיצוניים: תאונות, אלימות) ו-Z (גורמים שמשפיעים על המצב הבריאותי: הריון,
+  חוסר בית) יוצאים — הם לא מחלות שמחפשים במאגר. פרק R (תסמינים וסימנים) עובר לסוג "תסמין".
+- ATC בקבוצה V (חומרי ניגוד, אבחון, אלרגנים) או Q (וטרינריה) יוצאים; נוגדנים לרעלים (V03A) נשארים.
+- **ערך שאין לו שום מקור טקסט** (רק השם מוויקידאטה) נשאר מחוץ לקורפוס ונרשם בדוח תחת
+  "Left out"; `--keep-thin` משאיר אותו. מאגר של קליפות ריקות גרוע ממאגר קצר יותר.
 
 ## שתי שכבות טקסט, ותווית על כל ערך
 
@@ -31,33 +44,52 @@ SNOMED, DrugBank), ולא מנסחים מחדש מינון או תופעת לו�
   אישר; היום אין סוקר, והכפתור מחכה). ההצלבה ב-`lib/cross-check.mjs`, עם בדיקות ב-
   `apps/web/lib/medicine-cross-check.test.ts`.
 
+## הבדיקה הכפולה של כל ערך
+
+1. **זהות** (`cross_check.identity`): שני מקורות שמתייקים את הערך תחת אותו קוד — MeSH אצל
+   ויקידאטה ואצל MedlinePlus, OMIM או ICD-10-CM אצל MedlinePlus Genetics, RxCUI אצל
+   ויקידאטה ואצל RxNorm, UNII אצל ויקידאטה ובעלון ה-FDA. התאמה לפי שם בלבד לא נחשבת.
+   מוצג בדף הערך: "הזהות אומתה בין שני מקורות".
+2. **עובדות** (`status`): הסכמה של שני מקורות על קשר — תרופה מטפלת במחלה, מחלה גורמת לתסמין.
+3. **העברית מול המקור** — שתי בדיקות נפרדות אחרי הכתיבה:
+   - `hebrew.mjs --review` — קריאה שנייה: קריאה נפרדת למודל שרואה את החומר ואת העברית ונשאלת רק
+     אם העברית אומרת משהו שאין בחומר או משנה מספר. הפסק נשמר ב-`hebrew_meta.review`.
+   - `verify-hebrew.mjs` — בדיקת מספרים בלי רשת: כל מספר בעברית חייב להופיע בחומר האנגלי;
+     מספר שאין במקור מסמן את הערך ב-`hebrew_meta.numbers`.
+   מה שנפסל נכתב מחדש ב-`node scripts/medicine/hebrew.mjs --redo-flagged`, ואז שתי הבדיקות שוב.
+   הדף מציג את שתי התוצאות במילים.
+
 ## הצעדים
 
 ```
-node scripts/medicine/wikidata.mjs --curated=scripts/medicine/curated-sample.json   # 1 · הערכים והמזהים
-node scripts/medicine/medlineplus.mjs                                               # 2 · הסיכומים (קובץ XML אחד)
-node scripts/medicine/openfda.mjs                                                   # 3 · עלוני ה-FDA
-node scripts/medicine/nhs.mjs                                                       # 4 · דפי ה-NHS (צריך NHS_API_KEY)
-node scripts/medicine/compile.mjs                                                   # 5 · איחוד, קישורים, הצלבה
-node scripts/medicine/hebrew.mjs                                                    # 6 · עברית (צריך ANTHROPIC_API_KEY)
-node scripts/medicine/build.mjs                                                     # 7 · dataset.json.gz + דוח
-node scripts/medicine/import.mjs                                                    # 8 · טעינה למסד (אדמין)
+node scripts/medicine/wikidata.mjs --all      # 1 · הערכים והמזהים (או --curated=scripts/medicine/curated-sample.json לדוגמה)
+node scripts/medicine/medlineplus.mjs         # 2 · הסיכומים (קובץ XML אחד)
+node scripts/medicine/genetics.mjs            # 2b · מחלות גנטיות ונדירות (JSON לכל מחלה)
+node scripts/medicine/dailymed.mjs            # 3 · עלוני ה-FDA דרך DailyMed (openfda.mjs — אותו צעד עם OPENFDA_API_KEY)
+node scripts/medicine/rxnorm.mjs              # 3b · RxCUI לכל שם
+node scripts/medicine/nhs.mjs                 # 4 · דפי ה-NHS (צריך NHS_API_KEY)
+node scripts/medicine/compile.mjs             # 5 · איחוד, קישורים, זהות, הצלבה
+node scripts/medicine/hebrew.mjs              # 6 · עברית (צריך ANTHROPIC_API_KEY)
+node scripts/medicine/hebrew.mjs --review     # 6b · קריאה שנייה
+node scripts/medicine/verify-hebrew.mjs       # 6c · בדיקת מספרים
+node scripts/medicine/build.mjs               # 7 · dataset.json.gz + דוח
+node scripts/medicine/import.mjs              # 8 · טעינה למסד (אדמין)
 ```
 
-`node scripts/medicine/pipeline.mjs` מריץ 1–7 ברצף. הכול נשמר ב-`.cache/medicine/` (מחוץ
-ל-git), כך שריצה חוזרת לא מבקשת מהמקורות מה שכבר נתנו. `wikidata.mjs --all` בונה את הקורפוס
-המלא (כל מה שיש לו שם בעברית ו-ICD-10 / ATC), במקום הרשימה המקובצת.
+`node scripts/medicine/pipeline.mjs --all` מריץ 1–7 ברצף. הכול נשמר ב-`.cache/medicine/` (מחוץ
+ל-git), כך שריצה חוזרת לא מבקשת מהמקורות מה שכבר נתנו.
 
-הדוח נכתב ל-`test-results/medicine/report.md`: כמה ערכים בכל סטטוס, מי עם מקור אחד בלבד,
-מי בלי עברית, ואילו סתירות נמצאו. לקרוא אותו לפני כל ייבוא.
+הדוח נכתב ל-`test-results/medicine/report.md`: כמה ערכים בכל סטטוס, כמה עם זהות מאומתת,
+מה הושאר בחוץ ולמה, מי עם מקור אחד בלבד, מי בלי עברית, מה הקריאה השנייה פסלה, ואילו מספרים
+לא נמצאו במקור. לקרוא אותו לפני כל ייבוא.
 
 ## המפתחות (ב-`apps/web/.env.local`, לעולם לא בקוד)
 
 | משתנה | בשביל מה | בלעדיו |
 |---|---|---|
-| `NHS_API_KEY` | ה-API של אתר ה-NHS (רישום חינם ב-NHS England developer hub) | שלב 4 מדלג; הערכים נבנים מ-MedlinePlus + FDA + Wikidata |
-| `ANTHROPIC_API_KEY` | כתיבת העברית (אותו מפתח של "שאלות על הנתונים") | שלב 6 מדלג; עברית רק ממה שיש ב-`hebrew-manual.json` |
-| `OPENFDA_API_KEY` | מכסה גדולה יותר ב-openFDA (חינם) | 1,000 בקשות ביום — מספיק לדוגמה, לא לקורפוס המלא |
+| `ANTHROPIC_API_KEY` | כתיבת העברית והקריאה השנייה (אותו מפתח של "שאלות על הנתונים") | שלב 6 מדלג; עברית רק ממה שיש ב-`hebrew-manual.json` |
+| `OPENFDA_API_KEY` | רק אם מריצים `openfda.mjs` במקום `dailymed.mjs` (120,000 בקשות ביום במקום 1,000) | לא נדרש: DailyMed בלי מפתח ובלי מכסה |
+| `NHS_API_KEY` | ה-API של אתר ה-NHS (רישום חינם ב-NHS England developer hub) | שלב 4 מדלג; מחלות בלי MedlinePlus נשארות בחוץ |
 
 ## הטעינה למסד
 
@@ -77,16 +109,17 @@ MED_IMPORT_EMAIL=... MED_IMPORT_PASSWORD=... node scripts/medicine/import.mjs
 אחרי הטעינה הראשונה: `supabase/tests/tenant_isolation.sql` ב-SQL editor (בודק שמטופל בפורטל
 ואנונימי רואים 0, שחבר קליניקה קורא ולא כותב, ושהפונקציות סגורות).
 
-## לפני שמפעילים את ה-NHS (שלב 2)
+## לפני שמפעילים את ה-NHS
 
 1. להוריד את הלוגו הרשמי של ה-NHS מאתר הזהות שלהם ל-`apps/web/public/medicine/nhs-logo.svg`
    (לא לצייר מחדש; בלי הקובץ הרכיב מציג רק את המילים והקישור).
 2. לפרוס את פונקציית הרענון השבועי, שמושכת מחדש את דפי ה-NHS שבשימוש ומסמנת `hebrew_stale`
-   כשהמקור השתנה — חובת 7 הימים של הרישיון.
+   כשהמקור השתנה — חובת 7 הימים של הרישיון. היא נכתבת כשיש תוכן NHS לרענן.
 
 ## מה לבדוק בעין אחרי כל ריצה
 
-- `test-results/medicine/report.md` — ערכים שנפלו ל-`draft`, ערכים בלי עברית.
+- `test-results/medicine/report.md` — מה הושאר בחוץ, ערכים שנפלו ל-`draft`, ערכים בלי עברית,
+  מה הקריאה השנייה פסלה.
 - כמה תרופות אקראיות: שהעלון שנבחר הוא של החומר הפעיל לבד (לא שילוב), ושהמינון בעברית זהה
   לציטוט.
 - כמה מחלות: שהתאמת MedlinePlus נכונה (הכלל: MeSH קודם, ואז שם של 5 אותיות ומעלה שאינו
