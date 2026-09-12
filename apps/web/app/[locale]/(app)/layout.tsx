@@ -1,5 +1,7 @@
 import { redirect } from '@clinic/i18n/navigation';
-import { setRequestLocale } from 'next-intl/server';
+import { PREF_KEYS } from '@/lib/prefs';
+import { InstallHint } from '@clinic/ui';
+import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { isSupabaseConfigured } from '@clinic/db';
 import type { Locale } from '@clinic/domain';
 import { AppShell } from '@/components/app-shell';
@@ -32,6 +34,7 @@ export default async function AppLayout({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
+  const tInstall = await getTranslations({ locale, namespace: 'common.install' });
 
   if (!isSupabaseConfigured()) {
     redirect({ href: '/setup', locale: locale as Locale });
@@ -76,6 +79,28 @@ export default async function AppLayout({
       onSignOut={handleSignOut}
     >
       <ReferenceSheetProvider>{children}</ReferenceSheetProvider>
+      {/* The home-screen hint, on a phone, until it is dismissed or the app
+          runs from the home screen. Fixed above the tab bar: nothing shifts. */}
+      <InstallHint
+        storageKey={PREF_KEYS.installHintHidden}
+        labels={{
+          title: tInstall('title'),
+          body: tInstall('body'),
+          install: tInstall('install'),
+          ios: tInstall('ios'),
+          other: tInstall('other'),
+          dismiss: tInstall('dismiss'),
+        }}
+        icon={
+          <img
+            src="/icons/icon-192.png"
+            alt=""
+            width={40}
+            height={40}
+            className="h-10 w-10 rounded-xl"
+          />
+        }
+      />
     </AppShell>
   );
 }

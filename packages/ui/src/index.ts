@@ -24,6 +24,7 @@ export { List, ListRow } from './list';
 export { Stat } from './stat';
 export { FormActionBar } from './form-action-bar';
 export { ArrangeToggle } from './arrange-toggle';
+export { InstallHint } from './install-hint';
 export {
   Badge,
   Alert,

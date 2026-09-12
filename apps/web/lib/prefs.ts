@@ -16,6 +16,8 @@ export const PREF_KEYS = {
   kpiMode: 'herbalist-patient-kpi-mode',
   kpiLayout: 'herbalist-patient-kpi-layout',
   gettingStartedHidden: 'herbalist-getting-started-hidden',
+  /** The home-screen hint, once dismissed; an overlay, so the pre-paint script has no line for it. */
+  installHintHidden: 'herbalist-install-hint-hidden',
   /** sessionStorage, not localStorage: open files belong to a tab. */
   openFiles: 'herbalist-open-files',
 } as const;

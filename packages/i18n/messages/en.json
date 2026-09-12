@@ -273,7 +273,15 @@
     "invalidDate": "Enter a valid date",
     "invalidTime": "Enter a valid time",
     "somethingMissing": "Some fields still need attention",
-    "duplicate": "Duplicate"
+    "duplicate": "Duplicate",
+    "install": {
+      "title": "Herbalist on your home screen",
+      "body": "Opens like an app, without the browser's address bar.",
+      "install": "Install",
+      "ios": "In Safari: the Share button, then \"Add to Home Screen\".",
+      "other": "In the browser menu: \"Add to Home screen\" or \"Install app\".",
+      "dismiss": "Not now"
+    }
   },
   "nav": {
     "prices": "Price comparison",

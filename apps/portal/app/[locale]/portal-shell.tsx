@@ -1,6 +1,6 @@
 import { getTranslations } from 'next-intl/server';
 import { LogOut } from 'lucide-react';
-import { Button } from '@clinic/ui';
+import { InstallHint, Button } from '@clinic/ui';
 import { LanguageSwitcher } from './language-switcher';
 import { PortalNav } from './portal-nav';
 import { portalSignOut } from './login/actions';
@@ -26,6 +26,7 @@ export async function PortalShell({
 }) {
   const t = await getTranslations('portal');
   const tNav = await getTranslations('nav');
+  const tInstall = await getTranslations('common.install');
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-2xl flex-col px-4 pt-5 pb-[calc(env(safe-area-inset-bottom)+1.5rem)] sm:px-6 sm:pt-8">
@@ -46,6 +47,27 @@ export async function PortalShell({
       <main id="main-content" tabIndex={-1} className="flex-1 space-y-5 focus:outline-none">
         {children}
       </main>
+
+      <InstallHint
+        storageKey="herbalist-portal-install-hint-hidden"
+        labels={{
+          title: tInstall('title'),
+          body: tInstall('body'),
+          install: tInstall('install'),
+          ios: tInstall('ios'),
+          other: tInstall('other'),
+          dismiss: tInstall('dismiss'),
+        }}
+        icon={
+          <img
+            src="/icons/icon-192.png"
+            alt=""
+            width={40}
+            height={40}
+            className="h-10 w-10 rounded-xl"
+          />
+        }
+      />
 
       <footer className="mt-10 flex flex-wrap items-center justify-between gap-3 border-t border-ink-200 pt-4">
         <LanguageSwitcher />
