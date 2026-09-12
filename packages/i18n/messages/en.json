@@ -400,13 +400,16 @@
   },
   "dashboard": {
     "gettingStarted": {
-      "title": "Welcome. Three steps and the clinic is ready",
+      "title": "Welcome. Four steps and the clinic is ready",
       "hours": "Your working hours",
       "hoursBody": "The calendar shades the hours outside them.",
       "types": "Treatment types",
       "typesBody": "A default length for each appointment, and what is open for booking.",
       "patient": "The first patient",
       "patientBody": "Or a whole practice, one by one, as they come in.",
+      "twoFactor": "Two-step verification",
+      "twoFactorBody": "A code from the phone after the password. Recommended for anyone who opens patient files.",
+      "progress": "{done} of {total} done",
       "done": "Done",
       "dismiss": "Hide"
     },

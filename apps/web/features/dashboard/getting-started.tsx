@@ -2,7 +2,7 @@
 
 import { useLayoutEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { CalendarClock, Check, Stethoscope, UserPlus, X } from 'lucide-react';
+import { CalendarClock, Check, ShieldCheck, Stethoscope, UserPlus, X } from 'lucide-react';
 import { Button, Card, CardBody, cn } from '@clinic/ui';
 import { Link } from '@clinic/i18n/navigation';
 import { PREF_KEYS } from '@/lib/prefs';
@@ -14,18 +14,22 @@ const STORAGE_KEY = PREF_KEYS.gettingStartedHidden;
  *
  * Day one used to be a dashboard of zeros, an unshaded calendar and no
  * appointment types — every screen technically working and none of them
- * saying what to do first. Three steps, each a link, each ticked off as the
- * data appears. It is rendered only while the clinic has no patients, and
- * it can be hidden for good from this browser.
+ * saying what to do first. Four steps, each a link, each ticked off as the
+ * data appears, with the count of what is done. The fourth is the second
+ * factor: not data, but the one thing a clinic holding medical records
+ * should switch on before it holds any. The card stays until every step is
+ * done, and it can be hidden for good from this browser.
  */
 export function GettingStarted({
   hasHours,
   hasTypes,
   hasPatients,
+  hasTwoFactor,
 }: {
   hasHours: boolean;
   hasTypes: boolean;
   hasPatients: boolean;
+  hasTwoFactor: boolean;
 }) {
   const t = useTranslations('dashboard.gettingStarted');
   // Shown by default, and hidden before paint when this browser has
@@ -37,19 +41,26 @@ export function GettingStarted({
     setHidden(document.documentElement.dataset.gettingStarted === 'hidden');
   }, []);
 
-  if (hidden || hasPatients) return null;
-
   const steps = [
     { key: 'hours', done: hasHours, href: '/account/schedule', icon: CalendarClock },
     { key: 'types', done: hasTypes, href: '/account', icon: Stethoscope },
     { key: 'patient', done: hasPatients, href: '/patients/new', icon: UserPlus },
+    { key: 'twoFactor', done: hasTwoFactor, href: '/account', icon: ShieldCheck },
   ] as const;
+  const doneCount = steps.filter((step) => step.done).length;
+
+  if (hidden || doneCount === steps.length) return null;
 
   return (
     <Card data-getting-started className="mb-5 border-jade-200 bg-jade-50/60">
       <CardBody className="space-y-3">
         <div className="flex items-start justify-between gap-3">
-          <h2 className="text-base font-semibold text-ink-900">{t('title')}</h2>
+          <div className="min-w-0">
+            <h2 className="text-base font-semibold text-ink-900">{t('title')}</h2>
+            <p className="mt-0.5 text-xs text-ink-600">
+              {t('progress', { done: doneCount, total: steps.length })}
+            </p>
+          </div>
           <Button
             type="button"
             variant="ghost"
@@ -70,7 +81,7 @@ export function GettingStarted({
             <X className="h-4 w-4" aria-hidden />
           </Button>
         </div>
-        <ol className="grid gap-2 sm:grid-cols-3">
+        <ol className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           {steps.map((step) => (
             <li key={step.key}>
               <Link

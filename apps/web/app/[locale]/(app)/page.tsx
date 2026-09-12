@@ -7,6 +7,7 @@ import { defaultDashboardLayout } from '@/features/dashboard/default-layout';
 import { parseStoredLayout } from '@/features/dashboard/layout-utils';
 import { DEFAULT_TIME_ZONE, loadDashboardData } from '@/features/dashboard/loaders';
 import { pageTitle } from '@/lib/page-title';
+import { verifiedTotpFactor } from '@/lib/second-factor';
 
 export const generateMetadata = pageTitle('nav', 'dashboard');
 
@@ -20,15 +21,15 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
   // during `next build` before any credentials exist.
   if (!scope) return null;
 
-  const [{ data }, patientsCount, hoursCount, typesCount] = await Promise.all([
+  const [{ data }, patientsCount, hoursCount, typesCount, factor] = await Promise.all([
     scope.supabase
       .from('dashboard_layouts')
       .select('layout')
       .eq('user_id', scope.context.membership.user_id)
       .eq('name', 'default')
       .maybeSingle<{ layout: unknown }>(),
-    // Three head counts for the first-run checklist: cheap, and the card
-    // disappears for good once there is a patient.
+    // Three head counts and the authenticator for the first-steps card:
+    // cheap, and the card goes once every step is done.
     scope.supabase.from('patients').select('id', { count: 'exact', head: true }).limit(1),
     scope.supabase
       .from('practitioner_schedules')
@@ -36,6 +37,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
       .eq('practitioner_id', scope.context.membership.user_id)
       .limit(1),
     scope.supabase.from('appointment_types').select('id', { count: 'exact', head: true }).limit(1),
+    verifiedTotpFactor(scope.supabase),
   ]);
 
   const tracksInventory = scope.context.clinic.tracks_inventory !== false;
@@ -56,6 +58,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
         hasHours={(hoursCount.count ?? 0) > 0}
         hasTypes={(typesCount.count ?? 0) > 0}
         hasPatients={(patientsCount.count ?? 0) > 0}
+        hasTwoFactor={Boolean(factor)}
       />
       <DashboardGrid
         initialLayout={layout}
