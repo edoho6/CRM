@@ -1684,6 +1684,15 @@
       "title": "Your clinic, in order",
       "body": "Everything a Chinese-medicine clinic needs in one place: patients, the calendar, treatments, herbs, stock and billing. Built for the phone and the desk, with a portal for patients."
     },
+    "screens": {
+      "title": "What it looks like",
+      "dashboard": "The dashboard: today's appointments, tasks, income and patients at a glance",
+      "calendar": "The week's diary, with rooms and treatment types in colour",
+      "treatment": "The treatment page: complaint, diagnosis, points, tongue and pulse, dispensing",
+      "patient": "The patient file: details, history, appointments, documents and consents",
+      "phoneDashboard": "On the phone: the dashboard",
+      "phoneCalendar": "On the phone: the day's diary"
+    },
     "cta": {
       "login": "Sign in",
       "signup": "Create an account",
