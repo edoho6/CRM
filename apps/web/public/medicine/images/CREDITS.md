@@ -3,260 +3,691 @@
 Every picture comes from Wikimedia Commons under CC0, CC BY or CC BY-SA, shown as it is (scaled only), with the credit the licence asks for.
 
 - **אבבית** — Severerash.jpg · Rashy100 at English Wikipedia · CC0 · https://commons.wikimedia.org/wiki/File:Severerash.jpg
+- **אבדן שדה ראיה לאחד הצדדים** — Paris as seen with left homonymous hemianopsia.png · The original uploader was Nunh-huh at English Wikipedia . · CC BY-SA · https://commons.wikimedia.org/wiki/File:Paris_as_seen_with_left_homonymous_hemianopsia.png
+- **אבני כיס מרה** — Gallstones.jpg · Emmanuelm at en.wikipedia (Original text : Emmanuelm ( talk ) ) · CC BY · https://commons.wikimedia.org/wiki/File:Gallstones.jpg
 - **אבנים בכליות** — Nefrolit.jpg · Robert R. Wal · CC0 · https://commons.wikimedia.org/wiki/File:Nefrolit.jpg
+- **אבעבועות הפרות** — Cowpox virus.jpg · Dr Graham Beards · CC BY-SA · https://commons.wikimedia.org/wiki/File:Cowpox_virus.jpg
 - **אבעבועות שחורות** — Smallpox virus virions TEM PHIL 1849.JPG · Content Providers(s): CDC/ Dr. Fred Murphy; Sylvia Whitfield · CC0 · https://commons.wikimedia.org/wiki/File:Smallpox_virus_virions_TEM_PHIL_1849.JPG
+- **אגרנות כפייתית** — Compulsive hoarding Apartment.jpg · Grap · CC BY-SA · https://commons.wikimedia.org/wiki/File:Compulsive_hoarding_Apartment.jpg
+- **אדמדמת אביבית** — Hhv-6 (1).jpg · Bernard Kramarsky (Photographer) · CC0 · https://commons.wikimedia.org/wiki/File:Hhv-6_(1).jpg
+- **אדמנת קור** — Wintertenen.jpg · Sapp · CC0 · https://commons.wikimedia.org/wiki/File:Wintertenen.jpg
+- **אדמנת רב־צורתית** — Erythema multiforme EM 02.jpg · Grook Da Oger · CC BY-SA · https://commons.wikimedia.org/wiki/File:Erythema_multiforme_EM_02.jpg
+- **אדנואיד סיסטיק קרצינומה** — Adenoid cystic carcinoma - intermed mag.jpg · Nephron · CC BY-SA · https://commons.wikimedia.org/wiki/File:Adenoid_cystic_carcinoma_-_intermed_mag.jpg
+- **אדנומה** — Colon adenoma (1).jpg · unknown author · CC BY-SA · https://commons.wikimedia.org/wiki/File:Colon_adenoma_(1).jpg
+- **אדנומיוזיס** — Adenomyosis.jpg · Hic et nunc · CC0 · https://commons.wikimedia.org/wiki/File:Adenomyosis.jpg
 - **אדנוקרצינומה** — Adenocarcinoma of the Sigmoid Colon (longitudinal section, closeup).jpg · Ed Uthman from Houston, TX, USA · CC BY · https://commons.wikimedia.org/wiki/File:Adenocarcinoma_of_the_Sigmoid_Colon_(longitudinal_section,_closeup).jpg
-- **אוטיזם** — Autismbrain.jpg · National Institutes of Mental Health, National Institutes of Health · CC0 · https://commons.wikimedia.org/wiki/File:Autismbrain.jpg
+- **אוזן כרובית** — Cauliflower ear by dr vikram yadav.jpg · Drvikram008 · CC BY-SA · https://commons.wikimedia.org/wiki/File:Cauliflower_ear_by_dr_vikram_yadav.jpg
 - **אוטם שריר הלב** — Heart attack diagram.png · Unknown author Unknown author · CC0 · https://commons.wikimedia.org/wiki/File:Heart_attack_diagram.png
+- **אוסטאואיד אוסטאומה** — Osteoidosteom Roentgen-MRT.png · Hellerhoff · CC BY-SA · https://commons.wikimedia.org/wiki/File:Osteoidosteom_Roentgen-MRT.png
+- **אוסטאוליזיס דיסטלית של עצם הבריח** — Exostose Femur 54jm- CT cor und VR - 001.svg · Jmarchn · CC BY-SA · https://commons.wikimedia.org/wiki/File:Exostose_Femur_54jm-_CT_cor_und_VR_-_001.svg
+- **אוסטאופיטים** — Osteophytes processus anconeus.png · Rikke K Kirk, Bente Jørgensen, Henrik E Jensen · CC BY · https://commons.wikimedia.org/wiki/File:Osteophytes_processus_anconeus.png
+- **אופיום** — Papaversomniferum.jpg · unknown author · CC0 · https://commons.wikimedia.org/wiki/File:Papaversomniferum.jpg
+- **אזוטרופיה** — Andre Filipe Teixeira Marques Esotropia.jpg · Kakawere · CC BY · https://commons.wikimedia.org/wiki/File:Andre_Filipe_Teixeira_Marques_Esotropia.jpg
+- **אזוספרמיה** — Semen analysis.JPG · Bobjgalindo · CC BY-SA · https://commons.wikimedia.org/wiki/File:Semen_analysis.JPG
+- **אטרופין** — Atropine injection ampoule.JPG · Skirtick · CC BY-SA · https://commons.wikimedia.org/wiki/File:Atropine_injection_ampoule.JPG
+- **אי-ספיקת המסתם הצניפי** — 2D Echocardiogram showing Mitral Regurgitation in PLAX view - Navi Mumbai.jpg · Goleisureintl · CC BY · https://commons.wikimedia.org/wiki/File:2D_Echocardiogram_showing_Mitral_Regurgitation_in_PLAX_view_-_Navi_Mumbai.jpg
 - **אי-ספיקת כליות** — CDC Kidney and Diabetes graphic.jpg · CDC · CC0 · https://commons.wikimedia.org/wiki/File:CDC_Kidney_and_Diabetes_graphic.jpg
 - **אי-ספיקת כליות חריפה** — Kidney – acute cortical necrosis.jpg · Haymanj · CC0 · https://commons.wikimedia.org/wiki/File:Kidney_%E2%80%93_acute_cortical_necrosis.jpg
 - **אי-ספיקת כליות כרונית** — Uremic frost on forehead and scalp of young Afro-Caribbean male.jpg · Fythrion · CC BY-SA · https://commons.wikimedia.org/wiki/File:Uremic_frost_on_forehead_and_scalp_of_young_Afro-Caribbean_male.jpg
 - **אי-ספיקת לב** — Heartfailure.jpg · National Heart, Lung, and Blood Institute , National Institutes of Health ; originally uploaded by Wouterstomp at en.wikipedia. · CC0 · https://commons.wikimedia.org/wiki/File:Heartfailure.jpg
 - **אי-ספיקת מסתם אבי העורקים** — Myxomatous aortic valve.jpg · Nephron · CC BY-SA · https://commons.wikimedia.org/wiki/File:Myxomatous_aortic_valve.jpg
+- **אי-פוריות** — Infertility causes.png · Mikael Häggström . When using this image in external works, it may be cited as: Häggström, Mikael (2014). " Medical gallery of Mikael Häggström 2014 ". WikiJournal of Medicine 1 (2). DOI : 10.15347/wjm/2014.008 . ISSN 2002-4436 . Public Domain . or By Mikael Häggström, used with permission. · CC0 · https://commons.wikimedia.org/wiki/File:Infertility_causes.png
+- **איזופרופנול** — Isopropanol by Danny S.jpg · Danny S. · CC BY-SA · https://commons.wikimedia.org/wiki/File:Isopropanol_by_Danny_S.jpg
+- **איטמות פי הטבעת** — Rectovestibular fistula in females.jpg · unknown author · CC BY · https://commons.wikimedia.org/wiki/File:Rectovestibular_fistula_in_females.jpg
+- **איכתיוזיס** — Ichthyosis 2.jpg · George Henry Fox · CC0 · https://commons.wikimedia.org/wiki/File:Ichthyosis_2.jpg
 - **אין-אונות** — Erectile dysfunction.jpg · www.scientificanimations.com · CC BY-SA · https://commons.wikimedia.org/wiki/File:Erectile_dysfunction.jpg
+- **אינטרפרון** — 1RH2 Recombinant Human Interferon-Alpha 2b-01.png · Nevit Dilmen · CC BY-SA · https://commons.wikimedia.org/wiki/File:1RH2_Recombinant_Human_Interferon-Alpha_2b-01.png
+- **אינסולינומה** — Pancreatic insulinoma (2).JPG · unknown author · CC BY-SA · https://commons.wikimedia.org/wiki/File:Pancreatic_insulinoma_(2).JPG
 - **איסכמיה** — Ischemia.JPG · Jmh649 (James Heilman, M.D.) . · CC BY-SA · https://commons.wikimedia.org/wiki/File:Ischemia.JPG
 - **אכינוקוקוזיס** — Echinococcus Life Cycle.svg · Original: CDC Vector: Pixelsquid 🎱 · CC0 · https://commons.wikimedia.org/wiki/File:Echinococcus_Life_Cycle.svg
+- **אלום** — Alum.jpg · unknown author · CC0 · https://commons.wikimedia.org/wiki/File:Alum.jpg
+- **אלומינה** — Aluminium oxide2.png · Nbritton · CC0 · https://commons.wikimedia.org/wiki/File:Aluminium_oxide2.png
 - **אלפנטיאזיס** — Elephantiasis.jpg · Photo Credit: Content Providers: CDC/ · CC0 · https://commons.wikimedia.org/wiki/File:Elephantiasis.jpg
 - **אלרגיה** — Allergy skin testing.JPG · Wolfgang Ihloff · CC BY-SA · https://commons.wikimedia.org/wiki/File:Allergy_skin_testing.JPG
 - **אלרגיה לביצים** — Fried egg, sunny side up.jpg · David Benbennick · CC0 · https://commons.wikimedia.org/wiki/File:Fried_egg,_sunny_side_up.jpg
 - **אלרגיה למזון** — Hives on back.jpg · DLdoubleE · CC0 · https://commons.wikimedia.org/wiki/File:Hives_on_back.jpg
+- **אמוניום כלוריד** — Chlorid amonný.JPG · Ondřej Mangl · CC0 · https://commons.wikimedia.org/wiki/File:Chlorid_amonn%C3%BD.JPG
+- **אמפיאמה** — Empyema (3705506694).jpg · Yale Rosen from USA · CC BY-SA · https://commons.wikimedia.org/wiki/File:Empyema_(3705506694).jpg
+- **אנגיומה דובדבנית** — Angioma cereza en pecho y brazo.jpg · JOAN · CC BY · https://commons.wikimedia.org/wiki/File:Angioma_cereza_en_pecho_y_brazo.jpg
 - **אנדומטריוזיס** — Endometriosis.jpg · richie graham · CC BY · https://commons.wikimedia.org/wiki/File:Endometriosis.jpg
+- **אנומליות בנרתיק** — Double vagina Vagina duplex from Golay 1875.png · Golay · CC0 · https://commons.wikimedia.org/wiki/File:Double_vagina_Vagina_duplex_from_Golay_1875.png
+- **אנטרוביאזיס** — Head of Enterobius vermicularis human pinworm 5230 lores.jpg · author unknown · CC0 · https://commons.wikimedia.org/wiki/File:Head_of_Enterobius_vermicularis_human_pinworm_5230_lores.jpg
+- **אניסאקיס** — Anisakis.jpg · Anilocra at English Wikipedia · CC0 · https://commons.wikimedia.org/wiki/File:Anisakis.jpg
+- **אניסוקוריה** — Anizokoria.JPG · Radomil talk · CC BY-SA · https://commons.wikimedia.org/wiki/File:Anizokoria.JPG
 - **אנמיה המוליטית** — Haemolytic Anaemia.jpg · Prof. Osaro Erhabor · CC BY-SA · https://commons.wikimedia.org/wiki/File:Haemolytic_Anaemia.jpg
 - **אנצפלופתיה כבדית** — Alzheimer type II astrocyte high mag.jpg · Nephron · CC BY-SA · https://commons.wikimedia.org/wiki/File:Alzheimer_type_II_astrocyte_high_mag.jpg
+- **אסטיגמציה** — Astigmatism.jpg · BruceBlaus · CC BY-SA · https://commons.wikimedia.org/wiki/File:Astigmatism.jpg
+- **אסטרוציטומה** — Astrocytoma.jpg · Unknown author Unknown author · CC0 · https://commons.wikimedia.org/wiki/File:Astrocytoma.jpg
+- **אסיסטולה** — Asystole11.JPG · James Heilman, MD · CC BY-SA · https://commons.wikimedia.org/wiki/File:Asystole11.JPG
+- **אספירין** — Acetylsalicylicacid-crystals.jpg · Thesmallprint189 (picture) + Leridant (modification of colour) + Friedrich Graf (image correction) · CC0 · https://commons.wikimedia.org/wiki/File:Acetylsalicylicacid-crystals.jpg
 - **אסתמה** — Asthma.jpg · Yale Rosen · CC BY-SA · https://commons.wikimedia.org/wiki/File:Asthma.jpg
+- **אפזיה רצפטיבית** — Brain - Broca's and Wernicke's area Diagram.svg · UX Stalin · CC BY-SA · https://commons.wikimedia.org/wiki/File:Brain_-_Broca%27s_and_Wernicke%27s_area_Diagram.svg
 - **אפילפסיה** — Spike-waves.png · unknown author · CC BY-SA · https://commons.wikimedia.org/wiki/File:Spike-waves.png
+- **אפתה** — Aphthe Unterlippe.jpg · unknown author · CC BY-SA · https://commons.wikimedia.org/wiki/File:Aphthe_Unterlippe.jpg
+- **אפתה** — Aphthe Unterlippe.jpg · unknown author · CC BY-SA · https://commons.wikimedia.org/wiki/File:Aphthe_Unterlippe.jpg
+- **אצבעות פטישון** — Human foot with mallet toe.jpg · User:Bprender22 · CC0 · https://commons.wikimedia.org/wiki/File:Human_foot_with_mallet_toe.jpg
+- **אקטרודקטיליה** — Deux pieds 1 an.jpg · Aurélie & Sylvain Mulard · CC BY-SA · https://commons.wikimedia.org/wiki/File:Deux_pieds_1_an.jpg
+- **אקרית העוף האדומה** — Dermanyssus gallinae mite.jpg · AW · CC BY-SA · https://commons.wikimedia.org/wiki/File:Dermanyssus_gallinae_mite.jpg
+- **ארגוטיזם** — Barger.TIF · G. Barger · CC0 · https://commons.wikimedia.org/wiki/File:Barger.TIF
+- **ארגמנת** — Purpura.jpg · User:Hektor · CC BY-SA · https://commons.wikimedia.org/wiki/File:Purpura.jpg
+- **ארסניק תלת-חמצני** — Arsenic trioxide.jpg · Picture taken by w:User:Walkerma in June 2005. · CC0 · https://commons.wikimedia.org/wiki/File:Arsenic_trioxide.jpg
+- **אשלגן כלורי** — Potassium chloride.jpg · unknown author · CC0 · https://commons.wikimedia.org/wiki/File:Potassium_chloride.jpg
+- **אשלגן פרמנגנט** — Potassium permanganate sample.jpg · Adam Rędzikowski · CC BY-SA · https://commons.wikimedia.org/wiki/File:Potassium_permanganate_sample.jpg
+- **אתנול** — Sample of Absolute Ethanol.jpg · LHcheM · CC BY-SA · https://commons.wikimedia.org/wiki/File:Sample_of_Absolute_Ethanol.jpg
+- **בוהן קלובה** — Projectional radiograph of bunion.jpg · Michael Nebel http://de.wikipedia.org/wiki/Benutzer:Jakker · CC BY-SA · https://commons.wikimedia.org/wiki/File:Projectional_radiograph_of_bunion.jpg
 - **בוטוליזם** — Clostridium botulinum.jpg · Content Providers: CDC · CC0 · https://commons.wikimedia.org/wiki/File:Clostridium_botulinum.jpg
+- **בוראקס** — Tincalconite and Borax - Baker mine, US Borax Mine, Kramer Borate deposit, California, USA.jpg · Rock Currier · CC BY · https://commons.wikimedia.org/wiki/File:Tincalconite_and_Borax_-_Baker_mine,_US_Borax_Mine,_Kramer_Borate_deposit,_California,_USA.jpg
+- **בזואר** — Bezoare.jpg · User:Gerhard Elsner · CC BY-SA · https://commons.wikimedia.org/wiki/File:Bezoare.jpg
+- **בילהרציה** — Schistosomiasis itch.jpeg · Photo Credit: Content Providers(s): CDC · CC0 · https://commons.wikimedia.org/wiki/File:Schistosomiasis_itch.jpeg
+- **בלאומיצין** — Bleomycin ball-and-stick.png · MarinaVladivostok · CC0 · https://commons.wikimedia.org/wiki/File:Bleomycin_ball-and-stick.png
+- **בלט השלפוחית** — Cystocele.png · BruceBlaus · CC BY-SA · https://commons.wikimedia.org/wiki/File:Cystocele.png
+- **בלטת עצם בעקב** — 2023 Ostroga piętowa.jpg · Jacek Halicki · CC BY-SA · https://commons.wikimedia.org/wiki/File:2023_Ostroga_pi%C4%99towa.jpg
+- **בלפרוספזם** — Gray379.png · Henry Vandyke Carter · CC0 · https://commons.wikimedia.org/wiki/File:Gray379.png
+- **בצקת מוחית** — Tumor Meningioma3.JPG · Tdvorak · CC BY-SA · https://commons.wikimedia.org/wiki/File:Tumor_Meningioma3.JPG
 - **בצקת ריאות** — PulmEdema.PNG · James Heilman, MD · CC BY-SA · https://commons.wikimedia.org/wiki/File:PulmEdema.PNG
+- **בקע** — Hernia de Morgani.JPG · unknown author · CC BY · https://commons.wikimedia.org/wiki/File:Hernia_de_Morgani.JPG
+- **בקר נבוס** — Becker-Naevus.jpg · Siller · CC BY-SA · https://commons.wikimedia.org/wiki/File:Becker-Naevus.jpg
+- **ברונכיאקטזיס** — Illu bronchi lungs.jpg · unknown author · CC0 · https://commons.wikimedia.org/wiki/File:Illu_bronchi_lungs.jpg
 - **ברוצלוזיס** — Brucella spp.JPG · Photo Credit: Content Providers(s): CDC/Courtesy of Larry Stauffer, Oregon State Public Health Laboratory · CC0 · https://commons.wikimedia.org/wiki/File:Brucella_spp.JPG
+- **ברך קופצים** — Jumpers knee.jpg · Injurymap · CC BY · https://commons.wikimedia.org/wiki/File:Jumpers_knee.jpg
+- **ג'לטין** — Gelatine.png · Danielle dk · CC BY-SA · https://commons.wikimedia.org/wiki/File:Gelatine.png
+- **גזזת** — Teigne tondante enfant.jpg · Gzzz · CC BY-SA · https://commons.wikimedia.org/wiki/File:Teigne_tondante_enfant.jpg
 - **גחלת** — Anthrax PHIL 2033.png · CDC/ James H. Steele · CC0 · https://commons.wikimedia.org/wiki/File:Anthrax_PHIL_2033.png
+- **גידולים טרום-סרטניים בצוואר הרחם** — Cervical Intraepithelial Neoplasia HSIL 20X.jpg · Department of Pathology, Calicut Medical College · CC BY-SA · https://commons.wikimedia.org/wiki/File:Cervical_Intraepithelial_Neoplasia_HSIL_20X.jpg
+- **גידולים של תאי ענק בעצמות** — Giant cell tumour of bone - high mag.jpg · Nephron · CC BY-SA · https://commons.wikimedia.org/wiki/File:Giant_cell_tumour_of_bone_-_high_mag.jpg
 - **גיל המעבר אצל נשים** — Perimenopause.jpg · Chloe.b.2004 · CC BY · https://commons.wikimedia.org/wiki/File:Perimenopause.jpg
 - **גינקומסטיה** — Gynaecomastia.jpeg · ProloSozz ( ProloSozz ( talk )) · CC BY-SA · https://commons.wikimedia.org/wiki/File:Gynaecomastia.jpeg
 - **גלאוקומה** — Acute Angle Closure-glaucoma.jpg · Jonathan Trobe, M.D. · CC BY · https://commons.wikimedia.org/wiki/File:Acute_Angle_Closure-glaucoma.jpg
+- **גלוטתיון** — Sample of glutathione.jpg · Leiem · CC0 · https://commons.wikimedia.org/wiki/File:Sample_of_glutathione.jpg
+- **גלוסיטיס** — Scharlach.JPG · Martin Kronawitter · CC BY-SA · https://commons.wikimedia.org/wiki/File:Scharlach.JPG
+- **גלוקוז** — Glucose 2.jpg · Paul Nasca · CC0 · https://commons.wikimedia.org/wiki/File:Glucose_2.jpg
+- **גליובלסטומה מולטיפורמה** — Glioblastoma (1).jpg · unknown author · CC BY-SA · https://commons.wikimedia.org/wiki/File:Glioblastoma_(1).jpg
+- **גליצרול** — Sample of Glycerine.jpg · LHcheM · CC BY-SA · https://commons.wikimedia.org/wiki/File:Sample_of_Glycerine.jpg
+- **גמישות יתר** — Doublejointedfinger.JPG · Freefaller25 · CC BY · https://commons.wikimedia.org/wiki/File:Doublejointedfinger.JPG
+- **גמישות יתר מפרקית** — Fingerext-max.JPG · Dagger9977 · CC BY-SA · https://commons.wikimedia.org/wiki/File:Fingerext-max.JPG
+- **גנטמיצין** — Gentamicin for injection.jpg · LHcheM · CC BY-SA · https://commons.wikimedia.org/wiki/File:Gentamicin_for_injection.jpg
 - **גסטרופרזיס** — GastroparesisXray.jpg · Dong Seok Lee1 and Sang Jin Lee · CC BY · https://commons.wikimedia.org/wiki/File:GastroparesisXray.jpg
+- **גסטרקטומיה** — Illu stomach.jpg · cancer.gov · CC0 · https://commons.wikimedia.org/wiki/File:Illu_stomach.jpg
+- **גרדת** — Sarcoptes scabei 2.jpg · Kalumet · CC BY-SA · https://commons.wikimedia.org/wiki/File:Sarcoptes_scabei_2.jpg
 - **גרנולומטוזיס עם פוליאנגאיטיס** — Wegener's granulomatosis Case 105 (3735200668).jpg · Yale Rosen from USA · CC BY-SA · https://commons.wikimedia.org/wiki/File:Wegener%27s_granulomatosis_Case_105_(3735200668).jpg
+- **גרענת** — Entropion and trichiasis secondary to trachoma A44-652-11.jpg · Otis Historical Archives Nat'l Museum of Health & Medicine · CC BY · https://commons.wikimedia.org/wiki/File:Entropion_and_trichiasis_secondary_to_trachoma_A44-652-11.jpg
 - **דבר (מחלה)** — Yersinia pestis.jpg · unknown author · CC0 · https://commons.wikimedia.org/wiki/File:Yersinia_pestis.jpg
+- **דבר ספטי** — Yersinia pestis.jpg · unknown author · CC0 · https://commons.wikimedia.org/wiki/File:Yersinia_pestis.jpg
 - **דום נשימה בשינה** — Obstruction ventilation apnée sommeil.svg · Habib M'henni · CC0 · https://commons.wikimedia.org/wiki/File:Obstruction_ventilation_apn%C3%A9e_sommeil.svg
+- **דחיית איבר** — Lung transplant rejection - high mag.jpg · Nephron · CC BY-SA · https://commons.wikimedia.org/wiki/File:Lung_transplant_rejection_-_high_mag.jpg
+- **די-די-טי** — DDT chemical on watch glass.png · 102% Yield · CC BY-SA · https://commons.wikimedia.org/wiki/File:DDT_chemical_on_watch_glass.png
+- **דיאתיל אתר** — Dietil eter.png · Saint concrete · CC BY-SA · https://commons.wikimedia.org/wiki/File:Dietil_eter.png
+- **דיברטיקולוזיס** — Diverticulosis (two diverticula) 01.svg · Jmarchn · CC BY-SA · https://commons.wikimedia.org/wiki/File:Diverticulosis_(two_diverticula)_01.svg
 - **דיברטיקוליטיס** — Diverticula, sigmoid colon.jpg · Haymanj , a retired pathologist from Melbourne, Australia. · CC0 · https://commons.wikimedia.org/wiki/File:Diverticula,_sigmoid_colon.jpg
 - **דיכאון עונתי** — Bright light lamp.jpg · User:Mysid · CC0 · https://commons.wikimedia.org/wiki/File:Bright_light_lamp.jpg
 - **דימום מדרכי העיכול** — Positive fecal occult blood test.jpg · James Heilman, MD · CC BY-SA · https://commons.wikimedia.org/wiki/File:Positive_fecal_occult_blood_test.jpg
+- **דימום סאב-דורלי** — Subduralandherniation.PNG · James Heilman, MD · CC BY-SA · https://commons.wikimedia.org/wiki/File:Subduralandherniation.PNG
+- **דימום ריאתי** — Pulmonary hemorrhage - Blood Vessel Mineralization.jpg · Y. Rosen, MD · CC BY-SA · https://commons.wikimedia.org/wiki/File:Pulmonary_hemorrhage_-_Blood_Vessel_Mineralization.jpg
+- **דימות תהודה מגנטית** — Petmr.jpg · Tomáš Vendiš · CC BY-SA · https://commons.wikimedia.org/wiki/File:Petmr.jpg
+- **דיסטוציה** — Illustration of a deformed female pelvis - angular distortion Wellcome L0038229.jpg · unknown author · CC BY · https://commons.wikimedia.org/wiki/File:Illustration_of_a_deformed_female_pelvis_-_angular_distortion_Wellcome_L0038229.jpg
 - **דיסמנוריאה** — MenstrualCycle gen.svg · MenstrualCycle_en.svg : Speck-Made derivative work: A7N8X ( talk ) · CC BY-SA · https://commons.wikimedia.org/wiki/File:MenstrualCycle_gen.svg
 - **דיפילובותריאזיס** — Diphyl proglottidE.JPG · unknown author · CC0 · https://commons.wikimedia.org/wiki/File:Diphyl_proglottidE.JPG
 - **דיפתריה** — A diphtheria skin lesion on the leg. PHIL 1941 lores.jpg · CDC · CC0 · https://commons.wikimedia.org/wiki/File:A_diphtheria_skin_lesion_on_the_leg._PHIL_1941_lores.jpg
+- **דירופילריאזיס** — Microfilaria.jpg · Joelmills · CC BY-SA · https://commons.wikimedia.org/wiki/File:Microfilaria.jpg
 - **דלדול עצם** — Osteoporosis -- Smart-Servier.jpg · Laboratoires Servier · CC BY-SA · https://commons.wikimedia.org/wiki/File:Osteoporosis_--_Smart-Servier.jpg
+- **דלדול שרירים** — 1025 Atrophy.png · OpenStax · CC BY · https://commons.wikimedia.org/wiki/File:1025_Atrophy.png
+- **דליות** — Varicose ASV.jpg · Nini00 · CC BY-SA · https://commons.wikimedia.org/wiki/File:Varicose_ASV.jpg
 - **דלקות הוושט** — Herpes esophagitis - high mag.jpg · Nephron · CC BY-SA · https://commons.wikimedia.org/wiki/File:Herpes_esophagitis_-_high_mag.jpg
+- **דלקת באמתחת המרפק** — Bursitis Elbow WC.JPG · en:User:NJC123 · CC0 · https://commons.wikimedia.org/wiki/File:Bursitis_Elbow_WC.JPG
 - **דלקת בדרכי השתן** — Pyuria.JPG · Bobjgalindo · CC BY-SA · https://commons.wikimedia.org/wiki/File:Pyuria.JPG
+- **דלקת גיד אכילס** — Achilles tendonitis.svg · Injurymap · CC BY · https://commons.wikimedia.org/wiki/File:Achilles_tendonitis.svg
+- **דלקת גידים** — Tendon inflammation - Tendonitis -- Smart-Servier.png · Laboratoires Servier · CC BY-SA · https://commons.wikimedia.org/wiki/File:Tendon_inflammation_-_Tendonitis_--_Smart-Servier.png
 - **דלקת גרון** — Pharyngitis.jpg · unknown author · CC BY-SA · https://commons.wikimedia.org/wiki/File:Pharyngitis.jpg
+- **דלקת האוזן החיצונית** — OtitisExterna10.JPG · James Heilman, MD · CC BY · https://commons.wikimedia.org/wiki/File:OtitisExterna10.JPG
 - **דלקת האוזן התיכונה** — Otitis media entdifferenziert2.jpg · B. Welleschik · CC BY-SA · https://commons.wikimedia.org/wiki/File:Otitis_media_entdifferenziert2.jpg
 - **דלקת האמתחת** — Bursitis Elbow WC.JPG · en:User:NJC123 · CC0 · https://commons.wikimedia.org/wiki/File:Bursitis_Elbow_WC.JPG
+- **דלקת הזיז הפטמתי** — Mastoiditis1.jpg · B. Welleschik · CC BY-SA · https://commons.wikimedia.org/wiki/File:Mastoiditis1.jpg
 - **דלקת הלחמית** — Conjunctivitis 5174.jpg · unknown author · CC0 · https://commons.wikimedia.org/wiki/File:Conjunctivitis_5174.jpg
 - **דלקת המעי הגס** — Cryptitis high mag.jpg · Nephron · CC BY-SA · https://commons.wikimedia.org/wiki/File:Cryptitis_high_mag.jpg
+- **דלקת הנרתיק והפות** — Vaginitis.png · BruceBlaus · CC BY-SA · https://commons.wikimedia.org/wiki/File:Vaginitis.png
+- **דלקת הענבייה** — Anterior-uveitis.jpg · Jonathan Trobe, M.D. · CC BY · https://commons.wikimedia.org/wiki/File:Anterior-uveitis.jpg
 - **דלקת הצפק** — Tuberculous peritonitis (6544825621).jpg · Yale Rosen from USA · CC BY-SA · https://commons.wikimedia.org/wiki/File:Tuberculous_peritonitis_(6544825621).jpg
 - **דלקת הקיבה והמעיים** — Gastroenteritis viruses.jpg · en:User:Graham Beards at en.wikipedia · CC BY · https://commons.wikimedia.org/wiki/File:Gastroenteritis_viruses.jpg
 - **דלקת הקרנית** — Clare-314.jpg · Eddie314 at English Wikipedia · CC BY-SA · https://commons.wikimedia.org/wiki/File:Clare-314.jpg
+- **דלקת התוספתן** — Gray1073.png · Henry Vandyke Carter · CC0 · https://commons.wikimedia.org/wiki/File:Gray1073.png
 - **דלקת ושט אאוזינופילית** — Eosinophilic esophagitis - high mag.jpg · Nephron · CC BY-SA · https://commons.wikimedia.org/wiki/File:Eosinophilic_esophagitis_-_high_mag.jpg
+- **דלקת זווית הפה** — Angular Cheilitis.JPG · James Heilman, MD · CC BY-SA · https://commons.wikimedia.org/wiki/File:Angular_Cheilitis.JPG
 - **דלקת זיהומית של פנים הלב** — Haemophilus parainfluenzae Endocarditis PHIL 851 lores.jpg · unknown author · CC0 · https://commons.wikimedia.org/wiki/File:Haemophilus_parainfluenzae_Endocarditis_PHIL_851_lores.jpg
+- **דלקת זקיק השערה** — Isolated folliculitis.jpg · Jmarchn · CC BY-SA · https://commons.wikimedia.org/wiki/File:Isolated_folliculitis.jpg
 - **דלקת חוליות מקשחת** — Ankylosing.jpg · Senseiwa at English Wikipedia · CC0 · https://commons.wikimedia.org/wiki/File:Ankylosing.jpg
+- **דלקת חיתולית נמקית** — Necrotizing fasciitis left leg.JPEG · Piotr Smuszkiewicz, Iwona Trojanowska and Hanna Tomczak · CC BY · https://commons.wikimedia.org/wiki/File:Necrotizing_fasciitis_left_leg.JPEG
+- **דלקת חניכיים** — Gingivitis (crop).jpg · Lesion · CC BY-SA · https://commons.wikimedia.org/wiki/File:Gingivitis_(crop).jpg
 - **דלקת כבד** — Alcoholic hepatitis.jpg · The original uploader was Countincr at English Wikipedia . · CC BY-SA · https://commons.wikimedia.org/wiki/File:Alcoholic_hepatitis.jpg
 - **דלקת כבד אוטואימונית** — Autoimmune hepatitis - cropped - very high mag.jpg · Nephron · CC BY-SA · https://commons.wikimedia.org/wiki/File:Autoimmune_hepatitis_-_cropped_-_very_high_mag.jpg
 - **דלקת כיס המרה** — Cholecystitis.jpg · Sameem Arif · CC BY-SA · https://commons.wikimedia.org/wiki/File:Cholecystitis.jpg
+- **דלקת כלי דם** — Churg-Strauss syndrome - very high mag.jpg · Nephron · CC BY-SA · https://commons.wikimedia.org/wiki/File:Churg-Strauss_syndrome_-_very_high_mag.jpg
 - **דלקת לבלב** — Illu pancrease.svg · training.seer.cancer.gov SVG: Cradel · CC0 · https://commons.wikimedia.org/wiki/File:Illu_pancrease.svg
 - **דלקת לבלב חריפה** — 3D Medical Animation Acute Pancreatitis.jpg · https://www.scientificanimations.com · CC BY-SA · https://commons.wikimedia.org/wiki/File:3D_Medical_Animation_Acute_Pancreatitis.jpg
+- **דלקת מיתרי הקול** — Laryngitis gastrica.jpg · Phoni · CC BY-SA · https://commons.wikimedia.org/wiki/File:Laryngitis_gastrica.jpg
 - **דלקת מעי מקלוסטרידיום דיפיצילה** — Clostridium difficile 01.jpg · unknown author · CC0 · https://commons.wikimedia.org/wiki/File:Clostridium_difficile_01.jpg
 - **דלקת מפרקים** — Osteoarthritis and rheumatoid arthritis - Rheumatoid arthritis -- Smart-Servier.png · Laboratoires Servier · CC BY-SA · https://commons.wikimedia.org/wiki/File:Osteoarthritis_and_rheumatoid_arthritis_-_Rheumatoid_arthritis_--_Smart-Servier.png
+- **דלקת מפרקים זיהומית** — BioFix Hueftspacer bei septischer Pfannenlockerung 65W - CR ap - 001.jpg · Hellerhoff · CC BY-SA · https://commons.wikimedia.org/wiki/File:BioFix_Hueftspacer_bei_septischer_Pfannenlockerung_65W_-_CR_ap_-_001.jpg
 - **דלקת מפרקים ניוונית** — Heberden-Arthrose.JPG · Drahreg01 · CC BY-SA · https://commons.wikimedia.org/wiki/File:Heberden-Arthrose.JPG
+- **דלקת מפרקים ראקטיבית** — SOA-arthritis.jpg · unknown author · CC BY-SA · https://commons.wikimedia.org/wiki/File:SOA-arthritis.jpg
+- **דלקת סחוס הצלע** — Gray390.png · Henry Vandyke Carter · CC0 · https://commons.wikimedia.org/wiki/File:Gray390.png
 - **דלקת סימפונות** — Acute-bronchitis.jpg · Tyrol5 at English Wikipedia · CC0 · https://commons.wikimedia.org/wiki/File:Acute-bronchitis.jpg
 - **דלקת סימפונות חריפה** — Acute-bronchitis.jpg · Tyrol5 at English Wikipedia · CC0 · https://commons.wikimedia.org/wiki/File:Acute-bronchitis.jpg
+- **דלקת עור ממגע** — Contact dermatitis.jpg · Rleffmann · CC BY-SA · https://commons.wikimedia.org/wiki/File:Contact_dermatitis.jpg
 - **דלקת עורק הרקה** — Gray508.png · Henry Vandyke Carter · CC0 · https://commons.wikimedia.org/wiki/File:Gray508.png
+- **דלקת פקעיות הכליה** — Crescentic glomerulonephritis HE stain.JPEG · Arunachalam Ramaswami, Thiraviam Kandaswamy, Tholappan Rajendran, Kizhake Pisharam Jeyakrishnan, Hla Aung, Mohammaed Iqbal, Chakko K Jacob, Haji Shaukat Zinna and Gazala Kafeel. · CC BY · https://commons.wikimedia.org/wiki/File:Crescentic_glomerulonephritis_HE_stain.JPEG
+- **דלקת צוואר הרחם** — Herpetic Cervicitis (8539801948).jpg · Ed Uthman from Houston, TX, USA · CC BY-SA · https://commons.wikimedia.org/wiki/File:Herpetic_Cervicitis_(8539801948).jpg
 - **דלקת קרום הלב** — Pericarditis10.JPG · James Heilman, MD · CC BY-SA · https://commons.wikimedia.org/wiki/File:Pericarditis10.JPG
 - **דלקת קרום המוח** — Meninges-en.svg · SVG by Mysid , original by SEER Development Team [1] , Jmarchn · CC BY-SA · https://commons.wikimedia.org/wiki/File:Meninges-en.svg
+- **דלקת קרום לב מכווץ** — Constrictive pericarditis.jpg · علاء · CC BY-SA · https://commons.wikimedia.org/wiki/File:Constrictive_pericarditis.jpg
+- **דלקת רב-עורקית קשרית** — Kussmaul Maier Makro.jpg · A. Kussmaul († 1902), R. Maier († 1888); uploader: Eberhard J. Wormer · CC0 · https://commons.wikimedia.org/wiki/File:Kussmaul_Maier_Makro.jpg
 - **דלקת ריאות** — XR chest - pneumonia with abscess and caverns - d0.jpg · Christaras A · CC BY · https://commons.wikimedia.org/wiki/File:XR_chest_-_pneumonia_with_abscess_and_caverns_-_d0.jpg
 - **דלקת ריאות מרגישות יתר** — Chronic hypersensitivity pneumonitis - histology.jpg · Mutleysmith · CC BY-SA · https://commons.wikimedia.org/wiki/File:Chronic_hypersensitivity_pneumonitis_-_histology.jpg
+- **דלקת ריאות שאפתנית** — Aspiration pneumonia (4861515094).jpg · Yale Rosen from USA · CC BY-SA · https://commons.wikimedia.org/wiki/File:Aspiration_pneumonia_(4861515094).jpg
 - **דלקת רירית הרחם** — Endometritis - 2 - cropped - very high mag.jpg · Nephron · CC BY-SA · https://commons.wikimedia.org/wiki/File:Endometritis_-_2_-_cropped_-_very_high_mag.jpg
+- **דלקת רפידת הקיבה** — Gastritis erosiva.2278.jpg · Amadalvarez · CC BY-SA · https://commons.wikimedia.org/wiki/File:Gastritis_erosiva.2278.jpg
+- **דלקת רקמת השומן** — An introduction to dermatology (1905) erythema induratum 2.jpg · Norman Purvis Walker · CC0 · https://commons.wikimedia.org/wiki/File:An_introduction_to_dermatology_(1905)_erythema_induratum_2.jpg
+- **דלקת שלפוחית השתן** — Diverse e Coli.png · Mattosaurus · CC0 · https://commons.wikimedia.org/wiki/File:Diverse_e_Coli.png
 - **דלקת שקדים** — Angina.jpg · Personal · CC0 · https://commons.wikimedia.org/wiki/File:Angina.jpg
+- **דלקת שריר הלב** — Viral myocarditis (1).JPG · BellRap · CC BY-SA · https://commons.wikimedia.org/wiki/File:Viral_myocarditis_(1).JPG
+- **דמוי-בוענת** — Legs Bullous Pemphigoid.jpg · Jubward · CC BY-SA · https://commons.wikimedia.org/wiki/File:Legs_Bullous_Pemphigoid.jpg
+- **דמיאלינציה** — MS Demyelinisation CD68 10xv2.jpg · Marvin 101 · CC BY-SA · https://commons.wikimedia.org/wiki/File:MS_Demyelinisation_CD68_10xv2.jpg
+- **דסמואיד פיברומטוזיס** — Desmoid-type fibromatosis.gross pathology.jpg · Jerad M Gardner, MD · CC BY-SA · https://commons.wikimedia.org/wiki/File:Desmoid-type_fibromatosis.gross_pathology.jpg
+- **דקסטרוקרדיה** — Situs inversus chest Nevit.jpg · Nevit · CC BY-SA · https://commons.wikimedia.org/wiki/File:Situs_inversus_chest_Nevit.jpg
 - **דרמטיטיס** — Dermatitis2015.jpg · James Heilman, MD · CC BY-SA · https://commons.wikimedia.org/wiki/File:Dermatitis2015.jpg
 - **דררת** — Chlamydophila psittaci FA stain.jpg · Photo Credit: Content Providers(s): CDC/Dr. Vester Lewis · CC0 · https://commons.wikimedia.org/wiki/File:Chlamydophila_psittaci_FA_stain.jpg
 - **הגדלה שפירה של הערמונית** — BPH es-hiperplasia benigna de prostata.png · Basquetteur · CC BY-SA · https://commons.wikimedia.org/wiki/File:BPH_es-hiperplasia_benigna_de_prostata.png
+- **הידרדנומה פפיליפרום** — Papillary hidradenoma - very high mag.jpg · Nephron · CC BY-SA · https://commons.wikimedia.org/wiki/File:Papillary_hidradenoma_-_very_high_mag.jpg
+- **הידרדניטיס סופורטיבה** — Hidradenitis.png · Samuel Freire da Silva · CC BY-SA · https://commons.wikimedia.org/wiki/File:Hidradenitis.png
+- **הידרופס פטאליס** — Ultrasound Scan ND 373.jpg · Nevit Dilmen ( talk ) · CC BY-SA · https://commons.wikimedia.org/wiki/File:Ultrasound_Scan_ND_373.jpg
+- **הידרוצלה** — Gray1148.png · Henry Vandyke Carter · CC0 · https://commons.wikimedia.org/wiki/File:Gray1148.png
+- **הידרוצפלוס** — Hydrocephalus (cropped).jpg · Lucien Monfils · CC BY-SA · https://commons.wikimedia.org/wiki/File:Hydrocephalus_(cropped).jpg
+- **היסטופלסמוזיס** — Histoplasmosis capsulatum.jpg · Photo Credit: Content Providers(s): CDC/Dr. Libero Ajello · CC0 · https://commons.wikimedia.org/wiki/File:Histoplasmosis_capsulatum.jpg
 - **היפוגליקמיה** — Glucose test.JPG · Erik1980 · CC BY-SA · https://commons.wikimedia.org/wiki/File:Glucose_test.JPG
+- **היפוקמפוס** — Gray739-emphasizing-hippocampus.png · Henry Vandyke Carter · CC0 · https://commons.wikimedia.org/wiki/File:Gray739-emphasizing-hippocampus.png
+- **היפרדות שליה** — Blausen 0737 PlacentalAbruption.png · BruceBlaus . When using this image in external sources it can be cited as: Blausen.com staff (2014). " Medical gallery of Blausen Medical 2014 ". WikiJournal of Medicine 1 (2). DOI : 10.15347/wjm/2014.010 . ISSN 2002-4436 . · CC BY · https://commons.wikimedia.org/wiki/File:Blausen_0737_PlacentalAbruption.png
+- **היפרטרופיה של חדר שמאל** — Heart left ventricular hypertrophy sa.jpg · Patrick J. Lynch, medical illustrator · CC BY · https://commons.wikimedia.org/wiki/File:Heart_left_ventricular_hypertrophy_sa.jpg
 - **היפרטריגליצרידמיה** — Dislipidemias1.jpg · TLECOATL ZYANYA · CC BY-SA · https://commons.wikimedia.org/wiki/File:Dislipidemias1.jpg
+- **היפרפיגמנטציה** — Hyperpigmentation of the gum.jpg · Shaimaa Abdellatif · CC BY-SA · https://commons.wikimedia.org/wiki/File:Hyperpigmentation_of_the_gum.jpg
 - **היצרות המסתם הצניפי** — Mitral stenosis, gross pathology 20G0015 lores.jpg · unknown author · CC0 · https://commons.wikimedia.org/wiki/File:Mitral_stenosis,_gross_pathology_20G0015_lores.jpg
+- **היצרות העורק התרדמני** — Gray513.png · Henry Vandyke Carter · CC0 · https://commons.wikimedia.org/wiki/File:Gray513.png
+- **היצרות מסתם אבי העורקים** — Aortic stenosis rheumatic, gross pathology 20G0014 lores.jpg · CDC/Dr. Edwin P. Ewing, Jr. · CC0 · https://commons.wikimedia.org/wiki/File:Aortic_stenosis_rheumatic,_gross_pathology_20G0014_lores.jpg
+- **היצרות תעלת השדרה** — LUMBAR TREFOIL CANAL.JPG · A E Francis · CC0 · https://commons.wikimedia.org/wiki/File:LUMBAR_TREFOIL_CANAL.JPG
 - **המוגלובינוריה לילית התקפית** — Haemolytic Anaemia.jpg · Prof. Osaro Erhabor · CC BY-SA · https://commons.wikimedia.org/wiki/File:Haemolytic_Anaemia.jpg
 - **המופילוס אינפלואנזה** — Haemophilus influenzae 01.jpg · CDC/Dr. W.A. Clark (PHIL #1617), 1977. · CC0 · https://commons.wikimedia.org/wiki/File:Haemophilus_influenzae_01.jpg
+- **המטומה** — Upper Arm Bruise.jpg · Whoisjohngalt · CC BY-SA · https://commons.wikimedia.org/wiki/File:Upper_Arm_Bruise.jpg
+- **המטוספרמיה** — Hémospermie.JPG · Grekoriz . · CC0 · https://commons.wikimedia.org/wiki/File:H%C3%A9mospermie.JPG
+- **המטוריה** — HematuriaTrauma.JPG · James Heilman, MD · CC BY-SA · https://commons.wikimedia.org/wiki/File:HematuriaTrauma.JPG
+- **הפארין** — Heparin Sodium sample.jpg · LHcheM · CC BY-SA · https://commons.wikimedia.org/wiki/File:Heparin_Sodium_sample.jpg
 - **הפטיטיס A** — Hepatitis A virus 01.jpg · Photo Credit: Content Providers(s): CDC/Betty Partin · CC0 · https://commons.wikimedia.org/wiki/File:Hepatitis_A_virus_01.jpg
 - **הפטיטיס B** — Hepatitis B virus 01.jpg · unknown author · CC0 · https://commons.wikimedia.org/wiki/File:Hepatitis_B_virus_01.jpg
 - **הפטיטיס C** — HCV EM picture 2.png · HCV_pictures.png : Maria Teresa Catanese, Martina Kopp, Kunihiro Uryu , and Charles Rice derivative work: TimVickers ( talk ) · CC0 · https://commons.wikimedia.org/wiki/File:HCV_EM_picture_2.png
 - **הפטיטיס E** — Hepatitis E virus.jpg · unknown author · CC0 · https://commons.wikimedia.org/wiki/File:Hepatitis_E_virus.jpg
+- **הפלה טבעית** — Anembryonic gestation.jpg · Mikael Häggström . When using this image in external works, it may be cited as: Häggström, Mikael (2014). " Medical gallery of Mikael Häggström 2014 ". WikiJournal of Medicine 1 (2). DOI : 10.15347/wjm/2014.008 . ISSN 2002-4436 . Public Domain . or By Mikael Häggström, used with permission. · CC0 · https://commons.wikimedia.org/wiki/File:Anembryonic_gestation.jpg
+- **הפרעת אישיות נרקיסיסטית** — Narcissus-Caravaggio (1594-96) edited.jpg · Caravaggio · CC0 · https://commons.wikimedia.org/wiki/File:Narcissus-Caravaggio_(1594-96)_edited.jpg
+- **הפרעת עיבוד שמיעתי** — Auditory Pathway.png · Jonathan E. Peelle · CC BY · https://commons.wikimedia.org/wiki/File:Auditory_Pathway.png
 - **הפרעת קצב** — Ekg abnormal bionerd.jpg · Bionerd · CC BY · https://commons.wikimedia.org/wiki/File:Ekg_abnormal_bionerd.jpg
+- **הפרעת תנועה ריסונית ראשונית** — Kartagener.svg · Filip em · CC BY · https://commons.wikimedia.org/wiki/File:Kartagener.svg
+- **הפרשות פטמה** — Lactation.jpg · Maman · CC BY-SA · https://commons.wikimedia.org/wiki/File:Lactation.jpg
+- **הצטברות קראטין** — Keratosis pilaris arm.jpg · Irja from San Francisco · CC BY-SA · https://commons.wikimedia.org/wiki/File:Keratosis_pilaris_arm.jpg
 - **הצטננות** — Rhinovirus isosurface.png · Thomas Splettstoesser ( www.scistyle.com ) · CC BY-SA · https://commons.wikimedia.org/wiki/File:Rhinovirus_isosurface.png
+- **הרואין** — Heroin asian.jpg · Drug Enforcement Agency, Unknown Unknown · CC0 · https://commons.wikimedia.org/wiki/File:Heroin_asian.jpg
 - **הרעלה** — GHS-pictogram-skull.svg · Unknown author Unknown author · CC0 · https://commons.wikimedia.org/wiki/File:GHS-pictogram-skull.svg
 - **הרעלת כספית** — Mercury - Skin - 42041654271.jpg · Y. Rosen, MD · CC BY-SA · https://commons.wikimedia.org/wiki/File:Mercury_-_Skin_-_42041654271.jpg
 - **הרעלת מזון** — SalmonellaNIAID.jpg · unknown author · CC0 · https://commons.wikimedia.org/wiki/File:SalmonellaNIAID.jpg
+- **הרעלת נחושת** — Main symptoms of copper poisoning.svg · Mikael Häggström · CC0 · https://commons.wikimedia.org/wiki/File:Main_symptoms_of_copper_poisoning.svg
 - **הרעלת עופרת** — Lead PoisoningRadio.jpg · Dr Abhijit Datir · CC BY-SA · https://commons.wikimedia.org/wiki/File:Lead_PoisoningRadio.jpg
 - **הרעלת פחמן חד-חמצני** — Carbon-monoxide-3D-balls.png · Benjah-bmm27 · CC0 · https://commons.wikimedia.org/wiki/File:Carbon-monoxide-3D-balls.png
 - **הרפס** — Herpes simplex cytopathy.jpg · Dr. Roshan Nasimudeen · CC BY-SA · https://commons.wikimedia.org/wiki/File:Herpes_simplex_cytopathy.jpg
-- **השתלת מח עצם** — KM Transplantat.JPEG · No machine-readable author provided. John Bergenholtz~commonswiki assumed (based on copyright claims). · CC BY-SA · https://commons.wikimedia.org/wiki/File:KM_Transplantat.JPEG
+- **הרפס גניטלי** — Herpes simplex virus TEM B82-0474 lores.jpg · CDC/Dr. Erskine Palmer · CC0 · https://commons.wikimedia.org/wiki/File:Herpes_simplex_virus_TEM_B82-0474_lores.jpg
+- **הרפס שפתיים** — Herpes(PHIL 1573 lores).jpg · unknown author · CC0 · https://commons.wikimedia.org/wiki/File:Herpes(PHIL_1573_lores).jpg
+- **השתלת מח עצם** — KM Transplantat.JPEG · unknown author · CC BY-SA · https://commons.wikimedia.org/wiki/File:KM_Transplantat.JPEG
+- **התסמונת המטבולית** — Central Obesity 011.jpg · FatM1ke · CC0 · https://commons.wikimedia.org/wiki/File:Central_Obesity_011.jpg
 - **התסמונת המיאלודיספלסטית** — Hypogranular neutrophil with a pseudo-Pelger-Huet nucleus in MDS.jpg · The Armed Forces Institute of Pathology (AFIP) · CC0 · https://commons.wikimedia.org/wiki/File:Hypogranular_neutrophil_with_a_pseudo-Pelger-Huet_nucleus_in_MDS.jpg
+- **התפשלות מעיים** — VolvulusCT.PNG · James Heilman, MD · CC BY-SA · https://commons.wikimedia.org/wiki/File:VolvulusCT.PNG
+- **וגינוזיס חיידקי** — Vaginose-G15.jpg · Per Grinsted / Medicinsk Webdesign · CC BY-SA · https://commons.wikimedia.org/wiki/File:Vaginose-G15.jpg
+- **ויטמין C** — Sample of ascorbic acid.jpg · LHcheM · CC BY-SA · https://commons.wikimedia.org/wiki/File:Sample_of_ascorbic_acid.jpg
+- **וריקוצלה** — Varicocele.png · BruceBlaus · CC BY-SA · https://commons.wikimedia.org/wiki/File:Varicocele.png
 - **זיהום וירוס ניפה** — Nipah virus from an infected VERO cell.jpg · NIAID · CC BY · https://commons.wikimedia.org/wiki/File:Nipah_virus_from_an_infected_VERO_cell.jpg
+- **זיהום לידה** — Streptococcus pyogenes.jpg · Photo Credit: Content Providers(s): · CC0 · https://commons.wikimedia.org/wiki/File:Streptococcus_pyogenes.jpg
 - **זעזוע מוח** — Concussion mechanics.svg · Patrick J. Lynch, medical illustrator · CC BY · https://commons.wikimedia.org/wiki/File:Concussion_mechanics.svg
 - **חבורה** — Pferdekuss.jpg · Ribelle2289 · CC0 · https://commons.wikimedia.org/wiki/File:Pferdekuss.jpg
+- **חולי מוח מתקדם רב-מוקדי** — Progressive multifocal leukoencephalopathy 002.jpg · The copyright holder of this file allows anyone to use it for any purpose, provided that the radswiki.net is properly attributed. Derivative work is permitted. This file is licensed under the Creative Commons Attribution-Share Alike 3.0 Unported license. You are free: to share – to copy, distribute and transmit the work to remix – to adapt the work Under the following conditions: attribution – You must give appropriate credit, provide a link to the license, and indicate if changes were made. You may do so in any reasonable manner, but not in any way that suggests the licensor endorses you or your use. share alike – If you remix, transform, or build upon the material, you must distribute your contributions under the same or compatible license as the original. https://creativecommons.org/licenses/by-sa/3.0 CC BY-SA 3.0 Creative Commons Attribution-Share Alike 3.0 true true .mw-parser-output .messagebox{margin:4px 0;width:auto;border-collapse:collapse;border:2px solid var(--border-color-progressive,#6485d1);background-color:var(--background-color-neutral-subtle,#fbfcff);color:var(--color-base,#202122);box-sizing:border-box;border-inline-start-width:8px}.mw-parser-output .messagebox.mbox-small{font-size:88%;line-height:1.25em}.mw-parser-output .mbox-warning,.mw-parser-output .mbox-speedy{border:2px solid var(--border-color-error,#b22222);background:var(--background-color-error-subtle,#ffdbdb);border-inline-start-width:8px}.mw-parser-output .mbox-serious,.mw-parser-output .mbox-delete,.mw-parser-output .mbox-stop{border:2px solid var(--border-color-error,#b22222);border-inline-start-width:8px}.mw-parser-output .mbox-issue,.mw-parser-output .mbox-content{border:2px solid #f28500;background:var(--background-color-warning-subtle,#ffe);border-inline-start-width:8px}.mw-parser-output .mbox-query,.mw-parser-output .mbox-style{border:2px solid #f4c430;background:var(--background-color-warning-subtle,#ffe);border-inline-start-width:8px}.mw-parser-output .mbox-shit{border:2px solid #960;border-inline-start-width:8px}.mw-parser-output .mbox-license{border:2px solid #88a;border-inline-start-width:initial}.mw-parser-output .mbox-legal{border:2px solid var(--border-color-notice,#666);background:var(--background-color-base,#fff);border-inline-start-width:8px}.mw-parser-output .mbox-honor{border:2px solid #ca3;background:var(--background-color-warning-subtle,#fcf4db);border-inline-start-width:8px}.mw-parser-output .mbox-growth{border:2px solid #8d4;background:var(--background-color-success-subtle,#d5fdf4);border-inline-start-width:8px}.mw-parser-output .mbox-move{border:2px solid #93c;border-inline-start-width:8px}.mw-parser-output .mbox-protection,.mw-parser-output .mbox-message{border:2px solid var(--border-color-base,#aaa);border-inline-start-width:8px}.mw-parser-output .messagebox .mbox-text{border:none;padding:0.25em 0.9em;width:100%}.mw-parser-output .messagebox .mbox-image{border:none;padding-top:2px;padding-bottom:2px;padding-inline-start:0.9em;padding-inline-end:0;text-align:center}.mw-parser-output .messagebox .mbox-imageright{border:none;padding-top:2px;padding-bottom:2px;padding-inline-start:0;padding-inline-end:0.9em;text-align:center}.mw-parser-output .messagebox .mbox-empty-cell{border:none;padding:0;width:1px}.mw-parser-output .messagebox .mbox-invalid-type{text-align:center}@media(min-width:720px){.mw-parser-output .messagebox{margin:4px 10%}.mw-parser-output .messagebox.mbox-small{clear:right;float:right;margin:4px 0 4px 1em;width:238px}}body.skin--responsive .mw-parser-output table.messagebox img{max-width:none!important} This work is free and may be used by anyone for any purpose. If you wish to use this content , you do not need to request permission as long as you follow any licensing requirements mentioned on this page. The Wikimedia Foundation has received an e-mail confirming that the copyright holder has approved publication under the terms mentioned on this page. This correspondence has been reviewed by a Volunteer Response Team (VRT) member and stored in our permission archive . The correspondence is available to trusted volunteers as ticket #2013052110003987 . If you have questions about the archived correspondence, please use the VRT noticeboard . Ticket link: https://ticket.wikimedia.org/otrs/index.pl?Action=AgentTicketZoom&TicketNumber=2013052110003987 Find other files from the same ticket: · CC BY · https://commons.wikimedia.org/wiki/File:Progressive_multifocal_leukoencephalopathy_002.jpg
+- **חומצה אצטית** — Acetic acid.jpg · W. Oelen · CC BY-SA · https://commons.wikimedia.org/wiki/File:Acetic_acid.jpg
+- **חומצה בורית** — Boric acid.jpg · unknown author · CC0 · https://commons.wikimedia.org/wiki/File:Boric_acid.jpg
+- **חומצה סליצילית** — Salicylic acid 1.jpg · Oxetane lacx · CC BY · https://commons.wikimedia.org/wiki/File:Salicylic_acid_1.jpg
+- **חומצה פולית** — Folic acid crystals.jpg · W. Oelen · CC BY-SA · https://commons.wikimedia.org/wiki/File:Folic_acid_crystals.jpg
+- **חומצת מימן כלורי** — Hydrochloric acid 05.jpg · unknown author · CC0 · https://commons.wikimedia.org/wiki/File:Hydrochloric_acid_05.jpg
 - **חוסר G6PD** — G6PD - 3D structure - PDB1qki.png · Christaras A (copier). Original Author is Jfdwolff · CC BY-SA · https://commons.wikimedia.org/wiki/File:G6PD_-_3D_structure_-_PDB1qki.png
+- **חזה דם** — Hémothorax.jpg · Fourrure ( http://www.boulesdefourrure.fr ) · CC BY-SA · https://commons.wikimedia.org/wiki/File:H%C3%A9mothorax.jpg
+- **חיסון BCG** — Mycobacterium bovis BCG ZN.jpg · Y tambe · CC BY-SA · https://commons.wikimedia.org/wiki/File:Mycobacterium_bovis_BCG_ZN.jpg
 - **חירשות** — International Symbol for Deafness.svg · State of Rhode Island · CC0 · https://commons.wikimedia.org/wiki/File:International_Symbol_for_Deafness.svg
+- **חמצן** — Liquid oxygen in a beaker 4.jpg · U.S. Air Force/Staff Sgt. Jim Araos · CC0 · https://commons.wikimedia.org/wiki/File:Liquid_oxygen_in_a_beaker_4.jpg
 - **חמצת** — Symptoms of acidosis.svg · Mikael Häggström · CC0 · https://commons.wikimedia.org/wiki/File:Symptoms_of_acidosis.svg
 - **חמצת קטוטית סוכרתית** — Infuuszakjes.jpg · Harmid · CC0 · https://commons.wikimedia.org/wiki/File:Infuuszakjes.jpg
+- **חמרמורת** — Portrait de Suzanne Valadon par Henri de Toulouse-Lautrec.jpg · Henri de Toulouse-Lautrec · CC0 · https://commons.wikimedia.org/wiki/File:Portrait_de_Suzanne_Valadon_par_Henri_de_Toulouse-Lautrec.jpg
+- **חנקן** — Fluessiger Stickstoff.jpg · Robin Müller · CC BY-SA · https://commons.wikimedia.org/wiki/File:Fluessiger_Stickstoff.jpg
+- **חצצת בלוטות הרוק** — Salivary gland stone removed.jpeg · Peternickson · CC0 · https://commons.wikimedia.org/wiki/File:Salivary_gland_stone_removed.jpeg
+- **חריגה בגן הכרומוזום** — Single Chromosome Mutations.svg · Richard Wheeler ( Zephyris ) Vector version: NikNaks · CC BY-SA · https://commons.wikimedia.org/wiki/File:Single_Chromosome_Mutations.svg
+- **חריקת שיניים** — Bruxismo.jpg · Pilar Molés Julio · CC BY-SA · https://commons.wikimedia.org/wiki/File:Bruxismo.jpg
 - **טולרמיה** — Tularemia lesion.jpg · unknown author · CC0 · https://commons.wikimedia.org/wiki/File:Tularemia_lesion.jpg
 - **טחורים** — Hemorrhoid.png · WikipedianProlific · CC BY-SA · https://commons.wikimedia.org/wiki/File:Hemorrhoid.png
 - **טטרלוגיה על שם פאלוט** — Tetralogy of Fallot.svg · Mariana Ruiz LadyofHats · CC0 · https://commons.wikimedia.org/wiki/File:Tetralogy_of_Fallot.svg
 - **טכיקרדיה על-חדרית** — SVT Lead II-2.JPG · SVT_Lead_II.JPG : Displaced derivative work: James Heilman, MD ( talk ) · CC0 · https://commons.wikimedia.org/wiki/File:SVT_Lead_II-2.JPG
+- **טנטון** — PMC4148481 gr3 (1).png · Adjamian P, Hall DA, Palmer AR, Allan TW, Langers DR · CC BY · https://commons.wikimedia.org/wiki/File:PMC4148481_gr3_(1).png
+- **טסית דם** — Активированный тромбоцит на стекле с иммобилизованным фибриногеном.jpg · Сергей Обыденный · CC BY-SA · https://commons.wikimedia.org/wiki/File:%D0%90%D0%BA%D1%82%D0%B8%D0%B2%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%BD%D1%8B%D0%B9_%D1%82%D1%80%D0%BE%D0%BC%D0%B1%D0%BE%D1%86%D0%B8%D1%82_%D0%BD%D0%B0_%D1%81%D1%82%D0%B5%D0%BA%D0%BB%D0%B5_%D1%81_%D0%B8%D0%BC%D0%BC%D0%BE%D0%B1%D0%B8%D0%BB%D0%B8%D0%B7%D0%BE%D0%B2%D0%B0%D0%BD%D0%BD%D1%8B%D0%BC_%D1%84%D0%B8%D0%B1%D1%80%D0%B8%D0%BD%D0%BE%D0%B3%D0%B5%D0%BD%D0%BE%D0%BC.jpg
+- **טרטומה** — Mature cystic teratoma of ovary.jpg · Photograph by Ed Uthman, MD. · CC0 · https://commons.wikimedia.org/wiki/File:Mature_cystic_teratoma_of_ovary.jpg
+- **טריכומוניאזיס** — Trichomoniasis 01.png · unknown author · CC0 · https://commons.wikimedia.org/wiki/File:Trichomoniasis_01.png
+- **טריפסין** — Trypsin active site.png · Fdardel · CC BY-SA · https://commons.wikimedia.org/wiki/File:Trypsin_active_site.png
 - **טרשת אמיוטרופית צידית** — ALS Coronal.jpg · Frank Gaillard · CC BY-SA · https://commons.wikimedia.org/wiki/File:ALS_Coronal.jpg
+- **טרשת האוזן** — Gray919.png · Henry Vandyke Carter · CC0 · https://commons.wikimedia.org/wiki/File:Gray919.png
 - **טרשת נפוצה** — MS Demyelinisation CD68 10xv2.jpg · Marvin 101 · CC BY-SA · https://commons.wikimedia.org/wiki/File:MS_Demyelinisation_CD68_10xv2.jpg
 - **טרשת עורקים** — Endothelial dysfunction Atherosclerosis.png · unknown author · CC BY-SA · https://commons.wikimedia.org/wiki/File:Endothelial_dysfunction_Atherosclerosis.png
+- **טרשת עורקים** — Atherosclerosis, aorta, gross pathology PHIL 846 lores.jpg · unknown author · CC0 · https://commons.wikimedia.org/wiki/File:Atherosclerosis,_aorta,_gross_pathology_PHIL_846_lores.jpg
+- **יחידה לטיפול נמרץ** — Intensivstation (01) 2007-03-03.jpg · Norbert Kaiser · CC BY-SA · https://commons.wikimedia.org/wiki/File:Intensivstation_(01)_2007-03-03.jpg
 - **יתר לחץ דם** — Grade 1 hypertension.jpg · Steven Fruitsmaak · CC BY · https://commons.wikimedia.org/wiki/File:Grade_1_hypertension.jpg
 - **יתר לחץ דם ריאתי** — Illu pulmonary circuit.jpg · Arcadian · CC0 · https://commons.wikimedia.org/wiki/File:Illu_pulmonary_circuit.jpg
 - **יתר פעילות של בלוטת התריס** — Hyperthyroidism (3).jpg · unknown author · CC BY-SA · https://commons.wikimedia.org/wiki/File:Hyperthyroidism_(3).jpg
+- **יתר פרולקטין בדם** — PRL structure.png · BorisTM at English Wikipedia · CC0 · https://commons.wikimedia.org/wiki/File:PRL_structure.png
 - **כאב גב** — Dolor espalda.png · madartzgraphics · CC0 · https://commons.wikimedia.org/wiki/File:Dolor_espalda.png
 - **כאב עצבי מן העצב המשולש** — Gray778.png · Henry Vandyke Carter · CC0 · https://commons.wikimedia.org/wiki/File:Gray778.png
-- **כאב ראש מקבצי** — Gray778 Trigeminal.png · No machine-readable author provided. Lipothymia assumed (based on copyright claims). · CC BY-SA · https://commons.wikimedia.org/wiki/File:Gray778_Trigeminal.png
+- **כאב ראש מקבצי** — Gray778 Trigeminal.png · unknown author · CC BY-SA · https://commons.wikimedia.org/wiki/File:Gray778_Trigeminal.png
 - **כווייה** — Brandwond-graad2.JPG · ErikHmn · CC BY-SA · https://commons.wikimedia.org/wiki/File:Brandwond-graad2.JPG
+- **כוויית קור** — Frost bite.jpg · Dr. S. Falz · CC BY-SA · https://commons.wikimedia.org/wiki/File:Frost_bite.jpg
+- **כוויצת דופיטרן** — Morbus dupuytren 1 (fcm).jpg · Photograph: Frank C. Müller , Baden-Baden · CC BY-SA · https://commons.wikimedia.org/wiki/File:Morbus_dupuytren_1_(fcm).jpg
+- **כולסטאתומה** — Cholesteatom kuppelraum 1a.jpg · welleschik · CC BY · https://commons.wikimedia.org/wiki/File:Cholesteatom_kuppelraum_1a.jpg
+- **כולסטרולוזיס של כיס המרה** — Gallbladder cholesterolosis low mag.jpg · Nephron · CC BY-SA · https://commons.wikimedia.org/wiki/File:Gallbladder_cholesterolosis_low_mag.jpg
 - **כוריאוקרצינומה** — Metastatic choriocarcinoma Case 140 (4858357750).jpg · Yale Rosen from USA · CC BY-SA · https://commons.wikimedia.org/wiki/File:Metastatic_choriocarcinoma_Case_140_(4858357750).jpg
+- **כחול פרוסי** — Prussian blue.jpg · Picture created by publunch · CC0 · https://commons.wikimedia.org/wiki/File:Prussian_blue.jpg
 - **כיב עיכולי** — Benign gastric ulcer 1.jpg · Ed Uthman, MD · CC0 · https://commons.wikimedia.org/wiki/File:Benign_gastric_ulcer_1.jpg
+- **כיחלון** — Cynosis.JPG · James Heilman, MD · CC BY-SA · https://commons.wikimedia.org/wiki/File:Cynosis.JPG
+- **כינמת הראש** — Bugbuster.jpg · Thanks for the polite permission of the Community Hygiene Concern , Joanna Ibarra · CC BY-SA · https://commons.wikimedia.org/wiki/File:Bugbuster.jpg
+- **כינמת ערווה** — SOA-Pediculosis-pubis.jpg · SOA-AIDS Amsterdam · CC BY-SA · https://commons.wikimedia.org/wiki/File:SOA-Pediculosis-pubis.jpg
+- **כיסת גנגליון** — Cyst Profile2.JPG · User:GEMalone · CC BY · https://commons.wikimedia.org/wiki/File:Cyst_Profile2.JPG
+- **כירורגיה פלסטית** — De curtorum chirurgia 8.jpg · Gaspare Tagliacozzi - scanned by Google · CC0 · https://commons.wikimedia.org/wiki/File:De_curtorum_chirurgia_8.jpg
+- **כלורופורם** — Chloroform by Danny S. - 002.JPG · Danny S. · CC BY-SA · https://commons.wikimedia.org/wiki/File:Chloroform_by_Danny_S._-_002.JPG
+- **כלורמפניקול** — Sample of Chloramphenicol.jpg · LHcheM · CC BY-SA · https://commons.wikimedia.org/wiki/File:Sample_of_Chloramphenicol.jpg
+- **כליה פוליציסטית** — Polycystic kidneys, gross pathology 20G0027 lores.jpg · CDC/Dr. Edwin P. Ewing, Jr. · CC0 · https://commons.wikimedia.org/wiki/File:Polycystic_kidneys,_gross_pathology_20G0027_lores.jpg
 - **כלמידיה** — SOA-Chlamydia-trachomatis-female.jpg · unknown author · CC BY-SA · https://commons.wikimedia.org/wiki/File:SOA-Chlamydia-trachomatis-female.jpg
+- **כסיסת ציפורניים** — Nailbitebad.jpg · Avexdevil at English Wikipedia · CC0 · https://commons.wikimedia.org/wiki/File:Nailbitebad.jpg
+- **כסף חנקתי** — SilverNitrate.JPG · unknown author · CC0 · https://commons.wikimedia.org/wiki/File:SilverNitrate.JPG
 - **כרצת** — Ascaris lumbricoides (Round worm).JPG · Department of Pathology, Calicut Medical College · CC BY-SA · https://commons.wikimedia.org/wiki/File:Ascaris_lumbricoides_(Round_worm).JPG
+- **כתם יין פורט** — PortWineStainHand.jpg · Aamartinez0626 · CC BY-SA · https://commons.wikimedia.org/wiki/File:PortWineStainHand.jpg
+- **כתמי גיל** — Lentigo sénile.jpg · Alain Gérard · CC BY-SA · https://commons.wikimedia.org/wiki/File:Lentigo_s%C3%A9nile.jpg
+- **כתמי פורדייס** — Fordyce Spots on Lips.jpg · Superdisk · CC BY-SA · https://commons.wikimedia.org/wiki/File:Fordyce_Spots_on_Lips.jpg
+- **כתף קפואה** — Gray327.png · Henry Vandyke Carter · CC0 · https://commons.wikimedia.org/wiki/File:Gray327.png
+- **לואיזיס** — Loa loa in blood Giemsa stain.jpg · Dr Graham Beards · CC BY-SA · https://commons.wikimedia.org/wiki/File:Loa_loa_in_blood_Giemsa_stain.jpg
 - **לוקמיה** — Symptoms of leukemia.png · Mikael Häggström · CC0 · https://commons.wikimedia.org/wiki/File:Symptoms_of_leukemia.png
 - **לוקמיה לימפוציטית כרונית** — Chronic lymphocytic leukemia.jpg · Mary Ann Thompson ( VashiDonsk at en.wikipedia ) · CC BY-SA · https://commons.wikimedia.org/wiki/File:Chronic_lymphocytic_leukemia.jpg
 - **לוקמיה מיאלואידית חריפה** — Auer rods.PNG · VashiDonsk at English Wikipedia · CC BY-SA · https://commons.wikimedia.org/wiki/File:Auer_rods.PNG
+- **לוקמיה פרומיאלוציטית חריפה** — Жедел промиелоцитарлы лейкоз (миелограмма).jpg · Аружан Жамбулатова · CC BY-SA · https://commons.wikimedia.org/wiki/File:%D0%96%D0%B5%D0%B4%D0%B5%D0%BB_%D0%BF%D1%80%D0%BE%D0%BC%D0%B8%D0%B5%D0%BB%D0%BE%D1%86%D0%B8%D1%82%D0%B0%D1%80%D0%BB%D1%8B_%D0%BB%D0%B5%D0%B9%D0%BA%D0%BE%D0%B7_(%D0%BC%D0%B8%D0%B5%D0%BB%D0%BE%D0%B3%D1%80%D0%B0%D0%BC%D0%BC%D0%B0).jpg
+- **לחץ דם פורטלי** — Gray591.png · Henry Vandyke Carter · CC0 · https://commons.wikimedia.org/wiki/File:Gray591.png
+- **לידת עכוז** — Breechpre.jpg · William Smellie (obstetrician) · CC0 · https://commons.wikimedia.org/wiki/File:Breechpre.jpg
+- **ליכן סימפלקס כרוני** — Lichen simplex chronicus 1.jpg · kilbad ( talk ) · CC BY · https://commons.wikimedia.org/wiki/File:Lichen_simplex_chronicus_1.jpg
 - **לימפאנגיוליומיומטוזיס** — Lymphangioleiomyomatosis (LAM) Case 126 (4694237675).jpg · Yale Rosen from USA · CC BY-SA · https://commons.wikimedia.org/wiki/File:Lymphangioleiomyomatosis_(LAM)_Case_126_(4694237675).jpg
+- **לימפדנופתיה** — Lymphadanopathy.JPG · James Heilman, MD · CC BY-SA · https://commons.wikimedia.org/wiki/File:Lymphadanopathy.JPG
 - **לימפומה מפושטת של תאי B** — Diffuse large B cell lymphoma - cytology low mag.jpg · Nephron · CC BY-SA · https://commons.wikimedia.org/wiki/File:Diffuse_large_B_cell_lymphoma_-_cytology_low_mag.jpg
+- **לימפומה פוליקולרית** — Follicular lymphoma -- low mag.jpg · Nephron · CC BY-SA · https://commons.wikimedia.org/wiki/File:Follicular_lymphoma_--_low_mag.jpg
 - **לימפומה שאינה הודג'קין** — Mantle cell lymphoma - intermed mag.jpg · Nephron · CC BY-SA · https://commons.wikimedia.org/wiki/File:Mantle_cell_lymphoma_-_intermed_mag.jpg
+- **לימפומה של תאי מעטפת** — Mantle cell lymphoma - intermed mag.jpg · Nephron · CC BY-SA · https://commons.wikimedia.org/wiki/File:Mantle_cell_lymphoma_-_intermed_mag.jpg
+- **לימפומת בירקיט** — Burkitt lymphoma, touch prep, Wright stain.jpg · Ed Uthman, MD. · CC BY · https://commons.wikimedia.org/wiki/File:Burkitt_lymphoma,_touch_prep,_Wright_stain.jpg
 - **לימפומת הודג'קין** — Hodgkin lymphoma (1) mixed cellulary type.jpg · unknown author · CC BY-SA · https://commons.wikimedia.org/wiki/File:Hodgkin_lymphoma_(1)_mixed_cellulary_type.jpg
+- **ליפומה** — Lipoma 02.jpg · Sikander Iqbal · CC BY · https://commons.wikimedia.org/wiki/File:Lipoma_02.jpg
+- **ליפוסרקומה** — Myxoid liposarcoma (06).JPG · unknown author · CC BY-SA · https://commons.wikimedia.org/wiki/File:Myxoid_liposarcoma_(06).JPG
 - **לישמניאזיס** — Leishmaniasis 100x 1.jpg · Department of Pathology, Calicut Medical College · CC BY-SA · https://commons.wikimedia.org/wiki/File:Leishmaniasis_100x_1.jpg
+- **לישמניה ויסצרלית** — Visceral-Leishmaniasis-in-Ethiopia-An-Evolving-Disease-pntd.0003131.g001.jpg · Leta S, Dao T, Mesele F, Alemayehu G · CC BY · https://commons.wikimedia.org/wiki/File:Visceral-Leishmaniasis-in-Ethiopia-An-Evolving-Disease-pntd.0003131.g001.jpg
+- **לנטיגו** — Lentigo sénile.jpg · Alain Gérard · CC BY-SA · https://commons.wikimedia.org/wiki/File:Lentigo_s%C3%A9nile.jpg
+- **לשון קשורה** — Frenulum linguae.jpg · Klaus Peter-Kuttig, Wiehl, Germany Diese Datei aus meinem Archiv habe ich unter der „ Creative-Commons -Lizenz“ veröffentlicht. Ich bin dankbar, wenn Sie mir die Verwendung der Datei unter klaus-d.peter@t-online.de anzeigen. I have published this file under a " Creative Commons License " . Thank you for your email to klaus-d.peter@t-online.de in case of using this picture. · CC BY · https://commons.wikimedia.org/wiki/File:Frenulum_linguae.jpg
+- **מגנזיום גופרתי** — Magnesium sulfate anhydrous.jpg · unknown author · CC0 · https://commons.wikimedia.org/wiki/File:Magnesium_sulfate_anhydrous.jpg
+- **מדולובלסטומה** — CompT1.jpg · Reytan · CC0 · https://commons.wikimedia.org/wiki/File:CompT1.jpg
+- **מויה מויה** — Moyamoya disease-MRI T1.png · Takuma-sa · CC BY · https://commons.wikimedia.org/wiki/File:Moyamoya_disease-MRI_T1.png
+- **מולה (אנטומיה)** — Vesicular Mole 20x.jpg · Calicut Medical College · CC BY-SA · https://commons.wikimedia.org/wiki/File:Vesicular_Mole_20x.jpg
+- **מולוסקום קונטגיוזום** — Molluscum contagiousum virus.jpg · User:Graham Beards · CC BY-SA · https://commons.wikimedia.org/wiki/File:Molluscum_contagiousum_virus.jpg
 - **מום לב מולד** — VSD image.jpg · National Heart Lung and Blood Institute · CC0 · https://commons.wikimedia.org/wiki/File:VSD_image.jpg
 - **מונונוקלאוזיס זיהומי** — Infectious Mononucleosis 3.jpg · Ed Uthman, MD. · CC BY · https://commons.wikimedia.org/wiki/File:Infectious_Mononucleosis_3.jpg
+- **מורטון נוירומה** — Gray833.png · Henry Vandyke Carter · CC0 · https://commons.wikimedia.org/wiki/File:Gray833.png
 - **מורסה** — Abszess.jpg · Sven Teschke · CC BY-SA · https://commons.wikimedia.org/wiki/File:Abszess.jpg
 - **מורסה ריאתית** — CT chest in pneumonia with abscesses caverns and effusions d0.jpg · Christaras A · CC BY · https://commons.wikimedia.org/wiki/File:CT_chest_in_pneumonia_with_abscesses_caverns_and_effusions_d0.jpg
 - **מחלה אוטואימונית** — Warm autoimmune hemolytic anemia.jpg · E. Uthman, MD · CC BY-SA · https://commons.wikimedia.org/wiki/File:Warm_autoimmune_hemolytic_anemia.jpg
 - **מחלה דלקתית של האגן** — Blausen 0732 PID-Sites.png · BruceBlaus · CC BY · https://commons.wikimedia.org/wiki/File:Blausen_0732_PID-Sites.png
+- **מחלה צרברו-וסקולרית** — 1471-2415-12-28-1Cerebral angiogram.jpg · Doctors Sumeer Thinda, Mark R Melson and Rachel W Kuchtey from Nashville, USA · CC BY · https://commons.wikimedia.org/wiki/File:1471-2415-12-28-1Cerebral_angiogram.jpg
 - **מחלה קרדיווסקולרית** — Cardiac amyloidosis very high mag movat.jpg · Nephron · CC BY-SA · https://commons.wikimedia.org/wiki/File:Cardiac_amyloidosis_very_high_mag_movat.jpg
+- **מחלות חניכיים** — Paro1.JPG · unknown author · CC BY-SA · https://commons.wikimedia.org/wiki/File:Paro1.JPG
 - **מחלות מטבוליות** — Ragged red fibres - gtc - very high mag.jpg · Nephron · CC BY-SA · https://commons.wikimedia.org/wiki/File:Ragged_red_fibres_-_gtc_-_very_high_mag.jpg
 - **מחלות מעי דלקתיות** — Cryptitis high mag.jpg · Nephron · CC BY-SA · https://commons.wikimedia.org/wiki/File:Cryptitis_high_mag.jpg
 - **מחלות ריאה אינטרסטיציאליות** — End-stage interstitial lung disease (honeycomb lung).jpg · unknown author · CC0 · https://commons.wikimedia.org/wiki/File:End-stage_interstitial_lung_disease_(honeycomb_lung).jpg
+- **מחלת אגירה ליזוזומלית** — Gaucher disease - very high mag.jpg · Nephron · CC BY-SA · https://commons.wikimedia.org/wiki/File:Gaucher_disease_-_very_high_mag.jpg
 - **מחלת אגירת גליקוגן מסוג 2** — Pompe vacuoles.jpg · Jensflorian · CC BY-SA · https://commons.wikimedia.org/wiki/File:Pompe_vacuoles.jpg
+- **מחלת אוסגוד-שלטר** — Osgood.jpg · Lucien Monfils · CC BY-SA · https://commons.wikimedia.org/wiki/File:Osgood.jpg
+- **מחלת ברגר** — Dimeric IgA schematic 01.svg · McortNGHH · CC BY-SA · https://commons.wikimedia.org/wiki/File:Dimeric_IgA_schematic_01.svg
 - **מחלת גבהים** — Altitude Sickness Warning.jpg · Sistak · CC BY-SA · https://commons.wikimedia.org/wiki/File:Altitude_Sickness_Warning.jpg
 - **מחלת גופיפי לוי** — Lewy Koerperchen.JPG · Dr. Andreas Becker upload here Penarc · CC BY-SA · https://commons.wikimedia.org/wiki/File:Lewy_Koerperchen.JPG
+- **מחלת גושה** — Acid beta glucosidase.png · unknown author · CC BY-SA · https://commons.wikimedia.org/wiki/File:Acid_beta_glucosidase.png
+- **מחלת דבר נשימתית** — Yersinia pestis fluorescent.jpeg · Photo Credit= Content Providers= CDC/ Courtesy of Larry Stauffer, Oregon State Public Health Laboratory · CC0 · https://commons.wikimedia.org/wiki/File:Yersinia_pestis_fluorescent.jpeg
+- **מחלת היילוד** — 1910 Erythroblastosis Fetalis.jpg · OpenStax College · CC BY · https://commons.wikimedia.org/wiki/File:1910_Erythroblastosis_Fetalis.jpg
+- **מחלת הירשפרונג** — Hirschsprung acetylcholine.jpg · Marvin 101 · CC BY-SA · https://commons.wikimedia.org/wiki/File:Hirschsprung_acetylcholine.jpg
 - **מחלת הכבד השומני שאינה נובעת מצריכת אלכוהול** — NAFLD liver progression.svg · Signimu · CC BY-SA · https://commons.wikimedia.org/wiki/File:NAFLD_liver_progression.svg
 - **מחלת הלגיונרים** — PMC5258191 cureus-0008-00000000937-i01.png · Jacob, Ramos, Morgado. · CC BY · https://commons.wikimedia.org/wiki/File:PMC5258191_cureus-0008-00000000937-i01.png
 - **מחלת הנטינגטון** — Neuron with mHtt inclusion.jpg · Dr. Steven Finkbeiner, Gladstone Institute of Neurological Disease, The Taube-Koret Center for Huntington's Disease Research, and the University of California San Francisco · CC BY · https://commons.wikimedia.org/wiki/File:Neuron_with_mHtt_inclusion.jpg
+- **מחלת העורקים הפריפריאליים** — Pvd002.jpg · Wfnicdao · CC0 · https://commons.wikimedia.org/wiki/File:Pvd002.jpg
+- **מחלת הפה והטלפיים** — Foot and mouth disease in mouth.jpg · Unknown author Unknown author · CC0 · https://commons.wikimedia.org/wiki/File:Foot_and_mouth_disease_in_mouth.jpg
+- **מחלת השימוטו** — Hashimoto thyroiditis - alt -- very low mag.jpg · Librepath · CC BY-SA · https://commons.wikimedia.org/wiki/File:Hashimoto_thyroiditis_-_alt_--_very_low_mag.jpg
+- **מחלת טקיאסו** — Takayasu Arteritis.jpg · Justin Ly · CC0 · https://commons.wikimedia.org/wiki/File:Takayasu_Arteritis.jpg
+- **מחלת כבד כרונית חסימתית** — Cholangiogram of primary sclerosing cholangitis.jpg · Joy Worthington, Roger Chapman · CC BY · https://commons.wikimedia.org/wiki/File:Cholangiogram_of_primary_sclerosing_cholangitis.jpg
 - **מחלת לב** — Myocardial infarction (old).jpg · Narraburra · CC0 · https://commons.wikimedia.org/wiki/File:Myocardial_infarction_(old).jpg
 - **מחלת לב איסכמית** — Clogged Heart Artery.jpg · http://www.scientificanimations.com · CC BY-SA · https://commons.wikimedia.org/wiki/File:Clogged_Heart_Artery.jpg
 - **מחלת לב כלילית** — Blausen 0257 CoronaryArtery Plaque.png · BruceBlaus . When using this image in external sources it can be cited as: Blausen.com staff (2014). " Medical gallery of Blausen Medical 2014 ". WikiJournal of Medicine 1 (2). DOI : 10.15347/wjm/2014.010 . ISSN 2002-4436 . · CC BY · https://commons.wikimedia.org/wiki/File:Blausen_0257_CoronaryArtery_Plaque.png
+- **מחלת מונדור** — Enfermedad de Mondor (RPS 07-12-2021) cordón subcutáneo en costado izquierdo del tórax.png · Raimundo Pastor · CC BY-SA · https://commons.wikimedia.org/wiki/File:Enfermedad_de_Mondor_(RPS_07-12-2021)_cord%C3%B3n_subcut%C3%A1neo_en_costado_izquierdo_del_t%C3%B3rax.png
 - **מחלת מנייר** — Vestibular system's semicircular canal- a cross-section.jpg · United States government · CC0 · https://commons.wikimedia.org/wiki/File:Vestibular_system%27s_semicircular_canal-_a_cross-section.jpg
 - **מחלת נגיף הזיקה** — Alexius Salvador Zika-Virus.jpg · Cramunhao · CC BY-SA · https://commons.wikimedia.org/wiki/File:Alexius_Salvador_Zika-Virus.jpg
 - **מחלת נגיף קורונה 2019** — COVID-19-Longontsteking.jpg · Opzwartbeek · CC BY-SA · https://commons.wikimedia.org/wiki/File:COVID-19-Longontsteking.jpg
+- **מחלת עמוד השדרה** — Vertebral column disorders - Normal Scoliosis Lordosis Kyphosis -- Smart-Servier.jpg · Laboratoires Servier · CC BY-SA · https://commons.wikimedia.org/wiki/File:Vertebral_column_disorders_-_Normal_Scoliosis_Lordosis_Kyphosis_--_Smart-Servier.jpg
+- **מחלת פברי** — PBB Protein GLA image.jpg · The original uploader was ProteinBoxBot at English Wikipedia . · CC0 · https://commons.wikimedia.org/wiki/File:PBB_Protein_GLA_image.jpg
 - **מחלת קווסאקי** — Kawasaki Disease.png · BruceBlaus · CC BY-SA · https://commons.wikimedia.org/wiki/File:Kawasaki_Disease.png
+- **מחלת קיקוצ'י** — Histiocytic necrotizing lymphadenitis - intermed mag.jpg · Nephron · CC BY-SA · https://commons.wikimedia.org/wiki/File:Histiocytic_necrotizing_lymphadenitis_-_intermed_mag.jpg
+- **מחלת קסטלמן** — Castleman disease - high mag.jpg · Nephron · CC BY-SA · https://commons.wikimedia.org/wiki/File:Castleman_disease_-_high_mag.jpg
 - **מחלת קרוהן** — Crohn's Disease.png · BruceBlaus · CC BY-SA · https://commons.wikimedia.org/wiki/File:Crohn%27s_Disease.png
 - **מחלת ריאות חסימתית כרונית** — Centrilobular emphysema 865 lores.jpg · Dr. Edwin P. Ewing, Jr. · CC0 · https://commons.wikimedia.org/wiki/File:Centrilobular_emphysema_865_lores.jpg
+- **מחלת רנו** — Raynaud-Syndrom.JPG · Niklas D · CC BY-SA · https://commons.wikimedia.org/wiki/File:Raynaud-Syndrom.JPG
 - **מטהמוגלובינמיה** — ChocolateBrownBlood (cropped).jpg · Thomas M. Nappe, Anthony M. Pacelli, and Kenneth Katz · CC BY-SA · https://commons.wikimedia.org/wiki/File:ChocolateBrownBlood_(cropped).jpg
 - **מיאלומה נפוצה** — Plasmozytom multiple Osteolysen Unterarm.png · Hellerhoff · CC BY-SA · https://commons.wikimedia.org/wiki/File:Plasmozytom_multiple_Osteolysen_Unterarm.png
 - **מיאסטניה גראביס** — Synapse diag3.png · see above · CC BY-SA · https://commons.wikimedia.org/wiki/File:Synapse_diag3.png
+- **מיומה** — Uterine fibroids.jpg · Hic et nunc · CC BY-SA · https://commons.wikimedia.org/wiki/File:Uterine_fibroids.jpg
+- **מיומה ברחם** — Fibroid.jpg · Tod Gilliam · CC0 · https://commons.wikimedia.org/wiki/File:Fibroid.jpg
+- **מיטלשמרץ** — AbdoPainDif.png · Y. YULIAWATI · CC BY-SA · https://commons.wikimedia.org/wiki/File:AbdoPainDif.png
 - **מיילופיברוזיס ראשונית** — Myelofibrosis, Reticulin Stain (6032644716).jpg · Ed Uthman from Houston, TX, USA · CC BY · https://commons.wikimedia.org/wiki/File:Myelofibrosis,_Reticulin_Stain_(6032644716).jpg
+- **מיקרואורכידיזם** — Mikroorchie.jpg · Uwe Gille · CC BY-SA · https://commons.wikimedia.org/wiki/File:Mikroorchie.jpg
+- **מליודוסיס** — Bps close.JPG · Gavin Koh · CC BY-SA · https://commons.wikimedia.org/wiki/File:Bps_close.JPG
 - **מלריה** — Histopathology of malaria exoerythrocytic forms in liver 07G0024 lores.jpg · unknown author · CC0 · https://commons.wikimedia.org/wiki/File:Histopathology_of_malaria_exoerythrocytic_forms_in_liver_07G0024_lores.jpg
+- **מנינגואנצפליטיס** — Méningo-encéphalite amibienne primitive.JPG · Photo Credit: Content Providers(s): CDC/ Dr. Govinda S. Visvesvara · CC0 · https://commons.wikimedia.org/wiki/File:M%C3%A9ningo-enc%C3%A9phalite_amibienne_primitive.JPG
+- **מנינגיומה** — Contrast enhanced meningioma.jpg · Glitzy queen00 · CC0 · https://commons.wikimedia.org/wiki/File:Contrast_enhanced_meningioma.jpg
+- **מנשך חופה אנכי** — Zahnfehlstellung Angle-Klasse II-1.jpg · Dr. Georg Risse at de.wikipedia · CC BY-SA · https://commons.wikimedia.org/wiki/File:Zahnfehlstellung_Angle-Klasse_II-1.jpg
 - **מנת יתר** — CharcoalPO.jpg · James Heilman, MD · CC BY-SA · https://commons.wikimedia.org/wiki/File:CharcoalPO.jpg
 - **מסטוציטוזיס** — Mastocytosis - cropped - very high mag.jpg · Nephron · CC BY-SA · https://commons.wikimedia.org/wiki/File:Mastocytosis_-_cropped_-_very_high_mag.jpg
+- **מסלזין** — Mesalazine 3D.png · Jovan.gec · CC BY-SA · https://commons.wikimedia.org/wiki/File:Mesalazine_3D.png
 - **מערכת העצבים המרכזית** — Tabes Dorsalis.jpg · Photo Credit: Content Providers: CDC/Susan Lindsley · CC0 · https://commons.wikimedia.org/wiki/File:Tabes_Dorsalis.jpg
+- **מפרצת** — Dissecting aneurysm 01.jpg · Jojo at Polish Wikipedia · CC0 · https://commons.wikimedia.org/wiki/File:Dissecting_aneurysm_01.jpg
+- **מפרצת אבי העורקים בבטן** — AneurysmAortaWithArrows.jpg · Michel de Villeneuve (Original uploader) Modified by Bakerstmd · CC BY-SA · https://commons.wikimedia.org/wiki/File:AneurysmAortaWithArrows.jpg
 - **מפרצת מוחית** — Aneurysem.jpg · Lucien Monfils · CC BY-SA · https://commons.wikimedia.org/wiki/File:Aneurysem.jpg
+- **מפרק הלסת** — Gray309-en.svg · Jmarchn · CC BY-SA · https://commons.wikimedia.org/wiki/File:Gray309-en.svg
 - **מצב היפרגליקמי היפראוסמולרי** — Hyperosmolar hyperglycemic state by hariadhi.svg · Hariadhi · CC BY-SA · https://commons.wikimedia.org/wiki/File:Hyperosmolar_hyperglycemic_state_by_hariadhi.svg
+- **מתאמפטמין** — Crystal Meth.jpg · Radspunk · CC BY-SA · https://commons.wikimedia.org/wiki/File:Crystal_Meth.jpg
+- **מתילן בלו** — Reflections in a flask of Methylene Blue.jpg · Amanda Slater, Flickr user amandabhslater · CC BY-SA · https://commons.wikimedia.org/wiki/File:Reflections_in_a_flask_of_Methylene_Blue.jpg
+- **נאופלזיה** — Weiches-fibrom-augenlid.jpg · User:Oliver Riesen · CC0 · https://commons.wikimedia.org/wiki/File:Weiches-fibrom-augenlid.jpg
+- **נגיף הפפילומה האנושי** — Papilloma Virus (HPV) EM.jpg · Author: Unknown photographer/artist Source: Laboratory of Tumor Virus Biology · CC0 · https://commons.wikimedia.org/wiki/File:Papilloma_Virus_(HPV)_EM.jpg
 - **נגיף מרבורג** — Marburg virus.jpg · Photo Credit: Content Providers(s): CDC/ Dr. Erskine Palmer, Russell Regnery, Ph.D. · CC0 · https://commons.wikimedia.org/wiki/File:Marburg_virus.jpg
-- **נויטרופניה** — Neutropenia.JPG · Roberto J. Galindo · CC BY-SA · https://commons.wikimedia.org/wiki/File:Neutropenia.JPG
 - **נוירובלסטומה** — Neuroblastoma rosettes.jpg · Dr. Maria Tsokos, National Cancer Institute · CC0 · https://commons.wikimedia.org/wiki/File:Neuroblastoma_rosettes.jpg
+- **נוירופיברומה** — Neurofibroma (1).jpg · unknown author · CC BY-SA · https://commons.wikimedia.org/wiki/File:Neurofibroma_(1).jpg
 - **נזלת אלרגית** — Misc pollen colorized.jpg · Dartmouth Electron Microscope Facility, Dartmouth College · CC0 · https://commons.wikimedia.org/wiki/File:Misc_pollen_colorized.jpg
+- **נזקי רעש** — Temporary threshold shift (hearing loss) after noise exposure.jpg · AlexChirkin · CC0 · https://commons.wikimedia.org/wiki/File:Temporary_threshold_shift_(hearing_loss)_after_noise_exposure.jpg
+- **נחושת גופרתית** — Copper sulfate anhydrous.jpg · W. Oelen · CC BY-SA · https://commons.wikimedia.org/wiki/File:Copper_sulfate_anhydrous.jpg
 - **ניוון מקולרי** — Intermediate age related macular degeneration.jpg · Unknown author Unknown author · CC0 · https://commons.wikimedia.org/wiki/File:Intermediate_age_related_macular_degeneration.jpg
+- **ניוון שרירים (nemaline)** — Congenital nemaline myopathy.jpg · Jensflorian · CC BY-SA · https://commons.wikimedia.org/wiki/File:Congenital_nemaline_myopathy.jpg
 - **ניוון שרירים שדרתי** — Polio spinal diagram-en.svg · Cervical vertebra blank.svg : Fred the Oyster Polio spinal diagram.PNG : DO11.10 Derived: Angelito7 · CC BY-SA · https://commons.wikimedia.org/wiki/File:Polio_spinal_diagram-en.svg
+- **נימן פיק** — Autorecessive-es.svg · User:LordT modification from the original of en:User:Cburnett · CC BY-SA · https://commons.wikimedia.org/wiki/File:Autorecessive-es.svg
+- **נמק העצם** — Head of femur avascular necrosis.jpg · Steven Fruitsmaak · CC BY-SA · https://commons.wikimedia.org/wiki/File:Head_of_femur_avascular_necrosis.jpg
+- **נמק רעלני בעור** — Toxic-epidermal-necrolysis.jpg · Madhero88 · CC BY-SA · https://commons.wikimedia.org/wiki/File:Toxic-epidermal-necrolysis.jpg
 - **נפחת** — Emphysema H and E.jpg · unknown author · CC BY · https://commons.wikimedia.org/wiki/File:Emphysema_H_and_E.jpg
 - **נפרופתיה סוכרתית** — Nodular glomerulosclerosis.jpeg · unknown author · CC0 · https://commons.wikimedia.org/wiki/File:Nodular_glomerulosclerosis.jpeg
+- **נקבים הנוצרים בקיבה או במעיים** — Free air2010.JPG · James Heilman, MD · CC BY-SA · https://commons.wikimedia.org/wiki/File:Free_air2010.JPG
+- **נקודת חן** — Graindebeaute.jpg · unknown author · CC BY-SA · https://commons.wikimedia.org/wiki/File:Graindebeaute.jpg
+- **נקע** — Sprained foot.jpg · Boldie · CC0 · https://commons.wikimedia.org/wiki/File:Sprained_foot.jpg
+- **נקע בקרסול** — Ankle sprain 1 -- Smart-Servier.png · Laboratoires Servier · CC BY-SA · https://commons.wikimedia.org/wiki/File:Ankle_sprain_1_--_Smart-Servier.png
 - **נרקולפסיה** — 1R02 crystallography.png · Boghog2 , English Wikipedia · CC0 · https://commons.wikimedia.org/wiki/File:1R02_crystallography.png
+- **נתרן חנקיתי** — Sodium nitrite crystals.jpg · W. Oelen · CC BY-SA · https://commons.wikimedia.org/wiki/File:Sodium_nitrite_crystals.jpg
+- **נתרן פלואורי** — Sodium fluoride.jpg · Leiem · CC BY-SA · https://commons.wikimedia.org/wiki/File:Sodium_fluoride.jpg
+- **נתרן תיוסולפט** — Sodium thiosulfate.jpg · W. Oelen · CC BY-SA · https://commons.wikimedia.org/wiki/File:Sodium_thiosulfate.jpg
+- **סארס** — Lung tissue pathology due to SARS - PHIL 3659 lores.jpg · CDC/Dr. Sherif Zaki · CC0 · https://commons.wikimedia.org/wiki/File:Lung_tissue_pathology_due_to_SARS_-_PHIL_3659_lores.jpg
+- **סהרוריות** — Johann Heinrich Füssli - Lady Macbeth.jpg · Henry Fuseli · CC0 · https://commons.wikimedia.org/wiki/File:Johann_Heinrich_F%C3%BCssli_-_Lady_Macbeth.jpg
+- **סודה לשתייה** — Sodium bicarbonate.jpg · Thavox · CC0 · https://commons.wikimedia.org/wiki/File:Sodium_bicarbonate.jpg
+- **סודיום בנזואט** — Sodium benzoate-substance.jpg · Chemik10 at Polish Wikipedia · CC BY-SA · https://commons.wikimedia.org/wiki/File:Sodium_benzoate-substance.jpg
 - **סיאטיקה** — Gray1244.png · Henry Vandyke Carter · CC0 · https://commons.wikimedia.org/wiki/File:Gray1244.png
+- **סיאליס** — Tadalafil von STADA - T20 - 20 Milligramm - Potenzmittel - Bild 005.jpg · Lupus in Saxonia · CC BY-SA · https://commons.wikimedia.org/wiki/File:Tadalafil_von_STADA_-_T20_-_20_Milligramm_-_Potenzmittel_-_Bild_005.jpg
 - **סיגואטרה** — Gambierdiscus toxicus NOAA.png · National Centers for Coastal Ocean Science. USA.gov Department of Commerce National Oceanic and Atmospheric Administration National Ocean Service · CC0 · https://commons.wikimedia.org/wiki/File:Gambierdiscus_toxicus_NOAA.png
+- **סיטוס אינברסוס** — Situs inversus - Mirrored heart and lungs.jpg · The original uploader was Angela at English Wikipedia . · CC0 · https://commons.wikimedia.org/wiki/File:Situs_inversus_-_Mirrored_heart_and_lungs.jpg
+- **סיליקון** — Liquid-silicon-rubber.jpg · Gmhofmann · CC BY-SA · https://commons.wikimedia.org/wiki/File:Liquid-silicon-rubber.jpg
+- **סימני מתיחה** — Belly Strech Marks.jpg · FatM1ke · CC BY-SA · https://commons.wikimedia.org/wiki/File:Belly_Strech_Marks.jpg
+- **סינדרום באלינט** — Gray728.png · Henry Vandyke Carter · CC0 · https://commons.wikimedia.org/wiki/File:Gray728.png
+- **סינוסיטיס** — Ethmoidinfection.png · James Heilman, MD · CC BY-SA · https://commons.wikimedia.org/wiki/File:Ethmoidinfection.png
+- **סינסתזיה** — Number Form--colored.jpg · User:Cytowic in English Wikipedia (transferred by chelo Vechek / talk ) · CC BY-SA · https://commons.wikimedia.org/wiki/File:Number_Form--colored.jpg
 - **סלמונלוזיס** — Host-pathogen interface. Human Salmonella in chicken ileum (Original work of Dr R C YashRoy).png · Rakeshyashroy · CC BY-SA · https://commons.wikimedia.org/wiki/File:Host-pathogen_interface._Human_Salmonella_in_chicken_ileum_(Original_work_of_Dr_R_C_YashRoy).png
+- **סמינומה** — Seminoma Testes 40x.jpg · Calicut Medical College · CC BY-SA · https://commons.wikimedia.org/wiki/File:Seminoma_Testes_40x.jpg
+- **סעפת** — Impetigo elbow.jpg · Evanherk at Dutch Wikipedia · CC BY-SA · https://commons.wikimedia.org/wiki/File:Impetigo_elbow.jpg
+- **ספגת המוח** — Aphis.usda.gov BSE 3.jpg · unknown author · CC0 · https://commons.wikimedia.org/wiki/File:Aphis.usda.gov_BSE_3.jpg
+- **ספיגת עצם** — Osteoclast.jpg · Robert M. Hunt at English Wikipedia · CC0 · https://commons.wikimedia.org/wiki/File:Osteoclast.jpg
 - **סקלרודרמה** — Scleroderma - UIP - Honeycomb fibrosis Case 221 (7262028900).jpg · Yale Rosen from USA · CC BY-SA · https://commons.wikimedia.org/wiki/File:Scleroderma_-_UIP_-_Honeycomb_fibrosis_Case_221_(7262028900).jpg
+- **סרח עור** — NeckAcrochordons.jpg · Jmarchn · CC BY-SA · https://commons.wikimedia.org/wiki/File:NeckAcrochordons.jpg
 - **סרטן** — Breast cancer cell (2).jpg · Unknown photographer · CC0 · https://commons.wikimedia.org/wiki/File:Breast_cancer_cell_(2).jpg
 - **סרטן האשכים** — Seminoma of the Testis.jpg · Ed Uthman, MD. · CC BY · https://commons.wikimedia.org/wiki/File:Seminoma_of_the_Testis.jpg
+- **סרטן הלבלב** — MBq cystic-carcinoma-pancreas.jpg · MBq at German Wikipedia · CC0 · https://commons.wikimedia.org/wiki/File:MBq_cystic-carcinoma-pancreas.jpg
+- **סרטן הפה** — ZungenCa2a.jpg · Welleschik · CC BY-SA · https://commons.wikimedia.org/wiki/File:ZungenCa2a.jpg
 - **סרטן הרחם** — Ca in situ, cervix 2.jpg · Haymanj · CC0 · https://commons.wikimedia.org/wiki/File:Ca_in_situ,_cervix_2.jpg
-- **סרטן השד** — Breast DCIS histopathology (1).jpg · No machine-readable author provided. KGH assumed (based on copyright claims). · CC BY-SA · https://commons.wikimedia.org/wiki/File:Breast_DCIS_histopathology_(1).jpg
+- **סרטן הרחם** — Endometrioid endometrial adenocarcinoma low mag.jpg · Nephron · CC BY-SA · https://commons.wikimedia.org/wiki/File:Endometrioid_endometrial_adenocarcinoma_low_mag.jpg
+- **סרטן השד** — Breast DCIS histopathology (1).jpg · unknown author · CC BY-SA · https://commons.wikimedia.org/wiki/File:Breast_DCIS_histopathology_(1).jpg
 - **סרטן השחלה** — Mucinous lmp ovarian tumour intermed mag.jpg · Nephron · CC BY-SA · https://commons.wikimedia.org/wiki/File:Mucinous_lmp_ovarian_tumour_intermed_mag.jpg
+- **סרטן כיס המרה** — Diagram showing stage T3 gallbladder cancer CRUK 436.svg · Cancer Research UK uploader · CC BY-SA · https://commons.wikimedia.org/wiki/File:Diagram_showing_stage_T3_gallbladder_cancer_CRUK_436.svg
+- **סרטן מדולארי של בלוטת התריס** — Metastatic medullary thyroid carcinoma Case 217 (7261947556).jpg · Yale Rosen from USA · CC BY-SA · https://commons.wikimedia.org/wiki/File:Metastatic_medullary_thyroid_carcinoma_Case_217_(7261947556).jpg
+- **סרטן נח** — In situ carcinoma-en.svg · Jmarchn · CC BY-SA · https://commons.wikimedia.org/wiki/File:In_situ_carcinoma-en.svg
 - **סרטן צוואר הרחם** — Ca in situ, cervix 2.jpg · Haymanj · CC0 · https://commons.wikimedia.org/wiki/File:Ca_in_situ,_cervix_2.jpg
+- **סרטן שלפוחית השתן** — Bladder urothelial carcinoma histopathology (2) at trigone.jpg · unknown author · CC BY-SA · https://commons.wikimedia.org/wiki/File:Bladder_urothelial_carcinoma_histopathology_(2)_at_trigone.jpg
 - **סרפדת** — Rash.jpg · Enochlau · CC BY-SA · https://commons.wikimedia.org/wiki/File:Rash.jpg
+- **סתימה במעיים** — Upright abdominal X-ray demonstrating a bowel obstruction.jpg · James Heilman, MD · CC BY-SA · https://commons.wikimedia.org/wiki/File:Upright_abdominal_X-ray_demonstrating_a_bowel_obstruction.jpg
 - **עגבת** — Treponema pallidum.jpg · Photo credit: Content providers(s): CDC / Dr. David Cox · CC0 · https://commons.wikimedia.org/wiki/File:Treponema_pallidum.jpg
+- **עיוורון לילה** — P360 Onderdendam goed nachtzicht ns nachtblind.jpg · J.c.roeloffzen · CC BY-SA · https://commons.wikimedia.org/wiki/File:P360_Onderdendam_goed_nachtzicht_ns_nachtblind.jpg
+- **עיוורון צבעים** — Ishihara 9.svg · Shinobu Ishihara · CC0 · https://commons.wikimedia.org/wiki/File:Ishihara_9.svg
+- **עירוי דם** — Erythrozytenkonzentrat neu.jpg · Erythrozytenkonzentrat.jpg : Pflegewiki-User Würfel derivative work:Midnightsnack · CC BY-SA · https://commons.wikimedia.org/wiki/File:Erythrozytenkonzentrat_neu.jpg
 - **עכברת** — London Scruffy Rat.jpg · unknown author · CC BY-SA · https://commons.wikimedia.org/wiki/File:London_Scruffy_Rat.jpg
 - **עמילואידוזיס** — Small bowel duodenum with amyloid deposition congo red 10X.jpg · Michael Feldman, MD, PhD University of Pennsylvania School of Medicine · CC BY · https://commons.wikimedia.org/wiki/File:Small_bowel_duodenum_with_amyloid_deposition_congo_red_10X.jpg
-- **עששת** — Tooth model.jpg · No machine-readable author provided. Xauxa assumed (based on copyright claims). · CC BY · https://commons.wikimedia.org/wiki/File:Tooth_model.jpg
+- **עצמות מסרק קצרות** — Brachymetatarsia, fourth metatarsal bone, X-ray.jpg · Jmarchn · CC BY-SA · https://commons.wikimedia.org/wiki/File:Brachymetatarsia,_fourth_metatarsal_bone,_X-ray.jpg
+- **עצמים צפים בעין** — Simulated floaters.jpg · Belbury · CC BY · https://commons.wikimedia.org/wiki/File:Simulated_floaters.jpg
+- **עקיצת נמלים** — Stechende Biene 12a.jpg · Waugsberg · CC BY-SA · https://commons.wikimedia.org/wiki/File:Stechende_Biene_12a.jpg
+- **עששת** — Tooth model.jpg · unknown author · CC BY · https://commons.wikimedia.org/wiki/File:Tooth_model.jpg
 - **פאוכרומוציטומה** — Pheochromocytoma high mag.jpg · Nephron · CC BY-SA · https://commons.wikimedia.org/wiki/File:Pheochromocytoma_high_mag.jpg
+- **פגיעה מכלי ירי** — Gunshot skull.jpg · National Institutes of Health, Health & Human Services · CC0 · https://commons.wikimedia.org/wiki/File:Gunshot_skull.jpg
+- **פגם במחיצה הבין-חדרית** — Ventricular Septal Defect.jpg · unknown author · CC0 · https://commons.wikimedia.org/wiki/File:Ventricular_Septal_Defect.jpg
+- **פגם במחיצה הבין-פרוזדורית** — Gray468.png · Henry Vandyke Carter · CC0 · https://commons.wikimedia.org/wiki/File:Gray468.png
 - **פולימיוזיטיס** — Polymyositis HE.jpg · Jensflorian · CC BY-SA · https://commons.wikimedia.org/wiki/File:Polymyositis_HE.jpg
+- **פוליפ** — Polyp-2.jpeg · Polyp.jpeg : Original uploader was Rsabbatini at en.wikipedia Later version(s) were uploaded by Kd4ttc and dr. F.C. Turner at en.wikipedia . derivative work: Dr. F.C. Turner ( talk ) · CC BY · https://commons.wikimedia.org/wiki/File:Polyp-2.jpeg
+- **פוליפ באף** — Polyposis nasi 1.jpg · Klaus D. Peter, Wiehl, Germany Diese Datei aus meinem Archiv habe ich unter der „ Creative-Commons -Lizenz“ veröffentlicht. Ich bin dankbar, wenn Sie mir die Verwendung der Datei unter klaus-d.peter@t-online.de anzeigen. I have published this file under a " Creative Commons License " . Thank you for your email to klaus-d.peter@t-online.de in case of using this picture. · CC BY · https://commons.wikimedia.org/wiki/File:Polyposis_nasi_1.jpg
 - **פורפיריה** — Acute photosensitivity reaction in EPP (2).jpg · see above · CC BY-SA · https://commons.wikimedia.org/wiki/File:Acute_photosensitivity_reaction_in_EPP_(2).jpg
 - **פטלת** — Yaws 01.jpg · unknown author · CC0 · https://commons.wikimedia.org/wiki/File:Yaws_01.jpg
+- **פטמה יתרה** — Trzeci sutek.jpg · Zureks · CC BY · https://commons.wikimedia.org/wiki/File:Trzeci_sutek.jpg
+- **פטריגיום העין** — Pterygium (from Michigan Uni site, CC-BY).jpg · Originally created by Jonathan Trobe, M.D., University of Michigan Kellogg Eye Center · CC BY · https://commons.wikimedia.org/wiki/File:Pterygium_(from_Michigan_Uni_site,_CC-BY).jpg
 - **פטרת** — Pulmonary aspergillosis.jpg · Nephron · CC BY-SA · https://commons.wikimedia.org/wiki/File:Pulmonary_aspergillosis.jpg
+- **פטרת העור** — Dermatophytosis 20190815-02ASD.jpg · Asurnipal · CC BY-SA · https://commons.wikimedia.org/wiki/File:Dermatophytosis_20190815-02ASD.jpg
+- **פטרת הציפורניים** — Toefungus.jpg · Medguy at English Wikipedia · CC0 · https://commons.wikimedia.org/wiki/File:Toefungus.jpg
 - **פטרת השמש** — P versicolorklein.jpg · User Evanherk on nl.wikipedia · CC BY-SA · https://commons.wikimedia.org/wiki/File:P_versicolorklein.jpg
 - **פיאלונפריטיס** — Xanthogranulomatous pyelonephritis cd68.jpg · Nephron · CC BY-SA · https://commons.wikimedia.org/wiki/File:Xanthogranulomatous_pyelonephritis_cd68.jpg
+- **פיברואדנומה** — Breast fibradenoma (1).jpg · unknown author · CC BY-SA · https://commons.wikimedia.org/wiki/File:Breast_fibradenoma_(1).jpg
 - **פיברוזיס ריאתי** — IPF amiodarone.JPG · James Heilman, MD · CC BY-SA · https://commons.wikimedia.org/wiki/File:IPF_amiodarone.JPG
+- **פיברוזיס ריאתי אידיופתי** — Ipf NIH.jpg · National Heart Lung and Blood Institute (NIH) · CC0 · https://commons.wikimedia.org/wiki/File:Ipf_NIH.jpg
+- **פיברומה** — Weiches-fibrom-augenlid.jpg · User:Oliver Riesen · CC0 · https://commons.wikimedia.org/wiki/File:Weiches-fibrom-augenlid.jpg
+- **פיטיריאזיס רוזאה** — Pit rosea small.jpg · Evanherk at Dutch Wikipedia · CC BY-SA · https://commons.wikimedia.org/wiki/File:Pit_rosea_small.jpg
+- **פיטמה הפוכה** — Invertednipple.jpg · Jhfdsskl · CC0 · https://commons.wikimedia.org/wiki/File:Invertednipple.jpg
 - **פילאריאזיס** — Filariasis 01.png · unknown author · CC0 · https://commons.wikimedia.org/wiki/File:Filariasis_01.png
+- **פינגואקולה** — PRE-OPERATIVE PINGUECULA.JPG · Red eye2008 · CC BY-SA · https://commons.wikimedia.org/wiki/File:PRE-OPERATIVE_PINGUECULA.JPG
+- **פיסטולה בין שלפוחית השתן לנרתיק** — Vesicovaginal Fistula.png · BruceBlaus · CC BY-SA · https://commons.wikimedia.org/wiki/File:Vesicovaginal_Fistula.png
+- **פיסטולה הריונית** — Prolonged obstructed labour sequelae.jpg · FIGOHQ · CC BY-SA · https://commons.wikimedia.org/wiki/File:Prolonged_obstructed_labour_sequelae.jpg
+- **פיסטולה רקטו־וגינאלית** — Rectovestibular fistula in females.jpg · unknown author · CC BY · https://commons.wikimedia.org/wiki/File:Rectovestibular_fistula_in_females.jpg
+- **פירומניה** — Burned container.jpg · Chmee2 · CC BY-SA · https://commons.wikimedia.org/wiki/File:Burned_container.jpg
+- **פלגיוצפליה** — Плагиоцефалия.jpg · Medical advises · CC BY-SA · https://commons.wikimedia.org/wiki/File:%D0%9F%D0%BB%D0%B0%D0%B3%D0%B8%D0%BE%D1%86%D0%B5%D1%84%D0%B0%D0%BB%D0%B8%D1%8F.jpg
+- **פלזמה** — FreshFrozenPlasma.JPG · DiverDave · CC BY-SA · https://commons.wikimedia.org/wiki/File:FreshFrozenPlasma.JPG
+- **פלטפוס** — Flatfoot.jpg · Benojeda at English Wikipedia · CC0 · https://commons.wikimedia.org/wiki/File:Flatfoot.jpg
 - **פמפיגוס** — Permphigus.jpg · George Henry Fox · CC0 · https://commons.wikimedia.org/wiki/File:Permphigus.jpg
+- **פנול** — Phenol 2 grams.jpg · W. Oelen · CC BY-SA · https://commons.wikimedia.org/wiki/File:Phenol_2_grams.jpg
+- **פנולפתלאין** — Sample of solid phenolphthalein.jpg · LHcheM · CC BY-SA · https://commons.wikimedia.org/wiki/File:Sample_of_solid_phenolphthalein.jpg
+- **פנס בעין** — Black Eye 01.jpg · User:Kuebi = Armin Kübelbeck · CC BY-SA · https://commons.wikimedia.org/wiki/File:Black_Eye_01.jpg
 - **פסוריאזיס** — Psoriasis on back.jpg · Marnanel · CC BY-SA · https://commons.wikimedia.org/wiki/File:Psoriasis_on_back.jpg
 - **פסיכוזה** — Affective psychosis, Hashimoto's thyroiditis, and brain perfusion abnormalities.jpg · Alberto Bocchetta, Giorgio Tamburini, Pina Cavolina, Alessandra Serra, Andrea Loviselli and Mario Piga · CC BY · https://commons.wikimedia.org/wiki/File:Affective_psychosis,_Hashimoto%27s_thyroiditis,_and_brain_perfusion_abnormalities.jpg
+- **פצע לחץ** — Dekubitus Back.jpg · Pflegewiki-User Mennfield · CC BY-SA · https://commons.wikimedia.org/wiki/File:Dekubitus_Back.jpg
 - **פקקת** — Blausen 0089 BloodClot Motion.png · BruceBlaus . When using this image in external sources it can be cited as: Blausen.com staff (2014). " Medical gallery of Blausen Medical 2014 ". WikiJournal of Medicine 1 (2). DOI : 10.15347/wjm/2014.010 . ISSN 2002-4436 . · CC BY · https://commons.wikimedia.org/wiki/File:Blausen_0089_BloodClot_Motion.png
 - **פקקת ורידים** — Deep vein thrombosis of the right leg.jpg · James Heilman, MD · CC BY-SA · https://commons.wikimedia.org/wiki/File:Deep_vein_thrombosis_of_the_right_leg.jpg
+- **פקקת ורידים עמוקה** — Deep vein thrombosis of the right leg.jpg · James Heilman, MD · CC BY-SA · https://commons.wikimedia.org/wiki/File:Deep_vein_thrombosis_of_the_right_leg.jpg
 - **פרוטופורפיריה אריתרופויטית** — Cutaneous histological features of EPP.jpg · see above · CC BY-SA · https://commons.wikimedia.org/wiki/File:Cutaneous_histological_features_of_EPP.jpg
+- **פרולקטינומה** — PRL HE histology.jpg · Jensflorian · CC BY-SA · https://commons.wikimedia.org/wiki/File:PRL_HE_histology.jpg
+- **פרוניכיה** — Acute paronychia with pus-filled abscess on finger, photographed by Glen Humble - 3 September 2011.jpg · Glen · CC BY · https://commons.wikimedia.org/wiki/File:Acute_paronychia_with_pus-filled_abscess_on_finger,_photographed_by_Glen_Humble_-_3_September_2011.jpg
+- **פרונקל** — Furuncle-DSC08137.jpg · El Pantera · CC BY-SA · https://commons.wikimedia.org/wiki/File:Furuncle-DSC08137.jpg
+- **פריאפיזם** — Ultrasonography of traumatic arteriovenous fistula of the penis.jpg · Article authors: Maitê Aline Vieira Fernandes, Luis Ronan Marquez, Ferreira de Souza and Luciano Pousa Cartafina3 · CC BY · https://commons.wikimedia.org/wiki/File:Ultrasonography_of_traumatic_arteriovenous_fistula_of_the_penis.jpg
+- **פריצת דיסק** — Hernie discale L4 L5.png · Miguel Tremblay · CC0 · https://commons.wikimedia.org/wiki/File:Hernie_discale_L4_L5.png
+- **פריקה** — Ankledislocation.JPG · James Heilman, MD · CC BY-SA · https://commons.wikimedia.org/wiki/File:Ankledislocation.JPG
 - **פרכוס אפילפטי** — Spike-waves.png · unknown author · CC BY-SA · https://commons.wikimedia.org/wiki/File:Spike-waves.png
+- **פרכת** — XrayOITypeV-Audult.jpg · ShakataGaNai · CC BY-SA · https://commons.wikimedia.org/wiki/File:XrayOITypeV-Audult.jpg
+- **פרע מנוקב** — (MHNT) Hypericum perforatum flower and buttons.jpg · Didier Descouens · CC BY-SA · https://commons.wikimedia.org/wiki/File:(MHNT)_Hypericum_perforatum_flower_and_buttons.jpg
 - **פרפור חדרים** — Ventricular fibrillation.png · Jer5150 · CC BY-SA · https://commons.wikimedia.org/wiki/File:Ventricular_fibrillation.png
 - **פרפור עליות** — Afib ecg.svg · J. Heuser ; vectorised and touched up by Marnanel · CC BY-SA · https://commons.wikimedia.org/wiki/File:Afib_ecg.svg
+- **פרצטמול** — Paracetamol substance photo.jpg · Rillke · CC BY-SA · https://commons.wikimedia.org/wiki/File:Paracetamol_substance_photo.jpg
 - **צדרת** — Pleurisy.png · BruceBlaus · CC BY-SA · https://commons.wikimedia.org/wiki/File:Pleurisy.png
 - **צילום רנטגן** — Projectional radiography components.jpg · Blausen Medical Annotations by Mikael Häggström · CC BY-SA · https://commons.wikimedia.org/wiki/File:Projectional_radiography_components.jpg
+- **ציסטה דרמואידית** — Dermoid cyst intracranial.jpg · Jensflorian · CC BY-SA · https://commons.wikimedia.org/wiki/File:Dermoid_cyst_intracranial.jpg
+- **ציסטה פילונידלית** — Two pilonidal cysts in the natal cleft.jpg · JerryTahl · CC0 · https://commons.wikimedia.org/wiki/File:Two_pilonidal_cysts_in_the_natal_cleft.jpg
 - **ציסטה שחלתית** — Benign Ovarian Cyst.jpg · Ed Uthman, MD · CC BY · https://commons.wikimedia.org/wiki/File:Benign_Ovarian_Cyst.jpg
+- **ציסטינוזיס** — Cystine-skeletal.png · unknown author · CC0 · https://commons.wikimedia.org/wiki/File:Cystine-skeletal.png
+- **ציפורן חודרנית** — Vandenbosbefore1.jpg · Flydochc · CC BY-SA · https://commons.wikimedia.org/wiki/File:Vandenbosbefore1.jpg
+- **ציקלותימיה** — Bipolar mood shifts.png · Osmosis · CC BY-SA · https://commons.wikimedia.org/wiki/File:Bipolar_mood_shifts.png
+- **צלוליטיס** — Cellulitis Left Leg.JPG · unknown author · CC BY-SA · https://commons.wikimedia.org/wiki/File:Cellulitis_Left_Leg.JPG
 - **צלקת** — Scar (xndr).jpg · unknown author · CC BY-SA · https://commons.wikimedia.org/wiki/File:Scar_(xndr).jpg
 - **צניחה של המסתם הצניפי** — Myxomatous aortic valve.jpg · Nephron · CC BY-SA · https://commons.wikimedia.org/wiki/File:Myxomatous_aortic_valve.jpg
+- **צפדינה** — Scorbutic gums.jpg · Centers for Disease Control and Prevention · CC0 · https://commons.wikimedia.org/wiki/File:Scorbutic_gums.jpg
 - **קדחת השבר הסורי-אפריקני** — Rift Valley fever tissue.jpg · unknown author · CC0 · https://commons.wikimedia.org/wiki/File:Rift_Valley_fever_tissue.jpg
 - **קדחת לסה** — Lassa virus.JPG · unknown author · CC0 · https://commons.wikimedia.org/wiki/File:Lassa_virus.JPG
 - **קדחת מערב הנילוס** — NIAID-west-Nile.jpg · unknown author · CC0 · https://commons.wikimedia.org/wiki/File:NIAID-west-Nile.jpg
+- **קדחת נשיכת הקרציה האפריקאית** — African tick bite fever - leg lesion.jpg · Reinhard Kraasch · CC BY-SA · https://commons.wikimedia.org/wiki/File:African_tick_bite_fever_-_leg_lesion.jpg
 - **קדחת צהובה** — YellowFeverVirus.jpg · Erskine Palmer, Ph.D. · CC0 · https://commons.wikimedia.org/wiki/File:YellowFeverVirus.jpg
 - **קדחת שיגרונית** — Streptococcus pyogenes 01.jpg · Photo Credit: Content Providers(s): · CC0 · https://commons.wikimedia.org/wiki/File:Streptococcus_pyogenes_01.jpg
 - **קדחת Q** — Coxiella burnetii 01.JPG · NIAID · CC0 · https://commons.wikimedia.org/wiki/File:Coxiella_burnetii_01.JPG
+- **קו-אנזים Q10** — Coenzyme Q10 powder.jpg · Awkwafaba · CC BY-SA · https://commons.wikimedia.org/wiki/File:Coenzyme_Q10_powder.jpg
+- **קולגן** — Fibers of Collagen Type I - TEM .jpg · Louisa Howard · CC0 · https://commons.wikimedia.org/wiki/File:Fibers_of_Collagen_Type_I_-_TEM_.jpg
 - **קוליטיס כיבית** — Chronic Ulcerative Colitis 1.jpg · Photograph by Ed Uthman, MD. · CC0 · https://commons.wikimedia.org/wiki/File:Chronic_Ulcerative_Colitis_1.jpg
+- **קולכיצין** — Colchicine.png · Foreade · CC BY-SA · https://commons.wikimedia.org/wiki/File:Colchicine.png
+- **קוקאין** — Amapolaa en polvo (cocaina).jpg · Davidfernandocoronel · CC BY-SA · https://commons.wikimedia.org/wiki/File:Amapolaa_en_polvo_(cocaina).jpg
+- **קיפאון מוחי** — Gray778 Trigeminal.png · unknown author · CC BY-SA · https://commons.wikimedia.org/wiki/File:Gray778_Trigeminal.png
+- **קלאב פוט** — 813 Clubfoot.jpg · OpenStax College · CC BY · https://commons.wikimedia.org/wiki/File:813_Clubfoot.jpg
+- **קלואיד** — Keloid, Post Surgical.JPG · Htirgan · CC BY-SA · https://commons.wikimedia.org/wiki/File:Keloid,_Post_Surgical.JPG
+- **קלצינוזיס** — Calcinosis cutis new image.jpg · Mohammad2018 · CC BY-SA · https://commons.wikimedia.org/wiki/File:Calcinosis_cutis_new_image.jpg
 - **קנדידיאזיס** — Oral thrush Aphthae Candida albicans. PHIL 1217 lores.jpg · Photo Credit: Content Providers(s): CDC · CC0 · https://commons.wikimedia.org/wiki/File:Oral_thrush_Aphthae_Candida_albicans._PHIL_1217_lores.jpg
+- **קסנון** — XeTube.jpg · User:Pslawinski · CC BY-SA · https://commons.wikimedia.org/wiki/File:XeTube.jpg
+- **קרדיומיופתיה מורחבת** — Myocardiopathy dilated2.JPG · Xia X-G, Zhou H, Samper E, Melov S, Xu Z (2006) · CC BY · https://commons.wikimedia.org/wiki/File:Myocardiopathy_dilated2.JPG
 - **קרחת** — Alopecia.jpg · Welshsk · CC BY · https://commons.wikimedia.org/wiki/File:Alopecia.jpg
+- **קרחת צלחתית** — Dissecting cellulitis of the scalp - perifolliculitis capitis abscedens et suffodiens - Hoffman disease - 40yo male of African descent.jpg · PhilipPirrip · CC BY-SA · https://commons.wikimedia.org/wiki/File:Dissecting_cellulitis_of_the_scalp_-_perifolliculitis_capitis_abscedens_et_suffodiens_-_Hoffman_disease_-_40yo_male_of_African_descent.jpg
+- **קריוגלובולינמיה** — Cryoglobulinemia2.jpg · Madhero88 · CC BY-SA · https://commons.wikimedia.org/wiki/File:Cryoglobulinemia2.jpg
+- **קריון קלסי** — Kérion 02.jpg · Grook Da Oger · CC BY-SA · https://commons.wikimedia.org/wiki/File:K%C3%A9rion_02.jpg
+- **קריסטל ויולט** — Sample of Crystal Violet.jpg · LHcheM · CC BY-SA · https://commons.wikimedia.org/wiki/File:Sample_of_Crystal_Violet.jpg
+- **קרע של גיד אכילס** — Achilles tendon rupture.svg · InjuryMap · CC BY-SA · https://commons.wikimedia.org/wiki/File:Achilles_tendon_rupture.svg
 - **קרצינומה** — Small cell lung cancer - cytology.jpg · Nephron · CC BY-SA · https://commons.wikimedia.org/wiki/File:Small_cell_lung_cancer_-_cytology.jpg
 - **קרצינומה של תאי הכליה** — Renal clear cell ca (1) Nephrectomy.jpg · unknown author · CC BY-SA · https://commons.wikimedia.org/wiki/File:Renal_clear_cell_ca_(1)_Nephrectomy.jpg
+- **קשחת חוליות** — Lateral X-ray of lumbar spine spondylosis.jpg · Nevit Dilmen , crop and annotation by Mikael Häggström , M.D. Author info - Reusing images - Conflicts of interest: None Mikael Häggström , M.D. · CC BY-SA · https://commons.wikimedia.org/wiki/File:Lateral_X-ray_of_lumbar_spine_spondylosis.jpg
+- **רגל חפירות** — Case of trench feet suffered by unidentified soldier Cas de pieds des tranchées (soldat non identifié).jpg · LAC/BAC · CC0 · https://commons.wikimedia.org/wiki/File:Case_of_trench_feet_suffered_by_unidentified_soldier_Cas_de_pieds_des_tranch%C3%A9es_(soldat_non_identifi%C3%A9).jpg
+- **רחם דידלפי** — Uterus didelphys 0001.jpg · Mme Mim · CC BY-SA · https://commons.wikimedia.org/wiki/File:Uterus_didelphys_0001.jpg
+- **רככת בית הקול** — Laryngomalacia.jpg · User Doctormichael . · CC0 · https://commons.wikimedia.org/wiki/File:Laryngomalacia.jpg
 - **רעלת היריון** — Hypertrophic decidual vasculopathy high mag.jpg · Nephron · CC BY-SA · https://commons.wikimedia.org/wiki/File:Hypertrophic_decidual_vasculopathy_high_mag.jpg
 - **רפלוקס קיבתי-ושטי** — Peptic stricture.png · Samir धर्म · CC0 · https://commons.wikimedia.org/wiki/File:Peptic_stricture.png
 - **שבץ מוחי** — MCA-Stroke-Brain-Humn-2A.jpg · Marvin 101 · CC BY-SA · https://commons.wikimedia.org/wiki/File:MCA-Stroke-Brain-Humn-2A.jpg
+- **שבר בסיס גולגולתי** — Illu cranial bones2.jpg · Unknown author Unknown author · CC BY-SA · https://commons.wikimedia.org/wiki/File:Illu_cranial_bones2.jpg
+- **שבר בעצם החישור המרוחקת** — Collesfracture.jpg · Lucien Monfils · CC BY-SA · https://commons.wikimedia.org/wiki/File:Collesfracture.jpg
+- **שבר ג'ונס** — Cropped version of Jonesfracture.jpg · Mdscottis · CC BY-SA · https://commons.wikimedia.org/wiki/File:Cropped_version_of_Jonesfracture.jpg
+- **שבר היל-זקס** — Dislocated shoulder X-ray 03.png · Hellerhoff · CC BY-SA · https://commons.wikimedia.org/wiki/File:Dislocated_shoulder_X-ray_03.png
+- **שבר מאמץ** — Occult stress fracture of the talus on 1 month follow-up X-ray.jpg · Mohamed Jarraya, Daichi Hayashi, Frank W. Roemer, Michel D. Crema, Luis Diaz, Jane Conlin, Monica D. Marra, Nabil Jomaah and Ali Guermazi · CC BY · https://commons.wikimedia.org/wiki/File:Occult_stress_fracture_of_the_talus_on_1_month_follow-up_X-ray.jpg
+- **שבר עצם הבריח** — Clavicle Fracture Left.jpg · Majorkev ( talk ) ( Uploads ) · CC BY · https://commons.wikimedia.org/wiki/File:Clavicle_Fracture_Left.jpg
+- **שבר עצם הסירה** — X-ray of scaphoid fracture.png · Gilo1969 · CC BY · https://commons.wikimedia.org/wiki/File:X-ray_of_scaphoid_fracture.png
+- **שבר קולס** — Collesfracture.jpg · Lucien Monfils · CC BY-SA · https://commons.wikimedia.org/wiki/File:Collesfracture.jpg
+- **שברי גולגולת על שם לה פורט** — LeFort109M.jpg · James Heilman, MD · CC BY-SA · https://commons.wikimedia.org/wiki/File:LeFort109M.jpg
+- **שברים של עצם הירך** — Thigh bone fracture - Fracture of femur -- Smart-Servier.jpg · Laboratoires Servier · CC BY-SA · https://commons.wikimedia.org/wiki/File:Thigh_bone_fracture_-_Fracture_of_femur_--_Smart-Servier.jpg
 - **שומה** — Nevus.jpg · Участник:Lava.wiki · CC0 · https://commons.wikimedia.org/wiki/File:Nevus.jpg
 - **שושנה** — Erysipel.JPG · Poupou l'quourouce · CC BY-SA · https://commons.wikimedia.org/wiki/File:Erysipel.JPG
+- **שושנת יריחו** — Leishmaniose cutanée - Guyane fr.JPG · Dr Jean Fortunet · CC BY-SA · https://commons.wikimedia.org/wiki/File:Leishmaniose_cutan%C3%A9e_-_Guyane_fr.JPG
 - **שחפת** — TB Culture.jpg · Photo Credit: Content Providers(s): CDC/Dr. George Kubica · CC0 · https://commons.wikimedia.org/wiki/File:TB_Culture.jpg
+- **שטיון וסקולרי** — Vascular dementia.jpg · Pansieri J, Hadley G, Lockhart A, Pisa M, DeLuca GC. · CC BY · https://commons.wikimedia.org/wiki/File:Vascular_dementia.jpg
 - **שיגדון** — Gout2010.JPG · James Heilman, MD · CC BY-SA · https://commons.wikimedia.org/wiki/File:Gout2010.JPG
 - **שימוש לרעה בסמים** — Heroin paraphernalia.jpg · Matthew T Rader · CC BY-SA · https://commons.wikimedia.org/wiki/File:Heroin_paraphernalia.jpg
 - **שיתוק מוחין** — Gray764.png · Henry Vandyke Carter · CC0 · https://commons.wikimedia.org/wiki/File:Gray764.png
-- **שלבקת חוגרת** — Herpes zoster neck.png · No machine-readable author provided. Gentgeen assumed (based on copyright claims). · CC BY-SA · https://commons.wikimedia.org/wiki/File:Herpes_zoster_neck.png
+- **שיתוק על שם בל** — Bells palsy diagram.svg · Patrick J. Lynch, medical illustrator · CC BY · https://commons.wikimedia.org/wiki/File:Bells_palsy_diagram.svg
+- **שלבקת חוגרת** — Herpes zoster neck.png · unknown author · CC BY-SA · https://commons.wikimedia.org/wiki/File:Herpes_zoster_neck.png
+- **שליה נעוצה** — Placenta accreta.png · TheNewMessiah at English Wikipedia · CC0 · https://commons.wikimedia.org/wiki/File:Placenta_accreta.png
 - **שלפוחית** — Smlp6860.jpg · Frazzmatazz · CC BY-SA · https://commons.wikimedia.org/wiki/File:Smlp6860.jpg
 - **שלשול** — Multiple rotavirus particles.jpg · Dr Graham Beards · CC BY · https://commons.wikimedia.org/wiki/File:Multiple_rotavirus_particles.jpg
+- **שמן קיקיון** — Castor oil.jpg · Pete Markham from Loretto, USA · CC BY-SA · https://commons.wikimedia.org/wiki/File:Castor_oil.jpg
+- **שן עודפת** — Supernumerary teeth.jpg · Albert · CC0 · https://commons.wikimedia.org/wiki/File:Supernumerary_teeth.jpg
 - **שנית** — Scharlach.JPG · Martin Kronawitter · CC BY-SA · https://commons.wikimedia.org/wiki/File:Scharlach.JPG
 - **שנקרואיד** — Haemophilus ducreyi 01.jpg · unknown author · CC0 · https://commons.wikimedia.org/wiki/File:Haemophilus_ducreyi_01.jpg
+- **שעורה** — Stye02.jpg · Andre Riemann · CC0 · https://commons.wikimedia.org/wiki/File:Stye02.jpg
+- **שעורה כלואה** — Chalazion.JPG · jd · CC0 · https://commons.wikimedia.org/wiki/File:Chalazion.JPG
+- **שערה חודרנית** — Eingewachsenes Haar 2010.jpg · LBPics · CC BY-SA · https://commons.wikimedia.org/wiki/File:Eingewachsenes_Haar_2010.jpg
+- **שפיכה הפוכה** — Retrograde ejaculation en.svg · Wumingbai · CC BY-SA · https://commons.wikimedia.org/wiki/File:Retrograde_ejaculation_en.svg
 - **שפעת** — 3D Influenza virus.png · National Institutes of Health; originally uploaded to en.wikipedia by TimVickers (25 October 2006), transferred to Commons by Quadell using CommonsHelper . · CC0 · https://commons.wikimedia.org/wiki/File:3D_Influenza_virus.png
 - **שפעת העופות** — Influenza A - late passage.jpg · Photo Credit: Content Providers(s): CDC/ Dr. Erskine Palmer · CC0 · https://commons.wikimedia.org/wiki/File:Influenza_A_-_late_passage.jpg
+- **שתנן** — Sample of Urea.jpg · LHcheM · CC BY-SA · https://commons.wikimedia.org/wiki/File:Sample_of_Urea.jpg
+- **תא דם אדום** — Red Blood Cell.jpg · Arek Socha · CC0 · https://commons.wikimedia.org/wiki/File:Red_Blood_Cell.jpg
 - **תגובות רגישות יתר** — 2228 Immune Hypersensitivity new.jpg · OpenStax College · CC BY · https://commons.wikimedia.org/wiki/File:2228_Immune_Hypersensitivity_new.jpg
+- **תגובת ג'אריש-הרקסיימר** — Jarisch-Herxheimer reaction in patient.jpg · Dr. Aurean D’Eça Júnior · CC BY · https://commons.wikimedia.org/wiki/File:Jarisch-Herxheimer_reaction_in_patient.jpg
 - **תופעת לוואי** — DrugOverdose.jpg · Sam Metsfan · CC0 · https://commons.wikimedia.org/wiki/File:DrugOverdose.jpg
+- **תחזרת ריאתית** — Diagram of the human heart (cropped).svg · Wapcaplet · CC BY-SA · https://commons.wikimedia.org/wiki/File:Diagram_of_the_human_heart_(cropped).svg
+- **תחמוצת המגנזיום** — Magnesium oxide.jpg · unknown author · CC0 · https://commons.wikimedia.org/wiki/File:Magnesium_oxide.jpg
+- **תימומה** — Intrapulmonary thymoma Case 237 (7493570462).jpg · Yale Rosen from USA · CC BY-SA · https://commons.wikimedia.org/wiki/File:Intrapulmonary_thymoma_Case_237_(7493570462).jpg
+- **תירואידיטיס דה קרוון** — Subacute thyroiditis - intermed mag.jpg · Nephron · CC BY-SA · https://commons.wikimedia.org/wiki/File:Subacute_thyroiditis_-_intermed_mag.jpg
+- **תמט הריאות** — Atelectasia1.jpg · The original uploader was Pabloes at Spanish Wikipedia . · CC BY-SA · https://commons.wikimedia.org/wiki/File:Atelectasia1.jpg
+- **תמיסת הרטמן** — LactateRingers.jpg · Jcb10 John Baker · CC0 · https://commons.wikimedia.org/wiki/File:LactateRingers.jpg
+- **תמס בועתי של העור** — Iraqi-boy-epidermolysis bullosa-090216-M-8096M-00-legs.jpg · By Master Sgt. Keith A. Milks [Public domain], via Wikimedia Commons · CC0 · https://commons.wikimedia.org/wiki/File:Iraqi-boy-epidermolysis_bullosa-090216-M-8096M-00-legs.jpg
 - **תסחיף** — 3D Medical Animation still shot Pulmonary Embolism.jpg · https://www.scientificanimations.com · CC BY-SA · https://commons.wikimedia.org/wiki/File:3D_Medical_Animation_still_shot_Pulmonary_Embolism.jpg
 - **תסחיף מי שפיר** — Amniotic fluid embolism.jpg · Yale Rosen · CC BY-SA · https://commons.wikimedia.org/wiki/File:Amniotic_fluid_embolism.jpg
 - **תסחיף ריאתי** — SaddlePE.PNG · James Heilman, MD · CC BY-SA · https://commons.wikimedia.org/wiki/File:SaddlePE.PNG
+- **תסמונת אשרמן** — Ultrasound of Asherman's syndrome.jpg · Floranerolia Floranerolia · CC BY-SA · https://commons.wikimedia.org/wiki/File:Ultrasound_of_Asherman%27s_syndrome.jpg
+- **תסמונת באד-קיארי** — Gray577.png · Henry Vandyke Carter · CC0 · https://commons.wikimedia.org/wiki/File:Gray577.png
+- **תסמונת בילס** — יד תסמונת בילס.jpg · Made2serve · CC0 · https://commons.wikimedia.org/wiki/File:%D7%99%D7%93_%D7%AA%D7%A1%D7%9E%D7%95%D7%A0%D7%AA_%D7%91%D7%99%D7%9C%D7%A1.jpg
+- **תסמונת בלום** — 4cgz.png · Arthur Zalevsky · CC BY-SA · https://commons.wikimedia.org/wiki/File:4cgz.png
+- **תסמונת בראון-סקאר** — Cord es.svg · Fpjacquot Spanish translation by Angelito7 · CC BY-SA · https://commons.wikimedia.org/wiki/File:Cord_es.svg
+- **תסמונת דה קרוון** — Originaler Finkelstein-Test.jpg · PhilippN · CC BY-SA · https://commons.wikimedia.org/wiki/File:Originaler_Finkelstein-Test.jpg
 - **תסמונת האדם הנוקשה** — Stiff man human cerebellum.JPG · Marta Rizzi et al · CC BY · https://commons.wikimedia.org/wiki/File:Stiff_man_human_cerebellum.JPG
+- **תסמונת הבניין החולה** — WestendMoldyLivingroom.jpg · Infrogmation · CC BY-SA · https://commons.wikimedia.org/wiki/File:WestendMoldyLivingroom.jpg
+- **תסמונת המדור** — Fasciotomy leg.jpg · Sarte at English Wikipedia ( Original text: Sarte ) · CC BY-SA · https://commons.wikimedia.org/wiki/File:Fasciotomy_leg.jpg
+- **תסמונת המוח החלק** — Lissencephaly.jpg · Brain-disease-gyrification.png : Lefèvre J, Mangin J-F (2010) A Reaction-Diffusion Model of Human Brain Development. PLoS Comput Biol 6(4): e1000749. doi:10.1371/journal.pcbi.1000749 (cropped by Daniel Mietchen ) derivative work: Señor Aluminio ( talk ) · CC BY · https://commons.wikimedia.org/wiki/File:Lissencephaly.jpg
+- **תסמונת המוליטית-אורמית** — Schizocyte smear 2009-12-22.JPG · Paulo Henrique Orlandi Mourao · CC BY-SA · https://commons.wikimedia.org/wiki/File:Schizocyte_smear_2009-12-22.JPG
 - **תסמונת המעי הרגיז** — Irritable bowel syndrome.jpg · http://www.scientificanimations.com · CC BY-SA · https://commons.wikimedia.org/wiki/File:Irritable_bowel_syndrome.jpg
-- **תסמונת טרנר** — 45,X.jpg · No machine-readable author provided. The cat~commonswiki assumed (based on copyright claims). · CC BY-SA · https://commons.wikimedia.org/wiki/File:45,X.jpg
+- **תסמונת הנעילה** — CerebellumArteries.jpg · Semiconscious · CC0 · https://commons.wikimedia.org/wiki/File:CerebellumArteries.jpg
+- **תסמונת השלפוחית הרגיזה** — Illu bladder.jpg · U.S. National Cancer Institute's Surveillance, Epidemiology and End Results (SEER) Program · CC0 · https://commons.wikimedia.org/wiki/File:Illu_bladder.jpg
+- **תסמונת ולנברג** — WallenbergInfarct001.jpg · John S. To, M.D. · CC0 · https://commons.wikimedia.org/wiki/File:WallenbergInfarct001.jpg
+- **תסמונת טרנר** — 45,X.jpg · unknown author · CC BY-SA · https://commons.wikimedia.org/wiki/File:45,X.jpg
 - **תסמונת כאב אזורי מורכב** — CRPS 002ms5.jpg · Patientenvereniging CRPS · CC BY-SA · https://commons.wikimedia.org/wiki/File:CRPS_002ms5.jpg
+- **תסמונת לג-קלב-פרטס** — LCPdisease2015.png · James Heilman, MD · CC BY-SA · https://commons.wikimedia.org/wiki/File:LCPdisease2015.png
+- **תסמונת ליש-ניהן** — Dermatophagia.jpg · 6th Happiness · CC BY · https://commons.wikimedia.org/wiki/File:Dermatophagia.jpg
 - **תסמונת לנוקס-גסטו** — Spike-waves.png · unknown author · CC BY-SA · https://commons.wikimedia.org/wiki/File:Spike-waves.png
+- **תסמונת מוצא בית החזה** — Gray808.png · Henry Vandyke Carter · CC0 · https://commons.wikimedia.org/wiki/File:Gray808.png
+- **תסמונת מיאסטנית ע"ש למברט-איטון** — Synapse diag3.png · see above · CC BY-SA · https://commons.wikimedia.org/wiki/File:Synapse_diag3.png
+- **תסמונת מלורי-וייס** — Mallory Weiss Tear.tif · Samir · CC BY-SA · https://commons.wikimedia.org/wiki/File:Mallory_Weiss_Tear.tif
 - **תסמונת מנהרת שורש כף היד** — RSI-symptoms.jpg · Olimane · CC BY-SA · https://commons.wikimedia.org/wiki/File:RSI-symptoms.jpg
-- **תסמונת נפרוטית** — Diabetic glomerulosclerosis (1) HE.jpg · No machine-readable author provided. KGH assumed (based on copyright claims). · CC BY-SA · https://commons.wikimedia.org/wiki/File:Diabetic_glomerulosclerosis_(1)_HE.jpg
+- **תסמונת מרף** — Ragged red fibers in MELAS.jpg · Modified_Gomori_trichrome_stain_showing_several_ragged_red_fibers_.jpg : Abu-Amero KK, Al-Dhalaan H, Bohlega S, Hellani A, Taylor RW. derivative work: CopperKettle ( talk ) · CC BY · https://commons.wikimedia.org/wiki/File:Ragged_red_fibers_in_MELAS.jpg
+- **תסמונת נסיגת עצם-הזנב** — Caudal regression syndrome radiograph.jpg · see above · CC BY · https://commons.wikimedia.org/wiki/File:Caudal_regression_syndrome_radiograph.jpg
+- **תסמונת נפרוטית** — Diabetic glomerulosclerosis (1) HE.jpg · unknown author · CC BY-SA · https://commons.wikimedia.org/wiki/File:Diabetic_glomerulosclerosis_(1)_HE.jpg
+- **תסמונת סטיקלר** — Autosomal dominant - en.svg · Domaina · CC BY-SA · https://commons.wikimedia.org/wiki/File:Autosomal_dominant_-_en.svg
+- **תסמונת סימיטר** — Scimitar syndrome chest CT.jpg · Matthew Cham, MD · CC BY-SA · https://commons.wikimedia.org/wiki/File:Scimitar_syndrome_chest_CT.jpg
+- **תסמונת פאג'ט-שרוטר** — Gray576.png · Henry Vandyke Carter · CC0 · https://commons.wikimedia.org/wiki/File:Gray576.png
+- **תסמונת צ'רג שטראוס** — Churg-Strauss syndrome - high mag.jpg · Nephron · CC BY-SA · https://commons.wikimedia.org/wiki/File:Churg-Strauss_syndrome_-_high_mag.jpg
+- **תסמונת קורסקוף** — Thiamine-2D-skeletal.png · unknown author · CC0 · https://commons.wikimedia.org/wiki/File:Thiamine-2D-skeletal.png
 - **תסמונת קליינפלטר** — Human chromosomesXXY01.png · User:Nami-ja · CC0 · https://commons.wikimedia.org/wiki/File:Human_chromosomesXXY01.png
 - **תסמונת קלמן** — GNRH1 structure.png · BorisTM at English Wikipedia · CC0 · https://commons.wikimedia.org/wiki/File:GNRH1_structure.png
 - **תסמונת קרינה חריפה** — Autophagosomes.jpg · Genericuser · CC0 · https://commons.wikimedia.org/wiki/File:Autophagosomes.jpg
-- **תסמונת שגרן** — Sjogren's syndrome (2).jpg · No machine-readable author provided. KGH assumed (based on copyright claims). · CC BY-SA · https://commons.wikimedia.org/wiki/File:Sjogren%27s_syndrome_(2).jpg
+- **תסמונת קרצינואידית** — Carcinoid syndrome presentation.svg · Mikael Häggström · CC0 · https://commons.wikimedia.org/wiki/File:Carcinoid_syndrome_presentation.svg
+- **תסמונת רמזי האנט סוג 2** — Ramsey Hunt Syndrome.png · Worme M, Chada R, Lavallee L · CC BY · https://commons.wikimedia.org/wiki/File:Ramsey_Hunt_Syndrome.png
+- **תסמונת שאיפת מקוניום** — Amniotic fluid and meconium aspiration Case 179 (5613700230).jpg · Yale Rosen from USA · CC BY-SA · https://commons.wikimedia.org/wiki/File:Amniotic_fluid_and_meconium_aspiration_Case_179_(5613700230).jpg
+- **תסמונת שגרן** — Sjogren's syndrome (2).jpg · unknown author · CC BY-SA · https://commons.wikimedia.org/wiki/File:Sjogren%27s_syndrome_(2).jpg
+- **תסמונת שלפוחית השתן הכאובה** — JMedLife-03-167-g002.jpg · C Persu, V Cauni, S Gutue, I Blaj, V Jinga, and P Geavlete · CC BY · https://commons.wikimedia.org/wiki/File:JMedLife-03-167-g002.jpg
 - **תסמונת QT מוארך** — SinusRhythmLabels.svg · Created by Agateller (Anthony Atkielski) , converted to svg by atom . · CC0 · https://commons.wikimedia.org/wiki/File:SinusRhythmLabels.svg
+- **תסמונת XYY** — Amniocentesis results showing 47, XYY karyotype.png · Dimitrios Athanatos, Christos Tsakalidis, George P Tampakoudis, Maria N Papastergiou, Fillipos Tzevelekis, George Pados, and Efstratios A Assimakopoulos · CC BY · https://commons.wikimedia.org/wiki/File:Amniocentesis_results_showing_47,_XYY_karyotype.png
+- **תפליט פלאורלי** — Diagram showing a build up of fluid in the lining of the lungs (pleural effusion) CRUK 054.svg · Cancer Research UK · CC BY-SA · https://commons.wikimedia.org/wiki/File:Diagram_showing_a_build_up_of_fluid_in_the_lining_of_the_lungs_(pleural_effusion)_CRUK_054.svg
 - **תפלת השתן** — Arginine vasopressin3d.png · Fvasconcellos · CC0 · https://commons.wikimedia.org/wiki/File:Arginine_vasopressin3d.png
 - **תפלת שתן כלייתית** — Arginine vasopressin3d.png · Fvasconcellos · CC0 · https://commons.wikimedia.org/wiki/File:Arginine_vasopressin3d.png
 - **תפלת שתן מרכזית** — Arginine vasopressin3d.png · Fvasconcellos · CC0 · https://commons.wikimedia.org/wiki/File:Arginine_vasopressin3d.png
 - **תת-פעילות של בלוטת התריס** — Hypothyroidism.svg · Mikael Häggström · CC0 · https://commons.wikimedia.org/wiki/File:Hypothyroidism.svg
+- **תת־ספיגה** — Whipple2.jpg · The original uploader was Countincr at English Wikipedia . · CC BY-SA · https://commons.wikimedia.org/wiki/File:Whipple2.jpg
 - **Chikungunya** — Aedes aegypti biting human.jpg · Original author: US Department of Agriculture; then denoised rescaled, enhanced with adaptive denoising filters and minimal resharpening, then unscaled to original resolution, for easier refitting at various resolutions. · CC0 · https://commons.wikimedia.org/wiki/File:Aedes_aegypti_biting_human.jpg
+- **CIDP** — CIDP Histopathology Teased fibre.jpg · Marvin 101 · CC BY-SA · https://commons.wikimedia.org/wiki/File:CIDP_Histopathology_Teased_fibre.jpg
+- **gal blech** — Calcium carbonate.jpg · Picture taken August 2005 by User:Walkerma . · CC0 · https://commons.wikimedia.org/wiki/File:Calcium_carbonate.jpg
+- **Gam-COVID-Vac** — Посещение пункта вакцинации от COVID-19 (С. Собянин; декабрь 2020) (3, cropped).jpg · М. Мишина · CC BY · https://commons.wikimedia.org/wiki/File:%D0%9F%D0%BE%D1%81%D0%B5%D1%89%D0%B5%D0%BD%D0%B8%D0%B5_%D0%BF%D1%83%D0%BD%D0%BA%D1%82%D0%B0_%D0%B2%D0%B0%D0%BA%D1%86%D0%B8%D0%BD%D0%B0%D1%86%D0%B8%D0%B8_%D0%BE%D1%82_COVID-19_(%D0%A1._%D0%A1%D0%BE%D0%B1%D1%8F%D0%BD%D0%B8%D0%BD;_%D0%B4%D0%B5%D0%BA%D0%B0%D0%B1%D1%80%D1%8C_2020)_(3,_cropped).jpg
+- **Hepatitis D virus** — Hepatitis-d-virion-Pathogens-04-00046-g001-1024.png · Rafael Aldabe, Lester Suárez-Amarán, Carla Usai and Gloria González-Aseguinolaza. · CC BY · https://commons.wikimedia.org/wiki/File:Hepatitis-d-virion-Pathogens-04-00046-g001-1024.png
+- **mRNA-1273** — Moderna COVID-19 vaccine.jpg · Photographer: Airman 1st Class Anna Nolte Post-production: Zacharie Grossen · CC0 · https://commons.wikimedia.org/wiki/File:Moderna_COVID-19_vaccine.jpg
+- **Mycoplasma** — M. haemofelis IP2011.jpg · Nr387241 · CC BY-SA · https://commons.wikimedia.org/wiki/File:M._haemofelis_IP2011.jpg
+- **Orthocoronavirinae** — Electron micrograph of two coronaviruses.jpg · Dr Graham Beards · CC BY-SA · https://commons.wikimedia.org/wiki/File:Electron_micrograph_of_two_coronaviruses.jpg
+- **Rotavirus** — Rotavirus Reconstruction.jpg · unknown author · CC BY · https://commons.wikimedia.org/wiki/File:Rotavirus_Reconstruction.jpg
+- **SCLC** — Combined small cell lung carcinoma with extensive mucosal involvement; possible SCLC in situ Case 271 (9255562385).jpg · Yale Rosen from USA · CC BY-SA · https://commons.wikimedia.org/wiki/File:Combined_small_cell_lung_carcinoma_with_extensive_mucosal_involvement;_possible_SCLC_in_situ_Case_271_(9255562385).jpg
 - **Streptococcal pharyngitis** — Pos strep.JPG · James Heilman, MD · CC BY-SA · https://commons.wikimedia.org/wiki/File:Pos_strep.JPG
+- **TURP** — Urologist performing a TURP.png · UroJet · CC BY-SA · https://commons.wikimedia.org/wiki/File:Urologist_performing_a_TURP.png
+- **XLA** — X-linked recessive.svg · XlinkRecessive.jpg : National Institutes of Health derivative work: Drsrisenthil · CC0 · https://commons.wikimedia.org/wiki/File:X-linked_recessive.svg
+- **متلازمة بابون** — Baboon syndrome hariadhi.svg · Hariadhi · CC BY-SA · https://commons.wikimedia.org/wiki/File:Baboon_syndrome_hariadhi.svg
