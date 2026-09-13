@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Fetcher, FetchResult, Logger } from '../../../supabase/functions/_shared/shop-prices/types';
 import { refreshWebsites, sha256Hex, type ChunkPayload, type RefreshDb, type SourcePayload, type WebsiteSource } from '../../../supabase/functions/_shared/library/refresh';
-import { VOYAGE_BATCH, embedAll } from '../../../supabase/functions/_shared/library/voyage';
+import { VOYAGE_BATCH, batchTexts, embedAll } from '../../../supabase/functions/_shared/library/voyage';
 
 /**
  * The scheduled refresh, with fakes for the site, the database and the
@@ -159,5 +159,27 @@ describe('embedAll', () => {
     expect(waits).toEqual([2000]);
     expect(result.tokens).toBe(texts.length);
     expect(result.vectors.map((v) => v[0])).toEqual(texts.map((_, i) => i));
+  });
+
+  it('keeps a batch under the token ceiling, and halves one the service still finds too large', async () => {
+    // Forty texts of 10,000 characters: 4,000 tokens each by the estimate, so twenty to a batch.
+    const long = Array.from({ length: 40 }, (_, i) => `t${i}` + '.'.repeat(9_996));
+    expect(batchTexts(long).map((b) => b.length)).toEqual([20, 20]);
+    expect(batchTexts(['a', 'b', 'c'], 2).map((b) => b.length)).toEqual([2, 1]);
+
+    const calls: number[] = [];
+    const fetchImpl = async (_url: string, init: RequestInit) => {
+      const body = JSON.parse(String(init.body)) as { input: string[] };
+      calls.push(body.input.length);
+      // Anything above three texts is "too large" — the caller must halve until it fits.
+      if (body.input.length > 3) return new Response(JSON.stringify({ detail: 'The max allowed tokens per submitted batch is 120000.' }), { status: 400 });
+      return Response.json({ data: body.input.map((text, index) => ({ index, embedding: [Number(text.slice(1))] })), usage: { total_tokens: body.input.length } });
+    };
+    const texts = Array.from({ length: 10 }, (_, i) => `t${i}`);
+    const result = await embedAll('key', texts, { fetchImpl, sleep: async () => {} });
+    expect(result.vectors.map((v) => v[0])).toEqual(texts.map((_, i) => i));
+    expect(result.tokens).toBe(10);
+    // 10 → refused; 5 + 5 → refused; 3 + 2 + 3 + 2 → accepted.
+    expect(calls).toEqual([10, 5, 3, 2, 5, 3, 2]);
   });
 });

@@ -96,7 +96,7 @@ export async function listFolder(token, folderId, prefix = '', skipped = {}) {
       const filePath = prefix ? `${prefix}/${file.name}` : file.name;
       if (file.mimeType === FOLDER) files.push(...(await listFolder(token, file.id, filePath, skipped)));
       // Word keeps a lock file (~$name.docx) beside an open document; it is not a document.
-      else if (/^~$/.test(file.name)) continue;
+      else if (file.name.startsWith('~$')) continue;
       else if (READABLE[file.mimeType]) files.push({ ...file, path: filePath, ext: READABLE[file.mimeType].ext, exportAs: READABLE[file.mimeType].exportAs ?? null });
       else skipped[file.mimeType] = (skipped[file.mimeType] ?? 0) + 1;
     }

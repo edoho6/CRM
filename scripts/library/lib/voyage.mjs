@@ -1,20 +1,18 @@
 // Embeddings for the passages, from Voyage AI — the same model the app uses
 // for the question (apps/web/features/library/voyage.ts), so both live in
-// one space. Batched, retried when the service asks for a pause, and
-// cached by the passage's own hash so a re-run pays only for new text. The
-// call itself is the shared module the scheduled refresh uses too.
+// one space. Batched by count and by tokens, retried when the service asks
+// for a pause, halved when it finds a batch too large (all of that in the
+// shared module the scheduled refresh uses too), and cached by the
+// passage's own hash so a re-run pays only for new text.
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { readJson, sleep, writeJson } from '../../medicine/lib.mjs';
-
-import { DIMENSIONS, VOYAGE_MODEL, embedBatch as embedBatchShared, VOYAGE_BATCH as BATCH } from '../../../supabase/functions/_shared/library/voyage.ts';
+import { DIMENSIONS, VOYAGE_MODEL, embedAll } from '../../../supabase/functions/_shared/library/voyage.ts';
 
 export { DIMENSIONS, VOYAGE_MODEL };
 
 export const hashText = (text) => crypto.createHash('sha1').update(text).digest('hex');
-
-const embedBatch = (key, texts, inputType) => embedBatchShared(key, texts, { inputType, sleep });
 
 /**
  * Vectors for many texts, in order. `cacheDir` holds one small file per
@@ -33,16 +31,17 @@ export async function embedTexts(key, texts, { cacheDir, inputType = 'document',
     else missing.push(index);
   });
   let tokens = 0;
-  for (let i = 0; i < missing.length; i += BATCH) {
-    const indexes = missing.slice(i, i + BATCH);
-    const { vectors, tokens: used } = await embedBatch(key, indexes.map((index) => texts[index]), inputType);
+  // A few hundred at a time, so a long book shows progress and a failure late in it costs little.
+  const STEP = 256;
+  for (let i = 0; i < missing.length; i += STEP) {
+    const indexes = missing.slice(i, i + STEP);
+    const { vectors, tokens: used } = await embedAll(key, indexes.map((index) => texts[index]), { inputType, sleep });
     tokens += used;
     indexes.forEach((index, j) => {
       out[index] = vectors[j];
       writeJson(path.join(cacheDir, `${hashText(texts[index])}.json`), { model: VOYAGE_MODEL, embedding: vectors[j] });
     });
-    onProgress?.(Math.min(i + BATCH, missing.length), missing.length);
-    await sleep(200);
+    onProgress?.(Math.min(i + STEP, missing.length), missing.length);
   }
   return { embeddings: out, cached: texts.length - missing.length, tokens };
 }

@@ -48,10 +48,17 @@ function cleanHeading(line: string): string {
   return String(line).trim().replace(/^#{1,6}\s+/, '').slice(0, 120);
 }
 
+/**
+ * Characters that are not text: control codes (tab and newline excepted),
+ * the zero-width space, the byte-order mark. An EPUB or a converted file
+ * can carry them on every line, and they cost tokens without saying anything.
+ */
+const NOT_TEXT = new RegExp(`[${String.fromCharCode(0)}-${String.fromCharCode(8)}${String.fromCharCode(11)}${String.fromCharCode(12)}${String.fromCharCode(14)}-${String.fromCharCode(31)}${String.fromCharCode(127)}${String.fromCharCode(8203)}${String.fromCharCode(65279)}]`, 'g');
+
 /** Paragraphs of a page's text, blank-line separated; a very long paragraph is cut at sentence ends. */
 function paragraphsOf(text: string, maxChars: number): string[] {
   const out: string[] = [];
-  for (const raw of String(text ?? '').replace(/\r\n?/g, '\n').split(/\n\s*\n+/)) {
+  for (const raw of String(text ?? '').replace(NOT_TEXT, '').replace(/\r\n?/g, '\n').split(/\n\s*\n+/)) {
     const paragraph = raw.replace(/[ \t]+\n/g, '\n').trim();
     if (!paragraph) continue;
     if (paragraph.length <= maxChars) {

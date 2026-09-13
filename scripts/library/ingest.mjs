@@ -179,11 +179,11 @@ async function main() {
             continue;
           }
           try {
-            const read =
+            const ocr =
               file.ext === 'image'
                 ? await visionImage(visionToken, await read())
                 : await visionPdf(visionToken, await read(), { onPart: (done, total) => (total > 4 && done % 10 === 0 ? log(`ingest: ${file.path} — OCR ${done}/${total}`) : null) });
-            extracted = { pages: read.pages, pageCount: read.pageCount, note: read.pages.length ? 'read by OCR' : 'OCR found no text' };
+            extracted = { pages: ocr.pages, pageCount: ocr.pageCount, note: ocr.pages.length ? 'read by OCR' : 'OCR found no text' };
             summary.ocr += 1;
           } catch (error) {
             if (!VISION_OFF.test(error.message)) throw error;

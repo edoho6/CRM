@@ -35,6 +35,14 @@ describe('chunkPages', () => {
   it('returns nothing for empty text', () => {
     expect(chunkPages([{ page: 1, text: '   \n\n ' }])).toEqual([]);
   });
+
+  it('drops control characters, zero-width spaces and byte-order marks, which cost tokens and say nothing', () => {
+    const c = String.fromCharCode;
+    const text = c(65279) + 'Hel' + c(0) + 'lo' + c(8203) + ' wor' + c(12) + 'ld' + c(11) + '.\tTab kept.\n\nNext' + c(31) + ' paragraph.';
+    const chunks = chunkPages([{ page: null, text }]);
+    expect(chunks).toHaveLength(1);
+    expect(chunks[0]!.content).toBe('Hello world.\tTab kept.\n\nNext paragraph.');
+  });
 });
 
 describe('looksLikeHeading', () => {
