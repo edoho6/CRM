@@ -507,13 +507,15 @@
   `done` עם אותה תשובה בדיוק (`features/library/ndjson.ts` קורא אותה בדפדפן); **הטקסט לעולם לא נשלח לפני הבדיקות**,
   והכתיבה "תוך כדי" שרואים היא חשיפה הדרגתית בדפדפן של תשובה שכבר אושרה (`RevealedText`, מכבד reduced-motion,
   הטקסט המלא ב-sr-only מהפריים הראשון).
-  **מה נקרא:** PDF (pdfjs), docx (mammoth), doc (word-extractor, ונופל ל-Drive כשהוא נכשל — רוב ה-.doc העבריים
-  מפילים אותו), rtf (`rtfToText` ב-`lib/extract.mjs`, cp1255 ו-\\u), pptx/xlsx/epub (jszip), txt/md, וקובצי גוגל
-  (Docs/Slides/Sheets מיוצאים). **סריקה ותמונה = OCR של Drive** (`lib/convert.mjs`): העלאה כ-Google Doc עם
-  `ocrLanguage=iw` (גוגל מסרבת ל-`he`) לתוך `LIBRARY_OCR_FOLDER_ID` — תיקייה של המשתמש ששותפה לחשבון השירות
-  כ-Editor, כי לחשבון שירות אין מכסת אחסון — ייצוא כטקסט ומחיקה; ספר סרוק נחתך ל-12 עמודים לחלק (pdf-lib), והעמוד
-  של פסקה הוא תחילת החלק. הטקסט שחולץ נשמר ב-`.cache/library/text/<sha256>.json` (`EXTRACT_VERSION`), כך ש-OCR
-  רץ פעם אחת. `ingest.mjs --only=<מילה>` לקובץ אחד. ה-scope של חשבון השירות: `drive.readonly` + `drive.file`.
+  **מה נקרא:** PDF (pdfjs), docx (mammoth), doc (word-extractor, ונופל ל-**Word עצמו** דרך PowerShell/COM
+  ב-`lib/word.mjs` כשהוא נכשל — רוב ה-.doc העבריים מפילים אותו; `Documents.Open` עם ארגומנט אחד בלבד, PowerShell
+  לא מעביר את הבוליאנים), rtf (`rtfToText` ב-`lib/extract.mjs`, cp1255 ו-\\u עם דילוג על ה-fallback), pptx/xlsx/epub
+  (jszip), txt/md, וקובצי גוגל (Docs/Slides/Sheets מיוצאים). **סריקה ותמונה = Google Cloud Vision** (`lib/vision.mjs`,
+  `files:annotate` בחלקים של 5 עמודים דרך `lib/pdf.mjs`, מספרי עמודים אמיתיים, `languageHints: he,en`) באותו חשבון
+  שירות (scope `cloud-vision`); כשה-API כבוי או בלי חיוב, הטעינה אומרת זאת פעם אחת, סופרת ורושמת ב-`needs-ocr.json`
+  וממשיכה. **OCR של Drive לא אפשרי**: לחשבון שירות אין מכסת אחסון, גם בתיקייה משותפת כ-Editor (הקובץ בבעלות היוצר).
+  הטקסט שחולץ נשמר ב-`.cache/library/text/<sha256>.json` (`EXTRACT_VERSION`), כך ש-OCR רץ פעם אחת. `ingest.mjs
+  --only=<מילה>` לקובץ אחד.
   **ריענון אתרים (migration 47):** `supabase/functions/refresh-library` רץ בתזמון עם ה-service role וקורא שוב דפי
   אתר שעבר עליהם שבוע — בקשה מותנית (`etag`/`last_modified` על השורה), hash של הטקסט, וכתיבה מחדש רק כשהשתנה;
   דפים חדשים הם עדיין של `crawl.mjs`. הלוגיקה ב-`_shared/library/refresh.ts` (נבדק מ-`apps/web` עם fakes), וחיתוך

@@ -78,9 +78,9 @@ Voyage: כמה סנטים לאלף עמודים (ויש מכסה חינם). Anth
 ## מה נקרא, ומה עובר דרך Drive
 
 PDF, Word (.docx וגם .doc), RTF, מצגות (pptx), גיליונות (xlsx), EPUB, txt/md, וקובצי Google Docs/Slides/Sheets.
-PDF סרוק (בלי שכבת טקסט), תמונה (jpg/png/tiff/webp) ו-.doc שהקורא המקומי לא פותח נשלחים ל-Drive: עותק זמני
-נוצר בתיקייה `LIBRARY_OCR_FOLDER_ID` (תיקייה של המשתמש, משותפת לחשבון השירות כ-Editor), גוגל מריצה OCR/המרה,
-הטקסט מיוצא והעותק נמחק. ספר סרוק נחתך ל-12 עמודים לחלק. הטקסט נשמר ב-`.cache/library/text/` לפי hash של
-הקובץ, ולכן OCR רץ פעם אחת לכל קובץ. בלי תיקיית OCR — הקבצים האלה נספרים ונרשמים ב-`.cache/library/needs-ocr.json`.
+PDF סרוק (בלי שכבת טקסט) ותמונה (jpg/png/tiff/webp) נשלחים ל-Google Cloud Vision באותו חשבון שירות, 5 עמודים
+לבקשה, ומספרי העמודים נשמרים (DEPLOY.md, "OCR לסריקות ולתמונות": חיוב + הפעלת ה-API). .doc שהקורא הרגיל לא פותח
+נפתח ב-Word המותקן במחשב ונשמר כ-docx זמני. הטקסט נשמר ב-`.cache/library/text/` לפי hash של הקובץ, ולכן OCR רץ
+פעם אחת לכל קובץ. כשה-Vision API כבוי — הקבצים האלה נספרים ונרשמים ב-`.cache/library/needs-ocr.json`.
 
 `node scripts/library/ingest.mjs --only=<מילה>` — רק קבצים שהנתיב שלהם מכיל את המילה (לבדיקה של קובץ אחד).

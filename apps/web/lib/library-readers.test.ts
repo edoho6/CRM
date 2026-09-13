@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import JSZip from 'jszip';
 import { PDFDocument } from 'pdf-lib';
 import { extractText, rtfToText } from '../../../scripts/library/lib/extract.mjs';
-import { splitPdf } from '../../../scripts/library/lib/convert.mjs';
+import { splitPdf } from '../../../scripts/library/lib/pdf.mjs';
 
 /**
  * The readers the loader uses for what is not a PDF or a .docx: RTF with

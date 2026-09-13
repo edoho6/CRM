@@ -10,8 +10,8 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import { sleep } from '../../medicine/lib.mjs';
 
-// Read the folder it was shown; create and delete files of its own (the conversions in convert.mjs). Never the practitioner's files.
-const SCOPE = 'https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/drive.file';
+// Read the folder it was shown, and call Vision for the scans (vision.mjs). Never the practitioner's other files.
+const SCOPE = 'https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/cloud-vision';
 const API = 'https://www.googleapis.com/drive/v3';
 const FOLDER = 'application/vnd.google-apps.folder';
 const DOCX = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';

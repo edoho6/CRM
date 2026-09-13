@@ -205,11 +205,17 @@ Generate new private key** ← הקובץ שיורד. ב-Supabase ← **Edge Fun
    6. ב-Google Drive: קליק ימני על התיקייה של הספרייה → Share → מדביקים את כתובת המייל → Viewer → Send.
    7. פותחים את התיקייה בדפדפן; הכתובת נגמרת ב-`/folders/<מזהה ארוך>`. את המזהה מוסיפים ל-`.env.local`:
       `LIBRARY_DRIVE_FOLDER_ID=<המזהה>`.
-4. **תיקייה ל-OCR** — בשביל סריקות, תמונות וקובצי Word ישנים (.doc): גוגל קורא אותם בעצמו, אבל לחשבון שירות אין
-   מקום אחסון משלו, ולכן הוא צריך תיקייה שלך שבה ייצור עותק זמני (נמחק שניות אחר כך). ב-Google Drive: New →
-   New folder → שם `OCR-temp` → קליק ימני → Share → כתובת חשבון השירות → **Editor** → Send. את מזהה התיקייה
-   (הסוף של הכתובת אחרי `/folders/`) מוסיפים ל-`.env.local`: `LIBRARY_OCR_FOLDER_ID=<המזהה>`. בלי זה קבצים כאלה
-   נספרים ונרשמים ב-`.cache/library/needs-ocr.json`, ולא נטענים.
+4. **OCR לסריקות ולתמונות** — PDF סרוק (בלי שכבת טקסט) ותמונה נקראים ב-Google Cloud Vision, באותו פרויקט ובאותו
+   חשבון שירות. פעם אחת:
+   1. Billing: ב-[console.cloud.google.com](https://console.cloud.google.com) ← תפריט ☰ ← **Billing** ← לקשר חשבון
+      חיוב (Link a billing account / Start free trial). אלף העמודים הראשונים בכל חודש חינם; אחריהם כ-1.5 דולר לכל
+      אלף עמודים — ספרייה של כמה עשרות אלפי עמודים סרוקים היא עשרות דולרים, פעם אחת, וקרדיט הניסיון של גוגל מכסה זאת.
+   2. APIs & Services ← Library ← לחפש **Cloud Vision API** ← Enable (או הקישור שהטעינה מדפיסה כשה-API כבוי).
+   3. אם הטעינה עדיין מדווחת PERMISSION_DENIED: IAM & Admin ← IAM ← Grant access ← כתובת חשבון השירות ← תפקיד
+      **Service Usage Consumer** ← Save.
+
+   בלי זה קבצים כאלה נספרים ונרשמים ב-`.cache/library/needs-ocr.json`, ולא נטענים; ריצה חוזרת אחרי ההפעלה קוראת אותם.
+   קובצי Word ישנים (.doc) שהקורא הרגיל לא פותח נפתחים ב-Word עצמו (מותקן במחשב) — בלי הגדרה.
 5. **הטעינה**, בטרמינל של VS Code:
 
    ```
