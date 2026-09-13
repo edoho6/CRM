@@ -586,6 +586,12 @@
 pnpm typecheck && pnpm test && pnpm build && pnpm check:contrast && pnpm check:tokens && pnpm check:i18n
 ```
 
+**סריקת התלויות ב-CI** (`pnpm audit --audit-level high`) נכשלת גם על אזהרה שפורסמה היום לחבילה שלא נגענו בה —
+כך כל ה-CI היה אדום מ-12.9 בגלל `tar` ו-`sharp` שמגיעים דרך `@capacitor/assets` (כלי האייקונים, dev בלבד). התיקון
+הוא `pnpm.overrides` ב-`package.json` של השורש (גרסה מתוקנת לתלות העקיפה), לא כיבוי הסריקה; להריץ `pnpm audit
+--audit-level high` מקומית לפני push כשה-CI אדום בלי שינוי בקוד. עדכוני Dependabot מוחלים כאן ביד (כל החבילות
+שחייבות לזוז יחד — `react` עם `react-dom` והטיפוסים) ואז Dependabot סוגר את ה-PRs שלו לבד.
+
 `check:i18n` עובר על כל `t('…')` בקוד ומוודא שהמפתח קיים ב-`he.json` — מפתח
 חסר לא נכשל בבנייה, הוא מופיע על המסך כטקסט לועזי באמצע העברית.
 **קוד ומפתחות התרגום שלו נכנסים לאותו commit.** ה-CI מריץ את `lib/message-keys.test.ts` על
