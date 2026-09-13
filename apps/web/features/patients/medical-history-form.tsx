@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslations } from 'next-intl';
+import { MedicineMentions } from '@/features/medicine/medicine-mentions';
 import {
   patientMedicalHistorySchema,
   type PatientMedicalHistoryData,
@@ -36,7 +37,7 @@ export function MedicalHistoryForm({
   const [status, setStatus] = useState<'idle' | 'error'>('idle');
   const { toast } = useToast();
 
-  const { register, handleSubmit } = useForm<
+  const { register, handleSubmit, watch } = useForm<
     PatientMedicalHistoryValues,
     unknown,
     PatientMedicalHistoryData
@@ -72,12 +73,20 @@ export function MedicalHistoryForm({
             <Field label={t('allergies')} htmlFor="allergies">
               <Textarea id="allergies" rows={2} {...register('allergies')} />
             </Field>
-            <Field label={t('medications')} htmlFor="medications">
-              <Textarea id="medications" rows={2} {...register('medications')} />
-            </Field>
-            <Field label={t('chronicConditions')} htmlFor="chronic_conditions">
-              <Textarea id="chronic_conditions" rows={2} {...register('chronic_conditions')} />
-            </Field>
+            {/* The names the reference knows, as chips under the text: the
+                practitioner writes freely and the entry is one click away. */}
+            <div className="space-y-1.5">
+              <Field label={t('medications')} htmlFor="medications">
+                <Textarea id="medications" rows={2} {...register('medications')} />
+              </Field>
+              <MedicineMentions text={watch('medications') ?? ''} />
+            </div>
+            <div className="space-y-1.5">
+              <Field label={t('chronicConditions')} htmlFor="chronic_conditions">
+                <Textarea id="chronic_conditions" rows={2} {...register('chronic_conditions')} />
+              </Field>
+              <MedicineMentions text={watch('chronic_conditions') ?? ''} />
+            </div>
             <Field label={t('surgeries')} htmlFor="surgeries">
               <Textarea id="surgeries" rows={2} {...register('surgeries')} />
             </Field>

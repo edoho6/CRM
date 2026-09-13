@@ -3,6 +3,7 @@
 import { useCallback, useMemo, useState, useTransition } from 'react';
 import { useFormatter, useTranslations } from 'next-intl';
 import { BookmarkPlus, Lock, MoreHorizontal } from 'lucide-react';
+import { MedicineMentions } from '@/features/medicine/medicine-mentions';
 import {
   Alert,
   ArrangeToggle,
@@ -620,15 +621,18 @@ export function EncounterForm({
                     title: `${tf('westernDiagnosis')} · ${tf('treatmentPrinciple')}`,
                     node: (
                       <FieldGrid>
-                        <Field label={tf('westernDiagnosis')} htmlFor="western_diagnosis">
-                          <Textarea
-                            id="western_diagnosis"
-                            rows={2}
-                            disabled={disabled}
-                            value={state.western_diagnosis}
-                            onChange={(event) => set('western_diagnosis', event.target.value)}
-                          />
-                        </Field>
+                        <div className="space-y-1.5">
+                          <Field label={tf('westernDiagnosis')} htmlFor="western_diagnosis">
+                            <Textarea
+                              id="western_diagnosis"
+                              rows={2}
+                              disabled={disabled}
+                              value={state.western_diagnosis}
+                              onChange={(event) => set('western_diagnosis', event.target.value)}
+                            />
+                          </Field>
+                          <MedicineMentions text={state.western_diagnosis} />
+                        </div>
                         <Field label={tf('treatmentPrinciple')} htmlFor="treatment_principle">
                           <Textarea
                             id="treatment_principle"

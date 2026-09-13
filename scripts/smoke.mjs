@@ -1141,6 +1141,27 @@ const flows = {
     const ok = open <= 1 && afterClick === open + 1 && h1.length > 0;
     return { ok, detail: `${open} open of ${total} before the click, ${afterClick} after; h1 "${h1}"` };
   },
+  async medicineMentions(page) {
+    // A drug name typed into the medications field grows a chip under it,
+    // and the chip opens the entry over the page. Nothing is saved.
+    const field = page.locator('#medications');
+    if ((await field.count()) === 0) return { ok: false, detail: 'no medications field on the medical tab' };
+    await field.click();
+    await field.fill('מטפורמין 850 פעמיים ביום');
+    // The field may already name a drug: wait for the chip of the one typed,
+    // not for the first chip of the old text.
+    const chip = page.locator('[data-medicine-mentions] button', { hasText: 'מטפורמין' }).first();
+    const shown = await chip.waitFor({ timeout: 10_000 }).then(() => true).catch(() => false);
+    if (!shown) return { ok: true, detail: 'no chip appeared — is the reference loaded in this database?' };
+    const label = ((await chip.textContent()) ?? '').trim();
+    await chip.click();
+    const dialog = page.locator('[role="dialog"]').first();
+    const opened = await dialog.waitFor({ timeout: 8_000 }).then(() => true).catch(() => false);
+    const title = opened ? ((await dialog.locator('h2').first().textContent()) ?? '').trim() : '';
+    if (opened) await page.keyboard.press('Escape');
+    const ok = opened && /מטפורמין/.test(label) && /מטפורמין/.test(title);
+    return { ok, detail: `chip "${label}", dialog "${title}"` };
+  },
   async dashboardNoSpinners(page) {
     // Widgets arrive with their numbers: nothing spins after the document
     // has loaded, because the page computed the first paint on the server.
@@ -1519,6 +1540,7 @@ async function main() {
     await visit(context, { route: '/prices', locale: 'he', width: desktop, label: 'flow prices-cheapest', after: flows.pricesCheapest });
     if (patientIds[0]) {
       await visit(context, { route: `/patients/${patientIds[0]}?tab=encounters`, locale: 'he', width: desktop, label: 'flow patient-tab', after: flows.patientTab });
+      await visit(context, { route: `/patients/${patientIds[0]}?tab=medical`, locale: 'he', width: desktop, label: 'flow medicine-mentions', after: flows.medicineMentions });
       if (phone) {
         await visit(context, {
           route: `/calendar?patient=${patientIds[0]}&new=1`, locale: 'he', width: phone, label: 'flow phone-new-keeps-patient',

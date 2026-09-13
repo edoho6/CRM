@@ -2491,6 +2491,9 @@
     "labTest": {
       "codes": "LOINC codes",
       "ranges": "The normal range differs between laboratories and by age and sex. Always compare with the range printed on the report."
+    },
+    "mentions": {
+      "label": "In the medical reference"
     }
   },
   "accessibility": {
