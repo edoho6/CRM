@@ -41,7 +41,8 @@ Next.js (הטכנולוגיה שהמערכת בנויה עליה) רץ בצור�
    | `NEXT_PUBLIC_SUPABASE_URL` | ה-Project URL מ-Supabase |
    | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | ה-anon key מ-Supabase |
    | `NEXT_PUBLIC_SITE_URL` | בינתיים `https://placeholder` — מעדכנים בשלב 6 |
-   | `ANTHROPIC_API_KEY` | רק אם רוצים את מסך "שאלות על הנתונים". אפשר לדלג |
+   | `ANTHROPIC_API_KEY` | למסך "שאלות על הנתונים" ולספרייה המקצועית. אפשר לדלג בהתחלה |
+   | `VOYAGE_API_KEY` | לספרייה המקצועית (החיפוש במקורות). ראה סעיף "ספרייה מקצועית" |
 
 5. **Deploy**. שתיים-שלוש דקות. בסוף מופיע מסך "Congratulations" עם הכתובת — משהו כמו `https://crm-project-xxxx.vercel.app`. להעתיק אותה.
 6. **Settings ← Environment Variables**: לערוך את `NEXT_PUBLIC_SITE_URL` ולשים בה את הכתובת האמיתית (בלי `/` בסוף). ואז **Deployments ← ⋯ על העליון ← Redeploy** כדי שהשינוי ייכנס.
@@ -163,6 +164,49 @@ Generate new private key** ← הקובץ שיורד. ב-Supabase ← **Edge Fun
 
 עדכון המאגר (ערכים חדשים, ציטוטים מרועננים) הוא אותה פקודה על קובץ חדש; ערך שסומן "אומת"
 לא חוזר לטיוטה. הפירוט ב-`scripts/medicine/README.md`.
+
+## ספרייה מקצועית — חיבור לדרייב ולשירותי המענה
+
+הספרייה (בתפריט: "ספרייה מקצועית") עונה על שאלות מקצועיות רק מתוך קבצים בתיקייה בדרייב שלך. ארבעה
+צעדים, פעם אחת:
+
+1. **Supabase**: Database → Extensions → לחפש `vector` ולהפעיל. ואז SQL editor → New query → להדביק את
+   `37_library_to_run.sql` → Run. ואז `supabase/tests/tenant_isolation.sql` — צריך להסתיים ב-
+   `ALL TENANT ISOLATION CHECKS PASSED`.
+2. **שני מפתחות**:
+   - Voyage AI (החיפוש): נרשמים ב-[voyageai.com](https://www.voyageai.com), יוצרים API key. חינם עד 200 מיליון
+     מילים-טוקנים, הרבה מעבר לספרייה של מאות קבצים.
+   - Anthropic (המענה): [console.anthropic.com](https://console.anthropic.com) → API keys → Create key.
+
+   את שניהם מוסיפים ל-`apps/web/.env.local` בשורות `VOYAGE_API_KEY=...` ו-`ANTHROPIC_API_KEY=...`, וגם
+   ב-Vercel → הפרויקט של המערכת → Settings → Environment Variables (אותם שמות). לא בצ'אט ולא ב-git.
+3. **חשבון שירות בגוגל** — זהות טכנית שרואה רק את התיקייה שתשתף איתה:
+   1. [console.cloud.google.com](https://console.cloud.google.com) → למעלה "Select a project" → New Project →
+      שם, למשל `herbalist-library` → Create.
+   2. בתפריט ← APIs & Services → Library → לחפש "Google Drive API" → Enable.
+   3. APIs & Services → Credentials → Create Credentials → Service account → שם `herbalist-library` → Create
+      and continue → Done (בלי תפקידים).
+   4. לוחצים על חשבון השירות שנוצר → לשונית Keys → Add key → Create new key → JSON → Create. קובץ JSON יורד
+      למחשב. **שומרים אותו מחוץ לתיקיית הפרויקט**, למשל `C:\Users\User\Documents\herbalist-keys\drive.json`,
+      ומוסיפים ל-`apps/web/.env.local`:
+      `GOOGLE_SERVICE_ACCOUNT_FILE=C:\Users\User\Documents\herbalist-keys\drive.json`
+   5. בדף של חשבון השירות מעתיקים את כתובת המייל שלו (נגמרת ב-`iam.gserviceaccount.com`).
+   6. ב-Google Drive: קליק ימני על התיקייה של הספרייה → Share → מדביקים את כתובת המייל → Viewer → Send.
+   7. פותחים את התיקייה בדפדפן; הכתובת נגמרת ב-`/folders/<מזהה ארוך>`. את המזהה מוסיפים ל-`.env.local`:
+      `LIBRARY_DRIVE_FOLDER_ID=<המזהה>`.
+4. **הטעינה**, בטרמינל של VS Code:
+
+   ```
+   node scripts/library/ingest.mjs
+   ```
+
+   הפקודה קוראת את הקבצים, מדפיסה כמה קטעים יצאו מכל קובץ, ושואלת אימייל וסיסמה של החשבון שלך
+   (הסיסמה מוסתרת) לפני ההעלאה. מריצים אותה שוב אחרי שמוסיפים קבצים לתיקייה; קבצים שלא השתנו נדלגים.
+   `--dry` רק קורא בלי להעלות, ו-`--limit=10` מנסה על עשרה קבצים.
+
+מה כדאי לדעת: השאלות נשלחות ל-Voyage ול-Anthropic לצורך המענה (המסך אומר זאת), ואסור להזין בהן פרטי
+מטופלים; ביומן (`/library/activity`) נרשם מי שאל ומתי, לא מה. הקבצים הם שלך; אתרים ייכנסו רק מרשימה שתמלא,
+ובאחריותך שיש לך זכות להשתמש בהם.
 
 ## מה בודקים אחרי העלייה
 

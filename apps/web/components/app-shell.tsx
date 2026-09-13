@@ -31,6 +31,7 @@ import {
   FlaskConical,
   GripVertical,
   LayoutDashboard,
+  LibraryBig,
   ListTodo,
   MessageSquare,
   Building2,
@@ -132,6 +133,7 @@ const NAV_ITEMS = [
   { href: '/billing', labelKey: 'billing', icon: Receipt, exact: false, stockOnly: false },
   { href: '/reports', labelKey: 'reports', icon: ChartColumn, exact: false, stockOnly: false },
   { href: '/assistant', labelKey: 'assistant', icon: Sparkles, exact: false, stockOnly: false },
+  { href: '/library', labelKey: 'library', icon: LibraryBig, exact: false, stockOnly: false },
 ] as const;
 
 export function AppShell({

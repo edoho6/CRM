@@ -362,7 +362,8 @@
     "assistant": "Ask about the data",
     "reports": "Reports",
     "userMenu": "User menu — {name}",
-    "medicine": "Western medicine"
+    "medicine": "Western medicine",
+    "library": "Professional library"
   },
   "auth": {
     "signup": {
@@ -3372,6 +3373,74 @@
             "Deletion from the app is immediate. Encrypted backups are deleted in the normal backup cycle, within 30 days at most."
           ]
         }
+      }
+    }
+  },
+  "library": {
+    "title": "Professional library",
+    "subtitle": "Professional questions answered only from the sources loaded into the library. No answer without a source.",
+    "nav": {
+      "label": "Library screens",
+      "chat": "Questions",
+      "sources": "Sources",
+      "activity": "Activity"
+    },
+    "privacyTitle": "Before you ask",
+    "privacyBody": "The library answers only from its own sources and never sees a patient file. A question is sent to Voyage AI and Anthropic to be answered, so do not type names, identity numbers, phone numbers or medical details of a particular patient. The log records who asked, when, and which sources were retrieved; the question itself is not stored.",
+    "notConfigured": "The library is not connected yet",
+    "notConfiguredBody": "Whoever runs the service has not connected the search and answering services yet. Until then there is nothing to answer from.",
+    "empty": "No question yet. Start from one of the examples.",
+    "placeholder": "A professional question, for example: what are the indications of Gui Zhi Tang according to the sources?",
+    "send": "Send",
+    "thinking": "Searching the sources and writing an answer…",
+    "clear": "Clear the conversation",
+    "enterHint": "Enter to send, Shift+Enter for a new line",
+    "chars": "{count}/{max}",
+    "you": "Me",
+    "assistant": "The library",
+    "examples": {
+      "a": "Which herbs are in Gui Zhi Tang and what is the dose of each, according to the sources?",
+      "b": "What are the contraindications of Ma Huang?",
+      "c": "Which pattern is Xiao Yao San used for?"
+    },
+    "status": {
+      "no_sources": "Not found in the sources",
+      "refused_pii": "The question contains an identifying detail",
+      "refused_quota": "Daily quota reached",
+      "error": "Could not answer right now. Try again in a moment."
+    },
+    "citations": "Sources of the answer",
+    "retrieved": "The closest sources retrieved",
+    "page": "Page {page}",
+    "openSource": "Open the source",
+    "sources": {
+      "title": "Sources in the library",
+      "subtitle": "Every file and page the library answers from, when it was last read, and how many passages it became.",
+      "empty": "The library is still empty.",
+      "kindHeading": "Kind",
+      "passagesHeading": "Passages",
+      "fetchedHeading": "Last read",
+      "file": "File",
+      "website": "Website",
+      "pages": "{count, plural, one {One page} other {# pages}}",
+      "passages": "{count, plural, =0 {No passages} one {One passage} other {# passages}}"
+    },
+    "activity": {
+      "title": "Library activity",
+      "subtitle": "Who asked, when, and which sources were retrieved. Questions and answers are not stored.",
+      "empty": "No questions yet.",
+      "when": "When",
+      "who": "Who",
+      "status": "Outcome",
+      "sources": "Sources retrieved",
+      "cited": "cited",
+      "none": "No sources retrieved",
+      "statuses": {
+        "answered": "Answered",
+        "no_sources": "Not found in the sources",
+        "refused_pii": "Refused: identifying detail",
+        "refused_quota": "Refused: daily quota",
+        "error": "Error"
       }
     }
   }

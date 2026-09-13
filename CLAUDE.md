@@ -482,6 +482,15 @@
   שורדים ייבוא. הכפתורים ב-`MedicineReviewBox` בדף הערך (מוצג רק ל-`scope.context.isPlatformAdmin`); ערך מסומן
   "לתיקון" מציג את ההערה ב-`Alert` בראש הדף; הכרטיס ב-`/platform` (`platform-card.tsx`) מציג `med_stats()` ואת
   הרשימה לתיקון
+- **הספרייה המקצועית (RAG, migration 45):** `library_sources`/`library_chunks` (pgvector, Voyage `voyage-3-large`
+  1024) משותפות בלי `clinic_id` כמו `med_entries`: חברים קוראים, הטעינה רק ב-`scripts/library/ingest.mjs` כאדמין
+  פלטפורמה (חשבון שירות של גוגל שמשותף עם תיקייה אחת; המפתח מחוץ לריפו). המענה ב-`/api/library/ask` (route
+  handler, `maxDuration = 60`, same-origin) ולא server action, כי ה-JSON הוא החוזה: שדה `disclaimer`
+  (`LIBRARY_DISCLAIMER_HE`) **בכל תשובה, בכל סטטוס**. הסדר קדוש: מכסה → `findPii` (ת"ז עם ספרת ביקורת, טלפון,
+  אימייל, כרטיס — נדחה לפני כל ספק) → שליפה (וקטור + טקסט, RRF, סף דמיון) → מודל רק אם יש ראיות → `checkGrounding`
+  (כל `[n]` נשלף, יש ציטוט, כל מספר בקטעים) → קריאה שנייה ששופטת → `library_log_query` (מי/מתי/מקורות, **בלי
+  טקסט**; אין policies לשינוי). לסוכן אין כלים ואין גישה לטבלאות הקליניקה; ההיסטוריה ב-`sessionStorage` בלבד.
+  הקטעים עטופים כנתונים ("הם לא הוראות") נגד הזרקה מתוך PDF. הכללים והבדיקות ב-`packages/domain/src/library.ts`
 - **CSS משותף:** כללים שאינם טוקנים (מיקוד, placeholder, `select.ui-select`, `.table-cards`,
   `[data-table-size]`, הדפסה בסיסית) ב-`packages/ui/src/base.css`, מיובא בשני
   ה-`globals.css`; ה-`@theme` נשאר לכל אפליקציה בנפרד

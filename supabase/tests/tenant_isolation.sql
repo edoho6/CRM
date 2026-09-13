@@ -48,6 +48,7 @@ declare
   v_shop_product uuid;
   v_shop_fp    text := 'iso|' || gen_random_uuid();  -- the product's fingerprint, shared with its offer
   v_med        uuid;                                   -- one entry of the Western medicine reference
+  v_lib        uuid;                                   -- one source of the professional library
   v_user_c     uuid := gen_random_uuid();  -- a stranger with an account and no clinic
   v_invite_a   uuid;
   v_invite_b   uuid;
@@ -252,6 +253,11 @@ begin
   insert into public.med_entries (kind, slug, name_en, name_he, status)
   values ('drug', 'iso-drug', 'Iso drug', 'תרופת בדיקה', 'draft')
   returning id into v_med;
+
+  -- The professional library too: one source, no passages needed.
+  insert into public.library_sources (kind, locator, title)
+  values ('file', 'iso-library-source', 'Iso source')
+  returning id into v_lib;
 
   -- An open invitation in each clinic. The link is the whole secret.
   insert into public.clinic_invitations (clinic_id, role, invitee_name, invited_by)
@@ -551,6 +557,41 @@ begin
   end;
   raise notice 'ok   the medicine reference is readable by every member and writable by none';
 
+  -- The professional library is shared the same way, and its log takes the
+  -- caller's own clinic from the session — never as an argument.
+  select count(*) into v_count from public.library_sources where id = v_lib;
+  if v_count <> 1 then raise exception 'FAIL: a clinic member cannot read the professional library'; end if;
+  begin
+    insert into public.library_sources (kind, locator, title) values ('file', 'iso-injected-source', 'Injected');
+    raise exception 'FAIL: a clinic member inserted a library source';
+  exception
+    when insufficient_privilege then null;
+  end;
+  update public.library_sources set title = 'Changed' where id = v_lib;
+  if found then raise exception 'FAIL: a clinic member changed a library source'; end if;
+  delete from public.library_sources where id = v_lib;
+  if found then raise exception 'FAIL: a clinic member deleted a library source'; end if;
+  begin
+    perform public.library_upsert_source(jsonb_build_object('locator', 'iso-x', 'title', 'x'));
+    raise exception 'FAIL: a clinic member loaded a library source';
+  exception
+    when insufficient_privilege then null;
+  end;
+  begin
+    perform public.library_clear_chunks(v_lib);
+    raise exception 'FAIL: a clinic member cleared library passages';
+  exception
+    when insufficient_privilege then null;
+  end;
+  perform public.library_log_query('no_sources', '[]'::jsonb, null, null, null, null);
+  select count(*) into v_count from public.library_queries where clinic_id = v_clinic_a and user_id = v_user_a;
+  if v_count <> 1 then raise exception 'FAIL: the library log did not record the caller''s own clinic'; end if;
+  update public.library_queries set status = 'answered' where clinic_id = v_clinic_a;
+  if found then raise exception 'FAIL: a clinic member changed the library log'; end if;
+  delete from public.library_queries where clinic_id = v_clinic_a;
+  if found then raise exception 'FAIL: a clinic member deleted from the library log'; end if;
+  raise notice 'ok   the professional library is readable by every member, writable by none, and its log is append-only';
+
   -- Invitations belong to the owner who made them, and the last owner stays.
   select count(*) into v_count from public.clinic_invitations;
   if v_count <> 1 then raise exception 'FAIL: clinic A saw % invitation(s), expected only its own', v_count; end if;
@@ -655,6 +696,10 @@ begin
   perform set_config('role', 'authenticated', true);
 
   raise notice '--- as clinic B ---';
+
+  -- Clinic A's library questions are clinic A's.
+  select count(*) into v_count from public.library_queries where clinic_id = v_clinic_a;
+  if v_count <> 0 then raise exception 'FAIL: clinic B saw % of clinic A''s library log row(s)', v_count; end if;
 
   select count(*) into v_count from public.encounter_signatures;
   if v_count <> 0 then raise exception 'FAIL: clinic B saw % of clinic A''s signature record(s)', v_count; end if;
