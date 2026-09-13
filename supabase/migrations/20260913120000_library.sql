@@ -209,7 +209,9 @@ returns table (via text, chunk_id uuid, source_id uuid, title text, url text, ki
 language sql
 stable
 security invoker
-set search_path = public
+-- `extensions` too: the <=> operator of pgvector lives there, and a function's
+-- own search path would otherwise hide it (the SQL editor's session path does not).
+set search_path = public, extensions
 as $$
   (
     select 'vector'::text, c.id, s.id, s.title, s.url, s.kind, c.page, c.heading, c.content,
