@@ -88,7 +88,17 @@ async function listDrive() {
     token,
     files: files
       .sort((a, b) => a.path.localeCompare(b.path))
-      .map((file) => ({ locator: `drive:${file.id}`, path: file.path, ext: file.ext, modified: file.modifiedTime, read: async () => downloadFile(token, file) })),
+      .map((file) => ({
+        locator: `drive:${file.id}`,
+        path: file.path,
+        ext: file.ext,
+        modified: file.modifiedTime,
+        // Drive's own checksum, for every file it stores as bytes (a Google document has none): a
+        // file whose text is already cached is never downloaded again.
+        hash: file.exportAs ? null : file.md5Checksum ?? null,
+        size: Number(file.size ?? 0) || null,
+        read: async () => downloadFile(token, file),
+      })),
   };
 }
 
@@ -131,13 +141,12 @@ async function main() {
 
   for (const file of todo) {
     try {
-      const buffer = await file.read();
-      if (buffer.length === 0) {
-        summary.empty += 1;
-        log(`ingest: ${file.path} — empty file`);
-        continue;
-      }
-      const sha256 = crypto.createHash('sha256').update(buffer).digest('hex');
+      // The bytes are fetched once, and only when something needs them.
+      let buffer = null;
+      const read = async () => (buffer ??= await file.read());
+      // The content fingerprint: Drive's checksum when it has one, else a hash of the bytes. It is
+      // what the manifest and the text cache are keyed by (the column is called sha256 either way).
+      const sha256 = file.hash ?? crypto.createHash('sha256').update(await read()).digest('hex');
       const known = manifest.sources[file.locator];
       if (known && known.sha256 === sha256 && !refresh) {
         summary.unchanged += 1;
@@ -145,15 +154,20 @@ async function main() {
       }
       let extracted = cachedText(sha256);
       if (!extracted) {
+        if ((await read()).length === 0) {
+          summary.empty += 1;
+          log(`ingest: ${file.path} — empty file`);
+          continue;
+        }
         try {
-          extracted = await extractText(buffer, file.ext);
+          extracted = await extractText(await read(), file.ext);
         } catch (error) {
           // An old Word file the plain reader cannot open: Word can. Anything else is a failure.
           if (file.ext !== 'doc') throw error;
           extracted = { pages: [], pageCount: null, note: `doc: ${error.message.slice(0, 80)}` };
         }
         if (file.ext === 'doc' && extracted.pages.length === 0 && word) {
-          extracted = await extractText(await docToDocx(buffer), 'docx');
+          extracted = await extractText(await docToDocx(await read()), 'docx');
           extracted.note = extracted.pages.length ? 'converted by Word' : 'Word found no text';
           summary.word += 1;
         }
@@ -167,8 +181,8 @@ async function main() {
           try {
             const read =
               file.ext === 'image'
-                ? await visionImage(visionToken, buffer)
-                : await visionPdf(visionToken, buffer, { onPart: (done, total) => (total > 4 && done % 10 === 0 ? log(`ingest: ${file.path} — OCR ${done}/${total}`) : null) });
+                ? await visionImage(visionToken, await read())
+                : await visionPdf(visionToken, await read(), { onPart: (done, total) => (total > 4 && done % 10 === 0 ? log(`ingest: ${file.path} — OCR ${done}/${total}`) : null) });
             extracted = { pages: read.pages, pageCount: read.pageCount, note: read.pages.length ? 'read by OCR' : 'OCR found no text' };
             summary.ocr += 1;
           } catch (error) {
@@ -202,7 +216,7 @@ async function main() {
         title: titleOf(file.path),
         url: null,
         sha256,
-        bytes: buffer.length,
+        bytes: buffer ? buffer.length : file.size ?? null,
         pages: pageCount,
         language: null,
         licence_note: null,
