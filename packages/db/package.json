@@ -20,7 +20,7 @@
   "dependencies": {
     "@clinic/domain": "workspace:*",
     "@supabase/ssr": "^0.12.6",
-    "@supabase/supabase-js": "^2.115.0"
+    "@supabase/supabase-js": "^2.116.0"
   },
   "devDependencies": {
     "@clinic/config": "workspace:*",

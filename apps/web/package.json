@@ -25,7 +25,7 @@
     "@react-three/drei": "10.0.6",
     "@react-three/fiber": "9.1.2",
     "@supabase/ssr": "^0.12.6",
-    "@supabase/supabase-js": "^2.115.0",
+    "@supabase/supabase-js": "^2.116.0",
     "@tiptap/pm": "^3.31.3",
     "@tiptap/react": "^3.31.3",
     "@tiptap/starter-kit": "^3.31.3",
