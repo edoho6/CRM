@@ -14,7 +14,7 @@
 // at a time; the links follow once every entry they point at exists.
 import path from 'node:path';
 import { createRequire } from 'node:module';
-import { args, datasetFile, env, log, readGzipJson, root } from './lib.mjs';
+import { args, datasetFile, env, log, readGzipJson, root, sleep } from './lib.mjs';
 import { ask } from './lib/prompt.mjs';
 
 const { createClient } = createRequire(path.join(root, 'apps', 'web', 'package.json'))('@supabase/supabase-js');
@@ -37,20 +37,36 @@ async function main() {
   const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
   if (signInError) throw new Error(`sign-in failed: ${signInError.message}`);
 
+  // One call of med_import, tried again when the connection drops under it
+  // ("fetch failed" at entry 1,100 of 3,439 once ended a run that had done
+  // nothing wrong). The import is an upsert, so a chunk sent twice is harmless.
+  const call = async (label, args) => {
+    for (let attempt = 1; ; attempt += 1) {
+      try {
+        const { data, error } = await supabase.rpc('med_import', args);
+        if (error) throw new Error(error.message);
+        return data;
+      } catch (error) {
+        const transient = /fetch failed|network|ECONNRESET|ETIMEDOUT|socket|timeout|502|503|504/i.test(error.message ?? '');
+        if (!transient || attempt >= 5) throw new Error(`med_import (${label}): ${error.message}`);
+        log(`import: ${label} — ${error.message}; trying again in ${attempt * 5}s`);
+        await sleep(attempt * 5000);
+      }
+    }
+  };
+
   try {
     const totals = { entries: 0, links: 0, skipped_links: 0 };
     // Twenty-five at a time: a drug entry carries its label's sections as
     // quotes, and a hundred of those is more than one request should hold.
     const chunk = 25;
     for (let i = 0; i < dataset.entries.length; i += chunk) {
-      const { data, error } = await supabase.rpc('med_import', { p_entries: dataset.entries.slice(i, i + chunk), p_links: [] });
-      if (error) throw new Error(`med_import (entries ${i}–${i + chunk}): ${error.message}`);
+      const data = await call(`entries ${i}–${i + chunk}`, { p_entries: dataset.entries.slice(i, i + chunk), p_links: [] });
       totals.entries += data.entries;
       log(`import: ${Math.min(i + chunk, dataset.entries.length)}/${dataset.entries.length} entries`);
     }
     for (let i = 0; i < dataset.links.length; i += 500) {
-      const { data, error } = await supabase.rpc('med_import', { p_entries: [], p_links: dataset.links.slice(i, i + 500) });
-      if (error) throw new Error(`med_import (links ${i}–${i + 500}): ${error.message}`);
+      const data = await call(`links ${i}–${i + 500}`, { p_entries: [], p_links: dataset.links.slice(i, i + 500) });
       totals.links += data.links;
       totals.skipped_links += data.skipped_links;
     }
