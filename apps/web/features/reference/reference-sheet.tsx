@@ -240,7 +240,7 @@ function FormulaBody({ formula }: { formula: HerbFormulaWithItems }) {
           <h3 id="reference-formula-composition" className="text-sm font-semibold text-ink-900">
             {t('composition.title')}
           </h3>
-          <FormulaComposition herbs={items.map((item) => item.herb)} />
+          <FormulaComposition herbs={items.map((item) => (item.herb ? { ...item.herb, name: herbPrimaryName(item.herb) } : null))} />
         </section>
       ) : null}
 

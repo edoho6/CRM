@@ -299,19 +299,19 @@
 
   /* The chart colours, chosen for the dark card rather than dimmed: the
      same validator, the dark surface. */
-  --chart-temp-hot: #e11d48;
-  --chart-temp-warm: #d97706;
+  --chart-temp-hot: #dc2626;
+  --chart-temp-warm: #f87171;
   --chart-temp-neutral: #9ca3af;
-  --chart-temp-cool: #0284c7;
-  --chart-temp-cold: #7c3aed;
-  --chart-taste-sweet: #d97706;
-  --chart-taste-bitter: #0d9488;
+  --chart-temp-cool: #38bdf8;
+  --chart-temp-cold: #4f46e5;
+  --chart-taste-sweet: #facc15;
+  --chart-taste-bitter: #b45309;
   --chart-taste-acrid: #ef4444;
-  --chart-taste-sour: #a16207;
+  --chart-taste-sour: #22c55e;
   --chart-taste-salty: #3b82f6;
-  --chart-taste-bland: #78716c;
+  --chart-taste-bland: #d1d5db;
   --chart-taste-astringent: #8b5cf6;
-  --chart-taste-aromatic: #ec4899;
+  --chart-taste-aromatic: #f472b6;
 
   /* Surfaces. `white` is the raised surface a card sits on; ink-50 is the page
      behind it, and is darker so the cards read as lifted rather than flush. */
@@ -455,19 +455,24 @@
    and the one grey is the deliberate neutral of a diverging scale. Charts
    never rely on these alone: every wedge has its label and count beside it. */
 :root {
+  /* Nature: hot red through grey to cold blue. Taste: sour green, sweet
+     yellow, acrid red, bland the faintest grey, bitter a coffee brown, salty
+     blue, astringent violet, aromatic pink — the reader's own mapping. The
+     ring lays them out so no red sits beside a green or a brown, which is
+     where colour-blind eyes lose the border. */
   --chart-temp-hot: #b91c1c;
-  --chart-temp-warm: #f97316;
+  --chart-temp-warm: #f87171;
   --chart-temp-neutral: #6b7280;
   --chart-temp-cool: #0ea5e9;
   --chart-temp-cold: #1d4ed8;
-  --chart-taste-sweet: #d97706;
-  --chart-taste-bitter: #0d9488;
+  --chart-taste-sweet: #eab308;
+  --chart-taste-bitter: #92400e;
   --chart-taste-acrid: #dc2626;
-  --chart-taste-sour: #ca8a04;
+  --chart-taste-sour: #16a34a;
   --chart-taste-salty: #2563eb;
-  --chart-taste-bland: #78716c;
-  --chart-taste-astringent: #7c3aed;
-  --chart-taste-aromatic: #db2777;
+  --chart-taste-bland: #e5e7eb;
+  --chart-taste-astringent: #6d28d9;
+  --chart-taste-aromatic: #ec4899;
 }
 
 @media (width < 64rem) {

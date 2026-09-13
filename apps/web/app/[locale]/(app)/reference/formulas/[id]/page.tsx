@@ -221,17 +221,11 @@ export default async function FormulaDetailPage({
         </div>
       </section>
 
-      <div className="space-y-5">
-        {/* The formula's character before its parts: by nature and by taste, counted by herb. */}
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('composition.title')}</CardTitle>
-          </CardHeader>
-          <CardBody>
-            <FormulaComposition herbs={items.map((item) => item.herb)} />
-          </CardBody>
-        </Card>
-        <div>
+      {/* The parts in the wide column; the formula's character — two small
+          rings by nature and by taste — in a narrow column at the far side,
+          where it reads without taking the page. On a phone it follows the parts. */}
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-start">
+        <div className="min-w-0 space-y-5">
           <Card>
             <CardHeader>
               <CardTitle>{t('items')}</CardTitle>
@@ -370,9 +364,8 @@ export default async function FormulaDetailPage({
               )}
             </CardBody>
           </Card>
-        </div>
 
-        <div className="grid gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+          <div className="grid gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
           <Card>
             <CardHeader>
               <CardTitle>{t('clinical')}</CardTitle>
@@ -426,7 +419,15 @@ export default async function FormulaDetailPage({
               </dl>
             </CardBody>
           </Card>
+          </div>
         </div>
+
+        <aside aria-labelledby="formula-composition" className="min-w-0 space-y-2">
+          <h2 id="formula-composition" className="text-base font-semibold text-ink-900">
+            {t('composition.title')}
+          </h2>
+          <FormulaComposition herbs={items.map((item) => (item.herb ? { ...item.herb, name: herbPrimaryName(item.herb, locale as Locale) } : null))} />
+        </aside>
       </div>
     </>
   );

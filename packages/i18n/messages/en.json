@@ -1367,7 +1367,10 @@
         "unknownTaste": "{count, plural, one {One herb without a recorded taste} other {# herbs without a recorded taste}}",
         "ariaTemperature": "Nature pie: {parts}",
         "ariaTastes": "Taste pie: {parts}",
-        "none": "The formula’s herbs have no recorded nature or tastes yet. Add them on each herb, and the pies appear here."
+        "none": "The formula’s herbs have no recorded nature or tastes yet. Add them on each herb, and the pies appear here.",
+        "center": "herbs",
+        "hint": "Hover a wedge, or click a row, to see its herbs.",
+        "herbsOf": "Herbs of {label}"
       }
     },
     "batches": {

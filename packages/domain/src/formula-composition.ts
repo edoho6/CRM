@@ -12,6 +12,8 @@ import { TASTES, TEMPERATURES, type Taste, type Temperature } from './enums';
 export interface CompositionHerb {
   temperature?: Temperature | null;
   tastes?: readonly Taste[] | null;
+  /** The herb's name, so a wedge can say which herbs it holds. */
+  name?: string | null;
 }
 
 export interface CompositionSlice<K extends string> {
@@ -19,6 +21,8 @@ export interface CompositionSlice<K extends string> {
   count: number;
   /** This slice's share of the counted herbs (or taste mentions), 0–1. */
   share: number;
+  /** The named herbs in the slice, in the order they were given. */
+  herbs: string[];
 }
 
 export type TemperatureLean = 'warm' | 'cool' | 'balanced' | 'unknown';
@@ -48,6 +52,7 @@ const COOL = new Set<Temperature>(['cool', 'slightly_cold', 'cold', 'very_cold']
 
 export function temperatureComposition(herbs: readonly (CompositionHerb | null | undefined)[]): TemperatureComposition {
   const counts = new Map<Temperature, number>();
+  const names = new Map<Temperature, string[]>();
   let unknown = 0;
   for (const herb of herbs) {
     const temperature = herb?.temperature ?? null;
@@ -56,9 +61,15 @@ export function temperatureComposition(herbs: readonly (CompositionHerb | null |
       continue;
     }
     counts.set(temperature, (counts.get(temperature) ?? 0) + 1);
+    if (herb?.name) names.set(temperature, [...(names.get(temperature) ?? []), herb.name]);
   }
   const known = [...counts.values()].reduce((sum, n) => sum + n, 0);
-  const slices = TEMPERATURES.filter((key) => counts.has(key)).map((key) => ({ key, count: counts.get(key)!, share: counts.get(key)! / known }));
+  const slices = TEMPERATURES.filter((key) => counts.has(key)).map((key) => ({
+    key,
+    count: counts.get(key)!,
+    share: counts.get(key)! / known,
+    herbs: names.get(key) ?? [],
+  }));
   const warm = slices.filter((slice) => WARM.has(slice.key)).reduce((sum, slice) => sum + slice.count, 0);
   const cool = slices.filter((slice) => COOL.has(slice.key)).reduce((sum, slice) => sum + slice.count, 0);
   const neutral = known - warm - cool;
@@ -69,6 +80,7 @@ export function temperatureComposition(herbs: readonly (CompositionHerb | null |
 
 export function tasteComposition(herbs: readonly (CompositionHerb | null | undefined)[]): TasteComposition {
   const counts = new Map<Taste, number>();
+  const names = new Map<Taste, string[]>();
   let unknown = 0;
   for (const herb of herbs) {
     const tastes = (herb?.tastes ?? []).filter((taste): taste is Taste => (TASTES as readonly string[]).includes(taste));
@@ -76,10 +88,18 @@ export function tasteComposition(herbs: readonly (CompositionHerb | null | undef
       unknown += 1;
       continue;
     }
-    for (const taste of new Set(tastes)) counts.set(taste, (counts.get(taste) ?? 0) + 1);
+    for (const taste of new Set(tastes)) {
+      counts.set(taste, (counts.get(taste) ?? 0) + 1);
+      if (herb?.name) names.set(taste, [...(names.get(taste) ?? []), herb.name]);
+    }
   }
   const mentions = [...counts.values()].reduce((sum, n) => sum + n, 0);
-  const slices = TASTES.filter((key) => counts.has(key)).map((key) => ({ key, count: counts.get(key)!, share: counts.get(key)! / mentions }));
+  const slices = TASTES.filter((key) => counts.has(key)).map((key) => ({
+    key,
+    count: counts.get(key)!,
+    share: counts.get(key)! / mentions,
+    herbs: names.get(key) ?? [],
+  }));
   return { slices, mentions, unknown };
 }
 
@@ -87,6 +107,7 @@ export interface PieArc<K extends string> {
   key: K;
   count: number;
   share: number;
+  herbs: string[];
   /** An SVG path for the wedge, drawn clockwise from twelve o'clock. */
   d: string;
 }
@@ -131,6 +152,6 @@ export function pieArcs<K extends string>(slices: readonly CompositionSlice<K>[]
       }
     }
     start = end;
-    return { key: slice.key, count: slice.count, share: slice.share, d };
+    return { key: slice.key, count: slice.count, share: slice.share, herbs: slice.herbs, d };
   });
 }

@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { pieArcs, tasteComposition, temperatureComposition, type CompositionHerb } from '@clinic/domain';
 
-const herb = (temperature: CompositionHerb['temperature'], tastes: CompositionHerb['tastes'] = []): CompositionHerb => ({ temperature, tastes });
+let n = 0;
+const herb = (temperature: CompositionHerb['temperature'], tastes: CompositionHerb['tastes'] = []): CompositionHerb => ({ temperature, tastes, name: `herb ${++n}` });
 
 describe('temperatureComposition', () => {
   it('counts each nature and reads the lean from the larger side', () => {
@@ -16,6 +17,9 @@ describe('temperatureComposition', () => {
     expect(composition.cool).toBe(7);
     expect(composition.lean).toBe('cool');
     expect(composition.slices[2]!.share).toBeCloseTo(0.7);
+    // Each wedge knows its herbs, so a hover can name them.
+    expect(composition.slices[1]!.herbs).toHaveLength(2);
+    expect(composition.slices[2]!.herbs).toHaveLength(7);
   });
 
   it('calls a tie balanced, and nothing known unknown', () => {
@@ -41,6 +45,7 @@ describe('tasteComposition', () => {
     ]);
     expect(composition.mentions).toBe(4);
     expect(composition.unknown).toBe(1);
+    expect(composition.slices[0]!.herbs).toHaveLength(2);
   });
 });
 
@@ -48,8 +53,8 @@ describe('pieArcs', () => {
   it('draws one wedge per slice, together a whole circle', () => {
     const arcs = pieArcs(
       [
-        { key: 'a', count: 1, share: 0.25 },
-        { key: 'b', count: 3, share: 0.75 },
+        { key: 'a', count: 1, share: 0.25, herbs: [] },
+        { key: 'b', count: 3, share: 0.75, herbs: [] },
       ],
       40,
     );
@@ -60,7 +65,7 @@ describe('pieArcs', () => {
   });
 
   it('draws a single slice as a ring', () => {
-    const [arc] = pieArcs([{ key: 'only', count: 2, share: 1 }], 40, 20);
+    const [arc] = pieArcs([{ key: 'only', count: 2, share: 1, herbs: [] }], 40, 20);
     expect(arc!.d.match(/A /g)).toHaveLength(4);
   });
 
