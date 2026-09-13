@@ -224,7 +224,7 @@ export function Sketches({
       {sketches.length === 0 ? (
         <EmptyNote>{t('empty')}</EmptyNote>
       ) : (
-        <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3" aria-label={t('pages')}>
+        <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3" aria-label={t('pages')} data-sketch-pages>
           {sketches.map((sketch) => (
             <li key={sketch.id}>
               <button
@@ -284,12 +284,13 @@ export function Sketches({
                   variant="ghost"
                   className="text-red-700 hover:bg-red-50"
                   disabled={isPending}
+                  data-sketch-delete
                   onClick={() => remove(viewing)}
                 >
                   <Trash2 className="h-4 w-4" aria-hidden />
                   {t('remove')}
                 </Button>
-                <Button type="button" variant="secondary" disabled={isPending} onClick={() => open(viewing)}>
+                <Button type="button" variant="secondary" disabled={isPending} data-sketch-edit onClick={() => open(viewing)}>
                   <Pencil className="h-4 w-4" aria-hidden />
                   {t('edit')}
                 </Button>

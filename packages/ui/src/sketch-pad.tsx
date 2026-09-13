@@ -4,6 +4,7 @@ import * as React from 'react';
 import { AlignJustify, Eraser, Grid3x3, Highlighter, Pen, PenTool, Redo2, Square, Trash2, Undo2 } from 'lucide-react';
 import { cn } from './cn';
 import { focusRing } from './focus';
+import { Popover } from './popover';
 import { SegmentedControl } from './segmented-control';
 import { HIGHLIGHTER_FACTOR, SKETCH_SIZES, strokeHit, strokeWidth, type SketchPoint, type SketchSize, type SketchStroke, type SketchTool } from './sketch-geometry';
 
@@ -215,6 +216,8 @@ export const SketchPad = React.forwardRef<
     image.onload = () => {
       backgroundImage.current = image;
       redraw();
+      // A render, so the canvas can say the picture is in (a test waits for it).
+      setVersion((v) => v + 1);
     };
     image.onerror = () => {
       backgroundImage.current = null;
@@ -408,9 +411,50 @@ export const SketchPad = React.forwardRef<
             backgroundImage: `repeating-linear-gradient(to bottom, transparent 0 ${RULING - 1}px, #e5e7eb ${RULING - 1}px ${RULING}px), repeating-linear-gradient(to right, transparent 0 ${RULING - 1}px, #e5e7eb ${RULING - 1}px ${RULING}px)`,
           };
 
+  const swatches = (size: 'sm' | 'lg', onPick?: () => void) =>
+    SKETCH_COLORS.map((swatch, index) => (
+      <button
+        key={swatch}
+        type="button"
+        aria-label={labels.colors[index] ?? swatch}
+        aria-pressed={color === swatch}
+        onClick={() => {
+          setColor(swatch);
+          onPick?.();
+        }}
+        className={cn(
+          'flex items-center justify-center rounded-full transition-transform',
+          size === 'sm' ? 'h-8 w-8 pointer-coarse:h-10 pointer-coarse:w-10' : 'h-11 w-11',
+          focusRing,
+          color === swatch && 'scale-110',
+        )}
+      >
+        <span
+          aria-hidden
+          className={cn('block rounded-full border-2', size === 'sm' ? 'h-5 w-5' : 'h-7 w-7', color === swatch ? 'border-ink-900' : 'border-white shadow')}
+          style={{ background: swatch }}
+        />
+      </button>
+    ));
+  const paperOptions: { value: SketchPaper; label: string; icon: React.ReactNode }[] = [
+    { value: 'blank', label: labels.blank, icon: <Square className="h-4 w-4" aria-hidden /> },
+    { value: 'lines', label: labels.lines, icon: <AlignJustify className="h-4 w-4" aria-hidden /> },
+    { value: 'grid', label: labels.grid, icon: <Grid3x3 className="h-4 w-4" aria-hidden /> },
+  ];
+  const popoverTrigger = cn(
+    'flex h-8 w-8 items-center justify-center rounded-md text-ink-700 transition-colors hover:bg-ink-100 pointer-coarse:h-10 pointer-coarse:w-10',
+    focusRing,
+  );
+
   return (
     <div className={cn('flex h-full min-h-0 flex-col gap-2', className)} onKeyDown={onKeyDown}>
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 rounded-xl border border-ink-200 bg-white px-2 py-1.5 sm:gap-x-3" role="toolbar" aria-label={labels.tool}>
+      {/* One row from a tablet up, two on a phone: there the colours sit behind
+          one dot, and the paper — chosen once, if ever — behind one button always. */}
+      <div
+        className="flex flex-wrap items-center gap-x-2 gap-y-1.5 rounded-xl border border-ink-200 bg-white px-2 py-1.5 lg:gap-x-3"
+        role="toolbar"
+        aria-label={labels.tool}
+      >
         <SegmentedControl
           label={labels.tool}
           value={tool}
@@ -422,24 +466,24 @@ export const SketchPad = React.forwardRef<
             { value: 'eraser', label: labels.eraser, icon: <Eraser className="h-4 w-4" aria-hidden /> },
           ]}
         />
-        <div role="group" aria-label={labels.color} className="flex items-center gap-1">
-          {SKETCH_COLORS.map((swatch, index) => (
-            <button
-              key={swatch}
-              type="button"
-              aria-label={labels.colors[index] ?? swatch}
-              aria-pressed={color === swatch}
-              onClick={() => setColor(swatch)}
-              className={cn(
-                'flex h-8 w-8 items-center justify-center rounded-full transition-transform pointer-coarse:h-10 pointer-coarse:w-10',
-                focusRing,
-                color === swatch && 'scale-110',
-              )}
-            >
-              <span aria-hidden className={cn('block h-5 w-5 rounded-full border-2', color === swatch ? 'border-ink-900' : 'border-white shadow')} style={{ background: swatch }} />
-            </button>
-          ))}
+        <div role="group" aria-label={labels.color} className="hidden items-center gap-1 sm:flex">
+          {swatches('sm')}
         </div>
+        <Popover
+          className="sm:hidden"
+          width={312}
+          panelLabel={labels.color}
+          triggerLabel={labels.color}
+          triggerTitle={labels.color}
+          triggerClassName={popoverTrigger}
+          triggerContent={<span aria-hidden className="block h-5 w-5 rounded-full border-2 border-white shadow" style={{ background: color }} />}
+        >
+          {({ close }) => (
+            <div role="group" aria-label={labels.color} className="flex flex-wrap items-center gap-1 p-2">
+              {swatches('lg', close)}
+            </div>
+          )}
+        </Popover>
         <SegmentedControl
           label={labels.width}
           value={size}
@@ -452,17 +496,38 @@ export const SketchPad = React.forwardRef<
             icon: <span aria-hidden className="block rounded-full bg-current" style={{ width: SKETCH_SIZES[value] + 4, height: SKETCH_SIZES[value] + 4 }} />,
           }))}
         />
-        <SegmentedControl
-          label={labels.paper}
-          value={paper}
-          onChange={setPaper}
-          iconOnly
-          options={[
-            { value: 'blank', label: labels.blank, icon: <Square className="h-4 w-4" aria-hidden /> },
-            { value: 'lines', label: labels.lines, icon: <AlignJustify className="h-4 w-4" aria-hidden /> },
-            { value: 'grid', label: labels.grid, icon: <Grid3x3 className="h-4 w-4" aria-hidden /> },
-          ]}
-        />
+        <Popover
+          width={208}
+          panelLabel={labels.paper}
+          triggerLabel={labels.paper}
+          triggerTitle={labels.paper}
+          triggerClassName={popoverTrigger}
+          triggerContent={paperOptions.find((option) => option.value === paper)?.icon}
+        >
+          {({ close }) => (
+            <div role="group" aria-label={labels.paper} className="flex flex-col p-1">
+              {paperOptions.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  aria-pressed={paper === option.value}
+                  onClick={() => {
+                    setPaper(option.value);
+                    close();
+                  }}
+                  className={cn(
+                    'flex h-10 items-center gap-2 rounded-md px-2 text-sm',
+                    paper === option.value ? 'bg-accent text-accent-fg' : 'text-ink-800 hover:bg-ink-50',
+                    focusRing,
+                  )}
+                >
+                  {option.icon}
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </Popover>
         <div className="flex items-center gap-1">
           <ToolButton label={labels.undo} onClick={undo} disabled={!canUndo} data-sketch-undo>
             <Undo2 className="h-4 w-4 rtl:-scale-x-100" aria-hidden />
@@ -487,7 +552,7 @@ export const SketchPad = React.forwardRef<
           )}
         >
           <PenTool className="h-4 w-4" aria-hidden />
-          <span className="hidden sm:inline">{labels.penOnly}</span>
+          <span className="hidden lg:inline">{labels.penOnly}</span>
         </button>
       </div>
 
@@ -499,6 +564,7 @@ export const SketchPad = React.forwardRef<
           tabIndex={0}
           data-autofocus
           data-sketch-empty={strokes.current.length === 0 ? 'true' : 'false'}
+          data-sketch-background={backgroundImage.current ? 'loaded' : 'none'}
           className={cn('block h-full w-full touch-none select-none', tool === 'eraser' ? 'cursor-cell' : 'cursor-crosshair')}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}

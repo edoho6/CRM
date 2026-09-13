@@ -851,6 +851,59 @@ const flows = {
     const ok = response.status() === 200 && type.startsWith('image/png');
     return { ok, detail: `uploaded a PNG; download answered ${response.status()} ${type}` };
   },
+  async writeSketch(page) {
+    // A page written by hand: saved to the file, opened and drawn over (the
+    // new page replaces the old), then deleted. Needs migration 46 in the
+    // database — without it the save is refused and the flow says so.
+    const toast = (pattern) => page.locator('[role="status"], [role="alert"]', { hasText: pattern }).first().waitFor({ timeout: 15_000 }).then(() => true).catch(() => false);
+    const pages = () => page.locator('main [data-sketch-pages] li');
+    const canvas = () => page.locator('[role="dialog"] canvas');
+    const countIs = (n) => page.waitForFunction((want) => document.querySelectorAll('main [data-sketch-pages] li').length === want, n, { timeout: 15_000 }).then(() => true).catch(() => false);
+    const draw = async (fx, fy) => {
+      const box = await canvas().boundingBox();
+      await page.mouse.move(box.x + box.width * fx, box.y + box.height * fy);
+      await page.mouse.down();
+      for (let i = 1; i <= 8; i += 1) await page.mouse.move(box.x + box.width * (fx + i * 0.03), box.y + box.height * (fy + Math.sin(i) * 0.05));
+      await page.mouse.up();
+      await page.waitForTimeout(150);
+    };
+    const before = await pages().count();
+    await page.locator('[data-sketch-open]').click();
+    await canvas().waitFor({ timeout: 8_000 });
+    await page.waitForTimeout(600);
+    await draw(0.2, 0.3);
+    await page.locator('[data-sketch-save]').click();
+    if (!(await toast(/הדף נשמר/))) {
+      const refused = (await page.locator('[role="dialog"] [role="alert"]', { hasText: /לא ניתן היה לשמור/ }).count()) > 0;
+      return { ok: false, detail: refused ? 'the save was refused — has 38_sketches_to_run.sql been run?' : 'no "saved" toast' };
+    }
+    if (!(await countIs(before + 1))) return { ok: false, detail: `the panel did not show the new page (${await pages().count()} of ${before + 1})` };
+    const firstSrc = await pages().nth(before).locator('img').getAttribute('src');
+    // The picture is real: the file answers as a PNG.
+    const response = await page.request.get(new URL(firstSrc, page.url()).href);
+    const type = response.headers()['content-type'] ?? '';
+    const pngOk = response.status() === 200 && type.startsWith('image/png');
+    // Drawn over: the page opens with its picture, takes a stroke, and the save replaces it.
+    await pages().nth(before).locator('button').click();
+    await page.locator('[role="dialog"] [data-sketch-edit]').click();
+    await page.locator('[role="dialog"] canvas[data-sketch-background="loaded"]').waitFor({ timeout: 15_000 });
+    await page.waitForTimeout(300);
+    await draw(0.5, 0.6);
+    await page.locator('[data-sketch-save]').click();
+    if (!(await toast(/הדף נשמר/))) return { ok: false, detail: 'no "saved" toast after the edit' };
+    const replaced = await page.waitForFunction(({ n, src }) => {
+      const items = document.querySelectorAll('main [data-sketch-pages] li');
+      return items.length === n && items[n - 1]?.querySelector('img')?.getAttribute('src') !== src;
+    }, { n: before + 1, src: firstSrc }, { timeout: 15_000 }).then(() => true).catch(() => false);
+    // Deleted, and the panel is as it was.
+    await pages().nth(before).locator('button').click();
+    await page.locator('[role="dialog"] [data-sketch-delete]').click();
+    await page.locator('[role="dialog"] button', { hasText: /^מחיקה$/ }).last().click();
+    if (!(await toast(/הדף נמחק/))) return { ok: false, detail: 'no "deleted" toast' };
+    const backToBefore = await countIs(before);
+    const ok = pngOk && replaced && backToBefore;
+    return { ok, detail: `saved ${pngOk ? 'a real PNG' : `(download ${response.status()} ${type})`}; edit ${replaced ? 'replaced the page' : 'did not replace it'}; delete ${backToBefore ? 'left the panel as it was' : `left ${await pages().count()} page(s), had ${before}`}` };
+  },
   async exportPatientFile(page) {
     await page.locator('[role="tab"]', { hasText: /הסכמות/ }).first().click();
     const link = page.locator('main a[href$="/export"]').first();
@@ -1622,6 +1675,7 @@ async function main() {
         await guest.close();
       }
       await visit(context, { route: '/encounters/new', locale: 'he', width: desktop, label: 'flow write-encounter', after: flows.writeEncounter });
+      if (encounterIds[0]) await visit(context, { route: `/encounters/${encounterIds[0]}`, locale: 'he', width: desktop, label: 'flow write-sketch', after: flows.writeSketch });
       await visit(context, { route: '/billing/new', locale: 'he', width: desktop, label: 'flow write-invoice-line', after: flows.writeInvoiceLine });
       await visit(context, { route: '/account/schedule', locale: 'he', width: desktop, label: 'flow write-feed', after: flows.writeFeed });
       await visit(context, { route: '/settings/team', locale: 'he', width: desktop, label: 'flow write-invite', after: flows.writeInvite });
