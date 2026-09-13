@@ -13,7 +13,7 @@
 // Output: supabase/seed/medicine/dataset.json.gz and test-results/medicine/report.md
 import fs from 'node:fs';
 import path from 'node:path';
-import { cacheDir, datasetFile, firstSentences, log, readJson, reportDir, seedDir, writeGzipJson } from './lib.mjs';
+import { cacheDir, datasetFile, firstSentences, log, readJson, reportDir, root, seedDir, writeGzipJson } from './lib.mjs';
 import { hashOf, materialFor } from './lib/material.mjs';
 
 /**
@@ -69,10 +69,26 @@ function main() {
   if (!compiled) throw new Error('run compile.mjs first');
   const manual = readJson(path.join(seedDir, 'hebrew-manual.json'), {});
   const flags = readJson(path.join(cacheDir, 'hebrew-flags.json'), { flags: {} }).flags ?? {};
+  // The pictures a person has looked at (images.mjs, then the contact sheets):
+  // the manifest is the list, the files sit under public/medicine/images.
+  const images = readJson(path.join(root, 'apps', 'web', 'features', 'medicine', 'medicine-images.json'), {});
 
   const entries = compiled.entries.map((entry) => {
     const he = hebrewFor(entry, manual);
     const { description_he, image_file, wikipedia_he, ...rest } = entry;
+    const picture = entry.wikidata_id ? images[entry.wikidata_id] : null;
+    const image = picture
+      ? {
+          file: `/medicine/images/${picture.file}`,
+          title: picture.title,
+          source: picture.source,
+          author: picture.author,
+          page: picture.page,
+          licence: picture.licence,
+          licenceUrl: picture.licenceUrl,
+          creditRequired: picture.creditRequired,
+        }
+      : null;
     // A Hebrew name given by hand wins over Wikidata's label ("ליפיטור" is a
     // brand, "מתנת" is nobody's word for low back pain); the label stays as an alias.
     const handName = manual[entry.wikidata_id]?.name_he ?? null;
@@ -84,6 +100,7 @@ function main() {
     const numbers = review || (he && he.hebrew_meta.model !== 'wikipedia-he') ? (flags[entry.wikidata_id] ? { ok: false, missing: flags[entry.wikidata_id].missing } : { ok: true, missing: [] }) : null;
     return {
       ...rest,
+      image,
       name_he: nameHe,
       aliases_he: aliasesHe,
       // A short Wikidata description is better than nothing under a name.

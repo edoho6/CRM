@@ -105,6 +105,17 @@ describe('MedicineBody with the seed corpus', () => {
     expect(verified).not.toContain('סומן לתיקון');
   });
 
+  it('shows an entry’s picture with the credit its licence asks for', () => {
+    const row = rows.find((entry) => entry.image);
+    if (!row) return; // no pictures chosen yet
+    const html = render(row);
+    expect(html).toContain('<figure');
+    expect(html).toContain(`src="${row.image!.file}"`);
+    expect(html).toContain(row.image!.licence);
+    if (row.image!.author) expect(html).toContain('צילום:');
+    expect(html).toContain(row.image!.page!);
+  });
+
   it('shows a lab test with its LOINC code and the laboratory-range warning', () => {
     const row = rows.find((entry) => entry.kind === 'lab_test' && entry.identifiers.loinc);
     if (!row) return; // the corpus has no lab tests yet

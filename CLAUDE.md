@@ -469,6 +469,11 @@
   ריבוי, מינימום 3 אותיות בעברית ו-4 בלטינית — רק מחלות ותרופות, לא תסמינים ("כאב" בכל תיק). אינדקס השמות
   (`features/medicine/name-index.ts`) נקרא בדפים של אלף (תקרת PostgREST) ונשמר בזיכרון השרת לשעה — הוא של הקורפוס,
   לא של מטופל; הטקסט של המטופל נבדק בזיכרון ולא נרשם בשום מקום.
+  **תמונות:** `scripts/medicine/images.mjs` מביא מקומונס את התמונה ש-P18 מצביע עליה (CC0/BY/BY-SA בלבד; "אדם"
+  בתיאור או בקטגוריה נפסל אוטומטית), `image-sheets.mjs` מייצר גיליונות לבדיקה בעין, והפסולים נרשמים
+  ב-`medicine-image-rejects.json` לפי כותרת. **כל תמונה נבדקת בעין לפני commit** — הסינון האוטומטי החמיץ פרצוף
+  של חולה, ילד עם פורפורה, חתול בהרדמה ופוסטר. `build.mjs` מכניס את `medicine-images.json` ל-`image`;
+  הקרדיט תמיד מוצג (`MedicinePicture`) וגם ב-`/reference/medicine/credits`.
   **פסק דין של אדם (migration 44):** `verified` ו-`flagged` נכתבים רק ב-`med_set_status(id, verdict, note)` — אדמין
   פלטפורמה בלבד, `'clear'` מחזיר לפסק של המקורות — עם `reviewed_at/by/by_name` ו-`review_note` על השורה, ושניהם
   שורדים ייבוא. הכפתורים ב-`MedicineReviewBox` בדף הערך (מוצג רק ל-`scope.context.isPlatformAdmin`); ערך מסומן

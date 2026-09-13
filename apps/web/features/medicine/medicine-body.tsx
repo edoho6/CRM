@@ -196,6 +196,8 @@ export function MedicineBody({
         ) : null}
       </div>
 
+      {entry.image ? <MedicinePicture image={entry.image} name={entry.name_he ?? entry.name_en} /> : null}
+
       {sectionKeys.length > 0 ? (
         <div className="space-y-2">
           {sectionKeys.map((key) => {
@@ -299,6 +301,33 @@ export function MedicineBody({
         ) : null}
       </Alert>
     </div>
+  );
+}
+
+/**
+ * The entry's picture — an illustration, a micrograph, an X-ray from
+ * Wikimedia Commons, chosen by the pipeline and looked at by a person —
+ * with the credit its licence asks for, always, and a link to the file.
+ * Shown as it is, scaled only, so a share-alike licence binds nothing.
+ */
+function MedicinePicture({ image, name }: { image: NonNullable<MedEntry['image']>; name: string }) {
+  const t = useTranslations('medicine');
+  const tc = useTranslations('common');
+  return (
+    <figure className="rounded-lg border border-ink-200 bg-white p-2">
+      <img src={image.file} alt={t('image.alt', { name })} loading="lazy" className="mx-auto max-h-64 w-auto max-w-full rounded-md" />
+      <figcaption className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-ink-600">
+        {image.author ? <span dir="auto">{t('image.author', { author: image.author })}</span> : null}
+        <span>{t('sources.licence', { licence: image.licence })}</span>
+        {image.page ? (
+          <ExternalLink href={image.page} newTabLabel={tc('opensInNewTab')} className="underline-offset-2 hover:underline">
+            {image.source}
+          </ExternalLink>
+        ) : (
+          <span>{image.source}</span>
+        )}
+      </figcaption>
+    </figure>
   );
 }
 

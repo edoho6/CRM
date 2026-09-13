@@ -2543,6 +2543,16 @@
       "flaggedBy": "Flagged by {name} · {date}",
       "someone": "a team member",
       "saved": "The mark was saved"
+    },
+    "image": {
+      "alt": "An illustration or photograph of {name}",
+      "author": "Photo: {author}"
+    },
+    "credits": {
+      "title": "Picture credits",
+      "subtitle": "Where the pictures in the Western medicine reference come from, one line each.",
+      "none": "The reference has no pictures yet.",
+      "open": "Picture page"
     }
   },
   "accessibility": {

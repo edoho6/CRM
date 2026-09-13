@@ -232,7 +232,10 @@ async function inspect(page) {
     // so the page is read for anything shaped like one — three dotted
     // segments, letters only, not part of an address or a file name.
     const keyLeaks = [];
+    // A web address is not a key: a picture credit reads "www.scistyle.com".
+    const address = /^www\.|\.(com|org|net|gov|edu|il|uk|de|fr|io)$/i;
     for (const match of (main?.innerText ?? '').matchAll(/(?:^|[\s(])([a-z][a-zA-Z0-9]*(?:\.[a-zA-Z][a-zA-Z0-9_]*){2,})(?=$|[\s).,:;])/gm)) {
+      if (address.test(match[1])) continue;
       if (!keyLeaks.includes(match[1])) keyLeaks.push(match[1]);
       if (keyLeaks.length >= 5) break;
     }
@@ -1358,7 +1361,7 @@ const STATIC_ROUTES = [
   '/', '/patients', '/patients/new', '/calendar', '/calendar?view=day', '/calendar?view=month',
   '/calendar?view=range', '/tasks', '/messages', '/encounters', '/encounters/new', '/forms',
   '/forms/new', '/reference/herbs', '/reference/formulas', '/reference/points', '/reference/compare',
-  '/reference/medicine', '/reference/medicine?kind=drug', '/reference/medicine?kind=lab_test',
+  '/reference/medicine', '/reference/medicine?kind=drug', '/reference/medicine?kind=lab_test', '/reference/medicine/credits',
   '/inventory', '/inventory?tab=low', '/inventory/batches', '/inventory/batches/receive',
   '/inventory/suppliers', '/prices', '/prices?cat=needles&min=2', '/prices/credits', '/billing', '/billing/new',
   '/billing/settings', '/reports', '/assistant',

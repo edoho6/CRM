@@ -103,6 +103,21 @@ node scripts/medicine/import.mjs              # 8 · טעינה למסד (אדמ
 מה הושאר בחוץ ולמה, מי עם מקור אחד בלבד, מי בלי עברית, מה הקריאה השנייה פסלה, ואילו מספרים
 לא נמצאו במקור. לקרוא אותו לפני כל ייבוא.
 
+## תמונות
+
+```
+node scripts/medicine/images.mjs --limit=300 --kinds=condition,drug   # התמונה ש-Wikidata מצביע עליה (P18), מוויקימדיה קומונס
+node scripts/medicine/image-sheets.mjs                                # גיליונות של 20 תמונות לבדיקה בעין
+```
+
+רק CC0 / CC BY / CC BY-SA, כמו תמונות הצמחים; קובץ שהתיאור או הקטגוריות שלו אומרים "אדם" נפסל אוטומטית,
+ומה שהמילים לא תופסות תופסת העין: מספר התמונה בגיליון → הכותרת ב-`sheet-index.json` →
+`apps/web/features/medicine/medicine-image-rejects.json`, והריצה הבאה מוחקת אותה. מה שנפסל בעין עד עכשיו:
+פרצופים, תצלומי חולים, יצירות אמנות (הצעקה של מונק לחרדה), פוסטרים, תמונות של חיות ומפות. הקבצים ב-
+`apps/web/public/medicine/images/<qid>.jpg` (640px), הרשימה ב-`medicine-images.json`, ו-`build.mjs` מכניס
+אותה ל-`image` של הערך; הקרדיט מוצג מתחת לכל תמונה וב-`/reference/medicine/credits`. עד עכשיו נבדקו
+300 הערכים המקושרים ביותר; המשך: אותה פקודה עם `--limit` גדול יותר, ואז הגיליונות.
+
 ## אישור של איש מקצוע
 
 `status` של ערך: `draft` → `cross_checked` מגיעים מהצנרת; `verified` ו-`flagged` הם פסק דין של אדם
