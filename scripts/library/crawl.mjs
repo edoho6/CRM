@@ -128,6 +128,8 @@ async function crawlSite(site, state) {
       language: null,
       licence_note: site.note ?? null,
       fetched_at: new Date().toISOString(),
+      etag: page.etag,
+      last_modified: page.lastModified,
     };
     if (dry) {
       log(`crawl: ${url} — ${chunks.length} passage(s) (dry)`);

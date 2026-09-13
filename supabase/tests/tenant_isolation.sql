@@ -583,6 +583,13 @@ begin
   exception
     when insufficient_privilege then null;
   end;
+  begin
+    perform public.library_touch_source(v_lib, null, null);
+    raise exception 'FAIL: a clinic member refreshed a library source';
+  exception
+    when insufficient_privilege then null;
+    when undefined_function then null; -- before migration 47
+  end;
   perform public.library_log_query('no_sources', '[]'::jsonb, null, null, null, null);
   select count(*) into v_count from public.library_queries where clinic_id = v_clinic_a and user_id = v_user_a;
   if v_count <> 1 then raise exception 'FAIL: the library log did not record the caller''s own clinic'; end if;

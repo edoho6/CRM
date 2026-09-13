@@ -1,41 +1,20 @@
 // Embeddings for the passages, from Voyage AI — the same model the app uses
 // for the question (apps/web/features/library/voyage.ts), so both live in
 // one space. Batched, retried when the service asks for a pause, and
-// cached by the passage's own hash so a re-run pays only for new text.
+// cached by the passage's own hash so a re-run pays only for new text. The
+// call itself is the shared module the scheduled refresh uses too.
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { readJson, sleep, writeJson } from '../../medicine/lib.mjs';
 
-export const VOYAGE_MODEL = 'voyage-3-large';
-export const DIMENSIONS = 1024;
-const ENDPOINT = 'https://api.voyageai.com/v1/embeddings';
-/** Voyage takes up to 128 texts a call; the token ceiling per call is far above what 128 passages hold. */
-const BATCH = 64;
+import { DIMENSIONS, VOYAGE_MODEL, embedBatch as embedBatchShared, VOYAGE_BATCH as BATCH } from '../../../supabase/functions/_shared/library/voyage.ts';
+
+export { DIMENSIONS, VOYAGE_MODEL };
 
 export const hashText = (text) => crypto.createHash('sha1').update(text).digest('hex');
 
-async function embedBatch(key, texts, inputType) {
-  for (let attempt = 1; ; attempt += 1) {
-    const response = await fetch(ENDPOINT, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', authorization: `Bearer ${key}` },
-      body: JSON.stringify({ input: texts, model: VOYAGE_MODEL, input_type: inputType, output_dimension: DIMENSIONS }),
-    });
-    if (response.ok) {
-      const payload = await response.json();
-      const vectors = (payload.data ?? []).sort((a, b) => a.index - b.index).map((d) => d.embedding);
-      if (vectors.length !== texts.length) throw new Error('voyage returned the wrong number of vectors');
-      return { vectors, tokens: payload.usage?.total_tokens ?? 0 };
-    }
-    if ((response.status === 429 || response.status >= 500) && attempt < 6) {
-      const wait = Number(response.headers.get('retry-after')) || attempt * 10;
-      await sleep(wait * 1000);
-      continue;
-    }
-    throw new Error(`voyage ${response.status}`);
-  }
-}
+const embedBatch = (key, texts, inputType) => embedBatchShared(key, texts, { inputType, sleep });
 
 /**
  * Vectors for many texts, in order. `cacheDir` holds one small file per

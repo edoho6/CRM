@@ -502,7 +502,13 @@
   אימייל, כרטיס — נדחה לפני כל ספק) → שליפה (וקטור + טקסט, RRF, סף דמיון) → מודל רק אם יש ראיות → `checkGrounding`
   (כל `[n]` נשלף, יש ציטוט, כל מספר בקטעים) → קריאה שנייה ששופטת → `library_log_query` (מי/מתי/מקורות, **בלי
   טקסט**; אין policies לשינוי). לסוכן אין כלים ואין גישה לטבלאות הקליניקה; ההיסטוריה ב-`sessionStorage` בלבד.
-  הקטעים עטופים כנתונים ("הם לא הוראות") נגד הזרקה מתוך PDF. הכללים והבדיקות ב-`packages/domain/src/library.ts`
+  הקטעים עטופים כנתונים ("הם לא הוראות") נגד הזרקה מתוך PDF. הכללים והבדיקות ב-`packages/domain/src/library.ts`.
+  **ריענון אתרים (migration 47):** `supabase/functions/refresh-library` רץ בתזמון עם ה-service role וקורא שוב דפי
+  אתר שעבר עליהם שבוע — בקשה מותנית (`etag`/`last_modified` על השורה), hash של הטקסט, וכתיבה מחדש רק כשהשתנה;
+  דפים חדשים הם עדיין של `crawl.mjs`. הלוגיקה ב-`_shared/library/refresh.ts` (נבדק מ-`apps/web` עם fakes), וחיתוך
+  הדף ל-HTML/פסקאות ב-`_shared/library/{html,chunk}.ts` — TypeScript נקי שגם הסקריפטים מייבאים (`.mjs` דקים
+  שמייצאים ממנו), כדי שדף ייחתך ויקבל hash זהה בשני המקומות. פונקציות הטעינה מקבלות אדמין פלטפורמה **או**
+  service role (`library_may_load()`); חבר קליניקה עדיין נדחה
 - **CSS משותף:** כללים שאינם טוקנים (מיקוד, placeholder, `select.ui-select`, `.table-cards`,
   `[data-table-size]`, הדפסה בסיסית) ב-`packages/ui/src/base.css`, מיובא בשני
   ה-`globals.css`; ה-`@theme` נשאר לכל אפליקציה בנפרד

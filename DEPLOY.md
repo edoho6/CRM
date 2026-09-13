@@ -219,6 +219,27 @@ Generate new private key** ← הקובץ שיורד. ב-Supabase ← **Edge Fun
 מטופלים; ביומן (`/library/activity`) נרשם מי שאל ומתי, לא מה. הקבצים הם שלך; אתרים ייכנסו רק מרשימה שתמלא,
 ובאחריותך שיש לך זכות להשתמש בהם.
 
+## ריענון אוטומטי של אתרי הספרייה
+
+דף מאתר שנטען לספרייה נקרא שוב אחרי שבוע, לבד, בתוך Supabase (Edge Function בשם `refresh-library`): בקשה
+מותנית, כך שדף שלא השתנה עולה לאתר תשובת "לא השתנה" ותו לא; דף שכן השתנה נחתך, מוטמע ונכתב מחדש. דפים
+חדשים באתר עדיין נאספים בפקודת `node scripts/library/crawl.mjs`. ארבעה צעדים, פעם אחת:
+
+1. **SQL**: SQL editor → New query → להדביק את `39_library_refresh_to_run.sql` → Run, ואז שוב
+   `supabase/tests/tenant_isolation.sql` (צריך להסתיים ב-`ALL TENANT ISOLATION CHECKS PASSED`).
+2. **הפונקציה**, בטרמינל של VS Code (פעם ראשונה תבקש להתחבר ל-Supabase בדפדפן):
+
+   ```
+   npx supabase@latest functions deploy refresh-library --no-verify-jwt
+   ```
+
+3. **הסודות**: Supabase → Edge Functions → Secrets: `LIBRARY_REFRESH_SECRET` (מחרוזת אקראית ארוכה שממציאים
+   עכשיו), `VOYAGE_API_KEY` (אותו מפתח כמו ב-`.env.local`), `LIBRARY_CONTACT` (כתובת אימייל שבעלי אתרים
+   יוכלו לפנות אליה; מופיעה ב-User-Agent).
+4. **התזמון**: Database → Extensions → לוודא ש-`pg_cron` ו-`pg_net` דלוקים, ואז SQL editor → להדביק את
+   ההוראה `cron.schedule` שבסוף `39_library_refresh_to_run.sql` (בהערה), עם כתובת הפרויקט והסוד שנבחר → Run.
+   הפונקציה רצה כל שעה, עד ארבעים דפים בריצה, ולכן ספרייה של כמה מאות דפים נבדקת כולה בכל שבוע.
+
 ## מה בודקים אחרי העלייה
 
 1. `https://<כתובת-המערכת>/he/login` — כניסה עם המשתמש הרגיל שלך. אם יש שגיאה — 90% זה משתני סביבה: לבדוק שאין רווח בסוף הערך, ולעשות Redeploy.
