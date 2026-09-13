@@ -72,6 +72,8 @@ export {
   type SignatureMethod,
   type SignatureValue,
 } from './signature-pad';
+export { SketchPad, SKETCH_COLORS, type SketchPadHandle, type SketchPadLabels, type SketchPaper } from './sketch-pad';
+export { SKETCH_SIZES, strokeHit, strokeWidth, type SketchStroke, type SketchPoint, type SketchTool } from './sketch-geometry';
 export { TableWrapper, Table, Th, Td, Tr } from './table';
 export { TableSizeControl, type TableSize } from './table-size';
 export { UiLabelsProvider, useUiLabels, type UiLabels } from './ui-labels';

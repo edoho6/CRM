@@ -1165,6 +1165,39 @@ const flows = {
     const ok = opened && /מטפורמין/.test(label) && /מטפורמין/.test(title);
     return { ok, detail: `chip "${label}", dialog "${title}"` };
   },
+  async sketchPad(page) {
+    // The pen icon in the header opens a page; a mouse stroke lands on it,
+    // undo takes it back, redo brings it back, and closing asks before
+    // discarding. Nothing is saved.
+    const opener = page.locator('[data-sketch-open]');
+    if ((await opener.count()) === 0) return { ok: false, detail: 'no pen icon in the header' };
+    await opener.click();
+    const canvas = page.locator('[role="dialog"] canvas');
+    await canvas.waitFor({ timeout: 8_000 });
+    const box = await canvas.boundingBox();
+    if (!box) return { ok: false, detail: 'canvas has no box' };
+    await page.mouse.move(box.x + box.width * 0.2, box.y + box.height * 0.3);
+    await page.mouse.down();
+    for (let i = 1; i <= 12; i += 1) {
+      await page.mouse.move(box.x + box.width * (0.2 + i * 0.04), box.y + box.height * (0.3 + Math.sin(i / 2) * 0.12));
+    }
+    await page.mouse.up();
+    await page.waitForTimeout(150);
+    const afterStroke = await canvas.getAttribute('data-sketch-empty');
+    const saveEnabled = await page.locator('[data-sketch-save]').isEnabled();
+    await page.locator('[data-sketch-undo]').click();
+    const afterUndo = await canvas.getAttribute('data-sketch-empty');
+    await page.locator('[data-sketch-redo]').click();
+    const afterRedo = await canvas.getAttribute('data-sketch-empty');
+    await page.keyboard.press('Escape');
+    const question = page.locator('[role="dialog"], [role="alertdialog"]').filter({ hasText: /לסגור בלי לשמור|Close without saving/ }).first();
+    const asked = await question.waitFor({ timeout: 5_000 }).then(() => true).catch(() => false);
+    if (asked) await question.locator('button', { hasText: /סגירה בלי שמירה|Close without saving/ }).click();
+    await page.waitForTimeout(400);
+    const stillOpen = await page.locator('[role="dialog"] canvas').count();
+    const ok = afterStroke === 'false' && saveEnabled && afterUndo === 'true' && afterRedo === 'false' && asked && stillOpen === 0;
+    return { ok, detail: `stroke empty=${afterStroke}, save ${saveEnabled ? 'enabled' : 'disabled'}, undo empty=${afterUndo}, redo empty=${afterRedo}, asked ${asked}, pads open after ${stillOpen}` };
+  },
   async dashboardNoSpinners(page) {
     // Widgets arrive with their numbers: nothing spins after the document
     // has loaded, because the page computed the first paint on the server.
@@ -1555,6 +1588,7 @@ async function main() {
     if (encounterIds[0]) {
       await visit(context, { route: `/encounters/${encounterIds[0]}`, locale: 'he', width: desktop, label: 'flow protocol-menu-dialog', after: flows.protocolMenuThenDialog });
       await visit(context, { route: `/encounters/${encounterIds[0]}`, locale: 'he', width: desktop, label: 'flow body-2d-3d', after: flows.bodyToggle });
+      await visit(context, { route: `/encounters/${encounterIds[0]}`, locale: 'he', width: desktop, label: 'flow sketch-pad', after: flows.sketchPad });
     }
     await visit(context, {
       route: '/', locale: 'he', width: desktop, label: 'dark mode dashboard',

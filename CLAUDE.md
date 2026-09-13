@@ -270,6 +270,18 @@
 - **חסימת שעות ביומן:** `schedule_blocks` = חלונות "לא זמין" (כמה ביום, סיבה
   לכל אחד), מקוזזים משעות העבודה. `schedule_exceptions` נשאר ליום שלם או
   ל"פתוח רק בין" מהגדרות. הלוגיקה ב-`availability.ts` בלבד, עם בדיקות
+- **כתיבה בעט בדף הטיפול:** `packages/ui/src/sketch-pad.tsx` הוא המנוע (Pointer Events לעט, אצבע ועכבר כאחד;
+  `setPointerCapture`; `getCoalescedEvents` כדי שקו מהיר של Apple Pencil יהיה עקום ולא שבור; רוחב לפי לחץ רק
+  כש-`pointerType === 'pen'`; ברגע שזוהה עט, אצבע לא מציירת — מתג "עט בלבד" מציג ומאפשר לכבות; הקווים נשמרים
+  כנקודות, ולכן מחק מוחק קו שלם, ביטול/חזרה הם היסטוריה של הרשימה, והייצוא מצייר הכול מחדש פי 2 על דף לבן).
+  החישובים ב-`sketch-geometry.ts` (נבדק ב-`lib/sketch-geometry.test.ts`). הנייר לבן אמיתי (`#ffffff` inline) ולא
+  `bg-white` — הדיו קבוע והתמונה הנשמרת לבנה, גם במצב כהה. בדף הטיפול: `features/encounters/sketches.tsx` —
+  אייקון `PenLine` קטן בחריץ `encounter-header-sketch` (חריץ שני לפני `encounter-header-tools`, כדי שמתג הסידור
+  יישאר אחרון), פאנל "כתב יד" בעמודת הצד, והדף נשמר כ-PNG ב-`patient_documents` עם `category = 'sketch'`
+  (migration 46) ו-`encounter_id` — אותו bucket, אותו RLS, אותו יומן גישה. עריכה = דף חדש ואז מחיקת הישן,
+  והתמונה לעריכה מגיעה דרך `sketch-actions.ts` (`loadSketchImage`, data URL) ולא מ-`/api/documents` — הנתיב
+  מפנה לכתובת אחסון ב-origin אחר, ותמונה כזו "מכתימה" את ה-canvas ומונעת ייצוא. ה-smoke (`sketchPad`) מצייר קו
+  בעכבר, מבטל, מחזיר וסוגר בלי לשמור
 - **תמונות עם זום/גרירה:** `features/encounters/zoom-frame.tsx`. שם, ורק שם,
   הקואורדינטות פיזיות (`left`/`top`) ולא לוגיות — לתצלום אין כיוון קריאה,
   והזזה שמתהפכת עם העמוד היא באג. מאזין `wheel` נרשם ידנית עם

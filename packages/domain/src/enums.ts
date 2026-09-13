@@ -67,6 +67,7 @@ export const DOCUMENT_CATEGORIES = [
   'lab_result',
   'id_scan',
   'tongue',
+  'sketch',
   'other',
 ] as const;
 export type DocumentCategory = (typeof DOCUMENT_CATEGORIES)[number];

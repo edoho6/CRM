@@ -24,6 +24,7 @@ import { getClinicScope } from '@/lib/session';
 import { logRecordAccess } from '@/lib/access-log';
 import { EncounterForm } from '@/features/encounters/encounter-form';
 import type { TonguePhoto } from '@/features/encounters/tongue-photos';
+import type { Sketch } from '@/features/encounters/sketches';
 import { prescriptionKey } from '@/features/encounters/prescription-key';
 import { formulaPrimaryName, herbPrimaryName } from '@/lib/display';
 import { DispensePanel } from '@/features/inventory/dispense-panel';
@@ -112,6 +113,12 @@ interface TonguePhotoRow {
   encounter: { encounter_date: string } | null;
 }
 
+/** A page written by hand at this treatment. */
+interface SketchRow {
+  id: string;
+  created_at: string;
+}
+
 export default async function EncounterPage({
   params,
 }: {
@@ -146,6 +153,7 @@ export default async function EncounterPage({
     previousResult,
     stepsResult,
     tonguePhotosResult,
+    sketchesResult,
     signaturesResult,
   ] = await Promise.all([
       scope.supabase.from('tcm_notes').select('*').eq('encounter_id', id).maybeSingle<TcmNote>(),
@@ -263,6 +271,17 @@ export default async function EncounterPage({
         .order('created_at', { ascending: false })
         .limit(24)
         .returns<TonguePhotoRow[]>(),
+      // The pages written by hand at this treatment, oldest first. Until
+      // migration 46 has run no row can carry the category, and the panel
+      // simply shows none.
+      scope.supabase
+        .from('patient_documents')
+        .select('id, created_at')
+        .eq('encounter_id', id)
+        .eq('category', 'sketch')
+        .order('created_at', { ascending: true })
+        .limit(50)
+        .returns<SketchRow[]>(),
       // The signatures this record carried before it was reopened, newest
       // first. Until migration 38 has run the table does not exist, the
       // query fails, and the record simply shows no history of reopening.
@@ -392,6 +411,11 @@ export default async function EncounterPage({
     date: row.encounter?.encounter_date ?? row.created_at.slice(0, 10),
   }));
 
+  const sketches: Sketch[] = (sketchesResult.data ?? []).map((row) => ({
+    id: row.id,
+    date: encounter.encounter_date ?? row.created_at.slice(0, 10),
+  }));
+
   /** Oldest first, so a session's number never changes when a later one is added. */
   const steps: EncounterStep[] = (stepsResult.data ?? []).map((row) => ({
     id: row.id,
@@ -443,6 +467,9 @@ export default async function EncounterPage({
             {/* The switch that arranges both columns lands here, last — the
                 far corner of the header — so the columns start level with
                 each other and the switch is out of the way of the record. */}
+            {/* Two slots, so the pen stays before the arrange switch, which is
+                always the last control in the corner. */}
+            <HeaderToolsSlot id="encounter-header-sketch" />
             <HeaderToolsSlot id="encounter-header-tools" />
           </>
         }
@@ -460,6 +487,7 @@ export default async function EncounterPage({
         protocols={protocolsResult.data ?? []}
         previousEncounters={previousEncounters}
         tonguePhotos={tonguePhotos}
+        sketches={sketches}
         reopened={signaturesResult.data?.[0] ?? null}
         dispensePanel={
           <DispensePanel

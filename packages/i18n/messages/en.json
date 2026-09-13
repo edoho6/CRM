@@ -1043,7 +1043,8 @@
       "examination": "Tongue and pulse",
       "compare": "Versus earlier treatments",
       "dispensing": "Herbs",
-      "forms": "Questionnaires"
+      "forms": "Questionnaires",
+      "sketches": "Handwriting"
     },
     "sessionNav": "Move between treatments",
     "sessionNumber": "Session {number} of {total}",
@@ -1060,6 +1061,62 @@
     "reopenedNotice": {
       "title": "This treatment was reopened after signing",
       "body": "Signed {signedAt}, reopened {reopenedAt}. Reason: {reason}. Sign it again when done."
+    },
+    "sketches": {
+      "title": "Handwriting",
+      "open": "Write with a pen",
+      "openHint": "Opens a page to write or draw on with a pen, a finger or a mouse. Saved to the patient’s file as a picture.",
+      "dialogTitle": "Writing page",
+      "editTitle": "Edit the page",
+      "save": "Save to the file",
+      "saving": "Saving…",
+      "saved": "The page was saved to the patient’s file",
+      "empty": "No handwritten pages for this treatment yet.",
+      "emptyPage": "The page is empty. Write on it, then save.",
+      "edit": "Edit",
+      "view": "Open",
+      "remove": "Delete the page",
+      "deleted": "The page was deleted",
+      "uploadFailed": "The page could not be saved. Try again.",
+      "alt": "Handwritten page, {date}",
+      "discard": "Close without saving?",
+      "discardBody": "What was written on the page will be lost.",
+      "discardConfirm": "Close without saving",
+      "keepEditing": "Keep writing",
+      "pad": {
+        "canvas": "Writing page",
+        "tool": "Tool",
+        "pen": "Pen",
+        "highlighter": "Highlighter",
+        "eraser": "Eraser",
+        "color": "Colour",
+        "width": "Width",
+        "thin": "Thin",
+        "medium": "Medium",
+        "thick": "Thick",
+        "paper": "Paper",
+        "blank": "Blank",
+        "lines": "Lines",
+        "grid": "Grid",
+        "undo": "Undo the last stroke",
+        "redo": "Redo the stroke",
+        "clear": "Clear the page",
+        "penOnly": "Pen only",
+        "penOnlyHint": "When on, a finger or a palm does not draw. Turns on by itself once a pen is detected.",
+        "colors": {
+          "black": "Black",
+          "blue": "Blue",
+          "red": "Red",
+          "green": "Green",
+          "orange": "Orange",
+          "violet": "Violet"
+        }
+      },
+      "count": "{count, plural, one {One page} other {# pages}}",
+      "pages": "This treatment’s pages",
+      "zoomIn": "Zoom in",
+      "zoomOut": "Zoom out",
+      "zoomHint": "Wheel to zoom, drag to move, double-click to reset. Keyboard: + − and the arrows."
     }
   },
   "billing": {
@@ -1214,7 +1271,8 @@
       "lab_result": "Lab result",
       "id_scan": "ID scan",
       "tongue": "Tongue photo",
-      "other": "Other"
+      "other": "Other",
+      "sketch": "Handwriting"
     },
     "uploadedAt": "Uploaded",
     "download": "Download",

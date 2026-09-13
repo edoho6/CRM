@@ -41,6 +41,7 @@ import {
   type CurrentPrescription,
 } from './current-prescription-context';
 import { TonguePhotos, type TonguePhoto } from './tongue-photos';
+import { Sketches, type Sketch } from './sketches';
 import { SidePanels } from './side-panels';
 import { ProtocolPicker } from './protocol-picker';
 import { saveProtocolFromEncounter } from './protocol-actions';
@@ -143,6 +144,7 @@ export function EncounterForm({
   protocols,
   previousEncounters,
   tonguePhotos,
+  sketches,
   reopened = null,
   dispensePanel,
   formsPanel,
@@ -161,6 +163,8 @@ export function EncounterForm({
   previousEncounters: PreviousEncounter[];
   /** Every tongue photograph on this patient's file, newest first. */
   tonguePhotos: TonguePhoto[];
+  /** The pages written by hand at this treatment, oldest first. */
+  sketches: Sketch[];
   /** The signature this record carried before it was last reopened, if it ever was. */
   reopened?: EncounterSignature | null;
   dispensePanel?: React.ReactNode;
@@ -886,6 +890,18 @@ export function EncounterForm({
               ),
             },
             { id: 'forms', title: tPanels('forms'), node: <div>{formsPanel}</div> },
+            {
+              id: 'sketches',
+              title: tPanels('sketches'),
+              node: (
+                <Sketches
+                  patientId={patientId}
+                  encounterId={encounterId}
+                  sketches={sketches}
+                  disabled={isSigned}
+                />
+              ),
+            },
           ]}
         />
       </div>
