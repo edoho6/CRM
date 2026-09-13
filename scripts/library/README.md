@@ -74,3 +74,13 @@ node scripts/library/crawl.mjs --dry --limit=20       # ניסיון על עשר
 
 Voyage: כמה סנטים לאלף עמודים (ויש מכסה חינם). Anthropic: כמה סנטים לשאלה (שתי קריאות: תשובה ובדיקה).
 המכסה: 60 שאלות למטפל ליום (`LIBRARY_LIMITS.dailyQuota`).
+
+## מה נקרא, ומה עובר דרך Drive
+
+PDF, Word (.docx וגם .doc), RTF, מצגות (pptx), גיליונות (xlsx), EPUB, txt/md, וקובצי Google Docs/Slides/Sheets.
+PDF סרוק (בלי שכבת טקסט), תמונה (jpg/png/tiff/webp) ו-.doc שהקורא המקומי לא פותח נשלחים ל-Drive: עותק זמני
+נוצר בתיקייה `LIBRARY_OCR_FOLDER_ID` (תיקייה של המשתמש, משותפת לחשבון השירות כ-Editor), גוגל מריצה OCR/המרה,
+הטקסט מיוצא והעותק נמחק. ספר סרוק נחתך ל-12 עמודים לחלק. הטקסט נשמר ב-`.cache/library/text/` לפי hash של
+הקובץ, ולכן OCR רץ פעם אחת לכל קובץ. בלי תיקיית OCR — הקבצים האלה נספרים ונרשמים ב-`.cache/library/needs-ocr.json`.
+
+`node scripts/library/ingest.mjs --only=<מילה>` — רק קבצים שהנתיב שלהם מכיל את המילה (לבדיקה של קובץ אחד).

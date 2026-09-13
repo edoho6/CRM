@@ -36,8 +36,9 @@ export async function embedBatch(key: string, texts: readonly string[], options:
       if (vectors.length !== texts.length) throw new Error('voyage returned the wrong number of vectors');
       return { vectors, tokens: payload.usage?.total_tokens ?? 0 };
     }
-    if ((response.status === 429 || response.status >= 500) && attempt < 6) {
-      const wait = Number(response.headers.get('retry-after')) || attempt * 10;
+    if ((response.status === 429 || response.status >= 500) && attempt < 10) {
+      // A free-tier key allows a few requests a minute; wait as told, or longer each time.
+      const wait = Number(response.headers.get('retry-after')) || Math.min(120, attempt * 15);
       await sleep(wait * 1000);
       continue;
     }

@@ -30,14 +30,17 @@
   "devDependencies": {
     "axe-core": "^4.13.0",
     "jsdom": "^30.0.1",
+    "jszip": "3.10.1",
     "mammoth": "1.11.0",
+    "pdf-lib": "1.17.1",
     "pdfjs-dist": "4.10.38",
     "playwright-core": "1.56.1",
     "prettier": "^3.4.2",
     "rimraf": "^6.0.1",
     "supabase": "^2.116.0",
     "turbo": "2.10.12",
-    "typescript": "5.9.3"
+    "typescript": "5.9.3",
+    "word-extractor": "1.0.4"
   },
   "pnpm": {
     "overrides": {

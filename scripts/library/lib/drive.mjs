@@ -10,18 +10,38 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import { sleep } from '../../medicine/lib.mjs';
 
-const SCOPE = 'https://www.googleapis.com/auth/drive.readonly';
+// Read the folder it was shown; create and delete files of its own (the conversions in convert.mjs). Never the practitioner's files.
+const SCOPE = 'https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/drive.file';
 const API = 'https://www.googleapis.com/drive/v3';
 const FOLDER = 'application/vnd.google-apps.folder';
 const DOCX = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
-/** What the library reads, and what a Google-native file is exported as. */
+const PPTX = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+const XLSX = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+
+/**
+ * What the library reads (the kind extract.mjs reads it as), and what a
+ * Google-native file is exported as. An image, and a PDF that turns out to
+ * be a scan, go to Drive's OCR (convert.mjs) instead.
+ */
 export const READABLE = {
   'application/pdf': { ext: 'pdf' },
   [DOCX]: { ext: 'docx' },
+  'application/msword': { ext: 'doc' },
+  'application/rtf': { ext: 'rtf' },
+  'text/rtf': { ext: 'rtf' },
+  [PPTX]: { ext: 'pptx' },
+  [XLSX]: { ext: 'xlsx' },
+  'application/epub+zip': { ext: 'epub' },
   'text/plain': { ext: 'txt' },
   'text/markdown': { ext: 'md' },
+  'image/jpeg': { ext: 'image' },
+  'image/png': { ext: 'image' },
+  'image/tiff': { ext: 'image' },
+  'image/webp': { ext: 'image' },
   'application/vnd.google-apps.document': { ext: 'docx', exportAs: DOCX },
+  'application/vnd.google-apps.presentation': { ext: 'pptx', exportAs: PPTX },
+  'application/vnd.google-apps.spreadsheet': { ext: 'xlsx', exportAs: XLSX },
 };
 
 const base64url = (input) => Buffer.from(input).toString('base64url');
@@ -59,7 +79,7 @@ async function driveGet(token, url) {
  * Every readable file under the folder, subfolders included, with the path
  * it was found at. Folders the account cannot see simply do not appear.
  */
-export async function listFolder(token, folderId, prefix = '') {
+export async function listFolder(token, folderId, prefix = '', skipped = {}) {
   const files = [];
   let pageToken = null;
   do {
@@ -74,11 +94,16 @@ export async function listFolder(token, folderId, prefix = '') {
     const payload = await (await driveGet(token, `${API}/files?${params}`)).json();
     for (const file of payload.files ?? []) {
       const filePath = prefix ? `${prefix}/${file.name}` : file.name;
-      if (file.mimeType === FOLDER) files.push(...(await listFolder(token, file.id, filePath)));
+      if (file.mimeType === FOLDER) files.push(...(await listFolder(token, file.id, filePath, skipped)));
+      // Word keeps a lock file (~$name.docx) beside an open document; it is not a document.
+      else if (/^~$/.test(file.name)) continue;
       else if (READABLE[file.mimeType]) files.push({ ...file, path: filePath, ext: READABLE[file.mimeType].ext, exportAs: READABLE[file.mimeType].exportAs ?? null });
+      else skipped[file.mimeType] = (skipped[file.mimeType] ?? 0) + 1;
     }
     pageToken = payload.nextPageToken ?? null;
   } while (pageToken);
+  // The kinds left out ride along on the array, for one log line at the top level.
+  if (!prefix) files.skipped = skipped;
   return files;
 }
 

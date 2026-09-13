@@ -205,7 +205,12 @@ Generate new private key** ← הקובץ שיורד. ב-Supabase ← **Edge Fun
    6. ב-Google Drive: קליק ימני על התיקייה של הספרייה → Share → מדביקים את כתובת המייל → Viewer → Send.
    7. פותחים את התיקייה בדפדפן; הכתובת נגמרת ב-`/folders/<מזהה ארוך>`. את המזהה מוסיפים ל-`.env.local`:
       `LIBRARY_DRIVE_FOLDER_ID=<המזהה>`.
-4. **הטעינה**, בטרמינל של VS Code:
+4. **תיקייה ל-OCR** — בשביל סריקות, תמונות וקובצי Word ישנים (.doc): גוגל קורא אותם בעצמו, אבל לחשבון שירות אין
+   מקום אחסון משלו, ולכן הוא צריך תיקייה שלך שבה ייצור עותק זמני (נמחק שניות אחר כך). ב-Google Drive: New →
+   New folder → שם `OCR-temp` → קליק ימני → Share → כתובת חשבון השירות → **Editor** → Send. את מזהה התיקייה
+   (הסוף של הכתובת אחרי `/folders/`) מוסיפים ל-`.env.local`: `LIBRARY_OCR_FOLDER_ID=<המזהה>`. בלי זה קבצים כאלה
+   נספרים ונרשמים ב-`.cache/library/needs-ocr.json`, ולא נטענים.
+5. **הטעינה**, בטרמינל של VS Code:
 
    ```
    node scripts/library/ingest.mjs
