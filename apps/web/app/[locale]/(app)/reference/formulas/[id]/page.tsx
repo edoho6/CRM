@@ -31,6 +31,7 @@ import {
   herbPrimaryName,
 } from '@/lib/display';
 import { ReferenceNav } from '@/features/reference/reference-nav';
+import { FormulaComposition } from '@/features/inventory/formula-composition';
 import { pageTitle } from '@/lib/page-title';
 
 export const generateMetadata = pageTitle('inventory.formulas', 'single');
@@ -221,6 +222,15 @@ export default async function FormulaDetailPage({
       </section>
 
       <div className="space-y-5">
+        {/* The formula's character before its parts: by nature and by taste, counted by herb. */}
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('composition.title')}</CardTitle>
+          </CardHeader>
+          <CardBody>
+            <FormulaComposition herbs={items.map((item) => item.herb)} />
+          </CardBody>
+        </Card>
         <div>
           <Card>
             <CardHeader>

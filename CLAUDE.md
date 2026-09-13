@@ -388,6 +388,11 @@
 - **אייקוני מסך הבית:** `app/manifest.ts` + `app/apple-icon.png` + `public/icons/*.png` בשתי
   האפליקציות, מיוצרים מ-`app/icon.svg` ב-`node scripts/render-icons.mjs` (Edge headless,
   בלי ספריית תמונות). שינוי ב-SVG = להריץ שוב
+- **תרשימים:** צבעי תרשים הם משתני `--chart-*` ב-`globals.css` (בהיר וכהה בנפרד, לא הכהיה אוטומטית), ולפני שמוסיפים
+  צבע מריצים את בודק הפלטה של מיומנות dataviz על כל הסדרה בשני המצבים: אין שני צבעים סמוכים שקשה להבדיל ביניהם
+  בעיוורון צבעים, וכל פרוסה/עמודה נושאת תווית ומספר לידה — הצבע לעולם לא לבדו. עוגות הפורמולה
+  (`features/inventory/formula-composition.tsx`, החישוב ב-`packages/domain/src/formula-composition.ts`): לפי מספר
+  הצמחים, טבע מקופל לחמש רצועות (שמונה גוונים של אדום-כחול לא נבדלים), הרווח בין פרוסות הוא `--color-white`
 - **השעון של הדף, לא `Date.now()` בזמן ציור:** קומפוננטת client שמצוירת גם בשרת ומחליטה "באיחור"/"היום" לפי
   `new Date()` נשברת בהידרציה כשמשימה נופלת בין שני הציורים (React #418, לוח הבקרה ב-smoke). הדף מחשב
   `renderedAt = new Date().toISOString()` פעם אחת ומעביר אותו (`DashboardContextValue.renderedAt` →

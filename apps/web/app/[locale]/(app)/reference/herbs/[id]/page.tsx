@@ -402,7 +402,7 @@ export default async function HerbDetailPage({
                       <tr>
                         <SortTh sortKey="name">{tc('name')}</SortTh>
                         <SortTh sortKey="cat">{tFormulas('fields.tcmCategory')}</SortTh>
-                        <SortTh sortKey="dose">{tFormulas('dosage')}</SortTh>
+                        <SortTh sortKey="dose">{t('usedInDose')}</SortTh>
                       </tr>
                     </thead>
                     <SortBody locale={locale}>
@@ -419,15 +419,18 @@ export default async function HerbDetailPage({
                             }}
                           >
                             <Td data-card-title>
-                              <Link
-                                href={`/reference/formulas/${formula.id}`}
-                                className="font-medium text-jade-800 underline-offset-2 hover:underline"
-                              >
-                                {formulaPrimaryName(formula, locale as Locale)}
-                              </Link>
-                              {formulaChinese ? (
-                                <span className="ms-2 text-ink-600">{formulaChinese}</span>
-                              ) : null}
+                              {/* Pinyin and Chinese are one left-to-right run; a margin
+                                  alone vanished between them in the Hebrew page, so the
+                                  gap is a flex gap on a left-to-right box. */}
+                              <span dir="ltr" className="inline-flex flex-wrap items-baseline gap-x-3">
+                                <Link
+                                  href={`/reference/formulas/${formula.id}`}
+                                  className="font-medium text-jade-800 underline-offset-2 hover:underline"
+                                >
+                                  {formulaPrimaryName(formula, locale as Locale)}
+                                </Link>
+                                {formulaChinese ? <span className="text-ink-600">{formulaChinese}</span> : null}
+                              </span>
                               {use.notes ? (
                                 <span className="block text-sm text-ink-700">{use.notes}</span>
                               ) : null}

@@ -1282,7 +1282,8 @@
       "usedIn": "Appears in formulas",
       "usedInEmpty": "This herb is not part of any saved formula",
       "notStocked": "Not stocked",
-      "single": "Herb"
+      "single": "Herb",
+      "usedInDose": "Herb’s dose in the formula"
     },
     "category": {
       "raw_herb": "Raw herb",
@@ -1348,7 +1349,26 @@
       "clinical": "Clinical",
       "itemNotes": "Preparation note",
       "herbCount": "Herbs",
-      "single": "Formula"
+      "single": "Formula",
+      "composition": {
+        "title": "Composition",
+        "temperature": "Nature",
+        "tastes": "Tastes",
+        "lean": {
+          "warm": "Leans warm",
+          "cool": "Leans cool",
+          "balanced": "Balanced",
+          "unknown": "The herbs’ natures are not recorded"
+        },
+        "sides": "{warm} warm · {cool} cool · {neutral} neutral",
+        "detail": "By each herb’s recorded nature:",
+        "unknownTemperature": "{count, plural, one {One herb without a recorded nature} other {# herbs without a recorded nature}}",
+        "tasteHint": "By the number of herbs carrying each taste; a herb with several tastes counts for each.",
+        "unknownTaste": "{count, plural, one {One herb without a recorded taste} other {# herbs without a recorded taste}}",
+        "ariaTemperature": "Nature pie: {parts}",
+        "ariaTastes": "Taste pie: {parts}",
+        "none": "The formula’s herbs have no recorded nature or tastes yet. Add them on each herb, and the pies appear here."
+      }
     },
     "batches": {
       "noHerbsAction": "Add a herb to the catalogue",

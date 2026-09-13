@@ -6,3 +6,4 @@ export * from './forms/render';
 export * from './dates-tz';
 export * from './shell';
 export * from './medicine-mentions';
+export * from './formula-composition';

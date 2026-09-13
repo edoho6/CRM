@@ -28,7 +28,7 @@ export type ReferenceCard =
 const UUID = /^[0-9a-f-]{36}$/i;
 
 const FORMULA_SELECT =
-  '*, items:herb_formula_items(*, herb:herbs(id, pinyin_name, chinese_name, english_name, hebrew_name, default_unit))';
+  '*, items:herb_formula_items(*, herb:herbs(id, pinyin_name, chinese_name, english_name, hebrew_name, default_unit, temperature, tastes))';
 
 /** A clean, bounded lookup value; anything else is not a name. */
 function term(value: string | null | undefined): string | null {

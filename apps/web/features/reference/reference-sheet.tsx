@@ -10,6 +10,7 @@ import type { AcupuncturePoint, HerbFormulaWithItems } from '@clinic/db/types';
 import { formulaChineseName, formulaPrimaryName, herbBotanicalName, herbChineseName, herbPrimaryName } from '@/lib/display';
 import { HerbMonographBody } from '@/features/inventory/herb-monograph-sheet';
 import { MedicineBody } from '@/features/medicine/medicine-body';
+import { FormulaComposition } from '@/features/inventory/formula-composition';
 import { loadReferenceCard, type ReferenceCard, type ReferenceTarget } from './reference-card-action';
 import { ReferenceChip, ReferenceSheetContext, useReferenceSheet } from './reference-context';
 
@@ -233,6 +234,15 @@ function FormulaBody({ formula }: { formula: HerbFormulaWithItems }) {
         ) : null}
         {formula.source_text ? <DetailRow label={t('fields.sourceText')}>{formula.source_text}</DetailRow> : null}
       </dl>
+
+      {items.length > 0 ? (
+        <section aria-labelledby="reference-formula-composition" className="space-y-1.5">
+          <h3 id="reference-formula-composition" className="text-sm font-semibold text-ink-900">
+            {t('composition.title')}
+          </h3>
+          <FormulaComposition herbs={items.map((item) => item.herb)} />
+        </section>
+      ) : null}
 
       {items.length > 0 ? (
         <section aria-labelledby="reference-formula-items" className="space-y-1.5">

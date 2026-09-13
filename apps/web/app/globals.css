@@ -297,6 +297,22 @@
   /* Tells the browser to draw scrollbars, form controls and the caret dark. */
   color-scheme: dark;
 
+  /* The chart colours, chosen for the dark card rather than dimmed: the
+     same validator, the dark surface. */
+  --chart-temp-hot: #e11d48;
+  --chart-temp-warm: #d97706;
+  --chart-temp-neutral: #9ca3af;
+  --chart-temp-cool: #0284c7;
+  --chart-temp-cold: #7c3aed;
+  --chart-taste-sweet: #d97706;
+  --chart-taste-bitter: #0d9488;
+  --chart-taste-acrid: #ef4444;
+  --chart-taste-sour: #a16207;
+  --chart-taste-salty: #3b82f6;
+  --chart-taste-bland: #78716c;
+  --chart-taste-astringent: #8b5cf6;
+  --chart-taste-aromatic: #ec4899;
+
   /* Surfaces. `white` is the raised surface a card sits on; ink-50 is the page
      behind it, and is darker so the cards read as lifted rather than flush. */
   --color-white: #1e2225;
@@ -429,6 +445,29 @@
    not rendered — the portal, print, a desk. */
 :root {
   --bottom-bar: 0px;
+}
+
+/* Chart colours (the formula's two pies). Nature is a diverging scale —
+   two warm reds, a grey middle, two cool blues — and taste is eight fixed
+   hues, one per taste, in the order the tastes are listed. Both sets were
+   run through the palette validator (dataviz skill) in each theme: every
+   adjacent pair stays apart under the three colour-vision deficiencies,
+   and the one grey is the deliberate neutral of a diverging scale. Charts
+   never rely on these alone: every wedge has its label and count beside it. */
+:root {
+  --chart-temp-hot: #b91c1c;
+  --chart-temp-warm: #f97316;
+  --chart-temp-neutral: #6b7280;
+  --chart-temp-cool: #0ea5e9;
+  --chart-temp-cold: #1d4ed8;
+  --chart-taste-sweet: #d97706;
+  --chart-taste-bitter: #0d9488;
+  --chart-taste-acrid: #dc2626;
+  --chart-taste-sour: #ca8a04;
+  --chart-taste-salty: #2563eb;
+  --chart-taste-bland: #78716c;
+  --chart-taste-astringent: #7c3aed;
+  --chart-taste-aromatic: #db2777;
 }
 
 @media (width < 64rem) {
