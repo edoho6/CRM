@@ -597,10 +597,11 @@ export interface HerbFormulaItem {
 }
 
 export interface HerbFormulaItemWithHerb extends HerbFormulaItem {
-  herb: Pick<
-    Herb,
-    'id' | 'pinyin_name' | 'chinese_name' | 'english_name' | 'hebrew_name' | 'default_unit'
-  > | null;
+  /** Nature and tastes are there when the reader asked for them (the formula card draws its pies from them). */
+  herb:
+    | (Pick<Herb, 'id' | 'pinyin_name' | 'chinese_name' | 'english_name' | 'hebrew_name' | 'default_unit'> &
+        Partial<Pick<Herb, 'temperature' | 'tastes'>>)
+    | null;
 }
 
 export interface HerbFormulaWithItems extends HerbFormula {
@@ -1398,6 +1399,11 @@ export interface MedEntry {
   quotes: MedQuote[];
   sources: MedSource[];
   status: MedStatus;
+  /** A person's verdict (verified or flagged): when, who — by id and by the name they had — and the note that says what was wrong. */
+  reviewed_at?: string | null;
+  reviewed_by?: string | null;
+  reviewed_by_name?: string | null;
+  review_note?: string | null;
   /** identity: codes two sources file the entry under (e.g. "mesh:D008687", "rxcui:6809") — the entry is the right thing, whatever the facts say. */
   cross_check: { sources: number; agree: string[]; conflicts: string[]; identity_confirmed?: boolean; identity?: string[] } | null;
   hebrew_meta: {

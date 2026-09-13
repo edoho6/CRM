@@ -106,6 +106,19 @@
       "resolveTitle": "Mark the request as handled?",
       "resolveBody": "The requester’s address is removed from the record. The request itself stays as a record.",
       "resolved": "The request was marked as handled."
+    },
+    "medicine": {
+      "title": "Western medicine",
+      "entries": "{count, plural, =0 {No entries} one {One entry} other {# entries}}",
+      "lastImport": "Last import: {date}",
+      "never": "The reference has not been loaded yet",
+      "byKind": "By kind",
+      "verified": "Verified",
+      "flagged": "Need correction",
+      "crossChecked": "Cross-checked",
+      "draft": "Not yet cross-checked",
+      "flaggedList": "Entries flagged for correction",
+      "noFlagged": "No entries are waiting for a correction."
     }
   },
   "confirm": {
@@ -2365,12 +2378,14 @@
     "status": {
       "draft": "Not yet cross-checked",
       "cross_checked": "{count, plural, one {Cross-checked with one source} other {Cross-checked across # sources}}",
-      "verified": "Verified"
+      "verified": "Verified",
+      "flagged": "Needs correction"
     },
     "statusHint": {
       "draft": "The information comes from one source, or the sources have not yet been checked against each other.",
       "cross_checked": "At least two independent sources agree on the central facts.",
-      "verified": "A professional has read the entry and approved it."
+      "verified": "A professional has read the entry and approved it.",
+      "flagged": "A professional found a problem in the entry; the note says what."
     },
     "hebrewNote": {
       "manual": "The Hebrew text was written by hand from the sources below and has not yet been verified by a professional.",
@@ -2494,6 +2509,20 @@
     },
     "mentions": {
       "label": "In the medical reference"
+    },
+    "review": {
+      "title": "Professional review",
+      "hint": "These buttons are for whoever runs the service, after a physician or a pharmacist has read the entry.",
+      "verify": "Approve the entry",
+      "flag": "Flag for correction",
+      "clear": "Remove the mark",
+      "notePlaceholder": "What needs correcting? (required when flagging)",
+      "noteLabel": "Note",
+      "noteRequired": "A flag needs a note saying what to correct.",
+      "verifiedBy": "Approved by {name} · {date}",
+      "flaggedBy": "Flagged by {name} · {date}",
+      "someone": "a team member",
+      "saved": "The mark was saved"
     }
   },
   "accessibility": {

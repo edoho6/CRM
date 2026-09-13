@@ -629,7 +629,8 @@ export type ShopSizeKind = (typeof SHOP_SIZE_KINDS)[number];
 export const MED_KINDS = ['condition', 'symptom', 'drug', 'lab_test'] as const;
 export type MedKind = (typeof MED_KINDS)[number];
 
-export const MED_STATUSES = ['draft', 'cross_checked', 'verified'] as const;
+/** draft → cross_checked come from the pipeline; verified and flagged are a person's verdict and survive an import. */
+export const MED_STATUSES = ['draft', 'cross_checked', 'verified', 'flagged'] as const;
 export type MedStatus = (typeof MED_STATUSES)[number];
 
 export const MED_RELATIONS = ['treats', 'symptom_of', 'side_effect', 'class', 'diagnoses', 'related'] as const;

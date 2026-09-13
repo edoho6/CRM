@@ -45,6 +45,8 @@ export const MED_STATUS_TONES: Record<MedStatus, StatusTone> = {
   draft: 'neutral',
   cross_checked: 'info',
   verified: 'success',
+  // A person found something wrong: amber, and the note says what.
+  flagged: 'warning',
 };
 
 export const TREATMENT_STATUS_TONES: Record<TreatmentStatus, StatusTone> = {

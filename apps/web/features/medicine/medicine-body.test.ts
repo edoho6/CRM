@@ -94,6 +94,17 @@ describe('MedicineBody with the seed corpus', () => {
     expect(status).toBeGreaterThan(overview);
   });
 
+  it('puts a reviewer’s flag and note at the top, and an approval with the sources', () => {
+    const base = byQid('Q2840');
+    const flagged = render({ ...base, status: 'flagged', reviewed_at: '2026-09-13T08:00:00Z', reviewed_by_name: 'ד"ר לוי', review_note: 'המינון בסעיף הטיפול שגוי' });
+    expect(flagged).toContain('לתיקון');
+    expect(flagged).toContain('המינון בסעיף הטיפול שגוי');
+    expect(flagged.indexOf('סומן לתיקון על ידי ד&quot;ר לוי')).toBeLessThan(flagged.indexOf('סקירה'));
+    const verified = render({ ...base, status: 'verified', reviewed_at: '2026-09-13T08:00:00Z', reviewed_by_name: 'ד"ר לוי', review_note: null });
+    expect(verified).toContain('אושר על ידי ד&quot;ר לוי');
+    expect(verified).not.toContain('סומן לתיקון');
+  });
+
   it('shows a lab test with its LOINC code and the laboratory-range warning', () => {
     const row = rows.find((entry) => entry.kind === 'lab_test' && entry.identifiers.loinc);
     if (!row) return; // the corpus has no lab tests yet

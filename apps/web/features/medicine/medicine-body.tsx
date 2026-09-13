@@ -152,8 +152,24 @@ export function MedicineBody({
   // The overview opens by itself; a drug has none, and its "what it is for" is the same first step.
   const openKey = sectionKeys.includes('overview') ? 'overview' : sectionKeys[0];
 
+  // What a reviewer said, in words, with the note: shown at the top when the
+  // entry is flagged (a reader must not miss it) and with the sources otherwise.
+  const verdict =
+    entry.reviewed_at && (entry.status === 'verified' || entry.status === 'flagged')
+      ? t(entry.status === 'verified' ? 'review.verifiedBy' : 'review.flaggedBy', {
+          name: entry.reviewed_by_name ?? t('review.someone'),
+          date: formatDate(new Date(entry.reviewed_at)),
+        })
+      : null;
+
   return (
     <div className="space-y-5">
+      {entry.status === 'flagged' ? (
+        <Alert tone="warning" title={t('status.flagged')}>
+          {verdict ? <span className="block">{verdict}</span> : null}
+          {entry.review_note ? <span className="block">{entry.review_note}</span> : null}
+        </Alert>
+      ) : null}
       <div className="space-y-2">
         {showSummaryHe ? (
           <p className="text-base text-ink-900">{entry.summary_he}</p>
@@ -249,6 +265,7 @@ export function MedicineBody({
       <Collapsible titleAs={headingLevel} title={t('sources.title')} badge={<MedicineStatusBadge entry={entry} />}>
         <div className="space-y-3">
           <div className="space-y-1 text-xs text-ink-600">
+            {verdict && entry.status === 'verified' ? <p className="text-ink-800">{verdict}</p> : null}
             <p>{hebrewNote}</p>
             {checks.length ? (
               <ul className="flex flex-wrap gap-x-3 gap-y-1">

@@ -144,6 +144,8 @@ Generate new private key** ← הקובץ שיורד. ב-Supabase ← **Edge Fun
    ואז את `supabase/tests/tenant_isolation.sql` — כל השורות צריכות להיות `ok`.
    אם 34 כבר הורץ פעם, להריץ במקומו את `35_medicine_israel_to_run.sql` (מוסיף את השכבה הישראלית
    ואת בדיקות המעבדה לטבלאות הקיימות); מי שמריץ את 34 בפעם הראשונה לא צריך את 35.
+   ואחריהם, בכל מקרה, את `36_medicine_review_to_run.sql`: הכפתורים "אישור הערך" ו"סימון לתיקון" בדף
+   הערך (למי שברשימת אדמיני הפלטפורמה) והכרטיס ב-`/platform`.
 2. בטרמינל של VS Code (תפריט Terminal ← New Terminal), פקודה אחת:
 
    ```

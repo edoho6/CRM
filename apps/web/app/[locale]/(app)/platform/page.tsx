@@ -7,6 +7,7 @@ import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
 import { pageTitle } from '@/lib/page-title';
 import { DeletionRequests, type DeletionRequestRow } from './deletion-requests';
+import { MedicinePlatformCard } from '@/features/medicine/platform-card';
 
 export const generateMetadata = pageTitle('platform', 'title');
 
@@ -116,6 +117,10 @@ export default async function PlatformPage({ params }: { params: Promise<{ local
           </SortableTable>
         </TableWrapper>
       )}
+
+      <div className="mt-6">
+        <MedicinePlatformCard db={scope.supabase} />
+      </div>
 
       <div className="mt-6">
         <DeletionRequests rows={requests} />

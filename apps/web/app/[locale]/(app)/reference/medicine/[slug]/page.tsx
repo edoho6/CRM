@@ -5,6 +5,7 @@ import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
 import { ReferenceNav } from '@/features/reference/reference-nav';
 import { MedicineBody, MedicineKindIcon } from '@/features/medicine/medicine-body';
+import { MedicineReviewBox } from '@/features/medicine/review-box';
 import { loadMedicineEntry, loadMedicineLinks } from '@/features/medicine/queries';
 import { pageTitle } from '@/lib/page-title';
 
@@ -53,6 +54,13 @@ export default async function MedicineEntryPage({ params }: { params: Promise<{ 
       />
       <PageBody width="narrow">
         <MedicineBody entry={entry} links={links} headingLevel="h2" />
+        {/* The verdict box, for the person on the platform list only: the
+            database refuses everyone else, so the page does not offer it. */}
+        {scope.context.isPlatformAdmin ? (
+          <div className="mt-6">
+            <MedicineReviewBox entry={entry} />
+          </div>
+        ) : null}
       </PageBody>
     </>
   );

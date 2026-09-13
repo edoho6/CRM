@@ -538,6 +538,12 @@ begin
     when insufficient_privilege then null;
   end;
   begin
+    perform public.med_set_status(v_med, 'flagged', 'a note');
+    raise exception 'FAIL: a clinic member flagged a medicine entry';
+  exception
+    when insufficient_privilege then null;
+  end;
+  begin
     perform public.med_refresh_quotes('[]'::jsonb);
     raise exception 'FAIL: a clinic member ran the medicine refresh function';
   exception

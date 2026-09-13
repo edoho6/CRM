@@ -463,7 +463,12 @@
   `packages/domain/src/medicine-mentions.ts` (טהור, נבדק): מילים שלמות בלבד, עברית עם תחילית `[בלהומשכ]{1,2}`, לטינית עם
   ריבוי, מינימום 3 אותיות בעברית ו-4 בלטינית — רק מחלות ותרופות, לא תסמינים ("כאב" בכל תיק). אינדקס השמות
   (`features/medicine/name-index.ts`) נקרא בדפים של אלף (תקרת PostgREST) ונשמר בזיכרון השרת לשעה — הוא של הקורפוס,
-  לא של מטופל; הטקסט של המטופל נבדק בזיכרון ולא נרשם בשום מקום
+  לא של מטופל; הטקסט של המטופל נבדק בזיכרון ולא נרשם בשום מקום.
+  **פסק דין של אדם (migration 44):** `verified` ו-`flagged` נכתבים רק ב-`med_set_status(id, verdict, note)` — אדמין
+  פלטפורמה בלבד, `'clear'` מחזיר לפסק של המקורות — עם `reviewed_at/by/by_name` ו-`review_note` על השורה, ושניהם
+  שורדים ייבוא. הכפתורים ב-`MedicineReviewBox` בדף הערך (מוצג רק ל-`scope.context.isPlatformAdmin`); ערך מסומן
+  "לתיקון" מציג את ההערה ב-`Alert` בראש הדף; הכרטיס ב-`/platform` (`platform-card.tsx`) מציג `med_stats()` ואת
+  הרשימה לתיקון
 - **CSS משותף:** כללים שאינם טוקנים (מיקוד, placeholder, `select.ui-select`, `.table-cards`,
   `[data-table-size]`, הדפסה בסיסית) ב-`packages/ui/src/base.css`, מיובא בשני
   ה-`globals.css`; ה-`@theme` נשאר לכל אפליקציה בנפרד
