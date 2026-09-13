@@ -4,8 +4,9 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { BookMarked, Send, Trash2 } from 'lucide-react';
 import { Alert, Button, EmptyState, Spinner, Textarea, cn } from '@clinic/ui';
-import { LIBRARY_LIMITS, type LibraryAnswer, type LibraryCitation } from '@clinic/domain';
+import { LIBRARY_LIMITS, type LibraryAnswer, type LibraryCitation, type LibraryStage, type LibraryStreamEvent } from '@clinic/domain';
 import { ExternalLink } from '@/components/external-link';
+import { readNdjson } from './ndjson';
 
 /**
  * The conversation with the library. It lives in this tab and nowhere else:
@@ -14,6 +15,12 @@ import { ExternalLink } from '@/components/external-link';
  * server's reply is shown as it came — the answer with its markers, the
  * passages it cites, and the disclaimer field under every answer, whatever
  * its status.
+ *
+ * The wait is streamed, the answer is not: the reply arrives line by line
+ * (searching, reading N passages, writing, checking) and the text only
+ * comes once the checks have passed it. On the page the new answer is then
+ * revealed word by word — a reveal, not a stream, because a sentence the
+ * checks would strike must never be read before they strike it.
  */
 
 interface Reply extends LibraryAnswer {
@@ -26,6 +33,11 @@ interface Turn {
   role: 'user' | 'assistant';
   content: string;
   reply?: Reply;
+}
+
+interface Progress {
+  stage: LibraryStage;
+  passages: number | null;
 }
 
 const STORAGE_KEY = 'herbalist-library-chat';
@@ -54,6 +66,10 @@ export function LibraryChat({ configured, examples }: { configured: boolean; exa
   const [question, setQuestion] = useState('');
   const [pending, setPending] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [progress, setProgress] = useState<Progress | null>(null);
+  // Only the answer that has just arrived is revealed word by word; the
+  // ones read back from the tab's storage are simply there.
+  const [revealId, setRevealId] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -82,22 +98,38 @@ export function LibraryChat({ configured, examples }: { configured: boolean; exa
       const response = await fetch('/api/library/ask', {
         method: 'POST',
         credentials: 'same-origin',
-        headers: { 'content-type': 'application/json' },
+        headers: { 'content-type': 'application/json', accept: 'application/x-ndjson, application/json' },
         body: JSON.stringify({ question: value, history }),
       });
       if (!response.ok) throw new Error(`http_${response.status}`);
-      const reply = (await response.json()) as Reply;
+      const reply = await readReply(response, setProgress);
       const answerTurn: Turn = { id: crypto.randomUUID(), role: 'assistant', content: reply.answer, reply };
       const after = [...next, answerTurn];
+      setRevealId(answerTurn.id);
       setTurns(after);
       writeStored(after);
     } catch {
       setFailed(true);
     } finally {
       setPending(false);
+      setProgress(null);
       inputRef.current?.focus();
     }
   }
+
+  const progressText = (current: Progress | null) => {
+    if (!current) return t('thinking');
+    switch (current.stage) {
+      case 'searching':
+        return t('stages.searching');
+      case 'reading':
+        return t('stages.reading', { count: current.passages ?? 0 });
+      case 'writing':
+        return t('stages.writing');
+      case 'checking':
+        return t('stages.checking');
+    }
+  };
 
   function clear() {
     setTurns([]);
@@ -130,11 +162,13 @@ export function LibraryChat({ configured, examples }: { configured: boolean; exa
             </ul>
           </div>
         ) : null}
-        {turns.map((turn) => (turn.role === 'user' ? <UserTurn key={turn.id} text={turn.content} /> : <AssistantTurn key={turn.id} turn={turn} />))}
+        {turns.map((turn) =>
+          turn.role === 'user' ? <UserTurn key={turn.id} text={turn.content} /> : <AssistantTurn key={turn.id} turn={turn} reveal={turn.id === revealId} />,
+        )}
         {pending ? (
           <p className="flex items-center gap-2 text-sm text-ink-600" role="status">
             <Spinner className="h-4 w-4" />
-            {t('thinking')}
+            {progressText(progress)}
           </p>
         ) : null}
         {failed ? <Alert tone="danger">{t('status.error')}</Alert> : null}
@@ -188,6 +222,20 @@ export function LibraryChat({ configured, examples }: { configured: boolean; exa
   );
 }
 
+/** The reply, streamed when the server streams it and plain JSON otherwise. */
+async function readReply(response: Response, onProgress: (progress: Progress) => void): Promise<Reply> {
+  const type = response.headers.get('content-type') ?? '';
+  if (!type.includes('application/x-ndjson') || !response.body) return (await response.json()) as Reply;
+  let reply: Reply | null = null;
+  for await (const event of readNdjson(response.body)) {
+    const line = event as LibraryStreamEvent;
+    if (line.type === 'stage') onProgress({ stage: line.stage, passages: line.passages ?? null });
+    else if (line.type === 'done') reply = line.reply as Reply;
+  }
+  if (!reply) throw new Error('stream_ended');
+  return reply;
+}
+
 function UserTurn({ text }: { text: string }) {
   const t = useTranslations('library');
   return (
@@ -202,7 +250,7 @@ function UserTurn({ text }: { text: string }) {
   );
 }
 
-function AssistantTurn({ turn }: { turn: Turn }) {
+function AssistantTurn({ turn, reveal }: { turn: Turn; reveal: boolean }) {
   const t = useTranslations('library');
   const reply = turn.reply;
   if (!reply) return null;
@@ -216,7 +264,7 @@ function AssistantTurn({ turn }: { turn: Turn }) {
         </Alert>
       ) : (
         <div className="whitespace-pre-wrap text-sm leading-6 text-ink-900" dir="auto">
-          <Marked text={reply.answer} />
+          <RevealedText text={reply.answer} animate={reveal} />
         </div>
       )}
       {reply.citations.length > 0 ? (
@@ -247,6 +295,40 @@ function Marked({ text }: { text: string }) {
           <span key={index}>{part}</span>
         ),
       )}
+    </>
+  );
+}
+
+/**
+ * The answer written out over a second or two. The whole text is in the
+ * page from the first frame for a screen reader (the live region reads it
+ * once); only what the eye sees grows. Reduced motion shows it at once.
+ */
+function RevealedText({ text, animate }: { text: string; animate: boolean }) {
+  const [shown, setShown] = useState(animate ? 0 : text.length);
+  useEffect(() => {
+    if (!animate) return;
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+      setShown(text.length);
+      return;
+    }
+    const step = Math.max(3, Math.ceil(text.length / 90));
+    let count = 0;
+    let frame = requestAnimationFrame(function tick() {
+      count = Math.min(text.length, count + step);
+      setShown(count);
+      if (count < text.length) frame = requestAnimationFrame(tick);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [animate, text]);
+  if (shown >= text.length) return <Marked text={text} />;
+  return (
+    <>
+      <span className="sr-only">{text}</span>
+      <span aria-hidden>
+        <Marked text={text.slice(0, shown)} />
+        <span className="ms-0.5 inline-block h-4 w-0.5 animate-pulse bg-ink-500 align-middle" />
+      </span>
     </>
   );
 }

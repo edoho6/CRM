@@ -3500,6 +3500,12 @@
         "refused_quota": "Refused: daily quota",
         "error": "Error"
       }
+    },
+    "stages": {
+      "searching": "Searching the library…",
+      "reading": "Reading {count, plural, one {one passage} other {# passages}} from the sources…",
+      "writing": "Writing an answer from the passages…",
+      "checking": "Checking every sentence and number against the sources…"
     }
   }
 }

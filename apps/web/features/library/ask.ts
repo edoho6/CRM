@@ -12,6 +12,7 @@ import {
   rrfMerge,
   type LibraryAnswer,
   type LibraryCitation,
+  type LibraryStage,
   type LibraryStatus,
 } from '@clinic/domain';
 import { LIBRARY_MODEL, LibraryUnavailableError, callClaude, parseJsonReply } from './claude';
@@ -82,7 +83,10 @@ const reply = (status: LibraryStatus, answer: string, citations: LibraryCitation
   retrieved,
 });
 
-export async function askLibrary(db: SupabaseClient, input: AskInput): Promise<AskResult> {
+/** Told where the answer is, as it gets there — for a page that streams the wait, never the text. */
+export type StageListener = (stage: LibraryStage, detail?: { passages?: number }) => void;
+
+export async function askLibrary(db: SupabaseClient, input: AskInput, onStage?: StageListener): Promise<AskResult> {
   const started = Date.now();
   const question = input.question.trim();
   const history = input.history.slice(-LIBRARY_LIMITS.historyTurns * 2);
@@ -116,6 +120,7 @@ export async function askLibrary(db: SupabaseClient, input: AskInput): Promise<A
   }
 
   // Retrieval: by meaning and by words, folded together.
+  onStage?.('searching');
   const embedding = await embedQuery(question);
   const { data, error } = await db.rpc('library_search', { p_embedding: embedding, p_query: question, p_limit: 20 });
   if (error) throw new LibraryUnavailableError('search_failed');
@@ -153,6 +158,7 @@ export async function askLibrary(db: SupabaseClient, input: AskInput): Promise<A
     await log('no_sources', []);
     return reply('no_sources', LIBRARY_NO_SOURCES_HE);
   }
+  onStage?.('reading', { passages: evidence.length });
 
   const passages: PromptPassage[] = evidence.map((row, index) => ({
     n: index + 1,
@@ -175,6 +181,7 @@ export async function askLibrary(db: SupabaseClient, input: AskInput): Promise<A
   const allCitations = passages.map((p) => asCitation(p.n));
 
   // The answer.
+  onStage?.('writing');
   const first = await callClaude({
     system: ANSWER_SYSTEM,
     messages: [{ role: 'user', content: answerPrompt(question, history, passages) }],
@@ -188,6 +195,7 @@ export async function askLibrary(db: SupabaseClient, input: AskInput): Promise<A
   }
 
   // Grounding: the checks that cannot be argued with, then the second reading.
+  onStage?.('checking');
   const grounding = checkGrounding(parsed.answer, passages.map((p) => ({ n: p.n, content: p.content })));
   let faithful = grounding.ok;
   if (faithful) {

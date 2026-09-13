@@ -32,6 +32,18 @@ export interface LibraryAnswer {
 }
 
 /**
+ * Where an answer is on its way, for the page to say while it waits. The
+ * text itself is never sent early: it is checked first, then sent whole —
+ * a sentence the checks would strike must not be read before they strike it.
+ */
+export type LibraryStage = 'searching' | 'reading' | 'writing' | 'checking';
+
+/** One line of the streamed reply (`application/x-ndjson`): stages, then the answer. */
+export type LibraryStreamEvent =
+  | { type: 'stage'; stage: LibraryStage; passages?: number }
+  | { type: 'done'; reply: LibraryAnswer };
+
+/**
  * Working wording, to be approved by the lawyer who reads /privacy and
  * /terms (GO-LIVE.md). It says three things: what this is (a reading aid
  * over sources the clinic chose), what it is not (advice, a substitute for
