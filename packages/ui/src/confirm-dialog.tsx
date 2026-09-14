@@ -82,7 +82,10 @@ export function ConfirmProvider({
         {options ? (
           <DialogContent
             title={options.title}
-            closeLabel={closeLabel}
+            // Named for this dialog, not just "close": a confirmation opens over
+            // another dialog whose own close is also "close", and a screen
+            // reader could not tell the two ✕ buttons apart.
+            closeLabel={`${closeLabel} · ${options.title}`}
             onOpenAutoFocus={(event) => {
               event.preventDefault();
               cancelRef.current?.focus();

@@ -575,7 +575,8 @@
       "markDone": "Mark “{title}” as done",
       "urgent": "Urgent",
       "overdue": "Overdue",
-      "deleteTaskOf": "Delete task \"{title}\""
+      "deleteTaskOf": "Delete task \"{title}\"",
+      "more": "{count, plural, one {One more task} other {# more tasks}}"
     }
   },
   "patients": {
@@ -665,6 +666,12 @@
     "sendWhatsApp": "Send a WhatsApp message",
     "callPhone": "Call",
     "treatmentStatus": "Patient status",
+    "rowMenu": {
+      "label": "Actions for {name}",
+      "open": "Open file",
+      "newAppointment": "New appointment",
+      "call": "Call"
+    },
     "status": {
       "active": "In treatment",
       "completed": "Course finished",
@@ -834,6 +841,7 @@
       "start": "Start treatment"
     },
     "legend": {
+      "title": "Legend",
       "rooms": "Stripe — room:",
       "types": "Tint — treatment type:",
       "confirmation": "Attendance:"
@@ -1120,6 +1128,7 @@
     }
   },
   "billing": {
+    "openInvoices": "{count, plural, =0 {No open invoices} one {One open invoice} other {# open invoices}}",
     "keepInvoice": "Keep the invoice",
     "removeLineConfirm": "The invoice total updates accordingly.",
     "lineRemoved": "The line was removed",

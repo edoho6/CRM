@@ -158,7 +158,10 @@ export function MessageQueue({ queued, history }: { queued: QueueRow[]; history:
                         </span>
                       ) : null}
                     </div>
-                    <p className="whitespace-pre-wrap text-sm text-ink-800" dir="auto">
+                    {/* Clamped to three lines: the full text, link and all, is
+                        what "openWhatsApp" and "copy" carry — the card only has
+                        to say which message this is, not print the whole URL. */}
+                    <p className="line-clamp-3 whitespace-pre-wrap text-sm text-ink-800" dir="auto">
                       {row.body}
                     </p>
                     <div className="flex flex-wrap items-center gap-1.5">

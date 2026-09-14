@@ -575,7 +575,8 @@
       "markDone": "סימון \"{title}\" כבוצע",
       "urgent": "דחוף",
       "overdue": "באיחור",
-      "deleteTaskOf": "מחיקת המשימה \"{title}\""
+      "deleteTaskOf": "מחיקת המשימה \"{title}\"",
+      "more": "{count, plural, one {משימה אחת נוספת} two {עוד שתי משימות} other {עוד # משימות}}"
     }
   },
   "patients": {
@@ -665,6 +666,12 @@
     "sendWhatsApp": "שליחת הודעת WhatsApp",
     "callPhone": "חיוג",
     "treatmentStatus": "סטטוס מטופל",
+    "rowMenu": {
+      "label": "פעולות ל{name}",
+      "open": "פתיחת תיק",
+      "newAppointment": "תור חדש",
+      "call": "התקשרות"
+    },
     "status": {
       "active": "מטופל פעיל",
       "completed": "סיים טיפולים",
@@ -834,6 +841,7 @@
       "start": "פתיחת טיפול"
     },
     "legend": {
+      "title": "מקרא",
       "rooms": "פס צבע — חדר:",
       "types": "רקע — סוג טיפול:",
       "confirmation": "הגעה:"
@@ -1120,6 +1128,7 @@
     }
   },
   "billing": {
+    "openInvoices": "{count, plural, =0 {אין חשבוניות פתוחות} one {חשבונית פתוחה אחת} two {שתי חשבוניות פתוחות} other {# חשבוניות פתוחות}}",
     "keepInvoice": "להשאיר את החשבונית",
     "removeLineConfirm": "הסכום של החשבונית יתעדכן בהתאם.",
     "lineRemoved": "השורה הוסרה",

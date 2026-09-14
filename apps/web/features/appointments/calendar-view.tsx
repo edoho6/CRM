@@ -986,8 +986,8 @@ function CalendarLegend({
   const tConfirmation = useTranslations('appointments.confirmation');
   const activeRooms = rooms.filter((room) => room.is_active !== false);
   const activeTypes = appointmentTypes.filter((type) => type.is_active !== false);
-  return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-ink-600">
+  const body = (
+    <>
       {activeRooms.length > 0 ? (
         <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1">
           <span className="font-medium text-ink-700">{t('rooms')}</span>
@@ -1037,7 +1037,20 @@ function CalendarLegend({
           {tConfirmation('declined')}
         </span>
       </span>
-    </div>
+    </>
+  );
+  // Above the grid on a desk; folded behind "מקרא" on a phone, where three
+  // rows of colour keys pushed the day itself below the fold.
+  return (
+    <>
+      <div className="hidden flex-wrap items-center gap-x-4 gap-y-1 text-xs text-ink-600 sm:flex">{body}</div>
+      <details className="text-xs text-ink-600 sm:hidden">
+        <summary className="inline-flex cursor-pointer select-none rounded font-medium text-ink-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus">
+          {t('title')}
+        </summary>
+        <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1">{body}</div>
+      </details>
+    </>
   );
 }
 
