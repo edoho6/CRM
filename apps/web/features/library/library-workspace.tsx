@@ -29,7 +29,7 @@ interface Reply extends LibraryAnswer {
   error?: string;
 }
 
-const toThread = (message: ChatMessage): ThreadMessage => ({ id: message.id, role: message.role, status: message.status, content: message.content });
+const toThread = (message: ChatMessage): ThreadMessage => ({ id: message.id, role: message.role, status: message.status, content: message.content, general: message.general });
 
 export function LibraryWorkspace({
   configured,
@@ -122,7 +122,14 @@ export function LibraryWorkspace({
       });
       if (!response.ok) throw new Error(`http_${response.status}`);
       const reply = await readReply(response, setProgress);
-      const answer: ThreadMessage = { id: crypto.randomUUID(), role: 'assistant', status: reply.status, content: reply.answer };
+      const answer: ThreadMessage = {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        status: reply.status,
+        content: reply.answer,
+        general: reply.general ?? null,
+        trimmed: reply.trimmed,
+      };
       const after = [...withQuestion, answer];
       setRevealId(answer.id);
       const now = new Date().toISOString();

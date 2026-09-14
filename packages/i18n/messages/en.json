@@ -3485,8 +3485,14 @@
       "no_sources": "Not found in the sources",
       "refused_pii": "The question contains an identifying detail",
       "refused_quota": "Daily quota reached",
-      "error": "Could not answer right now. Try again in a moment."
+      "error": "Could not answer right now. Try again in a moment.",
+      "general": "Not found in the library's sources; this answer is from the model's general knowledge"
     },
+    "general": {
+      "title": "The model's general knowledge, not from the library",
+      "body": "This part was not checked against any source. A dose, formula or indication given here needs checking in a source before it is relied on."
+    },
+    "trimmed": "{count, plural, one {One sentence the sources did not support was left out of the answer} other {# sentences the sources did not support were left out of the answer}}",
     "citations": "Sources of the answer",
     "retrieved": "The closest sources retrieved",
     "page": "Page {page}",
@@ -3520,7 +3526,8 @@
         "no_sources": "Not found in the sources",
         "refused_pii": "Refused: identifying detail",
         "refused_quota": "Refused: daily quota",
-        "error": "Error"
+        "error": "Error",
+        "general": "General knowledge, not from the library"
       }
     },
     "stages": {

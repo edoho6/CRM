@@ -4,9 +4,14 @@ import {
   checkGrounding,
   citationNumbers,
   distinctByContent,
+  dropCitations,
   findPii,
   isIsraeliId,
   numbersIn,
+  parsePlan,
+  planFallback,
+  removeSentences,
+  removeSentencesWithNumbers,
   rrfMerge,
 } from '@clinic/domain';
 
@@ -66,6 +71,69 @@ describe('grounding', () => {
       { n: 2, content: 'Huang Qi 30g.' },
     ];
     expect(checkGrounding('חואנג צ׳י 30 גרם [1]', passages).ok).toBe(false);
+  });
+
+  it('counts a number from the cited passage’s title or page as evidence', () => {
+    const passages = [{ n: 1, content: 'Tao Ren: not recommended in pregnancy.', title: 'טבלת אינטראקציה 2014', page: 31 }];
+    expect(checkGrounding('לפי טבלת האינטראקציות 2014, עמוד 31: Tao Ren לא מומלץ בהיריון [1]', passages)).toEqual({ ok: true, problems: [] });
+    expect(checkGrounding('לפי טבלת 2019 [1]', passages).problems).toEqual([{ kind: 'number_not_in_sources', detail: '2019' }]);
+  });
+});
+
+describe('removeSentences', () => {
+  const answer = [
+    '**צמחים שאסורים בהיריון:**',
+    '- Tao Ren – לא מומלץ בהיריון [5]',
+    '- Yi Yi Ren – קונטרה אינדיקציה בהיריון (בפורמולת shen ling bai zhu san) [1][6]',
+    '- Rou Gui – אסור בהיריון [6]',
+    '',
+    'הערה: חלק מהצמחים מופיעים ברמות זהירות שונות [1]. יש לבחון כל פורמולה לפי ההקשר שלה. Suan Zao Ren מסומן גם כזהירות בלבד [7].',
+  ].join('\n');
+
+  it('strikes the bullet a quote sits in, whole, and leaves the rest', () => {
+    const { text, removed } = removeSentences(answer, ['Yi Yi Ren – קונטרה אינדיקציה בהיריון (בפורמולת shen ling bai zhu san)']);
+    expect(removed).toBe(1);
+    expect(text).not.toContain('Yi Yi Ren');
+    expect(text).toContain('- Tao Ren – לא מומלץ בהיריון [5]');
+    expect(text).toContain('- Rou Gui – אסור בהיריון [6]');
+  });
+
+  it('strikes one sentence of a paragraph by its first forty characters or by most of its words', () => {
+    const { text, removed } = removeSentences(answer, [
+      'הערה: חלק מהצמחים מופיעים ברמות זהירות שונות במקורות אחרים',
+      'Suan Zao Ren מסומן כזהירות בלבד ולא כאיסור',
+    ]);
+    expect(removed).toBe(2);
+    expect(text).toContain('- Rou Gui – אסור בהיריון [6]');
+    expect(text.endsWith('יש לבחון כל פורמולה לפי ההקשר שלה.')).toBe(true);
+    expect(text).not.toContain('הערה:');
+    expect(text).not.toContain('Suan Zao Ren');
+  });
+
+  it('removes nothing for a quote that matches nothing, and drops a heading left with nothing under it', () => {
+    expect(removeSentences(answer, ['Ma Huang is contraindicated in hypertension'])).toEqual({ text: answer, removed: 0 });
+    const { text } = removeSentences(answer, ['Tao Ren – לא מומלץ בהיריון', 'Yi Yi Ren – קונטרה אינדיקציה בהיריון', 'Rou Gui – אסור בהיריון']);
+    expect(text).not.toContain('צמחים שאסורים בהיריון');
+    expect(text.startsWith('הערה:')).toBe(true);
+  });
+
+  it('drops a marker that points at no passage and keeps the words', () => {
+    expect(dropCitations('Bai Shao 9 גרם [1, 12]. Gan Cao [12] מתוק [2][12].', [12])).toBe('Bai Shao 9 גרם [1]. Gan Cao מתוק [2].');
+  });
+
+  it('strikes the sentences that state a number the passages do not hold', () => {
+    const { text, removed } = removeSentencesWithNumbers('Bai Shao 9 גרם [1]. Huang Qi 30 גרם [1]. Gan Cao 6 גרם [1].', ['30']);
+    expect(removed).toBe(1);
+    expect(text).toBe('Bai Shao 9 גרם [1]. Gan Cao 6 גרם [1].');
+  });
+});
+
+describe('parsePlan', () => {
+  it('takes what the planner gave and falls back for the rest', () => {
+    const plan = parsePlan({ standalone: ' אילו צמחים אסורים בהיריון? ', english: 'Which herbs are contraindicated in pregnancy?', keywords: ['contraindicated pregnancy', '', 'abortifacient'], kind: 'list' }, 'q');
+    expect(plan).toEqual({ standalone: 'אילו צמחים אסורים בהיריון?', english: 'Which herbs are contraindicated in pregnancy?', keywords: ['contraindicated pregnancy', 'abortifacient'], kind: 'list' });
+    expect(parsePlan(null, 'מה זה?')).toEqual(planFallback('מה זה?'));
+    expect(parsePlan({ kind: 'nonsense', keywords: 'x' }, 'q')).toEqual({ standalone: 'q', english: 'q', keywords: [], kind: 'fact' });
   });
 });
 

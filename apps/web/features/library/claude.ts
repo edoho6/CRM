@@ -17,6 +17,9 @@ const API_VERSION = '2023-06-01';
  */
 export const LIBRARY_MODEL = 'claude-sonnet-5';
 
+/** The planner's model: it turns a question into searches, a job for a small, fast model. */
+export const LIBRARY_PLAN_MODEL = 'claude-haiku-4-5-20251001';
+
 export class LibraryUnavailableError extends Error {
   constructor(message: string) {
     super(message);

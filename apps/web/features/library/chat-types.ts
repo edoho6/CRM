@@ -14,8 +14,10 @@ export interface ChatSummary {
 export interface ChatMessage {
   id: string;
   role: 'user' | 'assistant';
-  status: 'answered' | 'no_sources' | 'refused_quota' | 'error' | null;
+  status: 'answered' | 'general' | 'no_sources' | 'refused_quota' | 'error' | null;
   content: string;
+  /** The part written from the model's own knowledge, shown as not from the library. */
+  general: string | null;
   createdAt: string;
 }
 

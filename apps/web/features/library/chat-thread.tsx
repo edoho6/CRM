@@ -10,8 +10,12 @@ import { AnswerText } from './answer-text';
 export interface ThreadMessage {
   id: string;
   role: 'user' | 'assistant';
-  status: 'answered' | 'no_sources' | 'refused_pii' | 'refused_quota' | 'error' | null;
+  status: 'answered' | 'general' | 'no_sources' | 'refused_pii' | 'refused_quota' | 'error' | null;
   content: string;
+  /** What the model added from its own knowledge — shown apart, labelled as not from the library. */
+  general?: string | null;
+  /** How many sentences the checks struck before the answer was shown. */
+  trimmed?: number;
 }
 
 export interface Progress {
@@ -183,21 +187,31 @@ function UserMessage({ text }: { text: string }) {
 function AssistantMessage({ message, reveal }: { message: ThreadMessage; reveal: boolean }) {
   const t = useTranslations('library');
   const status = message.status ?? 'answered';
-  const tone = status === 'answered' ? null : status === 'no_sources' ? 'info' : status === 'error' ? 'danger' : 'warning';
+  const general = message.general?.trim() ?? '';
+  // An answer from the library reads plain; the model's own knowledge is
+  // boxed and labelled, whether it follows a library answer or stands alone.
+  const tone = status === 'answered' || status === 'general' ? null : status === 'no_sources' ? 'info' : status === 'error' ? 'danger' : 'warning';
   return (
-    <div className="flex items-start gap-3" data-chat-answer>
+    <div className="flex items-start gap-3" data-chat-answer data-chat-status={status}>
       <span className="mt-1 hidden h-7 w-7 shrink-0 items-center justify-center rounded-full bg-ink-100 text-ink-600 sm:flex" aria-hidden>
         <BookMarked className="h-4 w-4" />
       </span>
-      <div className="min-w-0 max-w-full flex-1 rounded-2xl rounded-ss-sm border border-ink-200 bg-white px-4 py-3 shadow-sm">
+      <div className="min-w-0 max-w-full flex-1 space-y-3 rounded-2xl rounded-ss-sm border border-ink-200 bg-white px-4 py-3 shadow-sm">
         <span className="sr-only">{t('assistant')}: </span>
         {tone ? (
           <Alert tone={tone} title={t(`status.${status}` as never)}>
             {status === 'error' ? null : <span className="block whitespace-pre-wrap">{message.content}</span>}
           </Alert>
-        ) : (
-          <AnswerText text={message.content} reveal={reveal} />
-        )}
+        ) : null}
+        {status === 'answered' && message.content.trim() ? <AnswerText text={message.content} reveal={reveal} /> : null}
+        {status === 'answered' && message.trimmed ? <p className="text-xs text-ink-500">{t('trimmed', { count: message.trimmed })}</p> : null}
+        {general ? (
+          <section className="rounded-xl border border-amber-300 bg-amber-50 px-3 py-2" data-chat-general aria-label={t('general.title')}>
+            <p className="text-sm font-semibold text-amber-900">{status === 'general' ? t('status.general') : t('general.title')}</p>
+            <p className="mb-2 text-xs text-amber-900/80">{t('general.body')}</p>
+            <AnswerText text={general} reveal={reveal && status === 'general'} />
+          </section>
+        ) : null}
       </div>
     </div>
   );

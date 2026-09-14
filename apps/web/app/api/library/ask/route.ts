@@ -84,8 +84,8 @@ async function keep(
   }
   const base = { chat_id: id, clinic_id: ids.clinicId, user_id: ids.userId };
   const { error } = await supabase.from('library_messages').insert([
-    { ...base, role: 'user', status: null, content: question },
-    { ...base, role: 'assistant', status: result.status, content: result.answer },
+    { ...base, role: 'user', status: null, content: question, general: null },
+    { ...base, role: 'assistant', status: result.status, content: result.answer, general: result.general || null },
   ]);
   if (error) return chatId ?? null;
   await supabase.from('library_chats').update({ last_message_at: new Date().toISOString() }).eq('id', id);

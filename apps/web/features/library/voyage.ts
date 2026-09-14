@@ -16,18 +16,25 @@ export function isLibraryConfigured(): boolean {
   return Boolean(process.env.VOYAGE_API_KEY?.trim()) && Boolean(process.env.ANTHROPIC_API_KEY?.trim());
 }
 
-export async function embedQuery(text: string, signal?: AbortSignal): Promise<number[]> {
+/** Several questions in one call — the question as asked and its English twin — in the order given. */
+export async function embedQueries(texts: readonly string[], signal?: AbortSignal): Promise<number[][]> {
   const key = process.env.VOYAGE_API_KEY?.trim();
   if (!key) throw new LibraryUnavailableError('not_configured');
   const response = await fetch(ENDPOINT, {
     method: 'POST',
     headers: { 'content-type': 'application/json', authorization: `Bearer ${key}` },
-    body: JSON.stringify({ input: [text], model: VOYAGE_MODEL, input_type: 'query', output_dimension: EMBEDDING_DIMENSIONS }),
+    body: JSON.stringify({ input: texts, model: VOYAGE_MODEL, input_type: 'query', output_dimension: EMBEDDING_DIMENSIONS }),
     signal,
   });
   if (!response.ok) throw new LibraryUnavailableError(`voyage_http_${response.status}`);
-  const payload = (await response.json()) as { data?: { embedding?: number[] }[] };
-  const embedding = payload.data?.[0]?.embedding;
-  if (!embedding || embedding.length !== EMBEDDING_DIMENSIONS) throw new LibraryUnavailableError('voyage_bad_reply');
-  return embedding;
+  const payload = (await response.json()) as { data?: { embedding?: number[]; index?: number }[] };
+  const rows = [...(payload.data ?? [])].sort((a, b) => (a.index ?? 0) - (b.index ?? 0));
+  const embeddings = rows.map((row) => row.embedding);
+  if (embeddings.length !== texts.length || embeddings.some((e) => !e || e.length !== EMBEDDING_DIMENSIONS)) throw new LibraryUnavailableError('voyage_bad_reply');
+  return embeddings as number[][];
+}
+
+export async function embedQuery(text: string, signal?: AbortSignal): Promise<number[]> {
+  const [embedding] = await embedQueries([text], signal);
+  return embedding!;
 }

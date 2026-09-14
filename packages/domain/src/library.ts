@@ -9,8 +9,12 @@
  * passages), and the disclaimer that goes under every answer.
  */
 
-/** Statuses the API answers with; the audit log stores the same words. */
-export type LibraryStatus = 'answered' | 'no_sources' | 'refused_pii' | 'refused_quota' | 'error';
+/**
+ * Statuses the API answers with; the audit log stores the same words.
+ * `general` is an answer written from the model's own knowledge because
+ * the library held nothing — shown as such, never checked against a source.
+ */
+export type LibraryStatus = 'answered' | 'general' | 'no_sources' | 'refused_pii' | 'refused_quota' | 'error';
 
 export interface LibraryCitation {
   /** The [n] the answer refers to. */
@@ -29,6 +33,14 @@ export interface LibraryAnswer {
   citations: LibraryCitation[];
   /** Always present, always this text: the page shows it under every answer. */
   disclaimer: string;
+  /**
+   * What the model added from its own knowledge for the part the passages
+   * did not cover — or the whole reply, when `status` is `general`. Never
+   * checked against a source, and therefore always shown as not from the library.
+   */
+  general?: string;
+  /** How many sentences the checks struck from the answer before it was shown. */
+  trimmed?: number;
 }
 
 /**
@@ -66,6 +78,10 @@ export const LIBRARY_LIMITS = {
   dailyQuota: 60,
   /** Passages handed to the model. */
   passages: 8,
+  /** For a question that asks for a list ("which herbs…"), where one passage holds one item. */
+  listPassages: 14,
+  /** A list question keeps passages further below the best one; the items are spread across sources. */
+  listSimilarityBand: 0.25,
   /** Characters of a passage shown on the page as the quote. */
   quoteChars: 600,
   /** Cosine similarity under which a passage is not evidence. */
@@ -171,26 +187,220 @@ export interface GroundingProblem {
   detail: string;
 }
 
+export interface GroundingPassage {
+  n: number;
+  content: string;
+  /** The source's title and page count as evidence too: an answer may name "the 2014 table" or "page 3779". */
+  title?: string | null;
+  page?: number | null;
+}
+
 /**
  * Is the answer held up by the passages it cites? Every marker must name a
  * retrieved passage, an answer must cite something, and every number it
- * states must appear in the passages it cites. This runs before the second
- * model reading, and it is the part that cannot be talked out of a verdict.
+ * states must appear in the passages it cites — in their text, their title
+ * or their page number, all of which the model was shown. This runs before
+ * the second model reading, and it is the part that cannot be talked out
+ * of a verdict.
  */
-export function checkGrounding(answer: string, passages: readonly { n: number; content: string }[]): { ok: boolean; problems: GroundingProblem[] } {
+export function checkGrounding(answer: string, passages: readonly GroundingPassage[]): { ok: boolean; problems: GroundingProblem[] } {
   const problems: GroundingProblem[] = [];
   const cited = citationNumbers(answer);
-  const known = new Map(passages.map((p) => [p.n, p.content]));
+  const known = new Map(passages.map((p) => [p.n, p]));
   if (cited.length === 0) problems.push({ kind: 'no_citation', detail: 'the answer cites no passage' });
   for (const n of cited) if (!known.has(n)) problems.push({ kind: 'unknown_citation', detail: `[${n}]` });
   const evidence = cited
     .filter((n) => known.has(n))
-    .map((n) => known.get(n)!.replace(/,/g, ''))
+    .map((n) => {
+      const p = known.get(n)!;
+      return [p.content, p.title ?? '', p.page === null || p.page === undefined ? '' : String(p.page)].join('\n').replace(/,/g, '');
+    })
     .join('\n');
   for (const number of numbersIn(answer)) {
     if (!evidence.includes(number)) problems.push({ kind: 'number_not_in_sources', detail: number });
   }
   return { ok: problems.length === 0, problems };
+}
+
+// ---------------------------------------------------------------------------
+// Striking sentences
+// ---------------------------------------------------------------------------
+
+interface Unit {
+  start: number;
+  end: number;
+}
+
+/**
+ * The units an answer is struck by: a bullet, a numbered item or a heading
+ * line is one unit; a paragraph is cut into sentences at . ! ? followed by
+ * a space or the end of the line. Offsets into the original text, so a unit
+ * can be removed without disturbing the rest.
+ */
+function units(text: string): Unit[] {
+  const out: Unit[] = [];
+  let offset = 0;
+  for (const line of text.split('\n')) {
+    const trimmed = line.trim();
+    const isItem = /^(?:[-*•▪]|\d+[.)]|#{1,6})\s/.test(trimmed) || /^\*\*[^*]+\*\*:?$/.test(trimmed);
+    if (trimmed === '' || isItem || trimmed.length < 40) {
+      if (trimmed !== '') out.push({ start: offset, end: offset + line.length });
+    } else {
+      let cursor = 0;
+      for (const match of line.matchAll(/[.!?؟]+(?=\s|$)/g)) {
+        const end = match.index! + match[0].length;
+        out.push({ start: offset + cursor, end: offset + end });
+        cursor = end;
+      }
+      if (cursor < line.length && line.slice(cursor).trim() !== '') out.push({ start: offset + cursor, end: offset + line.length });
+    }
+    offset += line.length + 1;
+  }
+  return out;
+}
+
+const normalise = (s: string) => stripCitations(s).replace(/[*_`]/g, '').replace(/\s+/g, ' ').trim();
+const words = (s: string) => normalise(s).toLowerCase().split(/[^\p{L}\p{N}.]+/u).filter((w) => w.length >= 3);
+
+/** Whether a unit is the one a quote points at: the quote inside it, its first forty characters, or most of its words. */
+function unitMatches(unitText: string, quote: string): boolean {
+  const u = normalise(unitText);
+  const q = normalise(quote);
+  if (!q) return false;
+  if (u.includes(q) || q.includes(u)) return true;
+  if (q.length > 40 && u.includes(q.slice(0, 40))) return true;
+  const qWords = words(q);
+  if (qWords.length < 3) return false;
+  const uWords = new Set(words(u));
+  const shared = qWords.filter((w) => uWords.has(w)).length;
+  return shared / qWords.length >= 0.6;
+}
+
+const isHeadingLine = (line: string) => /^#{1,6}\s/.test(line) || /^\*\*[^*]+\*\*:?$/.test(line) || (/:$/.test(line) && line.length < 80);
+
+/**
+ * Strikes whole units and tidies what is left. A heading whose block —
+ * the lines right under it, or the block after one blank line — was
+ * struck entirely goes with it; blank runs shrink; nothing else moves.
+ */
+function strike(text: string, doomed: readonly Unit[]): string {
+  const spans = [...doomed].sort((a, b) => a.start - b.start);
+  const lines = text.split('\n');
+  const remaining: string[] = [];
+  let offset = 0;
+  for (const line of lines) {
+    const lineStart = offset;
+    const lineEnd = offset + line.length;
+    let kept = '';
+    let cursor = lineStart;
+    for (const span of spans) {
+      if (span.end <= lineStart || span.start >= lineEnd) continue;
+      if (span.start > cursor) kept += text.slice(cursor, span.start);
+      cursor = Math.max(cursor, span.end);
+    }
+    kept += text.slice(cursor, lineEnd);
+    remaining.push(kept.trim());
+    offset = lineEnd + 1;
+  }
+  const blockGone = (from: number): boolean => {
+    let i = from;
+    while (i < lines.length && lines[i]!.trim() === '') i += 1;
+    let had = false;
+    while (i < lines.length && lines[i]!.trim() !== '' && !isHeadingLine(lines[i]!.trim())) {
+      had = true;
+      if (remaining[i] !== '') return false;
+      i += 1;
+    }
+    return had;
+  };
+  const out: string[] = [];
+  for (let i = 0; i < lines.length; i += 1) {
+    const original = lines[i]!.trim();
+    if (original !== '' && isHeadingLine(original) && remaining[i] !== '' && blockGone(i + 1)) continue;
+    out.push(remaining[i]!);
+  }
+  return out
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+/**
+ * Removes from an answer the sentences the judge quoted — the sentence or
+ * the bullet each quote sits in, whole — and returns what stands, with the
+ * count of what was struck. A quote that matches nothing removes nothing.
+ * Removing can add no claim, so what is left needs no second reading.
+ */
+export function removeSentences(text: string, quotes: readonly string[]): { text: string; removed: number } {
+  const all = units(text);
+  const doomed = new Set<Unit>();
+  for (const quote of quotes) {
+    const hit = all.find((unit) => !doomed.has(unit) && unitMatches(text.slice(unit.start, unit.end), quote));
+    if (hit) doomed.add(hit);
+  }
+  return { text: doomed.size ? strike(text, [...doomed]) : text, removed: doomed.size };
+}
+
+/** Drops the given [n] markers from an answer — the ones that point at no retrieved passage — and leaves the words. */
+export function dropCitations(answer: string, numbers: readonly number[]): string {
+  const gone = new Set(numbers);
+  return String(answer ?? '')
+    .replace(/\[([\d\s,]+)\]/g, (whole, inner: string) => {
+      const kept = inner
+        .split(',')
+        .map((part) => part.trim())
+        .filter((part) => part !== '' && !gone.has(Number(part)));
+      return kept.length ? `[${kept.join(', ')}]` : '';
+    })
+    .replace(/[ \t]+([.,;:!?])/g, '$1')
+    .replace(/[ \t]{2,}/g, ' ');
+}
+
+/** Removes every sentence or bullet that states one of the given numbers — the ones the passages do not hold. */
+export function removeSentencesWithNumbers(text: string, numbers: readonly string[]): { text: string; removed: number } {
+  if (numbers.length === 0) return { text, removed: 0 };
+  const doomed = units(text).filter((unit) => {
+    const stated = numbersIn(text.slice(unit.start, unit.end));
+    return stated.some((n) => numbers.includes(n));
+  });
+  return { text: doomed.length ? strike(text, doomed) : text, removed: doomed.length };
+}
+
+// ---------------------------------------------------------------------------
+// The search plan
+// ---------------------------------------------------------------------------
+
+export type QuestionKind = 'list' | 'fact' | 'other';
+
+export interface SearchPlan {
+  /** The question standing on its own, in its own language, with what the earlier turns supplied. */
+  standalone: string;
+  /** The same question in English, for the English passages. */
+  english: string;
+  /** English search terms for the word index. */
+  keywords: string[];
+  kind: QuestionKind;
+}
+
+/** The plan the question falls back to when the planner fails: the question itself, searched as it is. */
+export function planFallback(question: string): SearchPlan {
+  return { standalone: question, english: question, keywords: [], kind: 'fact' };
+}
+
+/** The planner's JSON, with every field checked and the fallback for whatever is missing. */
+export function parsePlan(value: unknown, question: string): SearchPlan {
+  const fallback = planFallback(question);
+  if (!value || typeof value !== 'object') return fallback;
+  const raw = value as Record<string, unknown>;
+  const text = (v: unknown, or: string) => (typeof v === 'string' && v.trim() ? v.trim().slice(0, 600) : or);
+  const keywords = Array.isArray(raw.keywords)
+    ? raw.keywords
+        .filter((k): k is string => typeof k === 'string' && k.trim().length > 0)
+        .map((k) => k.trim().slice(0, 60))
+        .slice(0, 8)
+    : [];
+  const kind: QuestionKind = raw.kind === 'list' || raw.kind === 'other' ? raw.kind : 'fact';
+  return { standalone: text(raw.standalone, fallback.standalone), english: text(raw.english, fallback.english), keywords, kind };
 }
 
 // ---------------------------------------------------------------------------

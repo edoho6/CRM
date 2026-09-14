@@ -33,6 +33,7 @@ interface MessageRow {
   role: 'user' | 'assistant';
   status: ChatMessage['status'];
   content: string;
+  general: string | null;
   created_at: string;
 }
 
@@ -60,13 +61,13 @@ export async function loadChatMessages(chatId: string): Promise<ActionResult<Cha
   if (!id.success) return actionError(new Error('validation'));
   const { data, error } = await scope.supabase
     .from('library_messages')
-    .select('id, role, status, content, created_at')
+    .select('id, role, status, content, general, created_at')
     .eq('chat_id', id.data)
     .order('created_at', { ascending: true })
     .limit(400)
     .returns<MessageRow[]>();
   if (error) return actionError(error);
-  return actionOk((data ?? []).map((row) => ({ id: row.id, role: row.role, status: row.status, content: row.content, createdAt: row.created_at })));
+  return actionOk((data ?? []).map((row) => ({ id: row.id, role: row.role, status: row.status, content: row.content, general: row.general ?? null, createdAt: row.created_at })));
 }
 
 export async function renameChat(chatId: string, title: string): Promise<ActionResult> {

@@ -8,29 +8,40 @@ import {
   LIBRARY_REFUSED_PII_HE,
   LIBRARY_REFUSED_QUOTA_HE,
   checkGrounding,
+  citationNumbers,
   distinctByContent,
+  dropCitations,
   findPii,
+  removeSentences,
+  removeSentencesWithNumbers,
   rrfMerge,
+  type GroundingPassage,
   type LibraryAnswer,
   type LibraryCitation,
   type LibraryStage,
   type LibraryStatus,
 } from '@clinic/domain';
 import { LIBRARY_MODEL, LibraryUnavailableError, callClaude, parseJsonReply } from './claude';
-import { ANSWER_SYSTEM, REVIEW_SYSTEM, answerPrompt, repairPrompt, reviewPrompt, type PromptPassage } from './prompts';
-import { embedQuery } from './voyage';
+import { planSearch } from './plan';
+import { ANSWER_SYSTEM, GENERAL_SYSTEM, REVIEW_SYSTEM, answerPrompt, generalPrompt, repairPrompt, reviewPrompt, type PromptPassage } from './prompts';
+import { embedQueries } from './voyage';
 
 /**
- * One question, answered from the library and nothing else.
+ * One question, answered from the library — and, where the library has
+ * nothing, from the model's own knowledge under a label that says so.
  *
  * The order is the point: the daily quota and the identifier check come
  * before any provider is called, so a question with a patient's number in
- * it never leaves the server; retrieval comes before the model, so the
- * model only ever sees passages the library holds; and the grounding
- * checks come after the model, so an answer that cites nothing, cites a
- * passage that was not retrieved, states a number the passages do not, or
- * fails the second reading is replaced by "the sources do not answer
- * this". The log gets the outcome and the sources — never the words.
+ * it never leaves the server; a small planner turns the question into
+ * searches (its own language, English, the words a textbook would use);
+ * retrieval comes before the model, so the "answer" part only ever sees
+ * passages the library holds; and the checks come after the model — every
+ * citation must name a retrieved passage, every number must be in the
+ * cited passages, and a second reading names the sentences the passages do
+ * not support. What fails is written once more and then struck sentence by
+ * sentence; what stands is shown. The "general" part is never checked and
+ * is always shown as not from the library. The log gets the outcome and
+ * the sources — never the words.
  */
 
 export interface AskTurn {
@@ -76,6 +87,11 @@ interface LogSource {
   cited: boolean;
 }
 
+interface Issue {
+  quote: string;
+  why: string;
+}
+
 const reply = (status: LibraryStatus, answer: string, citations: LibraryCitation[] = [], retrieved: RetrievedSource[] = []): AskResult => ({
   status,
   answer,
@@ -87,19 +103,29 @@ const reply = (status: LibraryStatus, answer: string, citations: LibraryCitation
 /** Told where the answer is, as it gets there — for a page that streams the wait, never the text. */
 export type StageListener = (stage: LibraryStage, detail?: { passages?: number }) => void;
 
+/** The answer's shape, as the model is asked for it. */
+interface ModelAnswer {
+  answered?: boolean;
+  answer?: string;
+  general?: string;
+}
+
+const MIN_ANSWER_CHARS = 120;
+
 export async function askLibrary(db: SupabaseClient, input: AskInput, onStage?: StageListener): Promise<AskResult> {
   const started = Date.now();
   const question = input.question.trim();
   const history = input.history.slice(-LIBRARY_LIMITS.historyTurns * 2);
+  const usage = { input: 0, output: 0 };
 
-  const log = async (status: LibraryStatus, sources: LogSource[], usage?: { input: number; output: number }) => {
+  const log = async (status: LibraryStatus, sources: LogSource[], spent?: boolean) => {
     try {
       await db.rpc('library_log_query', {
         p_status: status,
         p_sources: sources,
-        p_model: usage ? LIBRARY_MODEL : null,
-        p_input_tokens: usage?.input ?? null,
-        p_output_tokens: usage?.output ?? null,
+        p_model: spent ? LIBRARY_MODEL : null,
+        p_input_tokens: spent ? usage.input : null,
+        p_output_tokens: spent ? usage.output : null,
         p_latency_ms: Date.now() - started,
       });
     } catch {
@@ -120,48 +146,84 @@ export async function askLibrary(db: SupabaseClient, input: AskInput, onStage?: 
     return reply('refused_pii', LIBRARY_REFUSED_PII_HE);
   }
 
-  // Retrieval: by meaning and by words, folded together.
+  // The question, prepared: on its own, in English, and as search words.
   onStage?.('searching');
-  const embedding = await embedQuery(question);
-  const { data, error } = await db.rpc('library_search', { p_embedding: embedding, p_query: question, p_limit: 20 });
-  if (error) throw new LibraryUnavailableError('search_failed');
-  const rows = (data ?? []) as SearchRow[];
+  const planned = await planSearch(question, history);
+  const plan = planned.plan;
+  usage.input += planned.inputTokens;
+  usage.output += planned.outputTokens;
+
+  // Retrieval: the question as asked and its English twin, each by meaning;
+  // the English search words once, by words. Up to three rankings, folded.
+  const twin = plan.english.trim() && plan.english.trim() !== plan.standalone.trim() ? plan.english.trim() : null;
+  const embeddings = await embedQueries(twin ? [plan.standalone, twin] : [plan.standalone]);
+  const words = plan.keywords.length ? plan.keywords.join(' ') : twin ?? question;
+  const searches = await Promise.all(
+    embeddings.map((embedding, index) => db.rpc('library_search', { p_embedding: embedding, p_query: index === 0 ? words : '', p_limit: 20 })),
+  );
+  if (searches.some((search) => search.error)) throw new LibraryUnavailableError('search_failed');
   const byId = new Map<string, SearchRow>();
   const vectorScore = new Map<string, number>();
-  const vectorList: string[] = [];
-  const textList: string[] = [];
-  for (const row of rows) {
-    byId.set(row.chunk_id, byId.get(row.chunk_id) ?? row);
-    if (row.via === 'vector') {
-      vectorList.push(row.chunk_id);
-      vectorScore.set(row.chunk_id, row.score);
-    } else {
-      textList.push(row.chunk_id);
+  const textHits = new Set<string>();
+  const rankings: string[][] = [];
+  for (const search of searches) {
+    const byMeaning: string[] = [];
+    const byWords: string[] = [];
+    for (const row of (search.data ?? []) as SearchRow[]) {
+      byId.set(row.chunk_id, byId.get(row.chunk_id) ?? row);
+      if (row.via === 'vector') {
+        byMeaning.push(row.chunk_id);
+        vectorScore.set(row.chunk_id, Math.max(vectorScore.get(row.chunk_id) ?? 0, row.score));
+      } else {
+        byWords.push(row.chunk_id);
+        textHits.add(row.chunk_id);
+      }
     }
+    rankings.push(byMeaning);
+    if (byWords.length) rankings.push(byWords);
   }
   const best = Math.max(0, ...vectorScore.values());
+  // A list question ("which herbs…") spreads its items across many sources:
+  // it takes more passages and keeps ones further below the best match.
+  const asksForList = plan.kind === 'list';
+  const band = asksForList ? LIBRARY_LIMITS.listSimilarityBand : LIBRARY_LIMITS.similarityBand;
+  const budget = asksForList ? LIBRARY_LIMITS.listPassages : LIBRARY_LIMITS.passages;
   // A passage is evidence when it is close in meaning, or when the words
   // themselves matched; anything else is noise that would only tempt the model.
-  // A passage held twice (a book in two folders) counts once, so the few
-  // slots go to distinct evidence and no page is cited against itself.
+  // A passage held twice (a book in two folders) counts once.
   const evidence = distinctByContent(
-    rrfMerge([vectorList, textList])
+    rrfMerge(rankings)
       .map((entry) => byId.get(entry.id)!)
       .filter((row) => {
         const similarity = vectorScore.get(row.chunk_id);
-        if (similarity === undefined) return textList.includes(row.chunk_id);
-        return similarity >= LIBRARY_LIMITS.minSimilarity && similarity >= best - LIBRARY_LIMITS.similarityBand;
+        if (similarity === undefined) return textHits.has(row.chunk_id);
+        return similarity >= LIBRARY_LIMITS.minSimilarity && similarity >= best - band;
       }),
-  ).slice(0, LIBRARY_LIMITS.passages);
+  ).slice(0, budget);
 
   const retrieved: RetrievedSource[] = evidence.map((row) => ({ sourceId: row.source_id, title: row.title, url: row.url, page: row.page }));
   const logSources = (cited: Set<number>): LogSource[] =>
     evidence.map((row, index) => ({ source_id: row.source_id, title: row.title, url: row.url, page: row.page, cited: cited.has(index + 1) }));
 
-  if (evidence.length === 0) {
-    await log('no_sources', []);
-    return reply('no_sources', LIBRARY_NO_SOURCES_HE);
-  }
+  /** The model's own knowledge, asked for on its own when the library holds nothing. */
+  const generalOnly = async (): Promise<string> => {
+    onStage?.('writing');
+    const spoken = await callClaude({ system: GENERAL_SYSTEM, messages: [{ role: 'user', content: generalPrompt(question, history) }], maxTokens: 6000 });
+    usage.input += spoken.inputTokens;
+    usage.output += spoken.outputTokens;
+    const parsed = parseJsonReply<{ general?: string }>(spoken.text);
+    return typeof parsed?.general === 'string' ? parsed.general.trim() : '';
+  };
+  const generalReply = async (general: string, citations: LibraryCitation[] = []): Promise<AskResult> => {
+    if (!general) {
+      await log('no_sources', logSources(new Set()), usage.input > 0);
+      return reply('no_sources', LIBRARY_NO_SOURCES_HE, citations, retrieved);
+    }
+    await log('general', logSources(new Set()), true);
+    return { ...reply('general', '', citations, retrieved), general };
+  };
+
+  if (evidence.length === 0) return generalReply(await generalOnly());
   onStage?.('reading', { passages: evidence.length });
 
   const passages: PromptPassage[] = evidence.map((row, index) => ({
@@ -171,6 +233,7 @@ export async function askLibrary(db: SupabaseClient, input: AskInput, onStage?: 
     url: row.url,
     content: row.heading ? `${row.heading}\n${row.content}` : row.content,
   }));
+  const groundingPassages: GroundingPassage[] = passages.map((p) => ({ n: p.n, content: p.content, title: p.title, page: p.page }));
   const asCitation = (n: number): LibraryCitation => {
     const row = evidence[n - 1]!;
     return {
@@ -184,88 +247,115 @@ export async function askLibrary(db: SupabaseClient, input: AskInput, onStage?: 
   };
   const allCitations = passages.map((p) => asCitation(p.n));
 
-  // The answer.
-  onStage?.('writing');
-  // The ceilings are well above what either reply needs (an answer runs to
-  // some 1,200 tokens, the verdict to 20), because the model thinks before
-  // it writes and that thinking is counted against the same ceiling: at
-  // 1,500 an answer was cut mid-JSON and at 400 a verdict came back with
-  // no text at all — both read as "not found" for an answerable question.
-  const first = await callClaude({
-    system: ANSWER_SYSTEM,
-    messages: [{ role: 'user', content: answerPrompt(question, history, passages) }],
-    maxTokens: 8000,
-  });
-  const usage = { input: first.inputTokens, output: first.outputTokens };
-  const parsed = parseJsonReply<{ answered?: boolean; answer?: string }>(first.text);
-  if (!parsed || typeof parsed.answer !== 'string' || parsed.answered !== true) {
-    await log('no_sources', logSources(new Set()), usage);
-    return reply('no_sources', LIBRARY_NO_SOURCES_HE, allCitations, retrieved);
-  }
+  // The answer. The ceilings are well above what a reply needs, because
+  // the model thinks before it writes and the thinking counts against the
+  // same ceiling: a low one cut an answer mid-JSON and a verdict to nothing.
+  const write = async (content: string): Promise<ModelAnswer | null> => {
+    onStage?.('writing');
+    const spoken = await callClaude({ system: ANSWER_SYSTEM, messages: [{ role: 'user', content }], maxTokens: 8000 });
+    usage.input += spoken.inputTokens;
+    usage.output += spoken.outputTokens;
+    return parseJsonReply<ModelAnswer>(spoken.text);
+  };
+  const usable = (draft: ModelAnswer | null): draft is ModelAnswer & { answer: string } =>
+    Boolean(draft && draft.answered === true && typeof draft.answer === 'string' && draft.answer.trim());
 
-  // Grounding: the checks that cannot be argued with, then the second reading.
-  // Both name what they object to, so that a draft can be written again.
-  const judge = async (text: string): Promise<{ faithful: boolean; issues: string[] }> => {
-    const grounding = checkGrounding(text, passages.map((p) => ({ n: p.n, content: p.content })));
-    if (!grounding.ok) return { faithful: false, issues: grounding.problems.map((p) => p.detail) };
-    const second = await callClaude({
-      system: REVIEW_SYSTEM,
-      messages: [{ role: 'user', content: reviewPrompt(text, passages) }],
-      maxTokens: 4000,
-    });
-    usage.input += second.inputTokens;
-    usage.output += second.outputTokens;
-    const verdict = parseJsonReply<{ faithful?: boolean; issues?: unknown }>(second.text);
-    const issues = Array.isArray(verdict?.issues) ? verdict.issues.filter((issue): issue is string => typeof issue === 'string').slice(0, 10) : [];
-    return { faithful: verdict?.faithful === true, issues };
+  const first = await write(answerPrompt(question, history, passages));
+  const general = typeof first?.general === 'string' ? first.general.trim() : '';
+  if (!usable(first)) return generalReply(general, allCitations);
+
+  // The second reading: which sentences do the passages not support?
+  const judge = async (text: string): Promise<{ faithful: boolean; issues: Issue[] }> => {
+    onStage?.('checking');
+    const spoken = await callClaude({ system: REVIEW_SYSTEM, messages: [{ role: 'user', content: reviewPrompt(text, passages) }], maxTokens: 4000 });
+    usage.input += spoken.inputTokens;
+    usage.output += spoken.outputTokens;
+    const verdict = parseJsonReply<{ faithful?: boolean; issues?: unknown }>(spoken.text);
+    const issues: Issue[] = Array.isArray(verdict?.issues)
+      ? verdict.issues
+          .map((issue): Issue | null => {
+            if (typeof issue === 'string') return { quote: issue, why: '' };
+            if (issue && typeof issue === 'object') {
+              const { quote, why } = issue as { quote?: unknown; why?: unknown };
+              return { quote: typeof quote === 'string' ? quote : '', why: typeof why === 'string' ? why : '' };
+            }
+            return null;
+          })
+          .filter((issue): issue is Issue => issue !== null && issue.quote.trim() !== '')
+          .slice(0, 12)
+      : [];
+    // A verdict that could not be read names nothing; the grounding checks
+    // above it still hold, and nothing is struck on a reading that did not happen.
+    return { faithful: verdict?.faithful === true || (verdict?.faithful !== false && issues.length === 0) || (verdict === null && issues.length === 0), issues };
   };
 
+  let answer = first.answer;
+  let trimmed = 0;
+
+  // Grounding — the checks that cannot be argued with. One rewrite with the
+  // objections; what still fails is struck: a marker pointing nowhere goes,
+  // a sentence stating a number the passages do not hold goes.
   onStage?.('checking');
-  let answer = parsed.answer;
+  let grounding = checkGrounding(answer, groundingPassages);
+  if (!grounding.ok) {
+    const objections = grounding.problems.map((p) => (p.kind === 'number_not_in_sources' ? `the number ${p.detail} is not in the cited passages` : p.kind === 'unknown_citation' ? `the marker ${p.detail} names no passage` : p.detail));
+    const again = await write(repairPrompt(question, history, passages, answer, objections));
+    if (usable(again)) answer = again.answer;
+    onStage?.('checking');
+    grounding = checkGrounding(answer, groundingPassages);
+    if (!grounding.ok) {
+      const unknown = grounding.problems.filter((p) => p.kind === 'unknown_citation').map((p) => Number(p.detail.replace(/[[\]]/g, '')));
+      if (unknown.length) answer = dropCitations(answer, unknown);
+      const numbers = grounding.problems.filter((p) => p.kind === 'number_not_in_sources').map((p) => p.detail);
+      const struck = removeSentencesWithNumbers(answer, numbers);
+      answer = struck.text;
+      trimmed += struck.removed;
+    }
+  }
+  if (citationNumbers(answer).length === 0 || answer.trim().length < MIN_ANSWER_CHARS) return generalReply(general, allCitations);
+
+  // The second reading. Sentences it names are struck; when a quote cannot
+  // be found in the answer, the draft is written once more with the
+  // objections and read a second time, and what that reading names is
+  // struck. Two readings at most, one rewrite at most, and nothing unread leaves.
   let verdict = await judge(answer);
-
-  // One repair. A long answer with a single sentence the passages do not
-  // support used to be withheld whole; now the draft goes back with the
-  // objections and is written again without them, then faces the same two
-  // checks. A second rejection is final, and nothing unchecked ever leaves.
   if (!verdict.faithful && verdict.issues.length > 0) {
-    onStage?.('writing');
-    const again = await callClaude({
-      system: ANSWER_SYSTEM,
-      messages: [{ role: 'user', content: repairPrompt(question, history, passages, answer, verdict.issues) }],
-      maxTokens: 8000,
-    });
-    usage.input += again.inputTokens;
-    usage.output += again.outputTokens;
-    const reparsed = parseJsonReply<{ answered?: boolean; answer?: string }>(again.text);
-    if (reparsed && typeof reparsed.answer === 'string' && reparsed.answered === true) {
-      onStage?.('checking');
-      answer = reparsed.answer;
-      verdict = await judge(answer);
+    const struck = removeSentences(answer, verdict.issues.map((i) => i.quote));
+    if (struck.removed === verdict.issues.length) {
+      answer = struck.text;
+      trimmed += struck.removed;
+    } else {
+      const again = await write(repairPrompt(question, history, passages, answer, verdict.issues.map((i) => (i.why ? `${i.why}: "${i.quote}"` : i.quote))));
+      if (usable(again)) {
+        answer = again.answer;
+        grounding = checkGrounding(answer, groundingPassages);
+        if (!grounding.ok) {
+          const numbers = grounding.problems.filter((p) => p.kind === 'number_not_in_sources').map((p) => p.detail);
+          const unknown = grounding.problems.filter((p) => p.kind === 'unknown_citation').map((p) => Number(p.detail.replace(/[[\]]/g, '')));
+          if (unknown.length) answer = dropCitations(answer, unknown);
+          const cleaned = removeSentencesWithNumbers(answer, numbers);
+          answer = cleaned.text;
+          trimmed += cleaned.removed;
+        }
+        verdict = await judge(answer);
+        if (!verdict.faithful && verdict.issues.length > 0) {
+          const second = removeSentences(answer, verdict.issues.map((i) => i.quote));
+          answer = second.text;
+          trimmed += second.removed;
+        }
+      } else {
+        answer = struck.text;
+        trimmed += struck.removed;
+      }
     }
   }
-  if (!verdict.faithful) {
-    await log('no_sources', logSources(new Set()), usage);
-    return reply('no_sources', LIBRARY_NO_SOURCES_HE, allCitations, retrieved);
-  }
+  if (citationNumbers(answer).length === 0 || answer.trim().length < MIN_ANSWER_CHARS) return generalReply(general, allCitations);
 
-  const cited = new Set(citedNumbers(answer));
-  await log('answered', logSources(cited), usage);
-  return reply(
-    'answered',
-    answer.trim(),
-    [...cited].sort((a, b) => a - b).map(asCitation),
-    retrieved,
-  );
-}
-
-function citedNumbers(answer: string): number[] {
-  const found = new Set<number>();
-  for (const group of answer.matchAll(/\[([\d\s,]+)\]/g)) {
-    for (const part of group[1].split(',')) {
-      const n = Number(part.trim());
-      if (Number.isInteger(n) && n > 0) found.add(n);
-    }
-  }
-  return [...found];
+  const cited = new Set(citationNumbers(answer));
+  await log('answered', logSources(cited), true);
+  return {
+    ...reply('answered', answer.trim(), [...cited].map(asCitation), retrieved),
+    ...(general ? { general } : {}),
+    ...(trimmed ? { trimmed } : {}),
+  };
 }

@@ -15,12 +15,13 @@ interface QueryRow {
   id: string;
   user_id: string;
   asked_at: string;
-  status: 'answered' | 'no_sources' | 'refused_pii' | 'refused_quota' | 'error';
+  status: 'answered' | 'general' | 'no_sources' | 'refused_pii' | 'refused_quota' | 'error';
   sources: { source_id: string; title: string; url: string | null; page: number | null; cited: boolean }[];
 }
 
 const STATUS_TONES: Record<QueryRow['status'], StatusTone> = {
   answered: 'success',
+  general: 'warning',
   no_sources: 'info',
   refused_pii: 'warning',
   refused_quota: 'warning',
