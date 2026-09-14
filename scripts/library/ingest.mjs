@@ -23,9 +23,11 @@
 //
 // A file that has not changed since the last run (same content hash) is
 // skipped; a file that is gone from the folder is removed from the library
-// when the whole folder was read. .cache/library holds the hashes, the
-// extracted text (so OCR runs once) and the embeddings, so a re-run pays
-// only for what is new.
+// when the whole folder was read; a file that sits in several folders is
+// loaded once, and its other copies are left out or, if an earlier run
+// loaded them, removed. .cache/library holds the hashes, the extracted
+// text (so OCR runs once) and the embeddings, so a re-run pays only for
+// what is new.
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -137,9 +139,27 @@ async function main() {
 
   let supabase = null;
   const admin = async () => (supabase ??= await connectAsAdmin());
-  const summary = { unchanged: 0, loaded: 0, empty: 0, needsOcr: 0, ocr: 0, word: 0, failed: 0, removed: 0, chunks: 0, tokens: 0 };
+  const summary = { unchanged: 0, loaded: 0, empty: 0, needsOcr: 0, ocr: 0, word: 0, failed: 0, removed: 0, duplicates: 0, chunks: 0, tokens: 0 };
   const needsOcr = [];
   const failed = [];
+
+  // One copy of each file. The same book sitting in several folders came in once per folder —
+  // half of the first library was copies, each taking the search's few slots with the same
+  // passage. The first path (in folder order) is the one that is loaded; every other copy is
+  // left out, and a copy that an earlier run did load is removed once the kept one is in.
+  // Drive's checksum decides for files it stores as bytes; a Google document has none, so it is
+  // judged by the hash of its export, after reading.
+  const firstByHash = new Map();
+  const pathByLocator = new Map(files.map((f) => [f.locator, f.path]));
+  for (const f of files) if (f.hash && !firstByHash.has(f.hash)) firstByHash.set(f.hash, f.locator);
+  const copyOf = (locator, sha256) => {
+    const first = firstByHash.get(sha256);
+    if (!first) {
+      firstByHash.set(sha256, locator);
+      return null;
+    }
+    return first === locator ? null : first;
+  };
 
   for (const file of todo) {
     try {
@@ -150,6 +170,28 @@ async function main() {
       // what the manifest and the text cache are keyed by (the column is called sha256 either way).
       const sha256 = file.hash ?? crypto.createHash('sha256').update(await read()).digest('hex');
       const known = manifest.sources[file.locator];
+      const first = copyOf(file.locator, sha256);
+      if (first) {
+        summary.duplicates += 1;
+        const kept = manifest.sources[first];
+        // Drive allows two files of one name in one folder; naming the path alone would read as "a copy of itself".
+        const firstPath = pathByLocator.get(first) ?? first;
+        const keptPath = firstPath === file.path ? `another file of the same name in that folder` : firstPath;
+        if (!known?.id) {
+          log(`ingest: ${file.path} — a copy of ${keptPath}; left out`);
+        } else if (!kept?.id) {
+          log(`ingest: ${file.path} — a copy of ${keptPath}, which is not loaded; kept for now`);
+        } else if (dry) {
+          log(`ingest: ${file.path} — a copy of ${keptPath}; would be removed`);
+        } else {
+          await removeSource(await admin(), known.id, known.title);
+          delete manifest.sources[file.locator];
+          writeJson(manifestPath, manifest);
+          summary.removed += 1;
+          log(`ingest: ${file.path} — a copy of ${keptPath}; removed, the copy there stays`);
+        }
+        continue;
+      }
       if (known && known.sha256 === sha256 && !refresh) {
         summary.unchanged += 1;
         continue;
@@ -269,7 +311,8 @@ async function main() {
   if (supabase) await supabase.auth.signOut();
   log(
     `ingest: done — ${summary.loaded} loaded (${summary.chunks} passages, ${summary.tokens} embedding tokens), ${summary.unchanged} unchanged, ` +
-      `${summary.ocr} read by OCR, ${summary.word} converted by Word, ${summary.needsOcr} waiting for OCR, ${summary.empty} empty, ${summary.failed} failed, ${summary.removed} removed`,
+      `${summary.ocr} read by OCR, ${summary.word} converted by Word, ${summary.needsOcr} waiting for OCR, ${summary.empty} empty, ${summary.failed} failed, ` +
+      `${summary.duplicates} copies of other files, ${summary.removed} removed`,
   );
 }
 

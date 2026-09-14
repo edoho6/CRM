@@ -8,6 +8,7 @@ import {
   LIBRARY_REFUSED_PII_HE,
   LIBRARY_REFUSED_QUOTA_HE,
   checkGrounding,
+  distinctByContent,
   findPii,
   rrfMerge,
   type LibraryAnswer,
@@ -141,14 +142,17 @@ export async function askLibrary(db: SupabaseClient, input: AskInput, onStage?: 
   const best = Math.max(0, ...vectorScore.values());
   // A passage is evidence when it is close in meaning, or when the words
   // themselves matched; anything else is noise that would only tempt the model.
-  const evidence = rrfMerge([vectorList, textList])
-    .map((entry) => byId.get(entry.id)!)
-    .filter((row) => {
-      const similarity = vectorScore.get(row.chunk_id);
-      if (similarity === undefined) return textList.includes(row.chunk_id);
-      return similarity >= LIBRARY_LIMITS.minSimilarity && similarity >= best - LIBRARY_LIMITS.similarityBand;
-    })
-    .slice(0, LIBRARY_LIMITS.passages);
+  // A passage held twice (a book in two folders) counts once, so the few
+  // slots go to distinct evidence and no page is cited against itself.
+  const evidence = distinctByContent(
+    rrfMerge([vectorList, textList])
+      .map((entry) => byId.get(entry.id)!)
+      .filter((row) => {
+        const similarity = vectorScore.get(row.chunk_id);
+        if (similarity === undefined) return textList.includes(row.chunk_id);
+        return similarity >= LIBRARY_LIMITS.minSimilarity && similarity >= best - LIBRARY_LIMITS.similarityBand;
+      }),
+  ).slice(0, LIBRARY_LIMITS.passages);
 
   const retrieved: RetrievedSource[] = evidence.map((row) => ({ sourceId: row.source_id, title: row.title, url: row.url, page: row.page }));
   const logSources = (cited: Set<number>): LogSource[] =>
@@ -182,10 +186,15 @@ export async function askLibrary(db: SupabaseClient, input: AskInput, onStage?: 
 
   // The answer.
   onStage?.('writing');
+  // The ceilings are well above what either reply needs (an answer runs to
+  // some 1,200 tokens, the verdict to 20), because the model thinks before
+  // it writes and that thinking is counted against the same ceiling: at
+  // 1,500 an answer was cut mid-JSON and at 400 a verdict came back with
+  // no text at all — both read as "not found" for an answerable question.
   const first = await callClaude({
     system: ANSWER_SYSTEM,
     messages: [{ role: 'user', content: answerPrompt(question, history, passages) }],
-    maxTokens: 1500,
+    maxTokens: 8000,
   });
   const usage = { input: first.inputTokens, output: first.outputTokens };
   const parsed = parseJsonReply<{ answered?: boolean; answer?: string }>(first.text);
@@ -202,7 +211,7 @@ export async function askLibrary(db: SupabaseClient, input: AskInput, onStage?: 
     const second = await callClaude({
       system: REVIEW_SYSTEM,
       messages: [{ role: 'user', content: reviewPrompt(parsed.answer, passages) }],
-      maxTokens: 400,
+      maxTokens: 4000,
     });
     usage.input += second.inputTokens;
     usage.output += second.outputTokens;

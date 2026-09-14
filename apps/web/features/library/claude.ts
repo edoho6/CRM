@@ -46,23 +46,38 @@ export async function callClaude({
   const key = process.env.ANTHROPIC_API_KEY?.trim();
   if (!key) throw new LibraryUnavailableError('not_configured');
 
-  const response = await fetch(ENDPOINT, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json', 'x-api-key': key, 'anthropic-version': API_VERSION },
-    body: JSON.stringify({ model, max_tokens: maxTokens, temperature: 0, system, messages }),
-    signal,
-  });
-  if (!response.ok) throw new LibraryUnavailableError(`http_${response.status}`);
+  // Now and then a reply arrives with no text in it at all (the service
+  // ends the turn before writing); one such reply made an answerable
+  // question "not found" at the judging step. It is asked once more; a
+  // second empty reply is returned as it is, and the caller treats it as
+  // no answer — never as a pass.
+  let inputTokens = 0;
+  let outputTokens = 0;
+  for (let attempt = 1; ; attempt += 1) {
+    // No `temperature`: the Claude 5 models refuse the parameter outright
+    // ("deprecated for this model", HTTP 400), and every library question
+    // came back as an error until it was dropped. Determinism is not lost —
+    // the grounding checks, not the sampling, are what keep the answer honest.
+    const response = await fetch(ENDPOINT, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-api-key': key, 'anthropic-version': API_VERSION },
+      body: JSON.stringify({ model, max_tokens: maxTokens, system, messages }),
+      signal,
+    });
+    if (!response.ok) throw new LibraryUnavailableError(`http_${response.status}`);
 
-  const payload = (await response.json()) as {
-    content?: { type: string; text?: string }[];
-    usage?: { input_tokens?: number; output_tokens?: number };
-  };
-  const text = (payload.content ?? [])
-    .filter((block) => block.type === 'text' && typeof block.text === 'string')
-    .map((block) => block.text)
-    .join('\n');
-  return { text, inputTokens: payload.usage?.input_tokens ?? 0, outputTokens: payload.usage?.output_tokens ?? 0 };
+    const payload = (await response.json()) as {
+      content?: { type: string; text?: string }[];
+      usage?: { input_tokens?: number; output_tokens?: number };
+    };
+    const text = (payload.content ?? [])
+      .filter((block) => block.type === 'text' && typeof block.text === 'string')
+      .map((block) => block.text)
+      .join('\n');
+    inputTokens += payload.usage?.input_tokens ?? 0;
+    outputTokens += payload.usage?.output_tokens ?? 0;
+    if (text.trim() !== '' || attempt >= 2) return { text, inputTokens, outputTokens };
+  }
 }
 
 /** The first JSON object in a reply; the model is asked for JSON only, but it sometimes wraps it. */

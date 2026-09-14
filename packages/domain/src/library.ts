@@ -211,6 +211,25 @@ export function rrfMerge(lists: readonly (readonly string[])[], k = 60): { id: s
   return [...scores.entries()].map(([id, score]) => ({ id, score })).sort((a, b) => b.score - a.score || a.id.localeCompare(b.id));
 }
 
+/**
+ * The same passage held twice — a book that sits in two folders of the
+ * library, loaded once per copy — would take two of the model's few slots
+ * for one piece of evidence and cite the same page twice. Passages whose
+ * text is the same once whitespace is ignored are folded to the first,
+ * which is the one ranked higher.
+ */
+export function distinctByContent<T extends { content: string }>(rows: readonly T[]): T[] {
+  const seen = new Set<string>();
+  const kept: T[] = [];
+  for (const row of rows) {
+    const key = row.content.replace(/\s+/g, ' ').trim();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    kept.push(row);
+  }
+  return kept;
+}
+
 /** The answer given when the library holds nothing on the question, in the practitioner's words. */
 export const LIBRARY_NO_SOURCES_HE = 'לא מצאתי במקורות הספרייה תשובה מבוססת לשאלה הזאת, ולכן אני לא עונה עליה.';
 export const LIBRARY_REFUSED_PII_HE =

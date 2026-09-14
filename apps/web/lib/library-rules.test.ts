@@ -3,6 +3,7 @@ import {
   LIBRARY_DISCLAIMER_HE,
   checkGrounding,
   citationNumbers,
+  distinctByContent,
   findPii,
   isIsraeliId,
   numbersIn,
@@ -76,6 +77,18 @@ describe('rrfMerge', () => {
     ]);
     expect(merged.map((m) => m.id)).toEqual(['a', 'c', 'b', 'd']);
     expect(merged[0]!.score).toBeGreaterThan(merged[2]!.score);
+  });
+});
+
+describe('distinctByContent', () => {
+  it('folds passages with the same text to the first, ignoring whitespace, and keeps the rest', () => {
+    const rows = [
+      { id: 'first', content: 'Sheng Jiang warms the middle.' },
+      { id: 'copy', content: 'Sheng  Jiang warms the middle.\n' },
+      { id: 'other', content: 'Sheng Jiang warms the lung.' },
+    ];
+    expect(distinctByContent(rows).map((r) => r.id)).toEqual(['first', 'other']);
+    expect(distinctByContent([])).toEqual([]);
   });
 });
 

@@ -9,6 +9,8 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./', import.meta.url)),
       // The price job's logic lives with the Edge Function; its tests live here.
       '@shop': fileURLToPath(new URL('../../supabase/functions/_shared/shop-prices', import.meta.url)),
+      // Server modules guard themselves with `import 'server-only'`, which throws here; see lib/test/server-only.ts.
+      'server-only': fileURLToPath(new URL('./lib/test/server-only.ts', import.meta.url)),
     },
   },
   // Next compiles JSX itself, so the tsconfig says `preserve`; a test that
