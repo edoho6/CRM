@@ -23,31 +23,62 @@
  * Usage:  node scripts/seed-sandbox-month.mjs [--dry-run] [--reset] [--patients=60] [--per-day=14]
  *   --reset   first removes what an earlier run of this script made (its
  *             patients carry a marker in their notes) — nothing else.
+ *   --remove  removes what an earlier run made and stops: the way back to
+ *             an empty clinic before real patients arrive.
  *   --dry-run prints the plan and writes nothing.
+ *
+ * The practitioner's own diary, for trying the system with a full practice
+ * (September 2026): the same script, signed in as them, with their week —
+ *
+ *   node scripts/seed-sandbox-month.mjs --me --patients=100 --weekly=33 --weeks=9 --days=0,2,4 --start=9 --end=20 --rooms=1
+ *
+ *   --me        asks for the email and password in the terminal (the smoke
+ *               account is the sandbox's; a real clinic is its owner's).
+ *   --days      working weekdays, 0 = Sunday. --start/--end the hours.
+ *   --rooms=1   one patient an hour, on the hour; 2 adds a room on the half hour.
+ *   --weekly=N  N patients hold a fixed hour every week for --weeks weeks
+ *               (as many as the week has hours); the others have a history
+ *               and no future appointment, like a real file that is not
+ *               currently in treatment.
+ * The guard does not move: the clinic row must carry `is_synthetic`, which
+ * puts the amber banner on every screen until --remove and the flag's
+ * removal, before the first real patient.
  */
 
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
+import { ask } from './medicine/lib/prompt.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const { createClient } = createRequire(path.join(root, 'apps', 'web', 'package.json'))('@supabase/supabase-js');
 
 const args = new Set(process.argv.slice(2));
 const dryRun = args.has('--dry-run');
-const reset = args.has('--reset');
+const reset = args.has('--reset') || args.has('--remove');
+const removeOnly = args.has('--remove');
+const asMe = args.has('--me');
 const numberArg = (name, fallback) => Number([...args].find((a) => a.startsWith(`--${name}=`))?.split('=')[1] ?? fallback);
+const listArg = (name, fallback) => {
+  const raw = [...args].find((a) => a.startsWith(`--${name}=`))?.split('=')[1];
+  return raw ? raw.split(',').map(Number).filter((n) => Number.isInteger(n)) : fallback;
+};
 const PATIENTS = numberArg('patients', 60);
 const PER_DAY = Math.min(19, numberArg('per-day', 14));
 const PAST_PER_DAY = 8;
 const MARKER = 'SEED-MONTH';
-/** Sunday, Tuesday, Wednesday. */
-const WORK_DAYS = [0, 2, 3];
-const DAY_START = 10;
-const DAY_END = 20;
-const DAYS_AHEAD = 31;
+/** Sunday, Tuesday, Wednesday unless told otherwise (0 = Sunday). */
+const WORK_DAYS = listArg('days', [0, 2, 3]);
+const DAY_START = numberArg('start', 10);
+const DAY_END = numberArg('end', 20);
+const ROOMS = Math.min(2, Math.max(1, numberArg('rooms', 2)));
+/** How many patients keep a fixed weekly hour; 0 spreads the diary's slots across everyone instead. */
+const WEEKLY = numberArg('weekly', 0);
+const DAYS_AHEAD = numberArg('weeks', 0) > 0 ? numberArg('weeks', 0) * 7 : 31;
 const DAYS_BACK = 63;
+if (!WORK_DAYS.length || WORK_DAYS.some((d) => d < 0 || d > 6)) throw new Error('--days takes weekdays 0–6, e.g. --days=0,2,4');
+if (!(DAY_START >= 0 && DAY_END <= 24 && DAY_END - DAY_START >= 2)) throw new Error('--start/--end must leave at least two hours, e.g. --start=9 --end=20');
 
 function readEnv(file) {
   if (!fs.existsSync(file)) return {};
@@ -61,10 +92,9 @@ function readEnv(file) {
 const env = { ...readEnv(path.join(root, 'apps/web/.env.local')), ...readEnv(path.join(root, 'apps/web/.env.test.local')) };
 const url = env.NEXT_PUBLIC_SUPABASE_URL;
 const anonKey = env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-const email = env.SMOKE_EMAIL;
-const password = env.SMOKE_PASSWORD;
-if (!url || !anonKey || !email || !password) {
-  throw new Error('Needs NEXT_PUBLIC_SUPABASE_URL/ANON_KEY (apps/web/.env.local) and SMOKE_EMAIL/SMOKE_PASSWORD (apps/web/.env.test.local).');
+if (!url || !anonKey) throw new Error('Needs NEXT_PUBLIC_SUPABASE_URL/ANON_KEY (apps/web/.env.local).');
+if (!asMe && (!env.SMOKE_EMAIL || !env.SMOKE_PASSWORD)) {
+  throw new Error('Needs SMOKE_EMAIL/SMOKE_PASSWORD (apps/web/.env.test.local) — or --me, to sign in as yourself.');
 }
 
 /* ---- time, in the clinic's zone ------------------------------------------ */
@@ -136,14 +166,37 @@ const CASES = [
   { tag: 'צרבת', complaint: 'צרבת אחרי ארוחות, גיהוקים ותחושת מלאות', western: 'ריפלוקס קיבתי-ושטי', pattern: 'חום בקיבה עם Qi שעולה במקום לרדת', principle: 'לנקות חום מהקיבה, להוריד Qi מורד ולהרמוניה בין הכבד לקיבה', tongue: ['אדום', 'תקינה', 'חיפוי צהוב', ''], pulse: ['מיתרי ומהיר', 'חלקלק', ['מיתרי', 'מהיר'], ''], points: ['CV12', 'PC6', 'ST36', 'ST44', 'LV3', 'CV17'], formula: ['Zuo Jin Wan', 'דזואו ג׳ין וואן'], herbs: [['Huang Lian', 6], ['Wu Zhu Yu', 1.5], ['Hai Piao Xiao', 12], ['Zhe Bei Mu', 9], ['Bai Shao', 9], ['Chen Pi', 6], ['Zhi Ke', 6], ['Gan Cao', 3]], modalities: ['acupuncture'], recommendations: 'ארוחות קטנות, לא לשכב שעתיים אחרי אוכל, הרמת ראש המיטה.', chronic: 'ריפלוקס', medications: 'אומפרזול 20 מ״ג', allergies: 'ללא ידועות', surgeries: 'ללא', family: 'ללא ידוע', lifestyle: 'ארוחות ערב מאוחרות, קפה על בטן ריקה', task: 'לעבור על שינויי התזונה שהוסכמו' },
   { tag: 'מצב רוח', complaint: 'מצב רוח ירוד, חוסר חשק ועייפות בבוקר מזה כמה חודשים', western: 'דיכאון קל', pattern: 'סטגנציה של Qi הכבד עם חוסר Qi של הטחול והלב', principle: 'להניע את Qi הכבד, לחזק את הטחול ולהזין את הלב', tongue: ['חיוור', 'מעט נפוחה', 'חיפוי לבן דק', ''], pulse: ['מיתרי וחלש', 'חלש', ['מיתרי', 'חלש'], ''], points: ['GV20', 'Yintang', 'LV3', 'HT7', 'ST36', 'PC6'], formula: ['Xiao Yao San', 'שיאו יאו סאן'], herbs: [['Chai Hu', 9], ['Dang Gui', 9], ['Bai Shao', 9], ['Bai Zhu', 9], ['Fu Ling', 9], ['Bo He', 3], ['Sheng Jiang', 3], ['He Huan Pi', 12], ['Gan Cao', 3]], modalities: ['acupuncture'], recommendations: 'יציאה לאור יום בבוקר, פעילות גופנית מתונה, שיחה עם איש מקצוע במקביל.', chronic: 'ללא', medications: 'ללא', allergies: 'ללא ידועות', surgeries: 'ללא', family: 'אם — דיכאון', lifestyle: 'עובד מהבית, מעט מפגשים', task: 'לוודא שנקבע מפגש עם פסיכולוג' },
   { tag: 'נשימה', complaint: 'קוצר נשימה במאמץ ושיעול יבש שנותר אחרי מחלה ויראלית', western: 'תסמינים מתמשכים לאחר זיהום ויראלי', pattern: 'חוסר Qi ו-Yin של הריאה', principle: 'לחזק Qi הריאה, להזין Yin ולעצור שיעול', tongue: ['אדום', 'דקה', 'חיפוי דק', 'יובש'], pulse: ['דק וחלש', 'דק', ['דק', 'חלש'], ''], points: ['LU9', 'LU7', 'BL13', 'ST36', 'CV17', 'KI6'], formula: ['Sheng Mai San', 'שנג מאי סאן'], herbs: [['Dang Shen', 12], ['Mai Men Dong', 12], ['Wu Wei Zi', 6], ['Sha Shen', 9], ['Bai He', 12], ['Jie Geng', 6], ['Xing Ren', 6], ['Gan Cao', 3]], modalities: ['acupuncture', 'moxibustion'], recommendations: 'הליכה קלה בהדרגה, תרגילי נשימה, שתייה חמה.', chronic: 'ללא', medications: 'ללא', allergies: 'ללא ידועות', surgeries: 'ללא', family: 'ללא ידוע', lifestyle: 'רוכב אופניים, חזר בהדרגה', task: 'לשאול על השיעול והסיבולת בביקור הבא' },
+  // Fifteen more, for a hundred files that should not read like six copies of each.
+  { tag: 'בלוטת התריס', complaint: 'עייפות, רגישות לקור, עלייה במשקל ועצירות; תת-פעילות של בלוטת התריס מאובחנת ומטופלת', western: 'תת-פעילות בלוטת התריס (השימוטו), מאוזנת תרופתית', pattern: 'חוסר Yang של הטחול והכליה', principle: 'לחמם ולחזק את Yang הטחול והכליה, להניע לחות', tongue: ['חיוור', 'נפוחה עם סימני שיניים', 'חיפוי לבן לח', ''], pulse: ['עמוק ואיטי', 'עמוק וחלש', ['עמוק', 'איטי', 'חלש'], ''], points: ['ST36', 'SP6', 'KI3', 'GV4', 'BL20', 'BL23', 'CV4'], formula: ['Jin Gui Shen Qi Wan', 'ג׳ין גווי שן צ׳י וואן'], herbs: [['Shu Di Huang', 12], ['Shan Zhu Yu', 9], ['Shan Yao', 12], ['Fu Zi', 3], ['Rou Gui', 3], ['Fu Ling', 9], ['Ze Xie', 6], ['Mu Dan Pi', 6]], modalities: ['acupuncture', 'moxibustion'], recommendations: 'ארוחות חמות ומבושלות, הליכה יומית קצרה, בדיקות TSH לפי הרופא ללא שינוי בתרופה.', chronic: 'תת-פעילות בלוטת התריס', medications: 'לבותירוקסין 75 מק״ג', allergies: 'ללא ידועות', surgeries: 'ללא', family: 'אם — מחלת בלוטת התריס', lifestyle: 'עבודה מהבית, מעט תנועה; שינה 8 שעות', task: 'לבקש תוצאות בדיקות דם אחרונות' },
+  { tag: 'סוכרת', complaint: 'צמא, יובש בפה ועייפות אחרי ארוחות; סוכרת סוג 2 בטיפול תרופתי, מבקש תמיכה משלימה', western: 'סוכרת סוג 2', pattern: 'חוסר Yin עם חום ויובש בקיבה ובכליה', principle: 'להזין Yin, לייצר נוזלים ולנקות חום', tongue: ['אדום', 'דקה', 'חיפוי דק ויבש', 'סדקים במרכז'], pulse: ['דק ומהיר', 'דק', ['דק', 'מהיר'], ''], points: ['SP6', 'ST36', 'KI3', 'BL20', 'BL23', 'CV12', 'ST44'], formula: ['Liu Wei Di Huang Wan', 'ליו ווי די הואנג וואן'], herbs: [['Shu Di Huang', 12], ['Shan Yao', 15], ['Shan Zhu Yu', 9], ['Ze Xie', 9], ['Mu Dan Pi', 6], ['Fu Ling', 9], ['Tian Hua Fen', 9], ['Huang Qi', 12]], modalities: ['acupuncture'], recommendations: 'ניטור סוכר כרגיל; הליכה אחרי הארוחה; להימנע ממתוקים ומשקאות ממותקים. שום שינוי בתרופות בלי הרופא.', chronic: 'סוכרת סוג 2 מזה שש שנים', medications: 'מטפורמין 850 מ״ג פעמיים ביום', allergies: 'ללא ידועות', surgeries: 'ללא', family: 'שני ההורים — סוכרת סוג 2', lifestyle: 'נהג, ישיבה ממושכת; ארוחות לא סדירות', task: 'לתאם עם המטופל תוכנית הליכה' },
+  { tag: 'כתף קפואה', complaint: 'כאב וטווח תנועה מוגבל בכתף שמאל מזה ארבעה חודשים, קשה להתלבש ולישון על הצד', western: 'קפסוליטיס אדהזיבית (כתף קפואה)', pattern: 'חסימת Qi ודם בערוצי הכתף עם חדירת קור', principle: 'לפזר קור, להניע Qi ודם ולפתוח את הערוצים', tongue: ['ורוד תקין', 'תקינה', 'חיפוי לבן דק', ''], pulse: ['מיתרי', 'מיתרי', ['מיתרי'], 'מתוח בעמדת הכבד'], points: ['LI15', 'TB14', 'SI9', 'LI11', 'GB34', 'ST38', 'LI4'], formula: ['Juan Bi Tang', 'ג׳ואן בי טאנג'], herbs: [['Qiang Huo', 9], ['Jiang Huang', 9], ['Dang Gui', 9], ['Huang Qi', 12], ['Chi Shao', 9], ['Fang Feng', 6], ['Gan Cao', 3]], modalities: ['acupuncture', 'moxibustion', 'cupping'], recommendations: 'תרגילי מטוטלת פעמיים ביום, חימום לפני התרגול, לא להרים משקל מעל גובה הכתף.', chronic: 'ללא', medications: 'אטקוד לפי הצורך', allergies: 'פניצילין', surgeries: 'ללא', family: 'ללא ידוע', lifestyle: 'ספרית, עבודה עם ידיים מורמות; שחייה בעבר', task: 'לבדוק התקדמות בטווח התנועה עם מד זווית' },
+  { tag: 'תעלה קרפלית', complaint: 'נימול וכאב בכף יד ימין, בעיקר בלילה ובבוקר; ניעור היד מקל', western: 'תסמונת התעלה הקרפלית', pattern: 'חסימת Qi ודם בערוצי מעטפת הלב והמעי הגס עם לחות', principle: 'להניע Qi ודם בערוצים, לפזר לחות ולעצור כאב', tongue: ['חיוור', 'מעט נפוחה', 'חיפוי לבן', ''], pulse: ['חלקלק', 'דק', ['חלקלק'], ''], points: ['PC7', 'PC6', 'LI4', 'LI10', 'TB5', 'SP9', 'LI11'], formula: ['Huang Qi Gui Zhi Wu Wu Tang', 'הואנג צ׳י גווי ג׳י וו וו טאנג'], herbs: [['Huang Qi', 15], ['Gui Zhi', 9], ['Bai Shao', 9], ['Sheng Jiang', 6], ['Da Zao', 6], ['Ji Xue Teng', 12]], modalities: ['acupuncture', 'moxibustion'], recommendations: 'סד לילה לשורש כף היד, הפסקות בעבודה עם עכבר כל 30 דקות, מתיחות לכפות הידיים.', chronic: 'ללא', medications: 'ללא', allergies: 'ללא ידועות', surgeries: 'ללא', family: 'ללא ידוע', lifestyle: 'מתכנתת, עשר שעות ביום מול מחשב', task: 'להמליץ על סד לילה ולתעד' },
+  { tag: 'כף רגל', complaint: 'כאב בעקב בצעדים הראשונים בבוקר ואחרי ישיבה ממושכת, מזה חצי שנה', western: 'דלקת הפאשיה הפלנטרית', pattern: 'חוסר Yin של הכליה עם סטגנציה מקומית של Qi ודם', principle: 'להזין Yin של הכליה, להניע דם ולעצור כאב במקום', tongue: ['אדום קל', 'דקה', 'חיפוי דק', 'סדקים בשורש'], pulse: ['דק', 'דק ועמוק', ['דק', 'עמוק'], 'חלש בעמדת הכליה'], points: ['KI3', 'KI6', 'BL60', 'BL57', 'SP4', 'GB34', 'KI1'], formula: ['Liu Wei Di Huang Wan', 'ליו ווי די הואנג וואן'], herbs: [['Shu Di Huang', 12], ['Shan Zhu Yu', 9], ['Shan Yao', 12], ['Ze Xie', 6], ['Mu Dan Pi', 6], ['Fu Ling', 9], ['Niu Xi', 9], ['Mu Gua', 9]], modalities: ['acupuncture', 'moxibustion'], recommendations: 'גלגול בקבוק קפוא מתחת לכף הרגל, מתיחת שוקיים, נעליים עם תמיכה בקשת.', chronic: 'ללא', medications: 'ללא', allergies: 'ללא ידועות', surgeries: 'ללא', family: 'אב — דלקת מפרקים', lifestyle: 'מלצר, עומד רוב היום; ריצה בסופי שבוע', task: 'לבדוק אם הנעליים הוחלפו' },
+  { tag: 'אנדומטריוזיס', complaint: 'כאבי מחזור עזים המקרינים לגב ולירכיים, כאב בקיום יחסים, אבחנה של אנדומטריוזיס', western: 'אנדומטריוזיס', pattern: 'סטגנציה של דם עם קור ברחם', principle: 'לחמם את הרחם, להניע דם, לפזר סטגנציה ולעצור כאב', tongue: ['סגלגל כהה', 'תקינה', 'חיפוי לבן', 'נקודות סטגנציה'], pulse: ['מיתרי ומחוספס', 'עמוק', ['מיתרי', 'מחוספס'], ''], points: ['SP6', 'SP8', 'CV3', 'ST29', 'LR3', 'KI13', 'SP10'], formula: ['Shao Fu Zhu Yu Tang', 'שאו פו ג׳ו יו טאנג'], herbs: [['Xiao Hui Xiang', 3], ['Gan Jiang', 3], ['Yan Hu Suo', 9], ['Dang Gui', 9], ['Chuan Xiong', 6], ['Chi Shao', 9], ['Pu Huang', 9], ['Wu Ling Zhi', 9], ['Rou Gui', 3]], modalities: ['acupuncture', 'moxibustion'], recommendations: 'חימום הבטן התחתונה בימים שלפני המחזור, להימנע מקור ומגלידה בשבוע שלפני, מעקב ביומן מחזור.', chronic: 'אנדומטריוזיס מאובחנת בלפרוסקופיה', medications: 'משככי כאבים בזמן המחזור', allergies: 'ללא ידועות', surgeries: 'לפרוסקופיה אבחנתית (2023)', family: 'אחות — אנדומטריוזיס', lifestyle: 'סטודנטית, יוגה פעם בשבוע', task: 'להתאים את הפורמולה לשלב המחזור בביקור הבא' },
+  { tag: 'בחילות הריון', complaint: 'בחילות והקאות בוקר בשבוע התשיעי להריון, קושי לאכול ועייפות', western: 'בחילות והקאות בהריון', pattern: 'חוסר הרמוניה בין הקיבה לכבד עם Qi של הקיבה שעולה', principle: 'להרמן את הקיבה, להוריד Qi מורד ולחזק את הטחול — בזהירות של הריון', tongue: ['חיוור-ורוד', 'תקינה', 'חיפוי לבן דק', ''], pulse: ['חלקלק', 'חלקלק ומיתרי', ['חלקלק'], 'דופק הריון'], points: ['PC6', 'ST36', 'CV12', 'SP4', 'KI27'], formula: ['Xiang Sha Liu Jun Zi Tang', 'שיאנג שא ליו ג׳ון דזה טאנג'], herbs: [['Ren Shen', 6], ['Bai Zhu', 9], ['Fu Ling', 9], ['Zhi Gan Cao', 3], ['Chen Pi', 6], ['Ban Xia', 6], ['Mu Xiang', 3], ['Sha Ren', 3], ['Zi Su Ye', 6]], modalities: ['acupuncture'], recommendations: 'ארוחות קטנות ותכופות, ג׳ינג׳ר טרי במים חמים בבוקר, מנוחה; נקודות ההריון נמנעות (SP6, LI4).', chronic: 'ללא', medications: 'חומצה פולית', allergies: 'ללא ידועות', surgeries: 'ללא', family: 'ללא ידוע', lifestyle: 'מורה, הריון ראשון', task: 'לוודא שהרופאה המלווה יודעת על הטיפול' },
+  { tag: 'ערמונית', complaint: 'השתנה תכופה בלילה, זרם חלש ותחושת ריקון לא מלא', western: 'הגדלה שפירה של הערמונית', pattern: 'חוסר Qi של הכליה עם לחות-חום במחמם התחתון', principle: 'לחזק את הכליה, לנקז לחות-חום ולהניע את מי המחמם התחתון', tongue: ['חיוור', 'נפוחה', 'חיפוי צהבהב דביק בשורש', ''], pulse: ['עמוק וחלש', 'חלקלק', ['עמוק', 'חלקלק'], ''], points: ['CV3', 'CV4', 'SP6', 'SP9', 'BL23', 'BL28', 'KI3'], formula: ['Ji Sheng Shen Qi Wan', 'ג׳י שנג שן צ׳י וואן'], herbs: [['Shu Di Huang', 12], ['Shan Yao', 12], ['Shan Zhu Yu', 9], ['Fu Ling', 9], ['Ze Xie', 9], ['Mu Dan Pi', 6], ['Che Qian Zi', 9], ['Niu Xi', 9], ['Rou Gui', 3]], modalities: ['acupuncture', 'moxibustion'], recommendations: 'להפחית שתייה בשעות הערב, להימנע מקפאין ואלכוהול בערב, מעקב אורולוגי כרגיל.', chronic: 'הגדלת ערמונית שפירה', medications: 'טמסולוסין 0.4 מ״ג', allergies: 'ללא ידועות', surgeries: 'ללא', family: 'אב — סרטן הערמונית בגיל 78', lifestyle: 'גמלאי, הליכות בוקר', task: 'לשאול על תוצאות ה-PSA האחרונות' },
+  { tag: 'אסתמה', complaint: 'צפצופים וקוצר נשימה במאמץ ובלילות קרים, שימוש במשאף הצלה פעמיים בשבוע', western: 'אסתמה קלה מתמשכת', pattern: 'חוסר Qi של הריאה והכליה עם ליחה שמסתתרת', principle: 'לחזק את הריאה ואת הכליה, להמיר ליחה ולהוריד Qi', tongue: ['חיוור', 'מעט נפוחה', 'חיפוי לבן דביק', ''], pulse: ['חלש', 'חלקלק', ['חלש', 'חלקלק'], 'חלש בעמדת הריאה'], points: ['LU7', 'LU9', 'BL13', 'BL23', 'KI3', 'CV17', 'ST40'], formula: ['Yu Ping Feng San', 'יו פינג פנג סאן'], herbs: [['Huang Qi', 15], ['Bai Zhu', 9], ['Fang Feng', 6], ['Zi Su Zi', 9], ['Ban Xia', 6], ['Chen Pi', 6], ['Wu Wei Zi', 3], ['Gan Cao', 3]], modalities: ['acupuncture', 'moxibustion'], recommendations: 'להמשיך במשאף המונע כפי שנקבע; חימום האוויר בנשימה דרך צעיף בקור; תרגילי נשימה סרעפתית.', chronic: 'אסתמה מילדות', medications: 'משאף בודסוניד; סלבוטמול לפי הצורך', allergies: 'קרדית האבק', surgeries: 'ללא', family: 'אם — אסתמה', lifestyle: 'רוכב אופניים, מתאמן בחוץ', task: 'לתעד תדירות השימוש במשאף ההצלה' },
+  { tag: 'סינוסים', complaint: 'גודש ולחץ בפנים, הפרשה סמיכה מהאף וכאבי ראש פרונטליים, שלוש דלקות סינוסים בשנה האחרונה', western: 'סינוסיטיס כרונית', pattern: 'חום ולחות בריאה עם חסימת רוח בפתחי האף', principle: 'לפתוח את פתחי האף, לנקות חום ולהמיר ליחה', tongue: ['אדום', 'תקינה', 'חיפוי צהוב דביק', ''], pulse: ['חלקלק ומהיר', 'חלקלק', ['חלקלק', 'מהיר'], ''], points: ['LI20', 'EX-HN3', 'LI4', 'LU7', 'ST36', 'GB20', 'BL2'], formula: ['Cang Er Zi San', 'צאנג אר דזה סאן'], herbs: [['Cang Er Zi', 9], ['Xin Yi', 6], ['Bai Zhi', 9], ['Bo He', 3], ['Huang Qin', 9], ['Jie Geng', 6], ['Gan Cao', 3]], modalities: ['acupuncture', 'cupping'], recommendations: 'שטיפות אף במי מלח פעמיים ביום, אדים חמים בערב, להפחית מוצרי חלב בתקופת ההתקף.', chronic: 'סינוסיטיס חוזרת', medications: 'תרסיס אף סטרואידי', allergies: 'אבקת עצי זית', surgeries: 'ניתוח מחיצת האף (2017)', family: 'ללא ידוע', lifestyle: 'גנן, עבודה בחוץ', task: 'לבדוק אם השטיפות נעשות בקביעות' },
+  { tag: 'פיברומיאלגיה', complaint: 'כאבים מפושטים בשרירים, שינה לא מרעננת ועייפות קשה, רגישות בלחיצה', western: 'פיברומיאלגיה', pattern: 'חוסר Qi ודם עם סטגנציה של Qi הכבד', principle: 'להזין Qi ודם, להניע את Qi הכבד ולהרגיע את השן', tongue: ['חיוור', 'דקה', 'חיפוי לבן דק', 'סדק במרכז'], pulse: ['דק ומיתרי', 'דק', ['דק', 'מיתרי'], ''], points: ['LR3', 'SP6', 'ST36', 'GB34', 'BL18', 'BL20', 'HT7', 'GV20'], formula: ['Xiao Yao San', 'שיאו יאו סאן'], herbs: [['Chai Hu', 9], ['Dang Gui', 9], ['Bai Shao', 9], ['Bai Zhu', 9], ['Fu Ling', 9], ['Zhi Gan Cao', 3], ['Sheng Jiang', 3], ['Bo He', 3], ['Ji Xue Teng', 12]], modalities: ['acupuncture', 'moxibustion'], recommendations: 'הליכה עדינה יומית, שעת שינה קבועה, אמבט חם בערב; מפגשים קצרים בתחילה.', chronic: 'פיברומיאלגיה; תסמונת המעי הרגיז', medications: 'דולוקסטין 30 מ״ג', allergies: 'ללא ידועות', surgeries: 'ללא', family: 'אם — פיברומיאלגיה', lifestyle: 'מזכירה, קושי לישון; אין פעילות גופנית', task: 'לשלוח תוכנית הליכה מדורגת' },
+  { tag: 'פסוריאזיס', complaint: 'רבדים אדומים עם קשקשים כסופים במרפקים ובקרקפת, גירוד, החמרה בלחץ', western: 'פסוריאזיס פלאק', pattern: 'חום בדם עם יובש ורוח בעור', principle: 'לקרר את הדם, לנקות חום, להזין Yin ולעצור גירוד', tongue: ['אדום', 'תקינה', 'חיפוי צהבהב דק', 'נקודות אדומות בקצה'], pulse: ['מהיר', 'מיתרי ומהיר', ['מהיר', 'מיתרי'], ''], points: ['LI11', 'SP10', 'BL17', 'BL40', 'ST36', 'LU5', 'GV14'], formula: ['Xi Jiao Di Huang Tang', 'שי ג׳יאו די הואנג טאנג (עם קרן תאו)'], herbs: [['Shui Niu Jiao', 15], ['Sheng Di Huang', 15], ['Mu Dan Pi', 9], ['Chi Shao', 9], ['Zi Cao', 9], ['Bai Ji Li', 9], ['Tu Fu Ling', 12], ['Gan Cao', 3]], modalities: ['acupuncture'], recommendations: 'לחות לעור אחרי המקלחת, להימנע מאלכוהול ומאוכל חריף, חשיפה מתונה לשמש.', chronic: 'פסוריאזיס מזה עשר שנים', medications: 'משחה סטרואידית לפי הצורך', allergies: 'ללא ידועות', surgeries: 'ללא', family: 'אב — פסוריאזיס', lifestyle: 'מנהל פרויקטים, לחץ בעבודה; מעשן', task: 'לצלם את הרבדים לתיעוד התקדמות (בהסכמה)' },
+  { tag: 'נשירת שיער', complaint: 'נשירת שיער מוגברת מזה ארבעה חודשים, שיער דק ויבש, ציפורניים שבירות', western: 'טלוגן אפלוביום', pattern: 'חוסר דם ו-Yin של הכבד והכליה', principle: 'להזין דם ו-Yin של הכבד והכליה, לחזק את שורש השיער', tongue: ['חיוור', 'דקה', 'חיפוי דק', ''], pulse: ['דק', 'דק וחלש', ['דק', 'חלש'], ''], points: ['GV20', 'BL18', 'BL23', 'SP6', 'KI3', 'ST36', 'LR8'], formula: ['Qi Bao Mei Ran Dan', 'צ׳י באו מיי ראן דאן'], herbs: [['He Shou Wu', 12], ['Dang Gui', 9], ['Gou Qi Zi', 9], ['Tu Si Zi', 9], ['Nu Zhen Zi', 9], ['Han Lian Cao', 9], ['Bu Gu Zhi', 6]], modalities: ['acupuncture'], recommendations: 'בדיקת ברזל ופריטין אצל הרופא, תזונה עשירה בחלבון וברזל, להימנע מקשירה הדוקה של השיער.', chronic: 'ללא', medications: 'גלולות למניעת הריון', allergies: 'ללא ידועות', surgeries: 'ללא', family: 'ללא ידוע', lifestyle: 'אחות במשמרות לילה; דיאטה נמוכת קלוריות לאחרונה', task: 'לבקש תוצאות פריטין' },
+  { tag: 'שיקום אחרי שבץ', complaint: 'חולשה ביד ובגב כף הרגל הימניות חצי שנה אחרי אירוע מוחי, קושי בהליכה ובאחיזה', western: 'המיפרזיס לאחר אירוע מוחי איסכמי', pattern: 'חוסר Qi עם סטגנציה של דם בערוצים', principle: 'לחזק Qi, להניע דם ולפתוח את הערוצים בצד הפגוע', tongue: ['סגלגל', 'מעט נוטה לצד', 'חיפוי לבן דק', 'ורידים כהים מתחת ללשון'], pulse: ['מחוספס', 'חלש', ['מחוספס', 'חלש'], ''], points: ['LI15', 'LI11', 'LI4', 'GB30', 'GB34', 'ST36', 'LR3', 'GV20'], formula: ['Bu Yang Huan Wu Tang', 'בו יאנג הואן וו טאנג'], herbs: [['Huang Qi', 30], ['Dang Gui', 6], ['Chi Shao', 6], ['Di Long', 3], ['Chuan Xiong', 3], ['Hong Hua', 3], ['Tao Ren', 3]], modalities: ['acupuncture', 'moxibustion'], recommendations: 'להמשיך בפיזיותרפיה במקביל; תרגול יומי של האחיזה; מדידת לחץ דם בבית.', chronic: 'יתר לחץ דם; אירוע מוחי (2026)', medications: 'אספירין 100 מ״ג; אטורבסטטין 40 מ״ג; רמיפריל 5 מ״ג', allergies: 'ללא ידועות', surgeries: 'ללא', family: 'אב — אירוע מוחי', lifestyle: 'גמלאי, נעזר בבן משפחה בהגעה', task: 'לתאם עם הפיזיותרפיסט את הדגשים לשבוע הקרוב' },
+  { tag: 'לסת', complaint: 'כאב בלסת ובאוזן, נקישות בפתיחת הפה וחריקת שיניים בלילה', western: 'הפרעה במפרק הלסת (TMD)', pattern: 'חסימת Qi ודם בערוצי הקיבה והמעי הגס על רקע מתח של Qi הכבד', principle: 'להניע Qi ודם בערוצים, להרפות את הכבד ולעצור כאב', tongue: ['ורוד תקין', 'תקינה', 'חיפוי לבן דק', 'קצה מעט אדום'], pulse: ['מיתרי', 'מיתרי', ['מיתרי'], ''], points: ['ST7', 'ST6', 'SI19', 'LI4', 'GB20', 'TB17', 'LR3'], formula: ['Xiao Yao San', 'שיאו יאו סאן'], herbs: [['Chai Hu', 9], ['Dang Gui', 9], ['Bai Shao', 12], ['Bai Zhu', 9], ['Fu Ling', 9], ['Zhi Gan Cao', 3], ['Ge Gen', 12], ['Bo He', 3]], modalities: ['acupuncture', 'cupping'], recommendations: 'סד לילה מרופא השיניים, חום מקומי בערב, להימנע ממסטיק ומאוכל קשה בתקופת ההתקף.', chronic: 'ללא', medications: 'ללא', allergies: 'ללא ידועות', surgeries: 'ללא', family: 'ללא ידוע', lifestyle: 'עורך דין, לחץ בעבודה; חריקת שיניים ידועה', task: 'לבדוק אם הסד הותאם' },
 ];
 
 const TAGS = [
   ['כאבי גב', 'amber'], ['מיגרנות', 'red'], ['שינה', 'sky'], ['עייפות', 'ink'], ['עיכול', 'jade'], ['מחזור', 'red'], ['חרדה', 'sky'],
   ['צוואר וכתפיים', 'amber'], ['אלרגיה', 'jade'], ['ברכיים', 'amber'], ['עור', 'ink'], ['גיל המעבר', 'red'], ['פוריות', 'jade'],
   ['שחלות פוליציסטיות', 'jade'], ['לחץ דם', 'red'], ['טנטון', 'ink'], ['סיאטיקה', 'amber'], ['צרבת', 'jade'], ['מצב רוח', 'sky'], ['נשימה', 'sky'],
+  ['בלוטת התריס', 'ink'], ['סוכרת', 'red'], ['כתף קפואה', 'amber'], ['תעלה קרפלית', 'amber'], ['כף רגל', 'amber'], ['אנדומטריוזיס', 'red'],
+  ['בחילות הריון', 'jade'], ['ערמונית', 'ink'], ['אסתמה', 'sky'], ['סינוסים', 'sky'], ['פיברומיאלגיה', 'ink'], ['פסוריאזיס', 'ink'],
+  ['נשירת שיער', 'ink'], ['שיקום אחרי שבץ', 'red'], ['לסת', 'amber'],
   ['מעקב צמוד', 'red'], ['ותיק/ה', 'ink'], ['ספורטאי/ת', 'jade'],
 ];
+
+/** Presentations that belong to one sex; a file never gets the other's. */
+const WOMEN_ONLY = ['מחזור', 'גיל המעבר', 'פוריות', 'שחלות פוליציסטיות', 'אנדומטריוזיס', 'בחילות הריון'];
+const MEN_ONLY = ['ערמונית'];
 
 const INTAKE_FIELDS = [
   { id: 'intro', type: 'section', label: 'שאלון קבלה', help: 'מסמך לדוגמה בסביבת הבדיקות. כל התשובות בדיוניות.', required: false, options: [], scale_min: 0, scale_max: 10 },
@@ -180,6 +233,10 @@ const norm = (s) => String(s ?? '').toLowerCase().replace(/[^a-z]/g, '');
 
 async function main() {
   const sb = createClient(url, anonKey, { auth: { persistSession: false } });
+  // The password is typed, never passed on the command line: the shell keeps a history file.
+  const email = asMe ? await ask('Email of the clinic owner: ') : env.SMOKE_EMAIL;
+  const password = asMe ? await ask('Password (not shown): ', { hidden: true }) : env.SMOKE_PASSWORD;
+  if (!email || !password) throw new Error('an email and a password are needed');
   const { error: signInError } = await sb.auth.signInWithPassword({ email, password });
   if (signInError) throw new Error(`sign-in failed: ${signInError.message}`);
   const user = (await sb.auth.getUser()).data.user;
@@ -218,6 +275,20 @@ async function main() {
     await q(sb.from('herb_formulas').delete().eq('data_source', 'seed-month'), 'delete formulas');
     console.log(`Removed ${ids.length} patients from the earlier run, with everything attached.`);
   }
+  if (removeOnly) {
+    if (dryRun) {
+      console.log(`Would remove ${seededBefore.length} seeded patient(s) and the sample questionnaire and consent documents. Nothing written.`);
+      return;
+    }
+    // The sample questionnaire and the sample consent documents go too, so
+    // the clinic is as empty as before the run; hours, rooms and tags stay,
+    // because they are the practitioner's own settings by now.
+    await q(sb.from('form_templates').delete().ilike('title', '% · סביבת בדיקות'), 'delete sample questionnaire');
+    await q(sb.from('consent_documents').delete().ilike('title', '% · סביבת בדיקות'), 'delete sample consent documents');
+    console.log('Removed the sample questionnaire and consent documents. The clinic is clear of seeded records; the is_synthetic flag can now be switched off.');
+    await sb.auth.signOut();
+    return;
+  }
 
   const herbs = await q(sb.from('herbs').select('id, pinyin_name, hebrew_name').eq('is_active', true).order('pinyin_name'), 'herbs');
   const points = await q(sb.from('acupuncture_points').select('code, bilateral').eq('is_active', true).order('code'), 'points');
@@ -254,12 +325,12 @@ async function main() {
   ).map((a) => [Date.parse(a.start_at), Date.parse(a.end_at)]);
   const clashes = (start, end) => taken.some(([s, e]) => start < e && end > s);
 
-  /** Every possible slot of a day: room 1 on the hour, room 2 on the half hour, 60 minutes each. */
+  /** Every possible slot of a day: room 1 on the hour, room 2 (when there is one) on the half hour, 60 minutes each. */
   function daySlots(day) {
     const [y, m, d] = day.split('-').map(Number);
     const slots = [];
-    for (let h = DAY_START; h < DAY_END; h++) slots.push({ day, room: 0, start: zoned(y, m, d, h, 0, tz) });
-    for (let h = DAY_START; h < DAY_END - 1; h++) slots.push({ day, room: 1, start: zoned(y, m, d, h, 30, tz) });
+    for (let h = DAY_START; h < DAY_END; h++) slots.push({ day, room: 0, hour: h, start: zoned(y, m, d, h, 0, tz) });
+    if (ROOMS > 1) for (let h = DAY_START; h < DAY_END - 1; h++) slots.push({ day, room: 1, hour: h, start: zoned(y, m, d, h, 30, tz) });
     for (const slot of slots) slot.end = new Date(slot.start.getTime() + 60 * 60000);
     return slots.sort((a, b) => a.start - b.start);
   }
@@ -278,8 +349,8 @@ async function main() {
     return chosen.sort((a, b) => a.start - b.start);
   }
 
-  const futureSlots = futureDays.flatMap((day, index) => pickSlots(day, index, PER_DAY));
-  const pastSlots = pastDays.flatMap((day, index) => pickSlots(day, index, PAST_PER_DAY));
+  const futureSlots = WEEKLY > 0 ? [] : futureDays.flatMap((day, index) => pickSlots(day, index, PER_DAY));
+  const pastSlots = pastDays.flatMap((day, index) => pickSlots(day, index, Math.max(PAST_PER_DAY, WEEKLY > 0 ? DAY_END - DAY_START : 0)));
 
   // ---- the people -----------------------------------------------------------
   const people = [];
@@ -290,9 +361,10 @@ async function main() {
     while (existingNames.has(`${first} ${LAST[lastIndex]}`) || people.some((p) => p.first === first && p.last === LAST[lastIndex])) lastIndex = (lastIndex + 1) % LAST.length;
     const last = LAST[lastIndex];
     const c = CASES[i % CASES.length];
-    // Women get the women's presentations; men do not.
-    const womenOnly = ['מחזור', 'גיל המעבר', 'פוריות', 'שחלות פוליציסטיות'];
-    const kase = !female && womenOnly.includes(c.tag) ? CASES[(i + 3) % CASES.length] : c;
+    // Women get the women's presentations and men the men's; nobody gets the other's.
+    const wrongSex = (k) => (!female && WOMEN_ONLY.includes(k.tag)) || (female && MEN_ONLY.includes(k.tag));
+    let kase = c;
+    for (let step = 3; wrongSex(kase) && step < 3 + CASES.length; step++) kase = CASES[(i + step) % CASES.length];
     people.push({
       i, first, last, female, kase,
       fullName: `${first} ${last}`,
@@ -300,14 +372,33 @@ async function main() {
       pastVisits: 1 + (i % 3),
     });
   }
-  // The women's cases must not land on a man even after the swap.
+  // Belt and braces: a case of the wrong sex never survives to a file.
   for (const p of people) {
-    if (!p.female && ['מחזור', 'גיל המעבר', 'פוריות', 'שחלות פוליציסטיות'].includes(p.kase.tag)) p.kase = CASES[0];
+    if ((!p.female && WOMEN_ONLY.includes(p.kase.tag)) || (p.female && MEN_ONLY.includes(p.kase.tag))) p.kase = CASES[0];
   }
 
-  // Future visits: slot k to person k mod N, so each file's visits spread across the month.
+  // Future visits. Two shapes: the diary's slots dealt round the whole
+  // list, so each file's visits spread across the month; or a fixed weekly
+  // hour for the first WEEKLY people — Sunday 09:00 is always the same
+  // person — for as many weeks as asked, and no future visit for the rest.
   const futureByPerson = people.map(() => []);
-  futureSlots.forEach((slot, k) => futureByPerson[k % people.length].push(slot));
+  if (WEEKLY > 0) {
+    const hours = DAY_END - DAY_START;
+    const grid = WORK_DAYS.length * hours;
+    if (WEEKLY > grid) console.log(`Note: the week has ${grid} hours, so only ${grid} of the ${WEEKLY} weekly patients get a fixed hour.`);
+    const holders = new Map(); // `${weekday}-${hour}` → person index
+    people.slice(0, Math.min(WEEKLY, grid)).forEach((p, k) => holders.set(`${WORK_DAYS[Math.floor(k / hours)]}-${DAY_START + (k % hours)}`, p.i));
+    for (const day of futureDays) {
+      for (const slot of daySlots(day).filter((s) => s.room === 0)) {
+        const who = holders.get(`${weekdayOf(day)}-${slot.hour}`);
+        if (who === undefined || clashes(slot.start.getTime(), slot.end.getTime())) continue;
+        futureByPerson[who].push(slot);
+        futureSlots.push(slot);
+      }
+    }
+  } else {
+    futureSlots.forEach((slot, k) => futureByPerson[k % people.length].push(slot));
+  }
   // Past visits: round by round, so each file's history is chronological and spaced.
   const pastByPerson = people.map(() => []);
   let cursor = 0;
@@ -317,16 +408,20 @@ async function main() {
     }
   }
 
-  console.log(`Working days ahead: ${futureDays.length} (${futureDays[0]} … ${futureDays[futureDays.length - 1]}), ${futureSlots.length} appointments, ${PER_DAY} a day where the diary is free.`);
+  console.log(
+    `Working days ahead: ${futureDays.length} (${futureDays[0]} … ${futureDays[futureDays.length - 1]}), ${futureSlots.length} appointments, ` +
+      (WEEKLY > 0 ? `one an hour ${DAY_START}:00–${DAY_END}:00 where the diary is free.` : `${PER_DAY} a day where the diary is free.`),
+  );
   console.log(`Working days behind: ${pastDays.length}, ${pastByPerson.flat().length} past visits with clinical records.`);
   console.log(
     'Per day: ' + futureDays.map((day) => `${day.slice(5)}×${futureSlots.filter((s) => s.day === day).length}`).join('  '),
   );
-  console.log(`Patients: ${people.length}. First full day, for example:`);
-  const sampleDay = futureDays.find((day) => futureSlots.filter((s) => s.day === day).length >= PER_DAY) ?? futureDays[0];
+  console.log(`Patients: ${people.length}${WEEKLY > 0 ? ` (${futureByPerson.filter((v) => v.length).length} with a fixed weekly hour, ${futureByPerson.filter((v) => !v.length).length} with a history only)` : ''}. First full day, for example:`);
+  const perDayWanted = WEEKLY > 0 ? DAY_END - DAY_START : PER_DAY;
+  const sampleDay = futureDays.find((day) => futureSlots.filter((s) => s.day === day).length >= perDayWanted) ?? futureDays[0];
   for (const s of futureSlots.filter((s) => s.day === sampleDay)) {
-    const k = futureSlots.indexOf(s) % people.length;
-    console.log(`  ${new Intl.DateTimeFormat('en-GB', { timeZone: tz, hour: '2-digit', minute: '2-digit' }).format(s.start)}  חדר ${s.room + 1}  ${people[k].fullName}`);
+    const k = WEEKLY > 0 ? futureByPerson.findIndex((visits) => visits.includes(s)) : futureSlots.indexOf(s) % people.length;
+    console.log(`  ${new Intl.DateTimeFormat('en-GB', { timeZone: tz, hour: '2-digit', minute: '2-digit' }).format(s.start)}  חדר ${s.room + 1}  ${people[k]?.fullName ?? '?'}`);
   }
   if (dryRun) {
     console.log('Dry run — nothing written.');
@@ -341,7 +436,7 @@ async function main() {
   );
   const roomRows = await q(sb.from('rooms').select('id, name'), 'rooms');
   const roomIds = [];
-  for (const [k, name] of ['חדר 1', 'חדר 2'].entries()) {
+  for (const [k, name] of ['חדר 1', 'חדר 2'].slice(0, ROOMS).entries()) {
     const existing = roomRows.find((r) => r.name === name);
     if (existing) roomIds.push(existing.id);
     else roomIds.push((await q(sb.from('rooms').insert({ clinic_id: clinic.id, name, color: k === 0 ? '#0e7490' : '#7c3aed', sort_order: k }).select('id').single(), 'room'))?.id);
@@ -410,7 +505,15 @@ async function main() {
         surgeries: p.kase.surgeries,
         family_history: p.kase.family,
         lifestyle_notes: p.kase.lifestyle,
-        pregnancy_status: p.female ? (p.kase.tag === 'פוריות' ? 'מנסה להרות' : p.i % 10 === 4 ? 'הריון — שבוע 14' : 'לא בהריון') : 'לא רלוונטי',
+        pregnancy_status: p.female
+          ? p.kase.tag === 'פוריות'
+            ? 'מנסה להרות'
+            : p.kase.tag === 'בחילות הריון'
+              ? 'הריון — שבוע 9'
+              : p.i % 10 === 4
+                ? 'הריון — שבוע 14'
+                : 'לא בהריון'
+          : 'לא רלוונטי',
         updated_by: practitioner,
       })),
     ),
@@ -659,7 +762,7 @@ async function main() {
       sleep: SLEEP[p.i % 3],
       digestion: DIGESTION[p.i % DIGESTION.length],
       medications: p.kase.medications,
-      pregnancy: p.female && p.kase.tag === 'פוריות',
+      pregnancy: p.female && (p.kase.tag === 'פוריות' || p.kase.tag === 'בחילות הריון'),
       goals: GOALS[p.i % GOALS.length],
     },
     submitted_at: new Date(firstVisitOf(p).getTime() - 24 * 60 * 60000).toISOString(),
@@ -676,7 +779,7 @@ async function main() {
   await q(sb.from('clinic_tasks').insert(taskRows), 'tasks');
 
   console.log(
-    `Done: ${people.length} patients with history, tags, a formula and points of their own; ${prescriptions} prescriptions; ${invoiceIds.length} invoices (${paymentRows.length} paid); ${consentRows.length} consent decisions; ${submissionRows.length} questionnaires (each also a document); ${taskRows.length} tasks; hours set to Sunday, Tuesday and Wednesday ${DAY_START}:00–${DAY_END}:00 in two rooms.`,
+    `Done: ${people.length} patients with history, tags, a formula and points of their own; ${prescriptions} prescriptions; ${invoiceIds.length} invoices (${paymentRows.length} paid); ${consentRows.length} consent decisions; ${submissionRows.length} questionnaires (each also a document); ${taskRows.length} tasks; hours set to weekdays ${WORK_DAYS.join(', ')} (0 = Sunday) ${DAY_START}:00–${DAY_END}:00 in ${ROOMS} room(s)${WEEKLY > 0 ? `; ${Math.min(WEEKLY, WORK_DAYS.length * (DAY_END - DAY_START))} patients hold a fixed weekly hour for ${Math.round(DAYS_AHEAD / 7)} weeks` : ''}.`,
   );
   await sb.auth.signOut();
 }
