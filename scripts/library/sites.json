@@ -19,7 +19,7 @@
   { "url": "http://herb.ac.cn/v2", "include": "/", "maxPages": 20, "note": "HERB 2.0 — יישום JavaScript בלי טקסט קבוע" },
   { "url": "https://www.tcmm.net.cn/en/", "include": "/en/", "maxPages": 50, "note": "תעודת ה-https פגה — לא נגיש מכאן (14.9.2026)" },
   { "url": "https://www.sinomed.ac.cn/", "include": "/", "maxPages": 20, "note": "SinoMed — החיבור נכשל מכאן (14.9.2026)" },
-  { "url": "https://www.americandragon.com/", "include": "/", "maxPages": 4000, "note": "American Dragon (Dr Joel Penner) — צמחים, פורמולות, מצבים ונקודות בדפי HTML קבועים; חשוב למשתמש. אלפי דפים, ולכן הסריקה המלאה נמשכת שעות" },
+  { "url": "https://www.americandragon.com/", "include": "/", "maxPages": 8000, "note": "American Dragon (Dr Joel Penner) — צמחים, פורמולות, מצבים ונקודות בדפי HTML קבועים; חשוב למשתמש. אלפי דפים, ולכן הסריקה המלאה נמשכת שעות" },
   { "url": "https://sys01.lib.hkbu.edu.hk/cmed/cmfid/index.php?lang=eng", "include": "/cmed/cmfid/", "keepQuery": true, "match": "lang=eng", "maxPages": 600, "note": "HKBU — Chinese Medicine Formulae Images Database (אנגלית בלבד); כל רשומה היא detail.php?id=…" },
   { "url": "https://sys01.lib.hkbu.edu.hk/cmed/cmsd/index.php?lang=eng", "include": "/cmed/cmsd/", "keepQuery": true, "match": "lang=eng", "maxPages": 900, "note": "HKBU — Chinese Medicine Specimen Database (אנגלית בלבד); כל רשומה היא detail.php?herb_id=…" },
   { "url": "https://tcmsp-e.com/index.php", "include": "/", "keepQuery": true, "maxPages": 60, "note": "TCMSP — מאגר פרמקולוגיה של מערכות; הנתונים מאחורי חיפוש, נקראים רק הדפים הקבועים והמאמרים" },
