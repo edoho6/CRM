@@ -176,6 +176,9 @@
   פונקציית `security definer` שמקבלת token אקראי (uuid), עם
   `revoke all from public; grant execute to anon`. **אין service-role key**
   בשום מקום — ה-token הוא ההרשאה כולה, ולכן מתחלף בכפתור ומוגבל בקצב
+- **סקריפט שמתחבר כמשתמש יוצא רק מהסשן שלו:** `auth.signOut({ scope: 'local' })`. ברירת המחדל של supabase-js
+  היא `global` — ביטול כל הסשנים של החשבון, כולל סריקת אתרים שרצה בטרמינל אחר (שהמשיכה עם המפתח האנונימי וקיבלה
+  "permission denied for function") והדפדפן. כך נפלה סריקת האתרים כשטעינת הקבצים הסתיימה (14.9)
 - **הרשאות על פונקציות:** Supabase מעניקה EXECUTE ל-anon, authenticated ו-service_role לכל פונקציה
   חדשה ב-public דרך default privileges. `revoke all … from public` לא נוגע בהענקות האלה — פונקציה
   שמיועדת ל-service_role בלבד חייבת `revoke execute … from anon, authenticated` במפורש (migration 36).

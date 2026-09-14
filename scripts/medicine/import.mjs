@@ -72,7 +72,7 @@ async function main() {
     }
     log(`import: done — ${totals.entries} entries, ${totals.links} links (${totals.skipped_links} links skipped: an end outside the corpus)`);
   } finally {
-    await supabase.auth.signOut();
+    await supabase.auth.signOut({ scope: 'local' });
   }
 }
 

@@ -308,7 +308,7 @@ async function main() {
 
   writeJson(path.join(cacheDir, 'needs-ocr.json'), needsOcr);
   writeJson(path.join(cacheDir, 'failed.json'), failed);
-  if (supabase) await supabase.auth.signOut();
+  if (supabase) await supabase.auth.signOut({ scope: 'local' });
   log(
     `ingest: done — ${summary.loaded} loaded (${summary.chunks} passages, ${summary.tokens} embedding tokens), ${summary.unchanged} unchanged, ` +
       `${summary.ocr} read by OCR, ${summary.word} converted by Word, ${summary.needsOcr} waiting for OCR, ${summary.empty} empty, ${summary.failed} failed, ` +

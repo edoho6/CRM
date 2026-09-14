@@ -16,6 +16,12 @@ const { createClient } = createRequire(path.join(root, 'apps', 'web', 'package.j
 const CHUNK_BATCH = 20;
 const STATEMENT_TIMEOUT = /statement timeout/i;
 
+/**
+ * Signs in as the platform admin, at the terminal. Whoever holds the client
+ * must sign out with `{ scope: 'local' }`: the default signs the account out
+ * everywhere, and the crawl in the next terminal, mid-run, was left with the
+ * anonymous key and "permission denied" on its next upload.
+ */
 export async function connectAsAdmin() {
   const url = env('NEXT_PUBLIC_SUPABASE_URL');
   const anonKey = env('NEXT_PUBLIC_SUPABASE_ANON_KEY');

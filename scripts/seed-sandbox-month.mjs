@@ -286,7 +286,7 @@ async function main() {
     await q(sb.from('form_templates').delete().ilike('title', '% · סביבת בדיקות'), 'delete sample questionnaire');
     await q(sb.from('consent_documents').delete().ilike('title', '% · סביבת בדיקות'), 'delete sample consent documents');
     console.log('Removed the sample questionnaire and consent documents. The clinic is clear of seeded records; the is_synthetic flag can now be switched off.');
-    await sb.auth.signOut();
+    await sb.auth.signOut({ scope: 'local' });
     return;
   }
 
@@ -781,7 +781,7 @@ async function main() {
   console.log(
     `Done: ${people.length} patients with history, tags, a formula and points of their own; ${prescriptions} prescriptions; ${invoiceIds.length} invoices (${paymentRows.length} paid); ${consentRows.length} consent decisions; ${submissionRows.length} questionnaires (each also a document); ${taskRows.length} tasks; hours set to weekdays ${WORK_DAYS.join(', ')} (0 = Sunday) ${DAY_START}:00–${DAY_END}:00 in ${ROOMS} room(s)${WEEKLY > 0 ? `; ${Math.min(WEEKLY, WORK_DAYS.length * (DAY_END - DAY_START))} patients hold a fixed weekly hour for ${Math.round(DAYS_AHEAD / 7)} weeks` : ''}.`,
   );
-  await sb.auth.signOut();
+  await sb.auth.signOut({ scope: 'local' });
 }
 
 main().catch((error) => {

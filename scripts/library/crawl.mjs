@@ -173,7 +173,7 @@ async function main() {
     await crawlSite(site, state);
   }
   writeJson(manifestPath, state.manifest);
-  if (state.supabase) await state.supabase.auth.signOut();
+  if (state.supabase) await state.supabase.auth.signOut({ scope: 'local' });
   log(`crawl: done — ${JSON.stringify(state.summary)}`);
 }
 
