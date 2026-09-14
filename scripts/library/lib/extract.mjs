@@ -66,7 +66,7 @@ export async function extractText(buffer, ext) {
       return extractEpub(buffer);
     case 'txt':
     case 'md':
-      return single(buffer.toString('utf8'));
+      return single(plainText(buffer));
     case 'image':
       return { pages: [], pageCount: null, note: NEEDS_OCR };
     default:
@@ -77,6 +77,24 @@ export async function extractText(buffer, ext) {
 function single(text) {
   const clean = String(text ?? '').trim();
   return { pages: clean ? [{ page: null, text: clean }] : [], pageCount: null, note: clean ? null : 'no text' };
+}
+
+/**
+ * A "text" file as text. Drive calls anything it cannot place text/plain —
+ * an Outlook message, say — and a Hebrew text file written on Windows is
+ * often in code page 1255 rather than UTF-8. So: bytes that are not text
+ * (NUL among them) mean no text at all; UTF-8 that decodes with many
+ * replacement characters is read again as 1255.
+ */
+export function plainText(buffer) {
+  const sample = buffer.subarray(0, 4096);
+  let binary = 0;
+  for (const byte of sample) if (byte === 0 || (byte < 9) || (byte > 13 && byte < 32)) binary += 1;
+  if (sample.length > 0 && binary / sample.length > 0.02) return '';
+  const utf8 = buffer.toString('utf8');
+  const replacements = (utf8.match(/�/g) || []).length;
+  if (replacements > 0 && replacements > utf8.length / 200) return new TextDecoder('windows-1255').decode(buffer);
+  return utf8;
 }
 
 async function extractPdf(buffer) {

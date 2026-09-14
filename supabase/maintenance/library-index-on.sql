@@ -4,6 +4,8 @@
 -- only. On a small instance this can take a few minutes — the SQL editor
 -- waits. If it stops with a timeout, run it again later or from a quieter
 -- moment; until it exists, search simply scans (slower, still correct).
+-- The editor's own limit on one statement is lifted for this session: the build takes minutes.
+set statement_timeout = '30min';
 set maintenance_work_mem = '512MB';
 create index if not exists library_chunks_embedding_idx
   on public.library_chunks using hnsw (embedding extensions.vector_cosine_ops);
