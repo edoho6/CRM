@@ -11,6 +11,7 @@
 // cut with pdf-lib; images go up one at a time. Nothing is stored on
 // Google's side: the request carries the bytes and the reply the text.
 import { sleep } from '../../medicine/lib.mjs';
+import { fetchWithRetry, resolveToken } from './drive.mjs';
 import { splitPdf } from './pdf.mjs';
 
 const ENDPOINT = 'https://vision.googleapis.com/v1';
@@ -20,13 +21,21 @@ const FEATURES = [{ type: 'DOCUMENT_TEXT_DETECTION' }];
 const CONTEXT = { languageHints: ['he', 'en'] };
 
 async function annotate(token, path, body) {
+  const payload = JSON.stringify(body);
+  let renewed = false;
   for (let attempt = 1; ; attempt += 1) {
-    const response = await fetch(`${ENDPOINT}/${path}`, {
+    const bearer = await resolveToken(token);
+    const response = await fetchWithRetry(`${ENDPOINT}/${path}`, {
       method: 'POST',
-      headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
-      body: JSON.stringify(body),
+      headers: { authorization: `Bearer ${bearer}`, 'content-type': 'application/json' },
+      body: payload,
     });
     if (response.ok) return response.json();
+    if (response.status === 401 && !renewed && typeof token === 'function' && token.renew) {
+      renewed = true;
+      await token.renew();
+      continue;
+    }
     if ((response.status === 429 || response.status >= 500) && attempt < 6) {
       await sleep(attempt * 5000);
       continue;

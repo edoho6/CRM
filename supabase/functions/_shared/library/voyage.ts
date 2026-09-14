@@ -57,11 +57,19 @@ export async function embedBatch(key: string, texts: readonly string[], options:
   const fetchImpl = options.fetchImpl ?? ((url, init) => fetch(url, init));
   const sleep = options.sleep ?? ((ms) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
   for (let attempt = 1; ; attempt += 1) {
-    const response = await fetchImpl(ENDPOINT, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', authorization: `Bearer ${key}` },
-      body: JSON.stringify({ input: texts, model: VOYAGE_MODEL, input_type: options.inputType ?? 'document', output_dimension: DIMENSIONS }),
-    });
+    let response: Response;
+    try {
+      response = await fetchImpl(ENDPOINT, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', authorization: `Bearer ${key}` },
+        body: JSON.stringify({ input: texts, model: VOYAGE_MODEL, input_type: options.inputType ?? 'document', output_dimension: DIMENSIONS }),
+      });
+    } catch (error) {
+      // The network dropped: the same patience as for a pause the service asks for.
+      if (attempt >= 10) throw new Error(`voyage network: ${error instanceof Error ? error.message : String(error)}`);
+      await sleep(Math.min(120, attempt * 15) * 1000);
+      continue;
+    }
     if (response.ok) {
       const payload = (await response.json()) as { data?: { index: number; embedding: number[] }[]; usage?: { total_tokens?: number } };
       const vectors = (payload.data ?? []).sort((a, b) => a.index - b.index).map((d) => d.embedding);

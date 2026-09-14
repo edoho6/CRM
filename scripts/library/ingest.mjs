@@ -31,7 +31,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { args, cacheDir as medicineCache, env, log, readJson, writeJson } from '../medicine/lib.mjs';
 import { chunkPages } from './lib/chunk.mjs';
-import { downloadFile, driveToken, listFolder, READABLE } from './lib/drive.mjs';
+import { downloadFile, driveSession, listFolder, READABLE } from './lib/drive.mjs';
 import { EXTENSION_KINDS, NEEDS_OCR, extractText, titleOf } from './lib/extract.mjs';
 import { connectAsAdmin, removeSource, uploadSource } from './lib/upload.mjs';
 import { visionImage, visionPdf } from './lib/vision.mjs';
@@ -78,8 +78,9 @@ async function listDrive() {
   const folderId = env('LIBRARY_DRIVE_FOLDER_ID');
   if (!keyFile || !folderId) throw new Error('GOOGLE_SERVICE_ACCOUNT_FILE and LIBRARY_DRIVE_FOLDER_ID are needed (apps/web/.env.local), or pass --folder');
   if (!fs.existsSync(keyFile)) throw new Error(`the service account key file is not at ${keyFile}`);
-  const { token, email } = await driveToken(keyFile);
-  log(`drive: reading as ${email}`);
+  const session = driveSession(keyFile);
+  const token = Object.assign(session.token, { renew: session.renew });
+  log(`drive: reading as ${await session.email()}`);
   const files = await listFolder(token, folderId);
   const skipped = Object.entries(files.skipped ?? {}).sort((a, b) => b[1] - a[1]);
   log(`drive: ${files.length} readable file(s) in the folder (${Object.keys(READABLE).length} kinds are read)`);
@@ -124,7 +125,7 @@ async function main() {
 
   const source = options.folder ? { token: null, files: walkLocal(String(options.folder)) } : await listDrive();
   // OCR runs under the service account even for a local folder.
-  let visionToken = source.token ?? (keyFileOrNull() ? (await driveToken(keyFileOrNull())).token : null);
+  let visionToken = source.token ?? (keyFileOrNull() ? (() => { const s = driveSession(keyFileOrNull()); return Object.assign(s.token, { renew: s.renew }); })() : null);
   if (!visionToken) log('ingest: no service account key — scanned PDFs and images will be counted, not read');
   const word = await wordAvailable();
   if (!word) log('ingest: Word is not installed here — an old .doc the plain reader cannot open will be counted as failed');
@@ -138,6 +139,7 @@ async function main() {
   const admin = async () => (supabase ??= await connectAsAdmin());
   const summary = { unchanged: 0, loaded: 0, empty: 0, needsOcr: 0, ocr: 0, word: 0, failed: 0, removed: 0, chunks: 0, tokens: 0 };
   const needsOcr = [];
+  const failed = [];
 
   for (const file of todo) {
     try {
@@ -186,6 +188,13 @@ async function main() {
             extracted = { pages: ocr.pages, pageCount: ocr.pageCount, note: ocr.pages.length ? 'read by OCR' : 'OCR found no text' };
             summary.ocr += 1;
           } catch (error) {
+            if (/Bad image data|invalid|unsupported/i.test(error.message)) {
+              extracted = { pages: [], pageCount: null, note: `OCR could not read the file (${error.message.slice(0, 60)})` };
+              cacheText(sha256, extracted);
+              summary.empty += 1;
+              log(`ingest: ${file.path} — ${extracted.note}`);
+              continue;
+            }
             if (!VISION_OFF.test(error.message)) throw error;
             // Not enabled, or no billing: said once, and the scans wait.
             log(`ingest: OCR is not available — ${error.message.slice(0, 200)}`);
@@ -234,6 +243,7 @@ async function main() {
       log(`ingest: ${file.path} — ${added} passage(s) loaded${note ? ` (${note})` : ''}`);
     } catch (error) {
       summary.failed += 1;
+      failed.push({ path: file.path, reason: error.message.slice(0, 200) });
       log(`ingest: ${file.path} — FAILED: ${error.message}`);
     }
   }
@@ -255,6 +265,7 @@ async function main() {
   }
 
   writeJson(path.join(cacheDir, 'needs-ocr.json'), needsOcr);
+  writeJson(path.join(cacheDir, 'failed.json'), failed);
   if (supabase) await supabase.auth.signOut();
   log(
     `ingest: done — ${summary.loaded} loaded (${summary.chunks} passages, ${summary.tokens} embedding tokens), ${summary.unchanged} unchanged, ` +

@@ -182,4 +182,23 @@ describe('embedAll', () => {
     // 10 → refused; 5 + 5 → refused; 3 + 2 + 3 + 2 → accepted.
     expect(calls).toEqual([10, 5, 3, 2, 5, 3, 2]);
   });
+
+  it('tries again when the network drops, and gives up with a plain reason when it keeps dropping', async () => {
+    let drops = 2;
+    const waits: number[] = [];
+    const fetchImpl = async (_url: string, init: RequestInit) => {
+      if (drops > 0) {
+        drops -= 1;
+        throw new TypeError('fetch failed');
+      }
+      const body = JSON.parse(String(init.body)) as { input: string[] };
+      return Response.json({ data: body.input.map((_, index) => ({ index, embedding: [index] })), usage: { total_tokens: 1 } });
+    };
+    const result = await embedAll('key', ['a', 'b'], { fetchImpl, sleep: async (ms) => { waits.push(ms); } });
+    expect(result.vectors).toEqual([[0], [1]]);
+    expect(waits).toEqual([15_000, 30_000]);
+
+    const dead = async () => { throw new TypeError('fetch failed'); };
+    await expect(embedAll('key', ['a'], { fetchImpl: dead, sleep: async () => {} })).rejects.toThrow(/voyage network: fetch failed/);
+  });
 });
