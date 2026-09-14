@@ -615,11 +615,18 @@ const flows = {
     await open(page, dayUrl);
     await screen(page, flow, 'calendar day');
 
-    const blockAtTen = () => page.locator('main button.absolute', { hasText: '10:00' }).first();
-    // A leftover 10:00 from an earlier run would collide — cleared with the mouse, not judged.
+    // Booked at 08:00 and moved to 08:30: the day view starts at 07:00, and
+    // the sandbox's seeded diary begins at 10:00 in every room, so the move
+    // never lands on a taken hour — at 10:00 it did, and the room's refusal
+    // ("החדר הזה כבר תפוס") read as a keyboard failure.
+    const HOUR = '08';
+    const AT = `${HOUR}:00`;
+    const HALF = `${HOUR}:30`;
+    const blockAtTen = () => page.locator('main button.absolute', { hasText: AT }).first();
+    // A leftover booking from an earlier run would collide — cleared with the mouse, not judged.
     if ((await blockAtTen().count()) > 0) {
       await deleteBlockByMouse(page, blockAtTen());
-      note(flow, 'calendar: a leftover 10:00 booking was cleared first (mouse)');
+      note(flow, `calendar: a leftover ${AT} booking was cleared first (mouse)`);
       await open(page, dayUrl);
     }
 
@@ -684,13 +691,13 @@ const flows = {
     await page.keyboard.insertText(`${day}/${month}/${year}`);
     const hour = await tabTo(page, flow, (s) => s.tag === 'select' && /התחלה/.test(s.name), { where: 'appointment dialog → hour', max: 10 });
     if (!hour) return finish(flow, context);
-    await page.keyboard.type('10');
+    await page.keyboard.type(HOUR);
     const minute = await tabTo(page, flow, (s) => s.tag === 'select' && /התחלה/.test(s.name), { where: 'appointment dialog → minute', max: 5 });
     if (minute) await page.keyboard.type('0');
     const time = await page.evaluate(() => [...document.querySelectorAll('[role="group"][aria-label="התחלה"] select')].map((s) => s.value));
-    if (time[0] !== '10' || time[1] !== '00') {
-      note(flow, `appointment dialog: typing into the time lists gave ${time.join(':')} — set to 10:00 by the harness`);
-      await dialog.locator('[role="group"][aria-label="התחלה"] select').nth(0).selectOption('10');
+    if (time[0] !== HOUR || time[1] !== '00') {
+      note(flow, `appointment dialog: typing into the time lists gave ${time.join(':')} — set to ${AT} by the harness`);
+      await dialog.locator('[role="group"][aria-label="התחלה"] select').nth(0).selectOption(HOUR);
       await dialog.locator('[role="group"][aria-label="התחלה"] select').nth(1).selectOption('00');
     } else note(flow, 'appointment dialog: typed 10 and 00 into the hour and minute lists');
     const submit = await tabTo(page, flow, (s) => s.tag === 'button' && s.inDialog && /שמירה|קביע/.test(s.name), {
@@ -703,7 +710,7 @@ const flows = {
       issue(flow, `appointment dialog: Enter on save did not book (dialogs open: ${await page.locator('[role="dialog"]').count()})`);
       return finish(flow, context);
     }
-    note(flow, 'appointment: booked tomorrow 10:00 with the keyboard alone');
+    note(flow, 'appointment: booked tomorrow ' + AT + ' with the keyboard alone');
     await page.waitForTimeout(500);
     const afterSave = await active(page);
     if (afterSave.tag === 'body') issue(flow, 'appointment: after the dialog closed on save, focus was dropped to the page body');
@@ -715,7 +722,7 @@ const flows = {
       return finish(flow, context);
     }
     await open(page, dayUrl);
-    const block = await tabTo(page, flow, (s) => s.role === 'button' && s.name.includes('10:00'), { where: 'calendar → the booked block', max: 300 });
+    const block = await tabTo(page, flow, (s) => s.role === 'button' && s.name.includes(AT), { where: 'calendar → the booked block', max: 300 });
     if (!block) {
       note(flow, 'cleanup: the block was deleted with the mouse');
       await deleteBlockByMouse(page, blockAtTen());
@@ -735,24 +742,24 @@ const flows = {
     if (!(await toast(page, /התור הוזז/))) issue(flow, 'appointment: Space, two arrows and Space did not move the block (no "moved" toast)');
     else {
       note(flow, 'appointment: moved half an hour down with Space, the arrows and Space');
-      const halfPast = page.locator('main button.absolute', { hasText: '10:30' }).first();
-      if (!(await halfPast.waitFor({ timeout: 15_000 }).then(() => true).catch(() => false))) issue(flow, 'appointment: the block did not redraw at 10:30');
+      const halfPast = page.locator('main button.absolute', { hasText: HALF }).first();
+      if (!(await halfPast.waitFor({ timeout: 15_000 }).then(() => true).catch(() => false))) issue(flow, 'appointment: the block did not redraw at ' + HALF);
       await page.waitForTimeout(400);
       const after = await active(page);
-      if (!(after.role === 'button' && after.name.includes('10:30'))) {
+      if (!(after.role === 'button' && after.name.includes(HALF))) {
         issue(flow, `appointment: after the drop, focus is on ${describeStop(after)} rather than the moved block`);
-        if (!(await tabTo(page, flow, (s) => s.role === 'button' && s.name.includes('10:30'), { where: 'calendar → the moved block', max: 300 }))) return finish(flow, context);
+        if (!(await tabTo(page, flow, (s) => s.role === 'button' && s.name.includes(HALF), { where: 'calendar → the moved block', max: 300 }))) return finish(flow, context);
       }
       await pressSlowly('Space', 'ArrowUp', 'ArrowUp', 'Space');
       if (!(await toast(page, /התור הוזז/))) issue(flow, 'appointment: the move back up gave no "moved" toast');
       if (!(await blockAtTen().waitFor({ timeout: 15_000 }).then(() => true).catch(() => false))) {
-        issue(flow, 'appointment: the block did not return to 10:00');
+        issue(flow, 'appointment: the block did not return to ' + AT);
         return finish(flow, context);
       }
       await page.waitForTimeout(400);
       const back = await active(page);
-      if (!(back.role === 'button' && back.name.includes('10:00'))) {
-        if (!(await tabTo(page, flow, (s) => s.role === 'button' && s.name.includes('10:00'), { where: 'calendar → the block, back at 10:00', max: 300 }))) return finish(flow, context);
+      if (!(back.role === 'button' && back.name.includes(AT))) {
+        if (!(await tabTo(page, flow, (s) => s.role === 'button' && s.name.includes(AT), { where: 'calendar → the block, back at ' + AT, max: 300 }))) return finish(flow, context);
       }
     }
     await page.keyboard.press('Enter');
