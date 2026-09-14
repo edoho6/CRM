@@ -23,7 +23,7 @@
   { "url": "https://sys01.lib.hkbu.edu.hk/cmed/cmfid/index.php?lang=eng", "include": "/cmed/cmfid/", "keepQuery": true, "match": "lang=eng", "maxPages": 600, "note": "HKBU — Chinese Medicine Formulae Images Database (אנגלית בלבד); כל רשומה היא detail.php?id=…" },
   { "url": "https://sys01.lib.hkbu.edu.hk/cmed/cmsd/index.php?lang=eng", "include": "/cmed/cmsd/", "keepQuery": true, "match": "lang=eng", "maxPages": 900, "note": "HKBU — Chinese Medicine Specimen Database (אנגלית בלבד); כל רשומה היא detail.php?herb_id=…" },
   { "url": "https://tcmsp-e.com/index.php", "include": "/", "keepQuery": true, "maxPages": 60, "note": "TCMSP — מאגר פרמקולוגיה של מערכות; הנתונים מאחורי חיפוש, נקראים רק הדפים הקבועים והמאמרים" },
-  { "url": "https://www.bidd.group/CMAUP/", "include": "/CMAUP/", "keepQuery": true, "maxPages": 60, "note": "CMAUP — מאגר צמחים ← מולקולות; אלפי דפי משפחות, נקראים רק הראשונים" },
+  { "url": "https://www.bidd.group/CMAUP/", "include": "/CMAUP/", "keepQuery": true, "maxPages": 10, "note": "CMAUP — מאגר צמחים ← מולקולות; כל דף משפחה הוא טבלה ענקית של שמות (14 דפים נתנו 1,042 קטעים בניסיון), ולכן רק הדפים הראשונים" },
   { "url": "https://cbcb.cdutcm.edu.cn/TCMPG2/", "include": "/TCMPG2/", "keepQuery": true, "maxPages": 100, "note": "TCMPG 2 — גנומים של צמחי מרפא; מאגר, מעט טקסט לקריאה" },
   { "url": "http://bionet.ncpsb.org.cn/batman-tcm/", "include": "/batman-tcm/", "maxPages": 10, "note": "BATMAN-TCM — יישום JavaScript בלי טקסט קבוע" },
   { "url": "https://tcmki.fairy.dance/download", "include": "/", "maxPages": 10, "note": "החזיר 502 (השרת לא זמין) ב-14.9.2026" }
