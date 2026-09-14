@@ -522,7 +522,13 @@
   --only=<מילה>` לקובץ אחד.
   **האינדקס (migration 48):** HNSW על `embedding::halfvec(1024)` (חצי דיוק — הגרף של 86 אלף וקטורים במלוא הדיוק
   לא נכנס לזיכרון של המכונה הקטנה, ובנייה מקבילית נופלת על "could not resize shared memory segment"), נבנה עם
-  `max_parallel_maintenance_workers = 0`; `library_search` משווה באותו ביטוי כדי שהאינדקס ישמש. טעינה גדולה =
+  `max_parallel_maintenance_workers = 0`; `library_search` משווה באותו ביטוי כדי שהאינדקס ישמש. **החיפוש רץ כבעל
+  הטבלאות (`security definer`, migration 53) ובודק חברות בעצמו** — תחת RLS אינדקס משרת רק תנאי שהאופרטור שלו
+  `leakproof`, ו-`@@` של חיפוש הטקסט אינו כזה: כחבר קליניקה ענף הטקסט סרק את כל הטבלה (8 שניות, timeout) בעוד
+  שאותה שאילתה כבעלים לקחה אלפית שנייה. ה-policies על הטבלאות נשארות לקריאה ישירה, עטופות
+  `(select current_clinic_id())` כדי שישולמו פעם אחת לשאילתה ולא לכל שורה (migrations 50–51; ספירה של 80 אלף
+  שורות עשתה 80 אלף בדיקות חברות). `tenant_isolation.sql` מריץ את החיפוש כחבר (מוצא), כמטופל בפורטל (כלום)
+  וכאנונימי (insufficient_privilege). טעינה גדולה =
   `supabase/maintenance/library-index-off.sql` לפני, `library-index-on.sql` + `library-vacuum.sql` אחרי; בלי
   אינדקס, חיפוש על ספרייה גדולה חורג מ-8 השניות של PostgREST. `upload.mjs` שולח 20 פסקאות לקריאה ומקטין לחצי
   כשהמסד לא עומד בזמן.

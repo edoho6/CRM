@@ -49,6 +49,9 @@ declare
   v_shop_fp    text := 'iso|' || gen_random_uuid();  -- the product's fingerprint, shared with its offer
   v_med        uuid;                                   -- one entry of the Western medicine reference
   v_lib        uuid;                                   -- one source of the professional library
+  -- A unit vector to search the library with; what it finds is beside the point,
+  -- who is allowed to search at all is the point.
+  v_probe_vec  extensions.vector(1024) := ('[1' || repeat(',0', 1023) || ']')::extensions.vector(1024);
   v_user_c     uuid := gen_random_uuid();  -- a stranger with an account and no clinic
   v_invite_a   uuid;
   v_invite_b   uuid;
@@ -254,10 +257,13 @@ begin
   values ('drug', 'iso-drug', 'Iso drug', 'תרופת בדיקה', 'draft')
   returning id into v_med;
 
-  -- The professional library too: one source, no passages needed.
+  -- The professional library too: one source with one passage, so that the
+  -- search itself can be asked, as each identity, whether it answers.
   insert into public.library_sources (kind, locator, title)
   values ('file', 'iso-library-source', 'Iso source')
   returning id into v_lib;
+  insert into public.library_chunks (source_id, ordinal, page, content, tokens, embedding)
+  values (v_lib, 0, 1, 'An isolation passage about the word zzzisolationword.', 8, v_probe_vec);
 
   -- An open invitation in each clinic. The link is the whole secret.
   insert into public.clinic_invitations (clinic_id, role, invitee_name, invited_by)
@@ -561,6 +567,15 @@ begin
   -- caller's own clinic from the session — never as an argument.
   select count(*) into v_count from public.library_sources where id = v_lib;
   if v_count <> 1 then raise exception 'FAIL: a clinic member cannot read the professional library'; end if;
+  -- The search runs as the tables' owner (under row security its text index
+  -- could not serve), so the membership rule lives inside it: a member finds
+  -- the passage by text and by vector alike…
+  select count(*) into v_count
+    from public.library_search(v_probe_vec, 'zzzisolationword', 5) where via = 'text' and chunk_id is not null;
+  if v_count <> 1 then raise exception 'FAIL: a member''s text search of the library found % passage(s), expected 1', v_count; end if;
+  select count(*) into v_count
+    from public.library_search(v_probe_vec, '', 5) where via = 'vector' and chunk_id is not null;
+  if v_count < 1 then raise exception 'FAIL: a member''s vector search of the library found nothing'; end if;
   begin
     insert into public.library_sources (kind, locator, title) values ('file', 'iso-injected-source', 'Injected');
     raise exception 'FAIL: a clinic member inserted a library source';
@@ -597,7 +612,7 @@ begin
   if found then raise exception 'FAIL: a clinic member changed the library log'; end if;
   delete from public.library_queries where clinic_id = v_clinic_a;
   if found then raise exception 'FAIL: a clinic member deleted from the library log'; end if;
-  raise notice 'ok   the professional library is readable by every member, writable by none, and its log is append-only';
+  raise notice 'ok   the professional library is readable and searchable by every member, writable by none, and its log is append-only';
 
   -- Invitations belong to the owner who made them, and the last owner stays.
   select count(*) into v_count from public.clinic_invitations;
@@ -768,7 +783,11 @@ begin
   if v_count <> 0 then raise exception 'FAIL: the portal patient read % shop row(s)', v_count; end if;
   select count(*) into v_count from public.med_entries;
   if v_count <> 0 then raise exception 'FAIL: the portal patient read % medicine entr(ies)', v_count; end if;
-  raise notice 'ok   shop prices and the medicine reference are hidden from the portal';
+  -- …and the library search, which runs as the owner, answers a signed-in
+  -- account without a clinic with nothing — by text and by vector alike.
+  select count(*) into v_count from public.library_search(v_probe_vec, 'zzzisolationword', 5);
+  if v_count <> 0 then raise exception 'FAIL: the portal patient searched the professional library (% row(s))', v_count; end if;
+  raise notice 'ok   shop prices, the medicine reference and the library search are closed to the portal';
 
   -- The headline safety property: no policy on tcm_notes mentions patients at all.
   select count(*) into v_count from public.tcm_notes;
@@ -847,6 +866,12 @@ begin
   if v_count <> 0 then raise exception 'FAIL: a random invitation token answered'; end if;
   select count(*) into v_count from public.invitation_by_token(v_invite_a) where clinic_name = 'Isolation Test A' and status = 'open';
   if v_count <> 1 then raise exception 'FAIL: the real invitation token did not answer with its clinic'; end if;
+  begin
+    perform public.library_search(v_probe_vec, 'zzzisolationword', 5);
+    raise exception 'FAIL: an anonymous caller ran the library search';
+  exception
+    when insufficient_privilege then null;
+  end;
   raise notice 'ok   anonymous callers see nothing';
 
   -- The token functions are the only doors without a session. A guessed

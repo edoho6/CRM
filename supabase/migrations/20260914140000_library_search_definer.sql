@@ -11,8 +11,9 @@
 -- So the function now runs as the owner (security definer): the tables'
 -- row security does not apply inside it, both indexes serve, and the one
 -- rule those policies expressed — only a clinic member reads the library —
--- is enforced by the function itself, first thing. The search path is
--- pinned, as a definer function's must be.
+-- is enforced by the function itself, in each half, as a one-time check
+-- (the sub-select makes it a single evaluation, not one per row). The
+-- search path is pinned, as a definer function's must be.
 create or replace function public.library_search(p_embedding extensions.vector(1024), p_query text, p_limit integer default 20)
 returns table (via text, chunk_id uuid, source_id uuid, title text, url text, kind text, page integer, heading text, content text, score real)
 language sql
@@ -20,17 +21,13 @@ stable
 security definer
 set search_path = public, extensions
 as $$
-  with allowed as (
-    -- The same rule as the policies: a signed-in member of a clinic. Nobody else gets rows.
-    select (select public.current_clinic_id()) is not null as ok
-  )
   (
     select 'vector'::text, n.id, s.id, s.title, s.url, s.kind, n.page, n.heading, n.content, (1 - n.distance)::real
       from (
         select c.id, c.source_id, c.page, c.heading, c.content,
                ((c.embedding::extensions.halfvec(1024)) operator(extensions.<=>) (p_embedding::extensions.halfvec(1024))) as distance
           from public.library_chunks c
-         where (select ok from allowed)
+         where (select public.current_clinic_id()) is not null
          order by (c.embedding::extensions.halfvec(1024)) operator(extensions.<=>) (p_embedding::extensions.halfvec(1024))
          limit greatest(p_limit, 1) * 3
       ) n
@@ -45,7 +42,7 @@ as $$
            pg_catalog.ts_rank(c.tsv, pg_catalog.websearch_to_tsquery('english', p_query))::real
       from public.library_chunks c
       join public.library_sources s on s.id = c.source_id
-     where (select ok from allowed)
+     where (select public.current_clinic_id()) is not null
        and s.status = 'active'
        and coalesce(p_query, '') <> ''
        and c.tsv @@ pg_catalog.websearch_to_tsquery('english', p_query)
