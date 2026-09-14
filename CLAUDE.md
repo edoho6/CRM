@@ -183,6 +183,10 @@
   ב-`proxy.ts` ל-`/about` (רק הדלת הראשית; קישור עמוק ממשיך ל-login). כל השאר חסום, ודף אישור ההגעה מקבל גם `noindex` משלו
   ב-`metadata`, כי הוא נגיש רק דרך הקישור. הפורטל חסום כולו. דף ציבורי חדש = להחליט אם הוא ברשימת
   ה-`allow`, ואם לא, לוודא שיש לו `noindex`
+- **פונקציה ב-policy נעטפת ב-`(select …)`:** `using ((select public.current_clinic_id()) is not null)` ולא
+  `using (public.current_clinic_id() is not null)`. בלי העטיפה Postgres מריץ את הפונקציה על כל שורה — ספירה של 86 אלף
+  פסקאות בספרייה עשתה 86 אלף בדיקות חברות ונפלה על 8 השניות של PostgREST, בעוד אותה ספירה כבעלים לקחה 0.3 שנייה
+  (migrations 50–51). policy שמשווה עמודה (`is_clinic_member(clinic_id)`) נשארת לפי שורה בהכרח
 - **Views:** תמיד `with (security_invoker = true)`, אחרת ה-view עוקף את ה-RLS
   של הטבלאות. `p.*` קופא ביצירה — עמודה חדשה ב-`patients` דורשת
   `drop view` + `create view` ל-`patients_with_diary`, אחרת היא לא תופיע
