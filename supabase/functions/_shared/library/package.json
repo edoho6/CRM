@@ -1,0 +1,5 @@
+{
+  "type": "module",
+  "private": true,
+  "description": "These TypeScript modules are imported both by the Edge Function (Deno) and, through the .mjs files in scripts/library/lib, by Node. Node reads this file to know they are ES modules; without it every loader run opens with a MODULE_TYPELESS_PACKAGE_JSON warning."
+}

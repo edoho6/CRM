@@ -60,13 +60,22 @@ async function crawlSite(site, state) {
   }
   const group = rulesFor(robots, AGENT_TOKEN);
   const delayMs = (group.crawlDelay ?? 1) * 1000;
+  // A database site keeps its records behind query strings (`keepQuery`), and
+  // `match` — a regular expression the whole address must satisfy — keeps the
+  // crawl to one language or one kind of page (`lang=eng`, `detail\\.php`).
+  const keepQuery = Boolean(site.keepQuery);
+  const matcher = site.match ? new RegExp(site.match) : null;
+  const wanted = (url) => {
+    const { pathname } = new URL(url);
+    return pathname.startsWith(prefix) && !SKIP_EXT.test(pathname) && (!matcher || matcher.test(url));
+  };
   const queue = [start.href];
   const seen = new Set(queue);
   let read = 0;
   while (queue.length && read < maxPages && state.pages < limit) {
     const url = queue.shift();
     const pathname = new URL(url).pathname;
-    if (!pathname.startsWith(prefix) || SKIP_EXT.test(pathname)) continue;
+    if (!wanted(url)) continue;
     if (!isAllowed(group, pathname)) {
       state.summary.disallowed += 1;
       continue;
@@ -94,7 +103,7 @@ async function crawlSite(site, state) {
       log(`crawl: ${url} — ${page.error}`);
       continue;
     }
-    const links = pageLinks(page.html, page.finalUrl).filter((link) => new URL(link).pathname.startsWith(prefix));
+    const links = pageLinks(page.html, page.finalUrl, { keepQuery }).filter(wanted);
     for (const link of links) if (!seen.has(link)) { seen.add(link); queue.push(link); }
     const { title, text } = pageText(page.html, url);
     if (text.length < MIN_CHARS) {

@@ -54,15 +54,18 @@ export function pageText(html: string | null | undefined, url: string): PageText
 }
 
 /** Every link on the page, absolute, same origin, without a fragment or a query. */
-export function pageLinks(html: string | null | undefined, base: string): string[] {
+export function pageLinks(html: string | null | undefined, base: string, options: { keepQuery?: boolean } = {}): string[] {
   const links = new Set<string>();
   const origin = new URL(base).origin;
   for (const match of String(html ?? '').matchAll(/<a\b[^>]*?href\s*=\s*["']([^"']+)["']/gi)) {
     try {
-      const url = new URL(match[1]!, base);
+      const url = new URL(match[1]!.trim(), base);
       if (url.origin !== origin || !/^https?:$/.test(url.protocol)) continue;
       url.hash = '';
-      url.search = '';
+      // The query is dropped, so that sorting and tracking variants of one page
+      // do not multiply — unless the site is a database whose every record is
+      // a query (detail.php?id=…), in which case the query is the page.
+      if (!options.keepQuery) url.search = '';
       links.add(url.href);
     } catch {
       // Not a URL.

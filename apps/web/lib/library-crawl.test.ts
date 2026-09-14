@@ -55,4 +55,15 @@ describe('page text and links', () => {
       'https://example.org/formulas/list',
     ]);
   });
+
+  it('keeps the query when asked, because a database keeps its records there — fragments still go', () => {
+    const records = '<a href=" detail.php?lang=eng&id=F1">one</a><a href="detail.php?lang=eng&id=F1#top">same</a><a href="detail.php?lang=eng&id=F2">two</a><a href="index.php">list</a>';
+    const base = 'https://db.example.org/cmed/cmfid/index.php?lang=eng';
+    expect(pageLinks(records, base, { keepQuery: true })).toEqual([
+      'https://db.example.org/cmed/cmfid/detail.php?lang=eng&id=F1',
+      'https://db.example.org/cmed/cmfid/detail.php?lang=eng&id=F2',
+      'https://db.example.org/cmed/cmfid/index.php',
+    ]);
+    expect(pageLinks(records, base)).toEqual(['https://db.example.org/cmed/cmfid/detail.php', 'https://db.example.org/cmed/cmfid/index.php']);
+  });
 });
