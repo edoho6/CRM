@@ -1,6 +1,6 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { BookMarked } from 'lucide-react';
-import { Badge, EmptyState, PageBody, TableWrapper, Td, Th, Tr } from '@clinic/ui';
+import { Badge, Dash, EmptyState, PageBody, TableWrapper, Td, Th, Tr } from '@clinic/ui';
 import { formatDate } from '@clinic/i18n';
 import { PageHeader } from '@/components/app-shell';
 import { ExternalLink } from '@/components/external-link';
@@ -17,7 +17,8 @@ interface SourceRow {
   url: string | null;
   pages: number | null;
   fetched_at: string;
-  chunks: { count: number }[];
+  /** Null when the count could not be had in time. */
+  chunks: { count: number }[] | null;
 }
 
 /**
@@ -33,7 +34,11 @@ export default async function LibrarySourcesPage({ params }: { params: Promise<{
   const t = await getTranslations('library.sources');
   const tc = await getTranslations('common');
 
-  const { data } = await scope.supabase
+  // The passage count per source is a count over every passage in the
+  // library; right after a large load, before the indexes and statistics
+  // catch up, that can run past the database's time limit. The list is
+  // then shown without the counts rather than as an empty library.
+  const counted = await scope.supabase
     .from('library_sources')
     .select('id, kind, title, url, pages, fetched_at, chunks:library_chunks(count)')
     .eq('status', 'active')
@@ -41,7 +46,17 @@ export default async function LibrarySourcesPage({ params }: { params: Promise<{
     .order('title')
     .limit(1000)
     .returns<SourceRow[]>();
-  const rows = data ?? [];
+  const plain = counted.error
+    ? await scope.supabase
+        .from('library_sources')
+        .select('id, kind, title, url, pages, fetched_at')
+        .eq('status', 'active')
+        .order('kind')
+        .order('title')
+        .limit(1000)
+        .returns<Omit<SourceRow, 'chunks'>[]>()
+    : null;
+  const rows: SourceRow[] = counted.data ?? (plain?.data ?? []).map((row) => ({ ...row, chunks: null }));
 
   return (
     <>
@@ -79,7 +94,7 @@ export default async function LibrarySourcesPage({ params }: { params: Promise<{
                       <Badge tone="muted">{row.kind === 'website' ? t('website') : t('file')}</Badge>
                     </Td>
                     <Td>
-                      <span className="tabular-nums">{t('passages', { count: row.chunks?.[0]?.count ?? 0 })}</span>
+                      {row.chunks ? <span className="tabular-nums">{t('passages', { count: row.chunks[0]?.count ?? 0 })}</span> : <Dash />}
                     </Td>
                     <Td>{formatDate(new Date(row.fetched_at))}</Td>
                   </Tr>
