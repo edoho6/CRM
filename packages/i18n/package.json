@@ -17,7 +17,7 @@
   },
   "dependencies": {
     "@clinic/domain": "workspace:*",
-    "next-intl": "^4.14.2"
+    "next-intl": "^4.14.3"
   },
   "devDependencies": {
     "@clinic/config": "workspace:*",
