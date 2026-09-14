@@ -234,8 +234,9 @@ Generate new private key** ← הקובץ שיורד. ב-Supabase ← **Edge Fun
    ואם ריצה קודמת כבר טענה אותם — הם מוסרים מהספרייה בריצה הבאה. `--dry` רק קורא בלי להעלות,
    ו-`--limit=10` מנסה על עשרה קבצים.
 7. **אחרי הטעינה הראשונה**, פעם אחת ובסדר הזה: `45_library_search_to_run.sql`, `47_library_policies_to_run.sql`,
-   `48_shared_policies_to_run.sql`, `50_library_search_inline_to_run.sql`, `51_library_search_definer_to_run.sql`
-   (הם migrations 49–53 ב-`supabase/migrations`), ואז שוב `supabase/tests/tenant_isolation.sql`. מה הם עושים:
+   `48_shared_policies_to_run.sql`, `50_library_search_inline_to_run.sql`, `51_library_search_definer_to_run.sql`,
+   `52_library_chats_to_run.sql` (הם migrations 49–54 ב-`supabase/migrations`; 52 הוא הטבלאות של השיחות —
+   בלעדיו הצ'אט עונה אבל לא זוכר), ואז שוב `supabase/tests/tenant_isolation.sql`. מה הם עושים:
    החיפוש קורא מהאינדקסים תחילה ורק אז מצרף את המקורות; בדיקת החברות של הקורא נעשית פעם אחת לשאילתה ולא לכל
    שורה; והחיפוש עצמו רץ כבעל הטבלאות ובודק חברות בעצמו — כי תחת אבטחת השורות אינדקס הטקסט לא משרת, וחיפוש
    בספרייה של עשרות אלפי קטעים נופל על מגבלת 8 השניות.

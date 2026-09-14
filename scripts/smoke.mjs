@@ -232,8 +232,9 @@ async function inspect(page) {
     // so the page is read for anything shaped like one — three dotted
     // segments, letters only, not part of an address or a file name.
     const keyLeaks = [];
-    // A web address is not a key: a picture credit reads "www.scistyle.com".
-    const address = /^www\.|\.(com|org|net|gov|edu|il|uk|de|fr|io)$/i;
+    // A web address is not a key: a picture credit reads "www.scistyle.com",
+    // and the library's sources list reads "en.wfas.org.cn" and "scm.hkbu.edu.hk".
+    const address = /^www\.|\.(com|org|net|gov|edu|info|ac|co|io|il|uk|de|fr|es|it|nl|ch|eu|ru|cn|hk|tw|jp|kr|in|au|ca|br)$/i;
     for (const match of (main?.innerText ?? '').matchAll(/(?:^|[\s(])([a-z][a-zA-Z0-9]*(?:\.[a-zA-Z][a-zA-Z0-9_]*){2,})(?=$|[\s).,:;])/gm)) {
       if (address.test(match[1])) continue;
       if (!keyLeaks.includes(match[1])) keyLeaks.push(match[1]);
@@ -903,6 +904,45 @@ const flows = {
     const backToBefore = await countIs(before);
     const ok = pngOk && replaced && backToBefore;
     return { ok, detail: `saved ${pngOk ? 'a real PNG' : `(download ${response.status()} ${type})`}; edit ${replaced ? 'replaced the page' : 'did not replace it'}; delete ${backToBefore ? 'left the panel as it was' : `left ${await pages().count()} page(s), had ${before}`}` };
+  },
+  async writeLibraryChat(page) {
+    // A conversation with the library: one question asked (a real answer,
+    // from the sandbox's own keys — a few cents), the conversation that
+    // opens with it renamed, pinned and deleted from the list. Without keys
+    // the page says the library is not connected, and the flow says so.
+    if ((await page.locator('main', { hasText: /הספרייה עוד לא מחוברת/ }).count()) > 0) return { ok: true, detail: 'skipped: the library is not connected here' };
+    const rows = () => page.locator('[data-chat-list] li');
+    const before = await rows().count();
+    const question = 'מהן ההתוויות של Gui Zhi Tang לפי המקורות?';
+    await page.locator('#library-question').fill(question);
+    await page.locator('[data-chat-send]').click();
+    const answered = await page.locator('[data-chat-answer]').first().waitFor({ timeout: 120_000 }).then(() => true).catch(() => false);
+    if (!answered) return { ok: false, detail: 'no answer within two minutes' };
+    const listed = await page.waitForFunction((n) => document.querySelectorAll('[data-chat-list] li').length === n, before + 1, { timeout: 10_000 }).then(() => true).catch(() => false);
+    if (!listed) return { ok: false, detail: `the conversation did not appear in the list (${await rows().count()} of ${before + 1})` };
+    const row = () => rows().filter({ hasText: /Gui Zhi Tang/ }).first();
+    const menu = async (item) => {
+      await row().locator('button[aria-label^="פעולות לשיחה"]').click();
+      await page.locator('[role="menuitem"]', { hasText: item }).click();
+    };
+    // Renamed.
+    await menu(/שינוי שם/);
+    await page.locator('#chat-title').fill('שיחת בדיקה');
+    await page.locator('[role="dialog"] button[type="submit"]').click();
+    const renamed = await rows().filter({ hasText: /שיחת בדיקה/ }).first().waitFor({ timeout: 10_000 }).then(() => true).catch(() => false);
+    if (!renamed) return { ok: false, detail: 'the new name did not show in the list' };
+    const named = () => rows().filter({ hasText: /שיחת בדיקה/ }).first();
+    // Pinned: the row sits under the pinned heading.
+    await named().locator('button[aria-label^="פעולות לשיחה"]').click();
+    await page.locator('[role="menuitem"]', { hasText: /נעיצה למעלה/ }).click();
+    const pinned = await page.locator('[data-chat-list] section[aria-label="נעוצות"] li', { hasText: /שיחת בדיקה/ }).waitFor({ timeout: 10_000 }).then(() => true).catch(() => false);
+    // Deleted, after the confirmation.
+    await named().locator('button[aria-label^="פעולות לשיחה"]').click();
+    await page.locator('[role="menuitem"]', { hasText: /^מחיקה$/ }).click();
+    await page.locator('[role="dialog"] button, [role="alertdialog"] button', { hasText: /^מחיקה$/ }).last().click();
+    const gone = await page.waitForFunction((n) => document.querySelectorAll('[data-chat-list] li').length === n, before, { timeout: 10_000 }).then(() => true).catch(() => false);
+    const ok = renamed && pinned && gone;
+    return { ok, detail: `answered; renamed; ${pinned ? 'pinned' : 'pin did not move the row'}; ${gone ? 'deleted' : `delete left ${await rows().count()} row(s), had ${before}`}` };
   },
   async exportPatientFile(page) {
     await page.locator('[role="tab"]', { hasText: /הסכמות/ }).first().click();
@@ -1676,6 +1716,7 @@ async function main() {
       }
       await visit(context, { route: '/encounters/new', locale: 'he', width: desktop, label: 'flow write-encounter', after: flows.writeEncounter });
       if (encounterIds[0]) await visit(context, { route: `/encounters/${encounterIds[0]}`, locale: 'he', width: desktop, label: 'flow write-sketch', after: flows.writeSketch });
+      await visit(context, { route: '/library', locale: 'he', width: desktop, label: 'flow write-library-chat', after: flows.writeLibraryChat });
       await visit(context, { route: '/billing/new', locale: 'he', width: desktop, label: 'flow write-invoice-line', after: flows.writeInvoiceLine });
       await visit(context, { route: '/account/schedule', locale: 'he', width: desktop, label: 'flow write-feed', after: flows.writeFeed });
       await visit(context, { route: '/settings/team', locale: 'he', width: desktop, label: 'flow write-invite', after: flows.writeInvite });

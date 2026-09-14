@@ -49,6 +49,7 @@ declare
   v_shop_fp    text := 'iso|' || gen_random_uuid();  -- the product's fingerprint, shared with its offer
   v_med        uuid;                                   -- one entry of the Western medicine reference
   v_lib        uuid;                                   -- one source of the professional library
+  v_chat_a     uuid;                                   -- clinic A's owner's conversation with the library
   -- A unit vector to search the library with; what it finds is beside the point,
   -- who is allowed to search at all is the point.
   v_probe_vec  extensions.vector(1024) := ('[1' || repeat(',0', 1023) || ']')::extensions.vector(1024);
@@ -614,6 +615,31 @@ begin
   if found then raise exception 'FAIL: a clinic member deleted from the library log'; end if;
   raise notice 'ok   the professional library is readable and searchable by every member, writable by none, and its log is append-only';
 
+  -- A conversation with the library is the practitioner's own: written by
+  -- them, read by them, and invisible to a colleague, a stranger, a patient.
+  insert into public.library_chats (clinic_id, user_id, title) values (v_clinic_a, v_user_a, 'Iso chat') returning id into v_chat_a;
+  insert into public.library_messages (chat_id, clinic_id, user_id, role, content) values (v_chat_a, v_clinic_a, v_user_a, 'user', 'Iso question');
+  insert into public.library_messages (chat_id, clinic_id, user_id, role, status, content) values (v_chat_a, v_clinic_a, v_user_a, 'assistant', 'answered', 'Iso answer');
+  select count(*) into v_count from public.library_chats where id = v_chat_a;
+  if v_count <> 1 then raise exception 'FAIL: a practitioner cannot read their own library conversation'; end if;
+  select count(*) into v_count from public.library_messages where chat_id = v_chat_a;
+  if v_count <> 2 then raise exception 'FAIL: a practitioner read % of their 2 library messages', v_count; end if;
+  update public.library_chats set pinned = true where id = v_chat_a;
+  if not found then raise exception 'FAIL: a practitioner could not pin their own conversation'; end if;
+  begin
+    insert into public.library_chats (clinic_id, user_id, title) values (v_clinic_a, v_user_b, 'Forged');
+    raise exception 'FAIL: a conversation was written in another person''s name';
+  exception
+    when insufficient_privilege then null;
+  end;
+  begin
+    insert into public.library_chats (clinic_id, user_id, title) values (v_clinic_b, v_user_a, 'Forged');
+    raise exception 'FAIL: a conversation was written into another clinic';
+  exception
+    when insufficient_privilege then null;
+  end;
+  raise notice 'ok   a library conversation belongs to the one who had it';
+
   -- Invitations belong to the owner who made them, and the last owner stays.
   select count(*) into v_count from public.clinic_invitations;
   if v_count <> 1 then raise exception 'FAIL: clinic A saw % invitation(s), expected only its own', v_count; end if;
@@ -719,9 +745,17 @@ begin
 
   raise notice '--- as clinic B ---';
 
-  -- Clinic A's library questions are clinic A's.
+  -- Clinic A's library questions are clinic A's, and A's conversation is A's owner's alone.
   select count(*) into v_count from public.library_queries where clinic_id = v_clinic_a;
   if v_count <> 0 then raise exception 'FAIL: clinic B saw % of clinic A''s library log row(s)', v_count; end if;
+  select count(*) into v_count from public.library_chats;
+  if v_count <> 0 then raise exception 'FAIL: clinic B saw % library conversation(s) of clinic A', v_count; end if;
+  select count(*) into v_count from public.library_messages;
+  if v_count <> 0 then raise exception 'FAIL: clinic B saw % library message(s) of clinic A', v_count; end if;
+  update public.library_chats set title = 'Taken' where id = v_chat_a;
+  if found then raise exception 'FAIL: clinic B renamed clinic A''s conversation'; end if;
+  delete from public.library_chats where id = v_chat_a;
+  if found then raise exception 'FAIL: clinic B deleted clinic A''s conversation'; end if;
 
   select count(*) into v_count from public.encounter_signatures;
   if v_count <> 0 then raise exception 'FAIL: clinic B saw % of clinic A''s signature record(s)', v_count; end if;
@@ -787,6 +821,14 @@ begin
   -- account without a clinic with nothing — by text and by vector alike.
   select count(*) into v_count from public.library_search(v_probe_vec, 'zzzisolationword', 5);
   if v_count <> 0 then raise exception 'FAIL: the portal patient searched the professional library (% row(s))', v_count; end if;
+  select count(*) into v_count from public.library_chats;
+  if v_count <> 0 then raise exception 'FAIL: the portal patient saw % library conversation(s)', v_count; end if;
+  begin
+    insert into public.library_chats (clinic_id, user_id, title) values (v_clinic_a, v_user_p, 'Patient chat');
+    raise exception 'FAIL: the portal patient opened a library conversation';
+  exception
+    when insufficient_privilege then null;
+  end;
   raise notice 'ok   shop prices, the medicine reference and the library search are closed to the portal';
 
   -- The headline safety property: no policy on tcm_notes mentions patients at all.
@@ -872,6 +914,8 @@ begin
   exception
     when insufficient_privilege then null;
   end;
+  select count(*) into v_count from public.library_chats;
+  if v_count <> 0 then raise exception 'FAIL: anonymous read returned % library conversation(s)', v_count; end if;
   raise notice 'ok   anonymous callers see nothing';
 
   -- The token functions are the only doors without a session. A guessed
