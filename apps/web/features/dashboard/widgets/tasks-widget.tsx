@@ -30,6 +30,9 @@ import { WidgetEmpty, WidgetLoading } from '../widget-frame';
  * actually decided in. Nothing is urgent as you type it; it becomes urgent when
  * you look at the list on Thursday.
  */
+/** How many rows a dashboard tile shows before "view all"; the page shows them all. */
+const TASK_LIMIT = 6;
+
 function TasksWidget() {
   const t = useTranslations('widgets.tasks');
   const tc = useTranslations('common');
@@ -165,6 +168,11 @@ function TasksWidget() {
       ) : rows.length === 0 ? (
         <WidgetEmpty>{t('empty')}</WidgetEmpty>
       ) : (
+        // On a phone the card grows with its list, and thirty open tasks made
+        // one very tall card; capped with an inner scroll there, while the desk
+        // keeps the frame's own cap (md and up). Every task stays in the list —
+        // a task added in the field above must not vanish past a slice.
+        <div className="max-h-80 overflow-y-auto md:max-h-none md:overflow-visible">
         <ul ref={listRef} className="divide-y divide-ink-100">
           {rows.map((task) => {
             const overdue = task.due_at
@@ -240,7 +248,18 @@ function TasksWidget() {
             );
           })}
         </ul>
+        </div>
       )}
+      {/* A jump to the full page when the list is long, so triage does not
+          mean scrolling a small card. */}
+      {rows.length > TASK_LIMIT ? (
+        <Link
+          href="/tasks"
+          className="mt-1 flex items-center justify-center gap-1 rounded-md py-1.5 text-xs font-medium text-jade-800 underline-offset-2 hover:bg-jade-50 hover:underline"
+        >
+          {t('more', { count: rows.length - TASK_LIMIT })}
+        </Link>
+      ) : null}
     </div>
   );
 }

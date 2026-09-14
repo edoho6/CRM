@@ -27,6 +27,9 @@ import {
 import { formatDate } from '@clinic/i18n';
 
 
+/** A dashboard tile shows a handful and points at the diary for the rest. */
+const APPOINTMENT_LIMIT = 6;
+
 function AppointmentList({
   rows,
   emptyLabel,
@@ -39,14 +42,16 @@ function AppointmentList({
   const locale = useLocale() as Locale;
   const format = useFormatter();
   const tStatus = useTranslations('appointments.status');
+  const tc = useTranslations('common');
 
   if (rows.length === 0) {
     return <WidgetEmpty>{emptyLabel}</WidgetEmpty>;
   }
 
   return (
+    <>
     <ul className="divide-y divide-ink-100">
-      {rows.map((row) => (
+      {rows.slice(0, APPOINTMENT_LIMIT).map((row) => (
         <li key={row.id}>
           <Link
             href={{ pathname: '/calendar', query: { date: row.start_at.slice(0, 10) } }}
@@ -75,6 +80,15 @@ function AppointmentList({
         </li>
       ))}
     </ul>
+    {rows.length > APPOINTMENT_LIMIT ? (
+      <Link
+        href="/calendar"
+        className="mt-1 flex items-center justify-center gap-1 rounded-md py-1.5 text-xs font-medium text-jade-800 underline-offset-2 hover:bg-jade-50 hover:underline"
+      >
+        {tc('viewAll')}
+      </Link>
+    ) : null}
+    </>
   );
 }
 
