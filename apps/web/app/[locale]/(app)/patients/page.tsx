@@ -8,6 +8,7 @@ import {
   SortableTable,
   TableWrapper,
   Td,
+  Th,
   Tr,
   cn,
   Dash,
@@ -24,6 +25,7 @@ import { getClinicScope } from '@/lib/session';
 import { ageFromDateOfBirth } from '@/lib/display';
 import { PatientSearch } from '@/features/patients/patient-search';
 import { PatientStatusCell } from '@/features/patients/status-cell';
+import { PatientRowActions } from '@/features/patients/row-actions';
 import { PatientStatusSummary, type StatusCounts } from '@/features/patients/status-summary';
 import { TagChipLink, type TagChip } from '@/features/patients/patient-tags';
 import { TAG_CLASSES } from '@/features/patients/tag-colors';
@@ -291,6 +293,9 @@ export default async function PatientsPage({
                 <SortTh sortKey="tags">{t('tags.column')}</SortTh>
                 <SortTh sortKey="next">{t('nextAppointment')}</SortTh>
                 <SortTh sortKey="status">{t('treatmentStatus')}</SortTh>
+                <Th className="w-10 text-end">
+                  <span className="sr-only">{tc('actions')}</span>
+                </Th>
               </tr>
             </thead>
             <SortBody locale={locale}>
@@ -368,6 +373,9 @@ export default async function PatientsPage({
                         patientId={patient.id}
                         status={patient.treatment_status ?? null}
                       />
+                    </Td>
+                    <Td className="text-end">
+                      <PatientRowActions patientId={patient.id} name={patient.full_name} phone={patient.phone} />
                     </Td>
                   </Tr>
                 );

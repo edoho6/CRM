@@ -67,9 +67,15 @@ export function PatientStatusCell({
         aria-invalid={failed || undefined}
         onChange={(event) => change(event.target.value as TreatmentStatus)}
         className={cn(
-          'ui-select h-8 max-w-[min(11rem,100%)] rounded-md border bg-white px-2 pe-8 text-base sm:text-sm text-ink-900 shadow-xs',
-          'focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-focus focus-visible:border-focus disabled:bg-ink-50',
-          failed ? 'border-red-600' : 'border-ink-200',
+          // Quiet at rest — fifty identical boxes down a list read as clutter,
+          // so the control is bare text until the pointer or focus reaches it,
+          // where it becomes a plain bordered select again.
+          'ui-select h-8 max-w-[min(11rem,100%)] rounded-md border px-2 pe-7 text-base sm:text-sm',
+          'hover:bg-white hover:text-ink-900 hover:shadow-xs',
+          'focus-visible:bg-white focus-visible:text-ink-900 focus-visible:shadow-xs focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-focus focus-visible:border-focus disabled:bg-ink-50',
+          failed
+            ? 'border-red-600 bg-white text-ink-900'
+            : 'border-transparent bg-transparent text-ink-700 hover:border-ink-200 focus-visible:border-focus',
         )}
       >
         {TREATMENT_STATUSES.map((option) => (

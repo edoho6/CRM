@@ -202,7 +202,11 @@ export function PatientStatusSummary({ counts }: { counts: StatusCounts }) {
   const ordered = arrangeTiles(all, layout);
   const isHidden = (item: Item) => layout.hidden.includes(item.key);
   const visible = ordered.filter((item) => !isHidden(item));
-  const visibleOutcomes = outcomes.filter((item) => !isHidden(item));
+  // An outcome nobody has yet is a tile that only adds noise and a filter that
+  // leads to an empty list — dropped while reading, kept while arranging so it
+  // can still be ordered or pinned. The diary tiles always show, 0 or not.
+  const shown = visible.filter((item) => arranging || !outcomes.includes(item) || item.value > 0);
+  const visibleOutcomes = outcomes.filter((item) => !isHidden(item) && (arranging || item.value > 0));
 
   const switcher = (
     <div className="flex shrink-0 items-center gap-2 self-end sm:self-auto">
@@ -242,7 +246,7 @@ export function PatientStatusSummary({ counts }: { counts: StatusCounts }) {
           {mode === 'tiles' ? (
             <div data-kpi-tiles>
               <TileRow
-                items={arranging ? ordered : visible}
+                items={arranging ? ordered : shown}
                 arranging={arranging}
                 hidden={layout.hidden}
                 onMove={(key, step) => saveLayout(moveTile(all, layout, key, step))}
@@ -257,7 +261,7 @@ export function PatientStatusSummary({ counts }: { counts: StatusCounts }) {
             </div>
           ) : mode === 'pills' ? (
             <div className="flex flex-wrap items-center gap-1">
-              {(arranging ? ordered : visible).map((item) => (
+              {(arranging ? ordered : shown).map((item) => (
                 <Pill key={item.key} item={item} dimmed={arranging && isHidden(item)} />
               ))}
             </div>
