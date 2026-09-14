@@ -30,6 +30,13 @@ const dry = Boolean(options.dry);
 const limit = Number(options.limit ?? 0) || Infinity;
 /** Pages smaller than this are menus and stubs, not reading matter. */
 const MIN_CHARS = 400;
+/**
+ * A page loaded (or found thin) this recently is not asked for again: a run
+ * that stopped halfway resumes in minutes instead of re-walking every site
+ * at one request a second. Staleness after that is the scheduled refresh's
+ * job (supabase/functions/refresh-library), which works on the same week.
+ */
+const FRESH_MS = 7 * 24 * 60 * 60 * 1000;
 const SKIP_EXT = /\.(png|jpe?g|gif|svg|webp|pdf|zip|mp[34]|css|js|ico|woff2?)$/i;
 
 async function fetchPage(url, known) {
@@ -81,6 +88,15 @@ async function crawlSite(site, state) {
       continue;
     }
     const known = state.manifest.pages[url];
+    const seenAt = known?.loadedAt ?? known?.checkedAt;
+    if (seenAt && Date.now() - Date.parse(seenAt) < FRESH_MS && (known.id || known.thin)) {
+      // Known and fresh: its links go on the queue, it costs the site nothing.
+      read += 1;
+      state.pages += 1;
+      state.summary.unchanged += 1;
+      for (const link of known.links ?? []) if (!seen.has(link)) { seen.add(link); queue.push(link); }
+      continue;
+    }
     let page;
     try {
       page = await fetchPage(url, known);
@@ -108,7 +124,7 @@ async function crawlSite(site, state) {
     const { title, text } = pageText(page.html, url);
     if (text.length < MIN_CHARS) {
       state.summary.thin += 1;
-      state.manifest.pages[url] = { ...known, etag: page.etag, lastModified: page.lastModified, links, thin: true };
+      state.manifest.pages[url] = { ...known, etag: page.etag, lastModified: page.lastModified, links, thin: true, checkedAt: new Date().toISOString() };
       continue;
     }
     const sha256 = crypto.createHash('sha256').update(text).digest('hex');
