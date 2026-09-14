@@ -17,7 +17,7 @@ import {
   type LibraryStatus,
 } from '@clinic/domain';
 import { LIBRARY_MODEL, LibraryUnavailableError, callClaude, parseJsonReply } from './claude';
-import { ANSWER_SYSTEM, REVIEW_SYSTEM, answerPrompt, reviewPrompt, type PromptPassage } from './prompts';
+import { ANSWER_SYSTEM, REVIEW_SYSTEM, answerPrompt, repairPrompt, reviewPrompt, type PromptPassage } from './prompts';
 import { embedQuery } from './voyage';
 
 /**
@@ -204,30 +204,56 @@ export async function askLibrary(db: SupabaseClient, input: AskInput, onStage?: 
   }
 
   // Grounding: the checks that cannot be argued with, then the second reading.
-  onStage?.('checking');
-  const grounding = checkGrounding(parsed.answer, passages.map((p) => ({ n: p.n, content: p.content })));
-  let faithful = grounding.ok;
-  if (faithful) {
+  // Both name what they object to, so that a draft can be written again.
+  const judge = async (text: string): Promise<{ faithful: boolean; issues: string[] }> => {
+    const grounding = checkGrounding(text, passages.map((p) => ({ n: p.n, content: p.content })));
+    if (!grounding.ok) return { faithful: false, issues: grounding.problems.map((p) => p.detail) };
     const second = await callClaude({
       system: REVIEW_SYSTEM,
-      messages: [{ role: 'user', content: reviewPrompt(parsed.answer, passages) }],
+      messages: [{ role: 'user', content: reviewPrompt(text, passages) }],
       maxTokens: 4000,
     });
     usage.input += second.inputTokens;
     usage.output += second.outputTokens;
-    const verdict = parseJsonReply<{ faithful?: boolean }>(second.text);
-    faithful = verdict?.faithful === true;
+    const verdict = parseJsonReply<{ faithful?: boolean; issues?: unknown }>(second.text);
+    const issues = Array.isArray(verdict?.issues) ? verdict.issues.filter((issue): issue is string => typeof issue === 'string').slice(0, 10) : [];
+    return { faithful: verdict?.faithful === true, issues };
+  };
+
+  onStage?.('checking');
+  let answer = parsed.answer;
+  let verdict = await judge(answer);
+
+  // One repair. A long answer with a single sentence the passages do not
+  // support used to be withheld whole; now the draft goes back with the
+  // objections and is written again without them, then faces the same two
+  // checks. A second rejection is final, and nothing unchecked ever leaves.
+  if (!verdict.faithful && verdict.issues.length > 0) {
+    onStage?.('writing');
+    const again = await callClaude({
+      system: ANSWER_SYSTEM,
+      messages: [{ role: 'user', content: repairPrompt(question, history, passages, answer, verdict.issues) }],
+      maxTokens: 8000,
+    });
+    usage.input += again.inputTokens;
+    usage.output += again.outputTokens;
+    const reparsed = parseJsonReply<{ answered?: boolean; answer?: string }>(again.text);
+    if (reparsed && typeof reparsed.answer === 'string' && reparsed.answered === true) {
+      onStage?.('checking');
+      answer = reparsed.answer;
+      verdict = await judge(answer);
+    }
   }
-  if (!faithful) {
+  if (!verdict.faithful) {
     await log('no_sources', logSources(new Set()), usage);
     return reply('no_sources', LIBRARY_NO_SOURCES_HE, allCitations, retrieved);
   }
 
-  const cited = new Set(grounding.ok ? citedNumbers(parsed.answer) : []);
+  const cited = new Set(citedNumbers(answer));
   await log('answered', logSources(cited), usage);
   return reply(
     'answered',
-    parsed.answer.trim(),
+    answer.trim(),
     [...cited].sort((a, b) => a - b).map(asCitation),
     retrieved,
   );

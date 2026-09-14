@@ -55,6 +55,34 @@ export function reviewPrompt(answer: string, passages: readonly PromptPassage[])
   return `${passagesBlock(passages)}\n\n<answer>\n${answer}\n</answer>`;
 }
 
+/**
+ * The second chance. A long answer with one stray sentence used to be
+ * withheld whole; instead the draft goes back with what the checks
+ * objected to, to be written again without it — under the same rules and
+ * the same JSON shape, and then through the same checks again.
+ */
+export function repairPrompt(
+  question: string,
+  history: readonly { role: 'user' | 'assistant'; content: string }[],
+  passages: readonly PromptPassage[],
+  draft: string,
+  issues: readonly string[],
+): string {
+  return [
+    answerPrompt(question, history, passages),
+    '',
+    '<draft>',
+    draft,
+    '</draft>',
+    '',
+    '<review>',
+    ...issues.map((issue) => `- ${issue}`),
+    '</review>',
+    '',
+    'The draft above was checked against the passages, and the review lists what they do not support. Write the answer again under the same rules: keep every claim the passages support, with its [n] marker; remove or restate every claim the review names, so that nothing goes beyond the passages; add nothing new. If little is left, say what the passages do cover and no more. Reply in the same JSON shape.',
+  ].join('\n');
+}
+
 function escapeAttr(text: string): string {
   return text.replace(/[<>&"]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' })[c]!);
 }
