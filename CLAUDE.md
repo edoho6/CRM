@@ -516,6 +516,12 @@
   וממשיכה. **OCR של Drive לא אפשרי**: לחשבון שירות אין מכסת אחסון, גם בתיקייה משותפת כ-Editor (הקובץ בבעלות היוצר).
   הטקסט שחולץ נשמר ב-`.cache/library/text/<sha256>.json` (`EXTRACT_VERSION`), כך ש-OCR רץ פעם אחת. `ingest.mjs
   --only=<מילה>` לקובץ אחד.
+  **האינדקס (migration 48):** HNSW על `embedding::halfvec(1024)` (חצי דיוק — הגרף של 86 אלף וקטורים במלוא הדיוק
+  לא נכנס לזיכרון של המכונה הקטנה, ובנייה מקבילית נופלת על "could not resize shared memory segment"), נבנה עם
+  `max_parallel_maintenance_workers = 0`; `library_search` משווה באותו ביטוי כדי שהאינדקס ישמש. טעינה גדולה =
+  `supabase/maintenance/library-index-off.sql` לפני, `library-index-on.sql` + `library-vacuum.sql` אחרי; בלי
+  אינדקס, חיפוש על ספרייה גדולה חורג מ-8 השניות של PostgREST. `upload.mjs` שולח 20 פסקאות לקריאה ומקטין לחצי
+  כשהמסד לא עומד בזמן.
   **ריענון אתרים (migration 47):** `supabase/functions/refresh-library` רץ בתזמון עם ה-service role וקורא שוב דפי
   אתר שעבר עליהם שבוע — בקשה מותנית (`etag`/`last_modified` על השורה), hash של הטקסט, וכתיבה מחדש רק כשהשתנה;
   דפים חדשים הם עדיין של `crawl.mjs`. הלוגיקה ב-`_shared/library/refresh.ts` (נבדק מ-`apps/web` עם fakes), וחיתוך
