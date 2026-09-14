@@ -920,6 +920,10 @@ const flows = {
     if (!answered) return { ok: false, detail: 'no answer within two minutes' };
     const listed = await page.waitForFunction((n) => document.querySelectorAll('[data-chat-list] li').length === n, before + 1, { timeout: 10_000 }).then(() => true).catch(() => false);
     if (!listed) return { ok: false, detail: `the conversation did not appear in the list (${await rows().count()} of ${before + 1})` };
+    // Kept: the address now names the conversation, and a fresh load brings it back with its answer.
+    await page.reload({ waitUntil: 'networkidle' });
+    const kept = await page.locator('[data-chat-answer]').first().waitFor({ timeout: 20_000 }).then(() => true).catch(() => false);
+    if (!kept) return { ok: false, detail: 'after a reload the conversation came back without its answer' };
     const row = () => rows().filter({ hasText: /Gui Zhi Tang/ }).first();
     const menu = async (item) => {
       await row().locator('button[aria-label^="פעולות לשיחה"]').click();
