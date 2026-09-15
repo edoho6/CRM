@@ -100,10 +100,15 @@ begin
   insert into public.patients (clinic_id, first_name, last_name, phone, date_of_birth)
   values (v_other, 'Other', 'Person', '050-0009999', make_date(1976, extract(month from v_today)::int, extract(day from v_today)::int));
 
-  insert into public.patient_consents (clinic_id, patient_id, document_id, kind, granted, method)
-  values (v_clinic, v_a, v_doc, 'marketing', true, 'in_person'),
-         (v_clinic, v_c, v_doc, 'marketing', true, 'in_person'),
-         (v_clinic, v_d, v_doc, 'marketing', true, 'in_person');
+  -- Given an hour ago, not "now": inside one transaction now() never moves,
+  -- so a consent stamped now and a withdrawal stamped now would tie on the
+  -- timestamp, and "the most recent decision" would be whichever row the
+  -- planner happened to read first. In life the tap on the link always
+  -- comes after the consent it withdraws; the fixture says so explicitly.
+  insert into public.patient_consents (clinic_id, patient_id, document_id, kind, granted, method, decided_at)
+  values (v_clinic, v_a, v_doc, 'marketing', true, 'in_person', now() - interval '1 hour'),
+         (v_clinic, v_c, v_doc, 'marketing', true, 'in_person', now() - interval '1 hour'),
+         (v_clinic, v_d, v_doc, 'marketing', true, 'in_person', now() - interval '1 hour');
 
   -- A treatment for Alpha that ended 26 hours before noon, marked completed.
   insert into public.appointments (clinic_id, patient_id, practitioner_id, start_at, end_at, status)
