@@ -31,7 +31,19 @@ instead.
 | `SMS_019_USERNAME` | Enables SMS through 019 (019sms.co.il): the account's user name… |
 | `SMS_019_TOKEN` | …an API token made in the account's settings (shown once)… |
 | `SMS_SENDER` | …and the sender name patients see: up to eleven English letters and digits. All three, or no SMS. |
-| `WHATSAPP_019_SOURCE` | Enables WhatsApp through the same 019 account: the clinic's WhatsApp number as verified there, international without a plus (`972…`). Needs `SMS_019_TOKEN` too. |
+
+WhatsApp needs no secret of its own: it goes through `SMS_019_TOKEN`, from
+each clinic's own line (`clinics.whatsapp_number`, entered in Settings →
+Messages). A row whose clinic has no line fails with `no_whatsapp_number`.
+
+### Who may wake it
+
+The schedule and the inbound function send `x-dispatch-secret`. A signed-in
+member of a clinic may call it too, with their own token (the app does,
+right after saving a WhatsApp message) — such a call sends the WhatsApp
+threads only, never the log's queue, so it can never overlap with the
+schedule on a reminder. Thread rows are claimed under a lock
+(`whatsapp_claim_outbound`), so two wakings never send one twice.
 
 SMS and WhatsApp go through 019. The adapters are plain TypeScript in
 `_shared/messaging/` (run here, tested from `apps/web` through the
@@ -81,6 +93,38 @@ the end of `supabase/migrations/20260909200000_schedule_blocks_messaging.sql`.
 No patient detail is logged. A failed send keeps a short code
 (`http_429`, `no_recipient`) on the row and nothing else. The service key is
 injected by Supabase at runtime and appears in no file.
+
+## whatsapp-inbound
+
+What WhatsApp sends us: a patient's message to the clinic's line, and the
+service's ticks and failure notices on messages the clinic sent. The
+function checks the secret in its address, tells the three events apart
+(`_shared/messaging/inbound.ts`) and hands the object to the database
+(`whatsapp_receive` / `whatsapp_ack`, migration 55), which dedupes on the
+service's id, opens or finds the thread, joins the file whose number it is,
+and — for a tap on "אגיע" / "לא אגיע" — answers the next appointment and
+queues a line back. A push for a line no clinic owns is answered and
+dropped. Nothing of a message is logged.
+
+### Deploy
+
+```
+supabase functions deploy whatsapp-inbound --no-verify-jwt
+```
+
+### Secrets (Dashboard → Edge Functions → Secrets)
+
+| Name | Purpose |
+|---|---|
+| `WHATSAPP_INBOUND_SECRET` | Any long random string. The address given to the service ends in `?key=<it>`; without a match the function answers 403. |
+| `DISPATCH_SECRET` | Already set for the sender; used here to wake it when a reply was queued. |
+
+### The address, in 019's web app
+
+`https://YOUR-PROJECT-REF.supabase.co/functions/v1/whatsapp-inbound?key=THE-SECRET`,
+as the Push URL of the WhatsApp line. The service retries a non-200 answer
+for a while, so the function answers 200 for every well-formed event —
+including ones the database dropped — because a retry would change nothing.
 
 ## fetch-shop-prices
 

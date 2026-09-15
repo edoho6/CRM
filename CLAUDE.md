@@ -237,7 +237,20 @@
   (`messages.errors.*`). WhatsApp ביוזמת העסק = תבנית מאושרת (`whatsapp_template_id` ב-`clinic_automations`,
   גם לתזכורת תחת kind `appointment_reminder`); בלי מזהה — טקסט חופשי, ואם נדחה `needs_template` למסלול
   הידני. קליניקה `is_synthetic` לא שולחת למטופלים (`skipped/synthetic_clinic`), חוץ מ-`test_message`
-  מהכרטיס בהגדרות ← הודעות
+  מהכרטיס בהגדרות ← הודעות.
+  **תיבת השיחות (migration 55):** `whatsapp_conversations` (אחת לקליניקה ולאיש קשר — `contact_key` הוא
+  המספר כ-`972…` או המזהה האטום של Meta; `patient_id` כשקובץ אחד בלבד נושא את המספר) ו-`whatsapp_messages`
+  (כל הודעה לשני הכיוונים, עם סימני ✓ של השירות: sent/delivered/read). **מה שנכנס נכתב רק על ידי הפונקציה
+  `whatsapp-inbound`** (Edge, `?key=WHATSAPP_INBOUND_SECRET`) דרך `whatsapp_receive`/`whatsapp_ack`
+  (service role בלבד; dedupe על `unique` של השירות; לחיצה על "אגיע"/"לא אגיע" — `whatsapp_reply_intent`,
+  התאמה מדויקת בלבד — קוראת ל-`respond_to_appointment` על התור הבא ומתורה שורת אישור חזרה); הצוות כותב רק
+  `direction = 'out'` (policy). שליחה מיידית: השולח נעור על ידי חבר קליניקה (JWT) או על ידי הפונקציה הנכנסת
+  ושולח **רק** את התור של השיחות (`whatsapp_claim_outbound`, נעילה + `sending`/`claimed_at`), כדי לא לחפוף
+  לתזמון על התזכורות. חלון 24 השעות של Meta נאכף במסך: טקסט חופשי עד יום מ-`last_inbound_at`, אחרת תבנית
+  הפתיחה (kind `conversation_opener`). הודעה אוטומטית ב-WhatsApp נכתבת גם לשיחה (`whatsapp_note_outbound`).
+  המסך: `features/whatsapp/*` — רשימה + שיחה (מגירה מתחת ל-`lg`), polling כל 10 שניות; `/messages/queue` הוא
+  התור הישן; מהתיק — כפתור "WhatsApp" (`?patient=`). קובץ שמטופל שולח נשמר רק כקישור של השירות (שבוע), לא
+  בתיק — שלב הבא
 - **זימון אונליין:** `/book/[slug]` קורא וכותב רק דרך `booking_clinic` /
   `booking_slots` / `booking_request` (anon, security definer). השעות הפנויות
   מחושבות **ב-SQL** מאותן טבלאות שהיומן קורא, כדי שהעמוד והיומן לא יחלקו
