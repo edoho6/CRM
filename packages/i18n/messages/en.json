@@ -2495,7 +2495,10 @@
         "appointments": "Appointment",
         "invoices": "Invoice",
         "herbs": "Herb",
-        "herb_formulas": "Formula"
+        "herb_formulas": "Formula",
+        "dispensing_records": "Dispensing",
+        "payments": "Payment",
+        "patient_portal_access": "Portal access"
       },
       "anomalies": {
         "title": "Unusual patterns",

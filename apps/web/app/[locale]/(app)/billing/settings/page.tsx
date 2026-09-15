@@ -1,5 +1,5 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { siteUrl } from '@clinic/db';
+import { readSupabaseEnv } from '@clinic/db';
 import type { ClinicPaymentSettings } from '@clinic/db/types';
 import { PageHeader } from '@/components/app-shell';
 import { SettingsNav } from '@/features/settings/settings-nav';
@@ -33,9 +33,11 @@ export default async function BillingSettingsPage({
   return (
     <>
       <PageHeader title={t('title')} below={<SettingsNav />} />
+      {/* The address the provider is given. It is the background job's, not
+          this app's: settling a payment needs rights the app does not hold. */}
       <GrowSettingsForm
         settings={settings ?? null}
-        webhookUrl={`${siteUrl()}/api/billing/grow/webhook`}
+        webhookUrl={`${(readSupabaseEnv()?.url ?? '').replace(/\/$/, '')}/functions/v1/grow-webhook`}
       />
     </>
   );

@@ -21,22 +21,16 @@ export async function refreshMessageQueue(): Promise<ActionResult<{ queued: numb
   const scope = await getClinicScope();
   if (!scope) return actionError(new Error('unauthorized'));
 
-  const [
-    { data: reminders, error },
-    { data: alerts, error: alertsError },
-    { data: automations, error: automationsError },
-  ] = await Promise.all([
-    scope.supabase.rpc('enqueue_due_reminders', { p_base_url: baseUrl() }),
-    scope.supabase.rpc('enqueue_due_task_alerts'),
-    scope.supabase.rpc('enqueue_due_automations', { p_base_url: baseUrl() }),
-  ]);
+  // One function, for this clinic only. The three jobs behind it run over every
+  // clinic at once and belong to the schedule; a member reaches them only
+  // through this door, which pins the clinic to their own (migration 68).
+  // Before that, pressing this button queued messages for every clinic in the
+  // service, with the link domain taken from whoever pressed it.
+  const { data, error } = await scope.supabase.rpc('enqueue_now_for_my_clinic', {
+    p_base_url: baseUrl(),
+  });
   if (error) return actionError(error);
-  if (alertsError) return actionError(alertsError);
-  // The automations job arrived later than the other two (migration 54): a
-  // database that has not run it yet still fills the reminders, and the
-  // screen says nothing about the part it does not have.
-  const automationsQueued = automationsError ? 0 : Number(automations ?? 0);
-  return actionOk({ queued: Number(reminders ?? 0) + Number(alerts ?? 0) + automationsQueued });
+  return actionOk({ queued: Number(data ?? 0) });
 }
 
 /**

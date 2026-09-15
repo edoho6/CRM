@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import type { TreatmentConfirmation } from '@clinic/db/types';
 import { getClinicScope } from '@/lib/session';
+import { logRecordAccess } from '@/lib/access-log';
 import { PrintButton } from '@/features/documents/print-button';
 import { formatDate } from '@clinic/i18n';
 
@@ -38,6 +39,10 @@ export default async function ConfirmationPrintPage({
     .maybeSingle<TreatmentConfirmation>();
 
   if (!confirmation) notFound();
+
+  // Named patient, named practitioner, dates of treatment — and printed to be
+  // handed to a third party. An export, like the prescription.
+  await logRecordAccess(scope.supabase, 'treatment_confirmations', id, 'export');
 
   const clinic = scope.context.clinic;
 

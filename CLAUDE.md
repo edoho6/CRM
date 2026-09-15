@@ -27,14 +27,14 @@ pnpm 9 + Turborepo, Node 20.9+. ההתקנה והחיבור ל-Supabase ב-`READ
 `apps/portal` פורטל המטופלים (3001), `packages/*` משותף, `supabase/` מיגרציות + Edge Functions +
 בדיקות SQL + קטלוגים, `scripts/` שערי איכות וצנרות תוכן.
 
-| מה | פקודה |
-|---|---|
-| פיתוח | `pnpm dev` (שתי האפליקציות), `pnpm dev:web`, `pnpm dev:portal` |
-| טיפוסים, בדיקות, בנייה | `pnpm typecheck`, `pnpm test`, `pnpm build` |
-| בדיקה אחת | `pnpm --filter @clinic/web test -- lib/theme.test.ts` — vitest רץ רק ב-`apps/web`, גם לחבילות; `test:watch` לצפייה |
-| שערי איכות (CI) | `pnpm check:contrast` (אחרי build), `pnpm check:tokens`, `pnpm check:i18n`, `pnpm check:a11y` (שרת רץ) |
-| דפדפן אמיתי | `pnpm smoke` (`--only=/path`, `--write`, `--dark`, `--zoom`, `--shell`, `--he-only`, `--desktop-only`), `pnpm a11y:walk` — מול `SMOKE_BASE_URL` (ברירת מחדל 3000), רק מול קליניקה עם באנר הבדיקות |
-| עיצוב | `pnpm format` |
+| מה                     | פקודה                                                                                                                                                                                             |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| פיתוח                  | `pnpm dev` (שתי האפליקציות), `pnpm dev:web`, `pnpm dev:portal`                                                                                                                                    |
+| טיפוסים, בדיקות, בנייה | `pnpm typecheck`, `pnpm test`, `pnpm build`                                                                                                                                                       |
+| בדיקה אחת              | `pnpm --filter @clinic/web test -- lib/theme.test.ts` — vitest רץ רק ב-`apps/web`, גם לחבילות; `test:watch` לצפייה                                                                                |
+| שערי איכות (CI)        | `pnpm check:contrast` (אחרי build), `pnpm check:tokens`, `pnpm check:i18n`, `pnpm check:a11y` (שרת רץ)                                                                                            |
+| דפדפן אמיתי            | `pnpm smoke` (`--only=/path`, `--write`, `--dark`, `--zoom`, `--shell`, `--he-only`, `--desktop-only`), `pnpm a11y:walk` — מול `SMOKE_BASE_URL` (ברירת מחדל 3000), רק מול קליניקה עם באנר הבדיקות |
+| עיצוב                  | `pnpm format`                                                                                                                                                                                     |
 
 - **מיגרציה = שני קבצים:** `supabase/migrations/<חותמת>_<שם>.sql` (מקור האמת) ועותק בשורש
   `NN_<שם>_to_run.sql` עם המספר הרץ הבא (gitignored) — המשתמש מדביק אותו בעורך ה-SQL של Supabase, ו"SQL 54"
@@ -46,7 +46,7 @@ pnpm 9 + Turborepo, Node 20.9+. ההתקנה והחיבור ל-Supabase ב-`READ
   מטופלים אמיתיים), `MOBILE.md` (החנויות), `supabase/functions/README.md` (ה-secrets),
   `scripts/{library,medicine,pull}/README.md` (הצנרות)
 - **לקחים לפי מודול — קובצי `CLAUDE.md` מקוננים** (נטענים לבד כשנוגעים בתיקייה): `features/{library, medicine,
-  messages, prices, inventory, encounters, appointments, settings, dashboard, forms, reference, patients}`,
+messages, prices, inventory, encounters, appointments, settings, dashboard, forms, reference, patients}`,
   `app/[locale]/(site)`, `apps/portal`, `packages/native`. תיקייה שנייה של אותו מודול (סקריפט, Edge Function,
   מעטפת) מחזיקה קובץ של שורה אחת שמייבא אותו ב-`@path`. לקח חדש נכתב שם, לא כאן; שינוי במודול מעדכן את הפסקה שלו
 
@@ -84,8 +84,11 @@ pnpm 9 + Turborepo, Node 20.9+. ההתקנה והחיבור ל-Supabase ב-`READ
 - RBAC מפורט לפי תפקיד, בהרשאות מינימליות
 - הצפנה: TLS בתעבורה, הצפנה במנוחה לנתונים רגישים, גיבויים מוצפנים
 - **audit log בלתי ניתן לשינוי** — כל יצירה, עריכה, מחיקה **וצפייה**
-  ברשומת מטופל נרשמת. צפייה נרשמת מהאפליקציה דרך `log_record_access`,
-  כי שום דבר ב-Postgres לא נורה על SELECT
+  ברשומת מטופל נרשמת. צפייה נרשמת מהאפליקציה דרך `logRecordAccess`
+  מ-`@clinic/db/access-log` (שתי האפליקציות, גם הפורטל), כי שום דבר ב-Postgres
+  לא נורה על SELECT. **דף רשומה חדש = שורת רישום**, וטבלת מטופל חדשה = גם
+  הטריגר `write_audit_log` וגם הרשימה הסגורה ב-`log_record_access` (migration 68);
+  הפונקציה מסרבת לטבלה שאינה ברשימה ולרשומה שאינה של הקליניקה של הקורא
 - הגבלת קצב על התחברות, נעילה אחרי כשלונות חוזרים
 - ולידציה בצד השרת לכל קלט; CSRF; security headers (CSP, HSTS, X-Frame-Options)
 - **אף מפתח או סוד בקוד או ב-git.** משתני סביבה או secret manager בלבד
@@ -230,7 +233,12 @@ pnpm 9 + Turborepo, Node 20.9+. ההתקנה והחיבור ל-Supabase ב-`READ
   חדשה ב-public דרך default privileges. `revoke all … from public` לא נוגע בהענקות האלה — פונקציה
   שמיועדת ל-service_role בלבד חייבת `revoke execute … from anon, authenticated` במפורש (migration 36).
   בדיקת הבידוד קוראת לפונקציה כחבר קליניקה ומצפה ל-insufficient_privilege; כך נתפס שפונקציית הכתיבה
-  של קורא המחירים הייתה פתוחה לכל משתמש מחובר
+  של קורא המחירים הייתה פתוחה לכל משתמש מחובר. **פונקציה שנכתבה לפני הלקח הזה אינה סגורה — היא פתוחה
+  לעולם:** migration 68 מצא עוד שלוש (סימון תשלום כשולם, קריאת פרטי דף הסליקה, ושלוש עבודות התור).
+  כל פונקציה מוגבלת חדשה מקבלת גם מקרה בבדיקת הבידוד, כחבר וכאנונימי — זו הצורה היחידה של הבדיקה שלא מתיישנת
+- **פונקציה שרצה על כל הקליניקות לא ניתנת ל-`authenticated`:** עבודות התזמון (`enqueue_due_*`) הן של בעל
+  המסד בלבד. חבר קליניקה מגיע אליהן רק דרך פונקציה שמצמידה `current_clinic_id()` (`enqueue_now_for_my_clinic`).
+  פרמטר שהקורא שולט בו והופך לתוכן שנשלח למטופל — כמו `p_base_url` בקישור התזכורת — הוא חלק מהחשיפה, לא נוחות
 - **דפים ציבוריים ומנועי חיפוש:** מותר לאינדוקס רק קבוצת `(site)` ודף הזימון (`robots.ts` + `sitemap.ts` בשתי האפליקציות); דף ציבורי חדש = להחליט אם ברשימת ה-allow ואחרת `noindex`, ולהוסיף לפוטר ב-`site-frame.tsx`, ל-`PUBLIC_ROUTES` ב-smoke ול-`ROUTES` ב-`check-a11y.mjs`. הטקסט המשפטי רק ב-`legal.*` במסרים, ופרטי המפעיל בסוגריים מרובעים עד אישור העו"ד. הפרטים וצילומי דף הבית — `apps/web/app/[locale]/(site)/CLAUDE.md`
 - **פונקציה ב-policy נעטפת ב-`(select …)`:** `using ((select public.current_clinic_id()) is not null)` ולא
   `using (public.current_clinic_id() is not null)`. בלי העטיפה Postgres מריץ את הפונקציה על כל שורה — ספירה של 86 אלף
@@ -252,7 +260,7 @@ pnpm 9 + Turborepo, Node 20.9+. ההתקנה והחיבור ל-Supabase ב-`READ
 - **מה המשתמש רואה:** אף מונח מאחורי הקלעים בממשק — לא "שרת", "מסד נתונים",
   "SQL", "token", "ספק", "API". הודעת שגיאה אומרת מה לעשות, לא מה נשבר.
   עמוד `/setup` הוא היוצא מן הכלל המכוון: הוא למי שמתקין, ולא נראה בייצור
-- **שליחת הודעות:** האפליקציה לא שולחת ולא מחליטה מה לשלוח. התור ב-`message_log` ממולא בפונקציות SQL (תזכורות, התראות משימה, אוטומציות), והשליחה היא רק של `supabase/functions/dispatch-messages` (המקום היחיד שמחזיק service role) או של אדם ממסך "הודעות". הודעה שיווקית רק עם הסכמה רשומה וקישור הסרה; קליניקה `is_synthetic` לא שולחת למטופלים; לספק מגיע רק מה שנשלח, ובלוג קוד שגיאה קצר. האוטומציות, תיבת ה-WhatsApp, ערוץ Make, 019 וה-push — `apps/web/features/messages/CLAUDE.md`
+- **שליחת הודעות:** האפליקציה לא שולחת ולא מחליטה מה לשלוח. התור ב-`message_log` ממולא בפונקציות SQL (תזכורות, התראות משימה, אוטומציות) שרצות על כל הקליניקות ושייכות לתזמון בלבד; "שליחה עכשיו" במסך קוראת ל-`enqueue_now_for_my_clinic` שמצמידה את הקליניקה של המשתמש. השליחה היא רק של `supabase/functions/dispatch-messages` (המקום היחיד שמחזיק service role) או של אדם ממסך "הודעות". הודעה שיווקית רק עם הסכמה רשומה וקישור הסרה; קליניקה `is_synthetic` לא שולחת למטופלים; לספק מגיע רק מה שנשלח, ובלוג קוד שגיאה קצר. האוטומציות, תיבת ה-WhatsApp, ערוץ Make, 019 וה-push — `apps/web/features/messages/CLAUDE.md`
 - **זימון אונליין:** `/book/[slug]` קורא וכותב רק דרך `booking_clinic` /
   `booking_slots` / `booking_request` (anon, security definer). השעות הפנויות
   מחושבות **ב-SQL** מאותן טבלאות שהיומן קורא, כדי שהעמוד והיומן לא יחלקו

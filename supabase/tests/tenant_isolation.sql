@@ -80,6 +80,9 @@ begin
     if to_regclass('public.catalogue_herbs') is null then
       v_missing := v_missing || v_sep || '56_reference_catalogue_to_run.sql'; v_sep := ', ';
     end if;
+    if to_regprocedure('public.enqueue_now_for_my_clinic(text)') is null then
+      v_missing := v_missing || v_sep || '60_payments_and_queues_locked_down_to_run.sql'; v_sep := ', ';
+    end if;
     if v_missing <> '' then
       raise exception 'This database has not run: %. Run it in the SQL editor, then run this file again.', v_missing;
     end if;
@@ -489,9 +492,26 @@ begin
   select count(*) into v_count from public.message_log where clinic_id = v_clinic_b;
   if v_count <> 0 then raise exception 'FAIL: the message log leaked across clinics'; end if;
 
-  -- Queueing runs for every clinic at once, as the database owner; what the
-  -- caller can then read is still only their own.
-  perform public.enqueue_due_reminders('https://iso.test');
+  -- Queueing every clinic at once is the schedule's, and the schedule runs as
+  -- the database owner. A member asking for it directly is refused — before
+  -- migration 68 it was granted to them, and the link domain came from the
+  -- caller, so one clinic's staff could queue messages to another clinic's
+  -- patients carrying those patients' own confirmation tokens.
+  begin
+    perform public.enqueue_due_reminders('https://iso.test');
+    raise exception 'FAIL: a clinic member ran the whole-service reminder job';
+  exception
+    when insufficient_privilege then null;
+  end;
+  begin
+    perform public.enqueue_due_task_alerts();
+    raise exception 'FAIL: a clinic member ran the whole-service task-alert job';
+  exception
+    when insufficient_privilege then null;
+  end;
+
+  -- What they may do instead: fill their own clinic's queue.
+  perform public.enqueue_now_for_my_clinic('https://iso.test');
   select count(*) into v_count from public.message_log where clinic_id <> v_clinic_a;
   if v_count <> 0 then raise exception 'FAIL: the queue showed % other clinic''s message(s)', v_count; end if;
   raise notice 'ok   blocked hours and the message log isolated';
@@ -507,12 +527,57 @@ begin
   exception
     when insufficient_privilege then null;
   end;
-  perform public.enqueue_due_automations('https://iso.test');
+  begin
+    perform public.enqueue_due_automations('https://iso.test');
+    raise exception 'FAIL: a clinic member ran the whole-service automations job';
+  exception
+    when insufficient_privilege then null;
+  end;
+  perform public.enqueue_now_for_my_clinic('https://iso.test');
   select count(*) into v_count from public.message_log where clinic_id <> v_clinic_a;
   if v_count <> 0 then raise exception 'FAIL: the automations queue showed % other clinic''s message(s)', v_count; end if;
   select count(*) into v_count from public.patient_unsubscribe_tokens;
   if v_count <> 0 then raise exception 'FAIL: a removal token was readable (% row(s))', v_count; end if;
   raise notice 'ok   automation settings, their queue and the removal tokens isolated';
+
+  -- The audit trail is meant to be unforgeable. It took the table name and the
+  -- record id on trust, so a member could write "viewed" rows about a table
+  -- that does not exist, or a record they never opened (migration 68).
+  begin
+    perform public.log_record_access('clinics', v_clinic_b, 'view');
+    raise exception 'FAIL: a member logged a read against a table that is not logged';
+  exception
+    when others then
+      if sqlerrm like 'FAIL:%' then raise; end if;
+  end;
+  begin
+    perform public.log_record_access('patients', v_patient_b, 'view');
+    raise exception 'FAIL: a member logged a read of another clinic''s patient';
+  exception
+    when others then
+      if sqlerrm like 'FAIL:%' then raise; end if;
+  end;
+  perform public.log_record_access('patients', v_patient_a, 'view');
+  select count(*) into v_count from public.audit_log
+   where table_name = 'patients' and record_id = v_patient_a and action = 'view';
+  if v_count <> 1 then raise exception 'FAIL: a member could not log reading their own patient (% row(s))', v_count; end if;
+  raise notice 'ok   the access log refuses tables and records that are not the caller''s';
+
+  -- Settling a payment belongs to the background job, which holds the service
+  -- role. It used to be callable by anyone at all holding the public key.
+  begin
+    perform public.settle_grow_payment('iso-process', 'iso-token', null, 'paid', null);
+    raise exception 'FAIL: a clinic member settled a payment';
+  exception
+    when insufficient_privilege then null;
+  end;
+  begin
+    perform public.grow_credentials_for_process('iso-process');
+    raise exception 'FAIL: a clinic member read a clinic''s payment-page credentials';
+  exception
+    when insufficient_privilege then null;
+  end;
+  raise notice 'ok   payment settlement and its credentials are the service role''s alone';
 
   -- The WhatsApp threads: A sees its own, writes only outbound into its own,
   -- and cannot call the functions the sending service is given.
@@ -1080,6 +1145,37 @@ begin
   if v_count <> 0 then raise exception 'FAIL: anonymous read returned % automation setting(s)', v_count; end if;
   select count(*) into v_count from public.whatsapp_messages;
   if v_count <> 0 then raise exception 'FAIL: anonymous read returned % WhatsApp message(s)', v_count; end if;
+
+  -- The one that mattered most: with nothing but the public key and a process
+  -- id — which travels through the payer's own browser — an unpaid invoice
+  -- could be marked paid, and a clinic's payment-page identifiers read.
+  begin
+    perform public.settle_grow_payment('iso-process', 'iso-token', null, 'paid', null);
+    raise exception 'FAIL: an anonymous caller settled a payment';
+  exception
+    when insufficient_privilege then null;
+  end;
+  begin
+    perform public.grow_credentials_for_process('iso-process');
+    raise exception 'FAIL: an anonymous caller read a clinic''s payment-page credentials';
+  exception
+    when insufficient_privilege then null;
+  end;
+  begin
+    perform public.enqueue_due_reminders('https://iso.test');
+    raise exception 'FAIL: an anonymous caller ran the reminder job';
+  exception
+    when insufficient_privilege then null;
+  end;
+  begin
+    perform public.enqueue_now_for_my_clinic('https://iso.test');
+    raise exception 'FAIL: an anonymous caller filled a clinic''s message queue';
+  exception
+    when insufficient_privilege then null;
+    -- No membership, so the function itself refuses before doing anything.
+    when others then
+      if sqlerrm like 'FAIL:%' then raise; end if;
+  end;
   begin
     perform public.whatsapp_ack('{"hook":"update","unique":"x","ack":3}'::jsonb);
     raise exception 'FAIL: an anonymous caller ran the WhatsApp acknowledgement function';

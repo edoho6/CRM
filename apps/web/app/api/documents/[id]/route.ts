@@ -2,11 +2,15 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getTranslations } from 'next-intl/server';
 import { createServerSupabase, isSupabaseConfigured } from '@clinic/db';
+import { checkRateLimit, recordFailure } from '@clinic/db/rate-limit';
 import type { PatientDocument } from '@clinic/db/types';
 import { renderSubmissionHtml, type FormField } from '@clinic/domain';
 import { formatDateTime } from '@clinic/i18n';
 import { getMembershipContext } from '@/lib/session';
 import { logRecordAccess } from '@/lib/access-log';
+
+/** Sixty copies out of the system a quarter of an hour, per person. */
+const DOWNLOAD_BUDGET = { max: 60 } as const;
 
 /**
  * A filed questionnaire has no object in storage: its document row points at
@@ -22,7 +26,9 @@ async function renderFiledSubmission(
 ): Promise<NextResponse> {
   const { data: submission } = await supabase
     .from('form_submissions')
-    .select('id, fields, answers, submitted_at, template:form_templates(title), patient:patients(full_name)')
+    .select(
+      'id, fields, answers, submitted_at, template:form_templates(title), patient:patients(full_name)',
+    )
     .eq('id', submissionId)
     .maybeSingle<{
       id: string;
@@ -69,7 +75,8 @@ async function renderFiledSubmission(
     'Cache-Control': 'private, no-store',
     'Content-Security-Policy': "default-src 'none'; img-src data:; style-src 'unsafe-inline'",
   };
-  if (!inline) headers['Content-Disposition'] = `attachment; filename*=UTF-8''${encodeURIComponent(fileName)}`;
+  if (!inline)
+    headers['Content-Disposition'] = `attachment; filename*=UTF-8''${encodeURIComponent(fileName)}`;
   return new NextResponse(html, { headers });
 }
 
@@ -104,6 +111,25 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
   const supabase = await createServerSupabase();
 
+  // Only the download is counted. The inline form is how the treatment page
+  // paints its tongue photographs — several per render — and a budget that
+  // bounded copies leaving the system would blank the page instead.
+  if (!inline) {
+    const context = await getMembershipContext();
+    if (!context) {
+      return NextResponse.json({ error: 'not_found' }, { status: 404 });
+    }
+    const limitKey = `doc-download:${context.membership.user_id}`;
+    const limit = checkRateLimit(limitKey, DOWNLOAD_BUDGET);
+    if (!limit.allowed) {
+      return NextResponse.json(
+        { error: 'too_many_requests' },
+        { status: 429, headers: { 'Retry-After': String(limit.retryAfterSeconds) } },
+      );
+    }
+    recordFailure(limitKey, DOWNLOAD_BUDGET);
+  }
+
   const { data: document, error } = await supabase
     .from('patient_documents')
     .select('file_path, file_name')
@@ -116,7 +142,12 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
   if (document.file_path.startsWith('form-submission:')) {
     await logRecordAccess(supabase, 'patient_documents', id, inline ? 'view' : 'export');
-    return renderFiledSubmission(supabase, document.file_path.slice('form-submission:'.length), document.file_name, inline);
+    return renderFiledSubmission(
+      supabase,
+      document.file_path.slice('form-submission:'.length),
+      document.file_name,
+      inline,
+    );
   }
 
   const { data: signed, error: signError } = await supabase.storage

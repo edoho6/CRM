@@ -14,6 +14,7 @@ import {
   ListRow,
 } from '@clinic/ui';
 import { getCurrentUser, isSupabaseConfigured, tryCreateServerSupabase } from '@clinic/db';
+import { logRecordAccess } from '@clinic/db/access-log';
 import type { Appointment, AppointmentType, PatientDocument, Profile } from '@clinic/db/types';
 import { APPOINTMENT_STATUS_TONES, statusTone, type Locale } from '@clinic/domain';
 import { appointmentTypeName } from './appointment-name';
@@ -84,6 +85,12 @@ export default async function PortalHomePage({
       </main>
     );
   }
+
+  // The patient reading their own file. Nothing in the portal was recorded
+  // before, which left the clinic's account of who opened a record with the
+  // patient's own visits missing from it. Deduplicated over fifteen minutes, so
+  // moving around the portal is one row, not one per page.
+  await logRecordAccess(supabase, 'patients', String(patientId));
 
   const nowIso = new Date().toISOString();
 

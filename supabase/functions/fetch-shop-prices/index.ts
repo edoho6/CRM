@@ -27,6 +27,7 @@ import { ADAPTERS } from '../_shared/shop-prices/adapters/index.ts';
 import { createDb } from '../_shared/shop-prices/db.ts';
 import { createFetcher } from '../_shared/shop-prices/fetcher.ts';
 import { runOnce } from '../_shared/shop-prices/run.ts';
+import { secretEquals } from '../_shared/secret-equal.ts';
 import type { Logger, RunTrigger } from '../_shared/shop-prices/types.ts';
 
 const AGENT_TOKEN = 'HerbalistPriceCheck';
@@ -38,7 +39,7 @@ const log: Logger = {
 
 Deno.serve(async (request) => {
   const secret = Deno.env.get('SHOP_PRICES_SECRET');
-  if (!secret || request.headers.get('x-shop-prices-secret') !== secret) {
+  if (!secretEquals(request.headers.get('x-shop-prices-secret'), secret)) {
     return new Response('Forbidden', { status: 403 });
   }
 

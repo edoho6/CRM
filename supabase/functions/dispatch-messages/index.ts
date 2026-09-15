@@ -50,6 +50,7 @@ import { createSms019Provider } from '../_shared/messaging/sms-019.ts';
 import { createWebhookProvider } from '../_shared/messaging/webhook.ts';
 import { createWhatsapp019Provider } from '../_shared/messaging/whatsapp-019.ts';
 import type { Channel, Provider, QueuedMessage, SendResult } from '../_shared/messaging/types.ts';
+import { secretEquals } from '../_shared/secret-equal.ts';
 
 /* ---------------------------------------------------------------------------
  * Providers. One per channel; adding one is adding an object here.
@@ -261,7 +262,7 @@ function pushProvider(supabase: SupabaseClient): Provider | null {
 /** The schedule and the inbound function carry the secret; a signed-in clinic member carries their token. */
 async function callerMode(request: Request, supabase: SupabaseClient): Promise<'schedule' | 'member' | null> {
   const secret = Deno.env.get('DISPATCH_SECRET');
-  if (secret && request.headers.get('x-dispatch-secret') === secret) return 'schedule';
+  if (secretEquals(request.headers.get('x-dispatch-secret'), secret)) return 'schedule';
 
   const bearer = request.headers.get('authorization')?.replace(/^Bearer\s+/i, '') ?? '';
   if (!bearer) return null;

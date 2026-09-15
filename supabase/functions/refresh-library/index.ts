@@ -23,6 +23,7 @@ import { createFetcher } from '../_shared/shop-prices/fetcher.ts';
 import type { Logger } from '../_shared/shop-prices/types.ts';
 import { refreshWebsites, sha256Hex, type ChunkPayload, type RefreshDb, type SourcePayload, type WebsiteSource } from '../_shared/library/refresh.ts';
 import { embedAll } from '../_shared/library/voyage.ts';
+import { secretEquals } from '../_shared/secret-equal.ts';
 
 const AGENT_TOKEN = 'herbalist-library';
 /** Passages per call: each carries a 1,024-number vector, and fifty of those is a few hundred kilobytes. */
@@ -35,7 +36,7 @@ const log: Logger = {
 
 Deno.serve(async (request) => {
   const secret = Deno.env.get('LIBRARY_REFRESH_SECRET');
-  if (!secret || request.headers.get('x-library-refresh-secret') !== secret) {
+  if (!secretEquals(request.headers.get('x-library-refresh-secret'), secret)) {
     return new Response('Forbidden', { status: 403 });
   }
   const voyageKey = Deno.env.get('VOYAGE_API_KEY');

@@ -29,12 +29,17 @@
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { parsePush } from '../_shared/messaging/inbound.ts';
+import { secretEquals } from '../_shared/secret-equal.ts';
 
 Deno.serve(async (request) => {
   const secret = Deno.env.get('WHATSAPP_INBOUND_SECRET');
   const url = new URL(request.url);
-  const key = url.searchParams.get('key') ?? request.headers.get('x-inbound-key');
-  if (!secret || key !== secret) return new Response('Forbidden', { status: 403 });
+  // The header first. A secret in the query string is written into every proxy
+  // and access log on the way and rides along in `Referer`; the address form
+  // stays because 019 sends what it was given a URL for, and some services
+  // cannot add a header. Whichever arrives, it is compared in constant time.
+  const key = request.headers.get('x-inbound-key') ?? url.searchParams.get('key');
+  if (!secretEquals(key, secret)) return new Response('Forbidden', { status: 403 });
   if (request.method !== 'POST') return new Response('Method not allowed', { status: 405 });
 
   let raw: unknown;

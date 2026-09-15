@@ -2495,7 +2495,10 @@
         "appointments": "תור",
         "invoices": "חשבונית",
         "herbs": "צמח",
-        "herb_formulas": "פורמולה"
+        "herb_formulas": "פורמולה",
+        "dispensing_records": "ניפוק",
+        "payments": "תשלום",
+        "patient_portal_access": "גישה לפורטל"
       },
       "anomalies": {
         "title": "דפוסים חריגים",

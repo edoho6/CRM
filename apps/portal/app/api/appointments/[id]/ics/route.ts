@@ -1,7 +1,11 @@
-import { tryCreateServerSupabase } from '@clinic/db';
+import { getCurrentUser, tryCreateServerSupabase } from '@clinic/db';
+import { checkRateLimit, recordFailure } from '@clinic/db/rate-limit';
 import { buildIcs, ICS_DOWNLOAD_HEADERS } from '@clinic/domain/ics';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Adding appointments to a phone's calendar, one at a time. */
+const ICS_BUDGET = { max: 40 } as const;
 
 interface Row {
   id: string;
@@ -27,6 +31,18 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
   const supabase = await tryCreateServerSupabase();
   if (!supabase) return new Response('Not configured', { status: 503 });
 
+  const user = await getCurrentUser();
+  if (!user) return new Response('Not found', { status: 404 });
+  const limitKey = `portal-ics:${user.id}`;
+  const limit = checkRateLimit(limitKey, ICS_BUDGET);
+  if (!limit.allowed) {
+    return new Response('Too many requests', {
+      status: 429,
+      headers: { 'Retry-After': String(limit.retryAfterSeconds) },
+    });
+  }
+  recordFailure(limitKey, ICS_BUDGET);
+
   const { data } = await supabase
     .from('appointments')
     .select(
@@ -36,7 +52,8 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
     .maybeSingle<Row>();
   if (!data) return new Response('Not found', { status: 404 });
 
-  const type = data.appointment_type?.name_he?.trim() || data.appointment_type?.name_en?.trim() || '';
+  const type =
+    data.appointment_type?.name_he?.trim() || data.appointment_type?.name_en?.trim() || '';
   const summary = [type, data.practitioner?.full_name].filter(Boolean).join(' · ') || 'Appointment';
 
   const body = buildIcs('Herbalist', [

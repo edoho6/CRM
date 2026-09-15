@@ -53,8 +53,21 @@ portal patient — an auth user with no membership — sees their own file and t
 shared documents and nothing clinical, and that an anonymous caller sees nothing
 at all. For the shared price tables it proves the opposite shape: the same rows
 for both clinics, none for the patient or the stranger, and every write — and
-every call to the job's or the admin's functions — refused. Everything is rolled back, so it is safe to run against the live project
+every call to the job's or the admin's functions — refused. Since migration 68 it
+also asserts what a member and an anonymous caller may _not_ run: the
+whole-service message jobs, payment settlement, a clinic's payment-page
+credentials, and an access-log entry naming a table or a record that is not
+theirs. Everything is rolled back, so it is safe to run against the live project
 and should be re-run after any migration that adds a table or touches a policy.
+
+**A lesson worth keeping, because it recurred.** Supabase grants EXECUTE on
+every new function in `public` to `anon`, `authenticated` and `service_role`
+through default privileges, and `revoke all … from public` does not touch those
+grants. A definer function written without an explicit revoke is therefore open
+to the world by default, not closed. Migration 36 recorded this for the price
+reader; migration 68 found three more that predated the lesson. The isolation
+test now calls each restricted function as a member and as an anonymous caller
+and expects to be refused, which is the only form of this check that cannot rot.
 
 **Gap:** it is run by hand in the SQL editor. Wiring it into CI needs a database
 CI can reach, which means the staging project of §12.
@@ -112,13 +125,29 @@ following a link to their encounter and pressing back is one act of looking.
 Document downloads are recorded as `export` and are never deduplicated: taking a
 copy out of the system is the strongest form of access there is.
 
-Currently logged: opening a patient file, opening a treatment record,
-downloading a document. `audit_log` is readable by clinic staff and writable by
-nobody.
+Currently logged: opening a patient file, opening the form that edits one,
+opening a treatment record, opening an invoice, printing a prescription or a
+treatment confirmation, viewing or downloading a document — in the staff app and
+in the patient portal alike. `audit_log` is readable by clinic staff and
+writable by nobody.
 
-**Gap:** the calendar, the invoice list and the reference catalogues do not log
-reads. That is a deliberate line — the catalogues hold no patient data — but the
-invoice list does, and it should.
+**What the trail will not accept.** `log_record_access` is called by the
+application, so until migration 68 it took the table name and the record id on
+trust: a signed-in member could write "viewed" rows naming a table that does not
+exist, or a record they had never opened. It now accepts only the nine tables
+this system logs, and only a record that belongs to the caller's own clinic — or,
+from the portal, to the patient themselves. A trail that can be filled with
+invented entries is not evidence of anything.
+
+**Changes, and which tables.** The write trigger covers nineteen tables. Five
+were added in migration 68 and are worth naming because of what they record:
+`patient_documents` (an upload, a deletion, and the flag that shares a file with
+the portal), `appointments`, `dispensing_records`, `payments` and
+`patient_portal_access` — who was granted access to whose file.
+
+**Gap:** the calendar and the reference catalogues do not log reads. That is a
+deliberate line: a catalogue holds no patient data, and a diary read is the
+screen a practitioner lives on all day.
 
 **Gap:** there is no retention or archival policy for the log. It grows without
 bound. At clinic volume that is years away from mattering, and it is still
@@ -171,18 +200,29 @@ applies its own limits underneath.
 The sign-in form returns one generic failure for both a wrong password and an
 unknown address, so it cannot be used to discover who has an account.
 
+**The same limiter, on things that are not sign-ins.** Four more entry points
+are now counted, each with its own budget: mailing a portal sign-in link (five a
+quarter of an hour, per address and source), exporting a whole patient file
+(twenty), downloading a document (sixty in the staff app, thirty in the portal),
+and the portal's calendar files (forty). The export route is the one that
+matters: it returns a complete patient file, and a loop over patient ids is
+exactly the mass-download pattern §4 watches for. Each is still recorded in the
+audit trail; the limit bounds how fast copies can be taken while the trail is
+only being read weekly. Viewing a document inline is deliberately not counted —
+that is how a treatment page paints its tongue photographs.
+
 ## 6 · Transport and headers
 
 Both applications send, on every response:
 
-| Header | Value |
-| --- | --- |
-| `Content-Security-Policy` | `default-src 'self'`; scripts and styles from self; images and connections limited to self and the Supabase origin; `object-src 'none'`; `frame-ancestors 'none'`; `upgrade-insecure-requests` |
-| `X-Frame-Options` | `DENY` |
-| `X-Content-Type-Options` | `nosniff` |
-| `Referrer-Policy` | `strict-origin-when-cross-origin` |
-| `Permissions-Policy` | camera, microphone and geolocation all denied |
-| `Strict-Transport-Security` | two years, `includeSubDomains; preload` — production only |
+| Header                      | Value                                                                                                                                                                                          |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Content-Security-Policy`   | `default-src 'self'`; scripts and styles from self; images and connections limited to self and the Supabase origin; `object-src 'none'`; `frame-ancestors 'none'`; `upgrade-insecure-requests` |
+| `X-Frame-Options`           | `DENY`                                                                                                                                                                                         |
+| `X-Content-Type-Options`    | `nosniff`                                                                                                                                                                                      |
+| `Referrer-Policy`           | `strict-origin-when-cross-origin`                                                                                                                                                              |
+| `Permissions-Policy`        | camera, microphone and geolocation all denied                                                                                                                                                  |
+| `Strict-Transport-Security` | two years, `includeSubDomains; preload` — production only                                                                                                                                      |
 
 `X-Powered-By` is removed.
 
@@ -292,6 +332,15 @@ portal consent is forced to `method = 'portal'` by the policy itself, so a
 decision made at home can never be recorded as though it had been witnessed in
 the room.
 
+**The password door, and when it is checked.** Patients have no password; the
+door exists for the app stores' reviewers, and the database opens it only inside
+a clinic marked synthetic. The check used to run _after_ the sign-in had already
+claimed the patient file, so a real patient who somehow held a password got a
+live session and a linked access row before being turned away. Migration 68 lets
+the question be answered from the address as well as the account id, so it is now
+asked first and a refused sign-in ends that session — and only that session,
+never the account's others.
+
 ## 8d · Treatment confirmations — what this document is not
 
 `treatment_confirmations` produces a page attesting that a named practitioner
@@ -315,16 +364,28 @@ audited.
 ## 9 · Payments
 
 Card details never touch this system. Grow hosts the payment page and the
-customer is redirected there; the callback carries a process id and token that
-this system generated and stored.
+customer is redirected there; the callback carries a process id and a process
+token, both issued by Grow when the payment was created and stored here at that
+moment.
 
 Settlement runs through `settle_grow_payment`, which is idempotent because Grow
-retries, and which does nothing at all for a process id it does not recognise —
-that is the check that stands in for a signature.
+retries, and which requires **both** identifiers to match the stored pair. The
+token is what does the work: it is never sent to the browser and never
+published, while the process id passes through the payer's own browser and is
+therefore not evidence of anything.
 
-**Known limitation:** Grow sends no cryptographic signature to verify, so the
-process id and token are the whole of the trust model. It is weaker than a
-signed webhook and it is the strongest thing available with this provider.
+The callback is received by an Edge Function holding the service role, and
+`settle_grow_payment` is executable by that role alone. Until migration 68 it
+was a route in the web app calling the function with the public anon key —
+which meant the function was callable by anyone holding that key, with only a
+process id, to mark an invoice paid. `grow_credentials_for_process`, which
+returns a clinic's payment-page identifiers, was open on the same terms and is
+now equally restricted. Both are covered by `tenant_isolation.sql`, as an
+anonymous caller and as a clinic member.
+
+**Known limitation:** Grow sends no cryptographic signature, so the stored
+token is the whole of the trust model. It is weaker than a signed webhook and it
+is the strongest thing available with this provider.
 
 **Gap:** the Israeli invoicing reform's allocation number is not implemented.
 The invoice schema has room for it.
@@ -376,7 +437,7 @@ file's own audit rules cannot defeat the right to have it erased. The audit
 entries for the deletion itself are not cascaded, so the fact that a file was
 erased survives the erasure.
 
-**Gap:** there is no deletion *flow* in the interface — no button, no
+**Gap:** there is no deletion _flow_ in the interface — no button, no
 confirmation, no record of who asked. Today it is a `DELETE` in the SQL editor,
 which is a real gap once a patient can ask for it in writing.
 
@@ -465,3 +526,14 @@ as everything else here: they need a database CI can reach.
 Closed since the first version of this document: consent records with document
 version and timestamp (§10), patient file export (§11), tenant isolation tests
 (§1), and the synthetic seed script (§12).
+
+Closed in migration 68, and each was a real exposure rather than a hardening:
+payment settlement and a clinic's payment-page credentials were callable by
+anyone holding the public key (§9); the three message-queue jobs were callable
+by any member, ran over every clinic, and took the link domain from the caller,
+so one clinic's staff could queue messages to another clinic's patients carrying
+those patients' own confirmation and unsubscribe tokens; and the access log
+accepted entries naming records the caller had never opened (§3). The same file
+put five more patient-data tables under the audit trigger, gave the portal and
+four more staff screens their missing read entries (§3), and moved the portal's
+password check ahead of the claim it used to follow (§8c).

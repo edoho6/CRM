@@ -23,6 +23,9 @@ export interface PasswordState {
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+/** A mailed link is something a patient asks for on purpose; five is generous. */
+const MAGIC_LINK_BUDGET = { max: 5 } as const;
+
 /** The address and the source address together — see the staff sign-in for why. */
 async function rateLimitKey(email: string): Promise<string> {
   const headerList = await headers();
@@ -55,6 +58,17 @@ export async function sendMagicLink(
     return { status: 'error' };
   }
 
+  // Five links a quarter of an hour, per address and source. Nothing here was
+  // counted before, which made the form a way to post mail to a patient over
+  // and over — and, timed, a way to ask whether an address is a patient at all.
+  // The answer stays the same either way; only the rate is now bounded.
+  const key = await rateLimitKey(`link:${email}`);
+  const limit = checkRateLimit(key, MAGIC_LINK_BUDGET);
+  if (!limit.allowed) {
+    return { status: 'sent' };
+  }
+  recordFailure(key, MAGIC_LINK_BUDGET);
+
   const supabase = await createServerSupabase();
   const { error } = await supabase.auth.signInWithOtp({
     email,
@@ -81,7 +95,11 @@ export async function sendMagicLink(
  * with no mailbox on it. Same email, same expiry, same claim of the patient
  * file afterwards. Guessing is rate-limited like a password would be.
  */
-export async function signInWithCode(locale: Locale, _prevState: CodeState, formData: FormData): Promise<CodeState> {
+export async function signInWithCode(
+  locale: Locale,
+  _prevState: CodeState,
+  formData: FormData,
+): Promise<CodeState> {
   if (!isSupabaseConfigured()) return { status: 'error' };
 
   const email = String(formData.get('email') ?? '').trim();
@@ -90,7 +108,8 @@ export async function signInWithCode(locale: Locale, _prevState: CodeState, form
 
   const key = await rateLimitKey(email);
   const limit = checkRateLimit(key);
-  if (!limit.allowed) return { status: 'tooManyAttempts', retryAfterSeconds: limit.retryAfterSeconds };
+  if (!limit.allowed)
+    return { status: 'tooManyAttempts', retryAfterSeconds: limit.retryAfterSeconds };
 
   const supabase = await createServerSupabase();
   const { error } = await supabase.auth.verifyOtp({ email, token, type: 'email' });
@@ -128,7 +147,8 @@ export async function signInWithPassword(
 
   const key = await rateLimitKey(email);
   const limit = checkRateLimit(key);
-  if (!limit.allowed) return { status: 'tooManyAttempts', retryAfterSeconds: limit.retryAfterSeconds };
+  if (!limit.allowed)
+    return { status: 'tooManyAttempts', retryAfterSeconds: limit.retryAfterSeconds };
 
   const supabase = await createServerSupabase();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -137,13 +157,19 @@ export async function signInWithPassword(
     return { status: 'invalidCredentials' };
   }
 
-  await supabase.rpc('claim_portal_access');
+  // Asked before anything is claimed. The gate used to run after
+  // `claim_portal_access`, which meant a real patient holding a password got a
+  // live session and a linked access row before being turned away; the database
+  // now answers from the address too, so the question comes first (migration 68).
   const { data: allowed } = await supabase.rpc('portal_password_login_allowed');
   if (allowed !== true) {
-    await supabase.auth.signOut();
+    // Local scope: this session only. The default ends every session this
+    // account has anywhere, which is not what a refused sign-in should do.
+    await supabase.auth.signOut({ scope: 'local' });
     return { status: 'notAllowed' };
   }
 
+  await supabase.rpc('claim_portal_access');
   clearAttempts(key);
   redirect({ href: '/', locale });
   return { status: 'idle' };

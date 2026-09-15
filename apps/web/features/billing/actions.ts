@@ -1,6 +1,6 @@
 'use server';
 
-import { siteUrl } from '@clinic/db';
+import { readSupabaseEnv, siteUrl } from '@clinic/db';
 import type {
   ClinicPaymentSettings,
   DispensingRecordWithItems,
@@ -81,10 +81,7 @@ export async function createInvoiceFromEncounter(
     // Herbs are billed per dispensing, not per batch split: a patient should see
     // one line for what they were handed, whatever the shelf had to do to fill it.
     const total = record.items.reduce((sum, item) => sum + Number(item.line_total ?? 0), 0);
-    const name =
-      record.formula?.name_english ??
-      record.formula?.name_pinyin ??
-      null;
+    const name = record.formula?.name_english ?? record.formula?.name_pinyin ?? null;
 
     lines.push({
       description: name ? `Herbs — ${name}` : 'Herbs dispensed',
@@ -294,6 +291,14 @@ export async function createGrowPaymentLink(
   }
 
   const base = siteUrl();
+  // Grow's callback goes to the Edge Function, not to this app. Settling a
+  // payment needs the service role, which the app does not hold and should not
+  // (migration 68); the app's old route called the settlement function with the
+  // public anon key, which is the same key every browser has.
+  const env = readSupabaseEnv();
+  if (!env) return actionError(new Error('not_configured'));
+  const notifyUrl = `${env.url.replace(/\/$/, '')}/functions/v1/grow-webhook`;
+
   const result = await createPaymentProcess(credentials, {
     sum: Number(outstanding.toFixed(2)),
     description: `${scope.context.clinic.name} invoice ${invoice.invoice_number}`,
@@ -302,7 +307,7 @@ export async function createGrowPaymentLink(
     email: patient.email,
     successUrl: `${base}/he/billing/${invoice.id}?paid=1`,
     cancelUrl: `${base}/he/billing/${invoice.id}?cancelled=1`,
-    notifyUrl: `${base}/api/billing/grow/webhook`,
+    notifyUrl,
     reference: invoice.id,
   });
 

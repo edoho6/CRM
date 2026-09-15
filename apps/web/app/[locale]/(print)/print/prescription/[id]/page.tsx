@@ -3,6 +3,7 @@ import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/serve
 import type { DispensingRecordWithItems, Patient, Profile } from '@clinic/db/types';
 import type { Locale } from '@clinic/domain';
 import { getClinicScope } from '@/lib/session';
+import { logRecordAccess } from '@/lib/access-log';
 import { formulaPrimaryName, herbPrimaryName } from '@/lib/display';
 import { PrintButton } from '@/features/documents/print-button';
 import { formatDate } from '@clinic/i18n';
@@ -46,6 +47,10 @@ export default async function PrescriptionPrintPage({
     .maybeSingle<DispensingRecordWithItems>();
 
   if (!record) notFound();
+
+  // A page built to leave the building with the patient. Recorded as an export
+  // for that reason, and so never deduplicated: each printing is its own row.
+  await logRecordAccess(scope.supabase, 'dispensing_records', id, 'export');
 
   const [{ data: patient }, { data: profile }] = await Promise.all([
     scope.supabase

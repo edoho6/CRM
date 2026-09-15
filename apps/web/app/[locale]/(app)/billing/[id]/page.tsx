@@ -4,6 +4,7 @@ import { Link } from '@clinic/i18n/navigation';
 import type { InvoiceWithDetails } from '@clinic/db/types';
 import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
+import { logRecordAccess } from '@/lib/access-log';
 import { InvoiceEditor } from '@/features/billing/invoice-editor';
 import { pageTitle } from '@/lib/page-title';
 
@@ -31,6 +32,10 @@ export default async function InvoicePage({
     .maybeSingle<InvoiceWithDetails>();
 
   if (!invoice) notFound();
+
+  // An invoice names a patient and what they were treated for. SECURITY.md
+  // called this out as a gap in the trail; it is one now closed.
+  await logRecordAccess(scope.supabase, 'invoices', id);
 
   // PostgREST returns embedded rows in arbitrary order; the invoice must read
   // in the order the lines were added.

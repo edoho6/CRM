@@ -22,15 +22,15 @@ instead.
 
 ### Secrets (Dashboard → Edge Functions → Secrets)
 
-| Name | Purpose |
-|---|---|
-| `DISPATCH_SECRET` | Any long random string. The schedule sends it; the function refuses without it. |
-| `RESEND_API_KEY` | Enables email through resend.com. |
-| `EMAIL_FROM` | The sender, e.g. `Herbalist <reminders@your-domain>`. |
+| Name                       | Purpose                                                                                                                                                                                        |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DISPATCH_SECRET`          | Any long random string. The schedule sends it; the function refuses without it.                                                                                                                |
+| `RESEND_API_KEY`           | Enables email through resend.com.                                                                                                                                                              |
+| `EMAIL_FROM`               | The sender, e.g. `Herbalist <reminders@your-domain>`.                                                                                                                                          |
 | `FCM_SERVICE_ACCOUNT_JSON` | Enables phone notifications through Firebase Cloud Messaging: the service-account JSON file Firebase hands out (Project settings → Service accounts → Generate new private key), pasted whole. |
-| `SMS_019_USERNAME` | Enables SMS through 019 (019sms.co.il): the account's user name… |
-| `SMS_019_TOKEN` | …an API token made in the account's settings (shown once)… |
-| `SMS_SENDER` | …and the sender name patients see: up to eleven English letters and digits. All three, or no SMS. |
+| `SMS_019_USERNAME`         | Enables SMS through 019 (019sms.co.il): the account's user name…                                                                                                                               |
+| `SMS_019_TOKEN`            | …an API token made in the account's settings (shown once)…                                                                                                                                     |
+| `SMS_SENDER`               | …and the sender name patients see: up to eleven English letters and digits. All three, or no SMS.                                                                                              |
 
 | `MAKE_OUTBOUND_URL` | A Make (or any) webhook: every message of the channels below is posted there as JSON (`_shared/messaging/webhook.ts` documents the body), and a scenario hands it on — to ManyChat, typically. Where set, it takes the channel from 019. |
 | `MAKE_OUTBOUND_SECRET` | Optional; sent as `x-herbalist-secret` so the scenario can refuse strangers. |
@@ -119,10 +119,10 @@ supabase functions deploy whatsapp-inbound --no-verify-jwt
 
 ### Secrets (Dashboard → Edge Functions → Secrets)
 
-| Name | Purpose |
-|---|---|
-| `WHATSAPP_INBOUND_SECRET` | Any long random string. The address given to the service ends in `?key=<it>`; without a match the function answers 403. |
-| `DISPATCH_SECRET` | Already set for the sender; used here to wake it when a reply was queued. |
+| Name                      | Purpose                                                                                                                                                                                                                                                                                                   |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `WHATSAPP_INBOUND_SECRET` | Any long random string. Sent as `x-inbound-key`, or — for a service that can only be given a URL — in the address as `?key=<it>`; without a match the function answers 403. The header is preferred and is tried first: a secret in a query string is written into every proxy and access log on the way. |
+| `DISPATCH_SECRET`         | Already set for the sender; used here to wake it when a reply was queued.                                                                                                                                                                                                                                 |
 
 ### The address, in 019's web app
 
@@ -181,11 +181,11 @@ supabase functions deploy fetch-shop-prices --no-verify-jwt
 
 ### Secrets (Dashboard → Edge Functions → Secrets)
 
-| Name | Purpose |
-|---|---|
-| `SHOP_PRICES_SECRET` | Any long random string. The schedule sends it as `x-shop-prices-secret`; the function refuses without it. |
-| `SHOP_PRICES_CONTACT` | An email address a shop can write to, shown in the User-Agent. |
-| `SHOP_PRICES_SITE` | The service's address, shown in the User-Agent. |
+| Name                  | Purpose                                                                                                   |
+| --------------------- | --------------------------------------------------------------------------------------------------------- |
+| `SHOP_PRICES_SECRET`  | Any long random string. The schedule sends it as `x-shop-prices-secret`; the function refuses without it. |
+| `SHOP_PRICES_CONTACT` | An email address a shop can write to, shown in the User-Agent.                                            |
+| `SHOP_PRICES_SITE`    | The service's address, shown in the User-Agent.                                                           |
 
 ### First run, by hand
 
@@ -217,3 +217,43 @@ comparison's pictures come from openly licensed sources
 (`scripts/fetch-shop-images.mjs`). The stored error is a short code, never
 a page's content. The service key is injected by Supabase at runtime and
 appears in no file.
+
+## grow-webhook
+
+What Grow tells us about a payment. Grow posts here when a payment page
+finishes; the function settles the payment (`settle_grow_payment`) and then
+acknowledges the transaction back to Grow, which requires it.
+
+This used to be a route in the web app. It could not stay there: settling a
+payment writes with no signed-in user, which only the service role may do, and
+the web app holds none — so it called the settlement function with the public
+anon key, and that meant anyone holding the same key could call it too
+(migration 68).
+
+### Deploy
+
+```
+supabase functions deploy grow-webhook --no-verify-jwt
+```
+
+Then put the function's address into the Grow account as the notification URL.
+The web app shows it, ready to copy, under חשבוניות ← הגדרות תשלום.
+
+### Secrets
+
+**None.** Deliberately: Grow posts to whatever address it was given and can
+carry nothing extra, so a secret would have to live in the query string, where
+every proxy and access log on the way would keep a copy.
+
+The credential is the **process token** — a value Grow issues when a payment is
+created, which this system stores at that moment and never publishes. A callback
+without the token that matches the stored one changes nothing. The process id is
+not enough on its own: it travels through the payer's own browser, and treating
+it as proof was the hole this function was built to close.
+
+### What is never here
+
+The answer is always 200 with a short reason (`token_mismatch`,
+`unknown_process`), because a non-2xx only makes Grow retry something no retry
+would fix. Nothing of the payment, the patient or the clinic is logged. The
+service key is injected by Supabase at runtime and appears in no file.

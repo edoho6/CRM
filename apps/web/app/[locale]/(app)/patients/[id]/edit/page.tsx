@@ -3,6 +3,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import type { Patient } from '@clinic/db/types';
 import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
+import { logRecordAccess } from '@/lib/access-log';
 import { PatientForm } from '@/features/patients/patient-form';
 import { pageTitle } from '@/lib/page-title';
 
@@ -27,6 +28,11 @@ export default async function EditPatientPage({
     .maybeSingle<Patient>();
 
   if (!patient) notFound();
+
+  // Opening the edit form is reading the whole record, whether or not anything
+  // is saved afterwards. A change would be caught by the audit trigger; this
+  // catches the look.
+  await logRecordAccess(scope.supabase, 'patients', id);
 
   return (
     <>

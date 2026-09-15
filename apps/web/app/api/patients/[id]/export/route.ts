@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { createServerSupabase, isSupabaseConfigured } from '@clinic/db';
+import { createServerSupabase, getCurrentUser, isSupabaseConfigured } from '@clinic/db';
+import { checkRateLimit, recordFailure } from '@clinic/db/rate-limit';
 import type {
   Appointment,
   Encounter,
@@ -33,6 +34,9 @@ import { logRecordAccess } from '@/lib/access-log';
  * Security, so the export can never reach further than the person running it.
  */
 
+/** Twenty whole files a quarter of an hour. A person reads one at a time. */
+const EXPORT_BUDGET = { max: 20 } as const;
+
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
@@ -41,6 +45,24 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   }
 
   const supabase = await createServerSupabase();
+
+  // Whole patient files, counted per person. This route is the mass-download
+  // pattern the access screen watches for — a loop over patient ids empties a
+  // clinic through it — and twenty in a quarter of an hour is far more than a
+  // practitioner does by hand. The log records each one either way; this bounds
+  // how fast they can be taken while the log is still only being read weekly.
+  const user = await getCurrentUser();
+  if (!user) {
+    return NextResponse.json({ error: 'not_found' }, { status: 404 });
+  }
+  const limitKey = `export:${user.id}`;
+  const limit = checkRateLimit(limitKey, EXPORT_BUDGET);
+  if (!limit.allowed) {
+    return NextResponse.json(
+      { error: 'too_many_requests' },
+      { status: 429, headers: { 'Retry-After': String(limit.retryAfterSeconds) } },
+    );
+  }
 
   const { data: patient } = await supabase
     .from('patients')
@@ -51,6 +73,8 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   if (!patient) {
     return NextResponse.json({ error: 'not_found' }, { status: 404 });
   }
+
+  recordFailure(limitKey, EXPORT_BUDGET);
 
   const [history, encounters, notes, appointments, documents, consents, access, dispensing] =
     await Promise.all([
