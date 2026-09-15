@@ -1,7 +1,9 @@
 # הרבליסט — כללי עבודה בפרויקט
 
 מסמך זה נטען אוטומטית בכל סשן. הוא לא תיעוד של מה שקיים — לשם כך יש
-`SECURITY.md` ו-`ARCHITECTURE.md` — אלא **הדרישות שכל שינוי חייב לעמוד בהן**.
+`ARCHITECTURE.md` ו-`SECURITY.md` — אלא **הדרישות שכל שינוי חייב לעמוד בהן**.
+לקח שנוגע למודול אחד לא נכתב כאן אלא ב-`CLAUDE.md` של התיקייה שלו (למשל
+`apps/web/features/library/CLAUDE.md`), שנטען לבד ברגע שנוגעים בקבצים שם; כאן נשארת שורת הכלל וההפניה.
 
 ---
 
@@ -15,6 +17,38 @@
 **דגל משפטי:** לפני הזנת נתוני מטופלים אמיתיים יש לוודא מול עו"ד או יועץ פרטיות
 את חובת רישום מאגר מידע רפואי (חוק הגנת הפרטיות, כולל תיקון 13). זה מסלול נפרד
 מהפיתוח ואינו חוסם קוד — אבל הוא כן חוסם עלייה לאוויר.
+
+---
+
+## פקודות ומפה
+
+pnpm 9 + Turborepo, Node 20.9+. ההתקנה והחיבור ל-Supabase ב-`README.md`; מבנה הקוד, זרימת הבקשה
+ושכבת הנתונים ב-`ARCHITECTURE.md`. `apps/web` היא אפליקציית הצוות (פורט 3000, כמעט כל הקוד),
+`apps/portal` פורטל המטופלים (3001), `packages/*` משותף, `supabase/` מיגרציות + Edge Functions +
+בדיקות SQL + קטלוגים, `scripts/` שערי איכות וצנרות תוכן.
+
+| מה | פקודה |
+|---|---|
+| פיתוח | `pnpm dev` (שתי האפליקציות), `pnpm dev:web`, `pnpm dev:portal` |
+| טיפוסים, בדיקות, בנייה | `pnpm typecheck`, `pnpm test`, `pnpm build` |
+| בדיקה אחת | `pnpm --filter @clinic/web test -- lib/theme.test.ts` — vitest רץ רק ב-`apps/web`, גם לחבילות; `test:watch` לצפייה |
+| שערי איכות (CI) | `pnpm check:contrast` (אחרי build), `pnpm check:tokens`, `pnpm check:i18n`, `pnpm check:a11y` (שרת רץ) |
+| דפדפן אמיתי | `pnpm smoke` (`--only=/path`, `--write`, `--dark`, `--zoom`, `--shell`, `--he-only`, `--desktop-only`), `pnpm a11y:walk` — מול `SMOKE_BASE_URL` (ברירת מחדל 3000), רק מול קליניקה עם באנר הבדיקות |
+| עיצוב | `pnpm format` |
+
+- **מיגרציה = שני קבצים:** `supabase/migrations/<חותמת>_<שם>.sql` (מקור האמת) ועותק בשורש
+  `NN_<שם>_to_run.sql` עם המספר הרץ הבא (gitignored) — המשתמש מדביק אותו בעורך ה-SQL של Supabase, ו"SQL 54"
+  בשיחה הוא המספר הזה. טבלה או policy חדשה = גם תוספת ב-`supabase/tests/tenant_isolation.sql`, ועמודה
+  חדשה = עדכון ידני של `packages/db/src/types.ts`
+- **`apps/web/CLAUDE.md`** מצרף את `AGENTS.md` ש-`next dev` מייצר מחדש: Next 16 שונה ממה שמוכר מהאימון,
+  התיעוד ב-`node_modules/next/dist/docs/`. לא מוחקים את הבלוק הזה
+- **מסמכים:** `SECURITY.md` (באנגלית, לעו"ד), `DEPLOY.md` (העלאה וחיבור ספקים), `GO-LIVE.md` (מה חוסם
+  מטופלים אמיתיים), `MOBILE.md` (החנויות), `supabase/functions/README.md` (ה-secrets),
+  `scripts/{library,medicine,pull}/README.md` (הצנרות)
+- **לקחים לפי מודול — קובצי `CLAUDE.md` מקוננים** (נטענים לבד כשנוגעים בתיקייה): `features/{library, medicine,
+  messages, prices, inventory, encounters, appointments, settings, dashboard, forms, reference, patients}`,
+  `app/[locale]/(site)`, `apps/portal`, `packages/native`. תיקייה שנייה של אותו מודול (סקריפט, Edge Function,
+  מעטפת) מחזיקה קובץ של שורה אחת שמייבא אותו ב-`@path`. לקח חדש נכתב שם, לא כאן; שינוי במודול מעדכן את הפסקה שלו
 
 ---
 
@@ -126,6 +160,11 @@
 - **מספר + יחידה:** בלי `dir` בכלל. אלגוריתם הבידי כבר מציב את המספר לפני
   היחידה בשורה עברית ("20 מ״ל ליום"). `dir="ltr"` על העוטף הוא בדיוק מה
   שגרם ל-"מ״ל 20 ליום" — הוא נדרש רק לתוכן לועזי (טלפון, ת"ז, פינין)
+- **משיכת מידע מחשבונות של המשתמש (`scripts/pull/`, README שם):** אף סיסמה לא עוברת בצ'אט, בשורת הפקודה
+  או בקובץ. Meta רק דרך Graph API עם token שמודבק בטרמינל (`meta.mjs`; כניסה של סקריפט נועלת חשבון ואסורה
+  בתנאים שלהם). אתר בלי API: `login.mjs` פותח Edge עם פרופיל ב-`.auth/<site>/` (gitignored) והמשתמש מתחבר
+  ביד; `site.mjs` פותח עמוד עם אותו פרופיל ושומר HTML, טקסט, צילום, קישורים וכל תשובת JSON שהעמוד קיבל,
+  ל-`test-results/pull/` (gitignored). מה שנמשך לא נכנס ל-git ולא לקליניקה בלי החלטה מפורשת
 - **ערך חסר:** מקף, לא 0. אפס הוא מדידה; אין מלאי זו היעדר מדידה
 - **מצב כהה:** `--color-white` הוא משטח הכרטיס ומתהפך. טקסט על כפתור צבעוני
   הוא `text-accent-fg` ולעולם לא `text-white` — הבודק נכשל על כך
@@ -184,14 +223,7 @@
   שמיועדת ל-service_role בלבד חייבת `revoke execute … from anon, authenticated` במפורש (migration 36).
   בדיקת הבידוד קוראת לפונקציה כחבר קליניקה ומצפה ל-insufficient_privilege; כך נתפס שפונקציית הכתיבה
   של קורא המחירים הייתה פתוחה לכל משתמש מחובר
-- **מנועי חיפוש:** `app/robots.ts` בשתי האפליקציות. במערכת מותר לאינדוקס רק הדפים הציבוריים של
-  קבוצת `(site)` — דף הבית `/about` והצהרת הנגישות `/accessibility`, שניהם בתוך `site-frame.tsx`
-  (כותרת עם כניסה/הרשמה או "ללוח הבקרה" לפי הסשן, ופוטר עם הקישורים) — ודף הזימון (`/he/book/`,
-  `/en/book/`), עם הקבצים שנדרשים לציור שלהם; `app/sitemap.ts` מונה את דפי `(site)`, ותמונת השיתוף
-  ב-`public/og/` מיוצרת ב-`node scripts/render-og.mjs`. מי שלא מחובר ומגיע לכתובת הראשית מופנה
-  ב-`proxy.ts` ל-`/about` (רק הדלת הראשית; קישור עמוק ממשיך ל-login). כל השאר חסום, ודף אישור ההגעה מקבל גם `noindex` משלו
-  ב-`metadata`, כי הוא נגיש רק דרך הקישור. הפורטל חסום כולו. דף ציבורי חדש = להחליט אם הוא ברשימת
-  ה-`allow`, ואם לא, לוודא שיש לו `noindex`
+- **דפים ציבוריים ומנועי חיפוש:** מותר לאינדוקס רק קבוצת `(site)` ודף הזימון (`robots.ts` + `sitemap.ts` בשתי האפליקציות); דף ציבורי חדש = להחליט אם ברשימת ה-allow ואחרת `noindex`, ולהוסיף לפוטר ב-`site-frame.tsx`, ל-`PUBLIC_ROUTES` ב-smoke ול-`ROUTES` ב-`check-a11y.mjs`. הטקסט המשפטי רק ב-`legal.*` במסרים, ופרטי המפעיל בסוגריים מרובעים עד אישור העו"ד. הפרטים וצילומי דף הבית — `apps/web/app/[locale]/(site)/CLAUDE.md`
 - **פונקציה ב-policy נעטפת ב-`(select …)`:** `using ((select public.current_clinic_id()) is not null)` ולא
   `using (public.current_clinic_id() is not null)`. בלי העטיפה Postgres מריץ את הפונקציה על כל שורה — ספירה של 86 אלף
   פסקאות בספרייה עשתה 86 אלף בדיקות חברות ונפלה על 8 השניות של PostgREST, בעוד אותה ספירה כבעלים לקחה 0.3 שנייה
@@ -208,99 +240,24 @@
 - **קליניקה נוצרת רק דרך `create_clinic_for_current_user`** (RPC, security
   definer). `platform_admins` נכתבת רק ב-SQL editor — אין מסך שמקדם משתמש.
   מי שמחובר בלי חברות בקליניקה מגיע ל-`/welcome`, לא ל-login
-- **צוות:** איש צוות שני מצטרף רק דרך הזמנה (`clinic_invitations`, migration 37): בעלים יוצר קישור
-  ב-`/settings/team` ושולח אותו בעצמו (האפליקציה לא שולחת מייל); `/join/[token]` קורא את ההזמנה דרך
-  `invitation_by_token` (anon) ומצטרף דרך `accept_invitation` (authenticated, בלי קליניקה קיימת).
-  הרשמה/כניסה עם `?join=` נושאות את ה-token; אחרי אימות מייל הוא ב-`user_metadata.invitation_token`
-  ו-`/welcome` מסיים את ההצטרפות. תפקיד ומצב של חבר משתנים רק ב-`set_membership_role/active`
-  (לא על השורה של עצמך), וטריגר `memberships_keep_owner` לא מאפשר לקליניקה להישאר בלי בעלים.
-  הרשאות לפי תפקיד עוד אינן: כל התפקידים רואים אותו דבר, ורק בעלים מנהלים צוות
+- **צוות, אימות דו-שלבי ומחיקת חשבון:** איש צוות מצטרף רק בהזמנה, ותפקיד ומצב משתנים רק ב-`set_membership_role/active`; האימות הדו-שלבי חי ב-Supabase Auth ונאכף במסד (`session_needs_second_factor`, אין קודי גיבוי); מחיקת חשבון רק דרך `request_account_deletion` — איש צוות הוא tombstone והרשומה הרפואית נשארת. הפרטים — `apps/web/features/settings/CLAUDE.md`
 - **מה המשתמש רואה:** אף מונח מאחורי הקלעים בממשק — לא "שרת", "מסד נתונים",
   "SQL", "token", "ספק", "API". הודעת שגיאה אומרת מה לעשות, לא מה נשבר.
   עמוד `/setup` הוא היוצא מן הכלל המכוון: הוא למי שמתקין, ולא נראה בייצור
-- **שליחת הודעות:** האפליקציה לא שולחת ולא מחליטה מה לשלוח. התור נכנס
-  ל-`message_log` על ידי `enqueue_due_reminders()` (SQL, לפי שעה), והשליחה
-  היא של `supabase/functions/dispatch-messages` (Edge Function — המקום היחיד
-  שמחזיק service role, מוזרק על ידי Supabase, לא בקוד) או של אדם ממסך
-  "הודעות" (`mark_message_sent`). ספק חדש = adapter אחד ב-`index.ts`.
-  מספר/כתובת של מטופל נשמרים אצלנו בלבד; לספק מגיע רק מה שנשלח, ובלוג
-  נשמר קוד שגיאה קצר, לא תגובת הספק.
-  **הודעות אוטומטיות (migration 54):** `enqueue_due_automations()` (SQL, לפי שעה) ממלא ארבעה סוגים לפי
-  `clinic_automations` — מעקב אחרי טיפול, יום הולדת, חזרה למי שלא ביקר, בקשת חוות דעת — עם `params`
-  (ערכי המשתנים לפי סדר, לתבנית WhatsApp), חלון של 48 שעות אחורה, שעות אזרחיות בלבד, ובלי retry. שלושת
-  הסוגים השיווקיים נשלחים רק עם הסכמה שיווקית רשומה (`has_marketing_consent`) ומסתיימים בקישור הסרה
-  (`patient_unsubscribe_tokens`, בלי policies; `unsubscribe_marketing` כותב נסיגה ב-`patient_consents` עם
-  method `link`; הדף `/unsubscribe/[token]` מסיר רק בלחיצה, לא ב-GET). הנוסחים המובנים חיים גם ב-SQL
-  (`render_automation`) וגם ב-`packages/domain/src/messaging-templates.ts` לתצוגה המקדימה — בדיקה מחזיקה אותם
-  זהים. **השליחה:** המתאמים של 019 (SMS + WhatsApp) ב-`supabase/functions/_shared/messaging/` — TypeScript
-  נקי שנבדק מ-`apps/web` דרך `@messaging/*`; מספר טלפון מנורמל שם, קודי השירות הופכים לקודים קצרים
-  (`messages.errors.*`). WhatsApp ביוזמת העסק = תבנית מאושרת (`whatsapp_template_id` ב-`clinic_automations`,
-  גם לתזכורת תחת kind `appointment_reminder`); בלי מזהה — טקסט חופשי, ואם נדחה `needs_template` למסלול
-  הידני. קליניקה `is_synthetic` לא שולחת למטופלים (`skipped/synthetic_clinic`), חוץ מ-`test_message`
-  מהכרטיס בהגדרות ← הודעות.
-  **תיבת השיחות (migration 55):** `whatsapp_conversations` (אחת לקליניקה ולאיש קשר — `contact_key` הוא
-  המספר כ-`972…` או המזהה האטום של Meta; `patient_id` כשקובץ אחד בלבד נושא את המספר) ו-`whatsapp_messages`
-  (כל הודעה לשני הכיוונים, עם סימני ✓ של השירות: sent/delivered/read). **מה שנכנס נכתב רק על ידי הפונקציה
-  `whatsapp-inbound`** (Edge, `?key=WHATSAPP_INBOUND_SECRET`) דרך `whatsapp_receive`/`whatsapp_ack`
-  (service role בלבד; dedupe על `unique` של השירות; לחיצה על "אגיע"/"לא אגיע" — `whatsapp_reply_intent`,
-  התאמה מדויקת בלבד — קוראת ל-`respond_to_appointment` על התור הבא ומתורה שורת אישור חזרה); הצוות כותב רק
-  `direction = 'out'` (policy). שליחה מיידית: השולח נעור על ידי חבר קליניקה (JWT) או על ידי הפונקציה הנכנסת
-  ושולח **רק** את התור של השיחות (`whatsapp_claim_outbound`, נעילה + `sending`/`claimed_at`), כדי לא לחפוף
-  לתזמון על התזכורות. חלון 24 השעות של Meta נאכף במסך: טקסט חופשי עד יום מ-`last_inbound_at`, אחרת תבנית
-  הפתיחה (kind `conversation_opener`). הודעה אוטומטית ב-WhatsApp נכתבת גם לשיחה (`whatsapp_note_outbound`).
-  המסך: `features/whatsapp/*` — רשימה + שיחה (מגירה מתחת ל-`lg`), polling כל 10 שניות; `/messages/queue` הוא
-  התור הישן; מהתיק — כפתור "WhatsApp" (`?patient=`). קובץ שמטופל שולח נשמר רק כקישור של השירות (שבוע), לא
-  בתיק — שלב הבא. **ערוץ Make (המשתמש עובד עם Make + ManyChat, 15.9):** `MAKE_OUTBOUND_URL` מפנה את הערוצים
-  שב-`MAKE_OUTBOUND_CHANNELS` (ברירת מחדל whatsapp) ל-webhook (`_shared/messaging/webhook.ts`, גוף JSON מתועד
-  ב-DEPLOY.md, `provider_message_id` = ה-id שלנו אלא אם התרחיש ענה עם `id`), ו-`whatsapp-inbound` מקבל גם את
-  הצורה הפשוטה `{event: message|status}` (`&to=` בכתובת כשהתרחיש לא יודע את הקו; הודעה בלי id מקבלת שם
-  סינתטי לפי שולח+טקסט+דקה). 019 נשאר החלופה, ול-SMS
+- **שליחת הודעות:** האפליקציה לא שולחת ולא מחליטה מה לשלוח. התור ב-`message_log` ממולא בפונקציות SQL (תזכורות, התראות משימה, אוטומציות), והשליחה היא רק של `supabase/functions/dispatch-messages` (המקום היחיד שמחזיק service role) או של אדם ממסך "הודעות". הודעה שיווקית רק עם הסכמה רשומה וקישור הסרה; קליניקה `is_synthetic` לא שולחת למטופלים; לספק מגיע רק מה שנשלח, ובלוג קוד שגיאה קצר. האוטומציות, תיבת ה-WhatsApp, ערוץ Make, 019 וה-push — `apps/web/features/messages/CLAUDE.md`
 - **זימון אונליין:** `/book/[slug]` קורא וכותב רק דרך `booking_clinic` /
   `booking_slots` / `booking_request` (anon, security definer). השעות הפנויות
   מחושבות **ב-SQL** מאותן טבלאות שהיומן קורא, כדי שהעמוד והיומן לא יחלקו
   על "האם 10:30 פנוי"; המרוץ על השעה האחרונה נסגר ב-exclusion constraint.
   `booking_codes` בלי policies בכלל — רק הפונקציות נוגעות בה
-- **גרירת תורים:** בלוק ביומן הוא `AppointmentBlock` (`features/appointments/appointment-block.tsx`): `useDraggable` של
-  dnd-kit לעכבר (6px כוונה, כדי שלחיצה עדיין תפתח פרטים) ולמגע (לחיצה ארוכה, כדי שהחלקה עדיין תגלול). ההנחה
-  נחשבת ב-`calendar-view.tsx` (רבע שעה, עמודת יום בשבוע) ונכתבת ב-`moveAppointment` — שני הזמנים בלבד, אותם
-  constraints של חפיפה. **המקלדת לא עוברת דרך ה-KeyboardSensor של dnd-kit** (חץ ראשון שנלחץ לפני שהוא מדד
-  את הבלוק שלח אותו לרוחב היום) אלא דרך `handleBlockKeyDown`: רווח מרים, חצים רבע שעה או יום, רווח מניח,
-  Escape מבטל, Enter פותח פרטים, ושורת `aria-live` אומרת כל צעד. ה-smoke גורר עם העכבר, ההליכה עם המקלדת
+- **היומן:** לחיצה על תור פותחת את פרטי התור ולא את הטופס; גרירה בעכבר ובמגע דרך dnd-kit, במקלדת דרך `handleBlockKeyDown` (לא KeyboardSensor); חסימת שעות ב-`schedule_blocks` והלוגיקה ב-`availability.ts` בלבד, עם בדיקות; ברירת המחדל בטלפון נקבעת בשרת. הפרטים — `apps/web/features/appointments/CLAUDE.md`
 - **רמז להתקנה על מסך הבית:** `InstallHint` מ-`@clinic/ui`, בשני ה-layouts. רק בטלפון, רק כשלא רץ כבר מהמסך
   הראשי, נסגר לתמיד ב-localStorage; שכבה קבועה מעל הסרגל התחתון, כדי ששום דבר לא יקפוץ. ה-smoke מסמן אותו
   כסגור בסקריפט הפתיחה ובודק אותו רק בביקור `?install-hint=1`
-- **צילומי המסך בדף הבית:** `apps/web/public/site/*.webp` מיוצרים ב-`SMOKE_BASE_URL=http://localhost:3002 node
-  scripts/render-site-shots.mjs` — מקליניקת הבדיקות בלבד (השומר הוא הבאנר), הבאנר וכרטיס הצעדים הראשונים
-  מוסתרים בתמונה. להריץ שוב אחרי שינוי נראה במסכים שמצולמים, ולוודא בעין שאין שם שמות של ריצות בדיקה
-- **היומן קריא:** לחיצה על תור פותחת את **פרטי התור** (`appointment-details.tsx`: מועד, סוג, חדר, מצב
-  והגעה, טלפון, הערות) והעריכה היא כפתור בתוכו — לא הטופס ישירות. כשיש חדרים ויש חפיפה ביום, העמודה
-  נחלקת לנתיבים לפי חדר (חדר 1 תמיד בנתיב הראשון), הפס בקצה הבלוק הוא צבע החדר, הרקע הוא צבע סוג
-  הטיפול, והמקרא מעל הרשת אומר זאת במילים. בלוק צר (שבוע + נתיבים) מציג רק שעה ושם
 - **שם הקליניקה בראש התפריט** הוא קישור ל-`profiles.home_path` (migration 38, `HOME_PATHS` ב-domain),
   שנבחר ב"איזור אישי ← מראה"
-- **כרטיס מידע:** כל צמח, פורמולה ונקודת דיקור בדף הטיפול הם `ReferenceChip`
-  (`features/reference/reference-sheet.tsx`) שפותח את המונוגרף בחלון מעל הדף — לא ניווט. ספק אחד
-  (`ReferenceSheetProvider` ב-layout של `(app)`), פעולה אחת (`loadReferenceCard`: לפי id, ואם אין —
-  לפי פינין/קוד/שם). גוף המונוגרף של צמח הוא `HerbMonographBody`, משותף עם הגלריה
-- **חתימת טיפול:** רשומה חתומה נפתחת לעריכה רק דרך `reopen_encounter(id, reason)` (migration 38):
-  החתימה הקודמת נשמרת ב-`encounter_signatures` (append-only, בלי policies לכתיבה), הרשומה חוזרת
-  לטיוטה עם הודעה על המסך, וצריך לחתום שוב. הטריגר שנועל רשומה חתומה נפתח רק להגדרה
-  `herbalist.reopening` שהפונקציה עצמה מציבה. לעולם לא עריכה שקטה של רשומה חתומה
-- **דף הטיפול מסודר לפי המטפל:** שתי העמודות הן `SidePanels` (`side-panels.tsx`) — רשימת בלוקים
-  שנגררים במצב "סידור" אחד לשתיהן (`ArrangeToggle` בפינת הכותרת, דרך portal ל-`#encounter-header-tools`),
-  והסדר נשמר ב-localStorage לכל עמודה (`herbalist-encounter-fields`, `herbalist-encounter-panels-v2`).
-  השדות של הרשומה עצמה הם בלוקים כאלה (תלונה, היסטוריה, אבחנה, נקודות…), בלי כותרות ביניים — תוויות
-  השדות אומרות הכול; `Section titleHidden` משאיר h2 לקורא מסך היכן שנשאר סקשן. פאנלי הצד ורשימת
-  הנקודות הם `resize-y overflow-auto` — נמתחים מהפינה כמו תיבת טקסט. עמודת הצד רחבה מעט משליש
-  (`1.7fr/1fr`). סטטוס התשלום יושב ליד הכותרת (`PageHeader aside`), לא בין הפעולות
-- **אימות דו-שלבי (migration 39):** `profiles` לא יודע עליו; Supabase Auth מחזיק את הגורם (`auth.mfa_factors`)
-  ומסמן סשן שנתן קוד ב-`aal = 'aal2'`. הנעילה במסד: `session_needs_second_factor()` אמת לחשבון עם גורם
-  מאומת בסשן `aal1`, ושלושת העוזרים (`current_clinic_id`, `is_clinic_member`, `has_clinic_role`) וגם
-  `current_membership_context` מחזירים כלום עד שהקוד ניתן — כל policy עוברת דרכם. באפליקציה:
-  `lib/second-factor.ts` (`needsSecondFactor`), `/verify` אחרי הסיסמה, ההרשמה ב"איזור אישי ← אימות
-  דו-שלבי" (`two-factor-settings.tsx`, `mfa.enroll/challengeAndVerify/unenroll`). אין קודי גיבוי: טלפון שאבד =
-  מחיקת השורה ב-`auth.mfa_factors` מה-SQL editor (GO-LIVE.md). ה-smoke לא נרשם לגורם — חשבון הבדיקות
-  היה ננעל בלי קוד; `test-results/probe-2fa.tmp.mjs` (מייצר TOTP בעצמו) הוא הבדיקה מקצה לקצה
+- **מאגר המידע:** צמח, פורמולה ונקודה בדף הטיפול הם `ReferenceChip` שפותח מונוגרף בחלון מעל הדף, לא ניווט; בדפי רשומה `<ReferenceNav compact />` בחריץ `actions`. הפרטים — `apps/web/features/reference/CLAUDE.md`
+- **דף הטיפול:** רשומה חתומה נפתחת רק ב-`reopen_encounter(id, reason)` — לעולם לא עריכה שקטה; הקואורדינטות של הגוף התלת-ממדי חיות רק ב-`body3d/points.ts` עם `validated`, והדגם glb בלי Draco/טקסטורות; `zoom-frame.tsx` הוא המקום היחיד לקואורדינטות פיזיות; כתב יד נשמר כ-PNG ב-`patient_documents`. סידור הפאנלים, ההשוואה והפרטים — `apps/web/features/encounters/CLAUDE.md`
 - **הגדלת טקסט 200%:** `pnpm smoke -- --zoom` מציב `html { font-size: 200% }` לפני הציור ובודק בכל מסך
   שהדף לא גולל הצידה ושאף תיבה לא חותכת טקסט שלא נועד להיחתך. מה שנשבר ותוקן: רוחב מינימלי קבוע
   (`min-w-64`) → `min-w-0 basis-64`; `select`/`input` בלי `min-w-0` נמתחים לרוחב האופציה הארוכה;
@@ -308,53 +265,8 @@
   כי מסלול משתמע נמדד לפי התוכן והרחיב עמודה שלמה מעבר לטלפון; היומן עבר מפיקסלים ל-rem (`SLOT_HEIGHT_REM`)
 - **מספר לפני יחידה:** "6 גרם ליום" — לעולם לא `dir="ltr"` על מספר+יחידה (ראה "מספר + יחידה"); כך
   נולד "גרם 6 ליום" בהשוואה ובהיסטוריית הניפוקים
-- **השוואת טיפולים:** זוג זהה (אותה נקודה/אותו צמח בשני הצדדים) נצבע באותו גוון מ-`PAIR_HUES`
-  (color-mix על המשטח, טקסט `ink-900`); כתום/ירוק נשארים למה שנעלם/נוסף, והמקרא אומר זאת במילים
-- **חסימת שעות ביומן:** `schedule_blocks` = חלונות "לא זמין" (כמה ביום, סיבה
-  לכל אחד), מקוזזים משעות העבודה. `schedule_exceptions` נשאר ליום שלם או
-  ל"פתוח רק בין" מהגדרות. הלוגיקה ב-`availability.ts` בלבד, עם בדיקות
-- **כתיבה בעט בדף הטיפול:** `packages/ui/src/sketch-pad.tsx` הוא המנוע (Pointer Events לעט, אצבע ועכבר כאחד;
-  `setPointerCapture`; `getCoalescedEvents` כדי שקו מהיר של Apple Pencil יהיה עקום ולא שבור; רוחב לפי לחץ רק
-  כש-`pointerType === 'pen'`; ברגע שזוהה עט, אצבע לא מציירת — מתג "עט בלבד" מציג ומאפשר לכבות; הקווים נשמרים
-  כנקודות, ולכן מחק מוחק קו שלם, ביטול/חזרה הם היסטוריה של הרשימה, והייצוא מצייר הכול מחדש פי 2 על דף לבן).
-  החישובים ב-`sketch-geometry.ts` (נבדק ב-`lib/sketch-geometry.test.ts`). הנייר לבן אמיתי (`#ffffff` inline) ולא
-  `bg-white` — הדיו קבוע והתמונה הנשמרת לבנה, גם במצב כהה. בדף הטיפול: `features/encounters/sketches.tsx` —
-  אייקון `PenLine` קטן בחריץ `encounter-header-sketch` (חריץ שני לפני `encounter-header-tools`, כדי שמתג הסידור
-  יישאר אחרון), פאנל "כתב יד" בעמודת הצד, והדף נשמר כ-PNG ב-`patient_documents` עם `category = 'sketch'`
-  (migration 46) ו-`encounter_id` — אותו bucket, אותו RLS, אותו יומן גישה. עריכה = דף חדש ואז מחיקת הישן,
-  והתמונה לעריכה מגיעה דרך `sketch-actions.ts` (`loadSketchImage`, data URL) ולא מ-`/api/documents` — הנתיב
-  מפנה לכתובת אחסון ב-origin אחר, ותמונה כזו "מכתימה" את ה-canvas ומונעת ייצוא. ה-smoke (`sketchPad`) מצייר קו
-  בעכבר, מבטל, מחזיר וסוגר בלי לשמור
-- **תמונות עם זום/גרירה:** `features/encounters/zoom-frame.tsx`. שם, ורק שם,
-  הקואורדינטות פיזיות (`left`/`top`) ולא לוגיות — לתצלום אין כיוון קריאה,
-  והזזה שמתהפכת עם העמוד היא באג. מאזין `wheel` נרשם ידנית עם
-  `{ passive: false }`, כי React רושם אותו passive ואז `preventDefault` לא עובד
-- **גוף תלת-ממדי:** `features/encounters/body3d/`. הקואורדינטות של הנקודות על
-  הדגם חיות **רק** ב-`body3d/points.ts` — לא במסד ולא מחושבות מהמפה השטוחה —
-  עם `validated` לכל רשומה; נקודה בלי רשומה לא מצוירת. מסגרת: מטרים, +Y
-  למעלה, +Z חזית, ראשית בין הרגליים, +X = שמאל המטופל; דו-צדדי נשמר בימין
-  (x<0) ומשוקף. הדגם ב-`public/models/body.glb` חייב להיות glb רגיל — **בלי
-  Draco/Meshopt/טקסטורות** — כי ה-CSP חוסם worker ו-blob; לא להרחיב את ה-CSP
-- **תמונות ייחוס לצמחים:** `apps/web/public/herbs/` + `features/inventory/herb-reference-images.json`
-  (מקור, צלם, רישיון, קישור, `form`). **חומר המרפא היבש קודם** — `scripts/fetch-herb-material-images.mjs`
-  מחפש ב-Commons (ו-Openverse) לפי השם הסיני בשני הכתבים, הפינין והשם הפרמצבטי, מנקד לפי מילות
-  החומר (dried, slices, 饮片, 藥材, Radix…) ופוסל צמח חי, חנויות, מאכלים ואיורים; רק כשאין —
-  `scripts/fetch-herb-images.mjs` מביא את הצמח החי (iNaturalist / Commons / GBIF עם אימות מין).
-  CC0 / CC BY / CC BY-SA בסדר הזה (לא NC, לא ND); BY-SA אושר כי התמונה מוצגת כפי שהיא ולא נערכת
-  (הקטנה בלבד), ולכן אין יצירה נגזרת. מאומת מול המקור עצמו. `herb-reference-rejects.json` = דפים
-  שנפסלו בבדיקה בעין ולא ייבחרו שוב. `referenceImageFor(herb)` מחפש לפי פינין ואז לפי מין
-  (תמונת חומר לעולם לא משמשת צמח אחר מאותו מין), מציג רק כשאין תמונה של הקליניקה, תמיד עם
-  הקרדיט (CC BY מחייב) וכיתוב שאומר אם זה החומר או הצמח. לא להוסיף תמונה בלי רשומה ב-manifest.
-  **הגלריה:** `features/inventory/herb-gallery.tsx` — `HerbGalleryProvider` (מקבל את כל הצמחים עם תמונה
-  מ-`loadHerbGalleryEntries`, `server-only`), `HerbThumb` פותח את התמונה בגדול ב-`ZoomFrame`, ו"השוואת
-  תמונות" מציב עד 6 צמחים זה לצד זה (חלון על כל המסך מ-`sm`, עמודה לכל תמונה) לפי בחירה ב-`Combobox`
-  שמציג גם את השם הבוטני; הסדר משתנה בגרירה של הידית שמתחת לתמונה (dnd-kit, גם במקלדת — הידית בלבד,
-  כי גרירה על התמונה עצמה מזיזה אותה בתוך המסגרת), בכיתוב רק הקרדיט שהרישיון דורש, ושם הצמח פותח את המונוגרף בחלון מעל
-  (`herb-monograph-sheet.tsx`, נטען לפי דרישה דרך `loadHerbMonograph`). הקרדיט מוצג בכל מסגרת
-- **שאלונים מהספרייה:** `features/forms/library.ts` — תבניות מוכנות עם מזהי שדות קבועים.
-  כל מילוי שאלון מקבל שורה ב-`patient_documents` עם `file_path = 'form-submission:<id>'`
-  (trigger ב-migration 20260910170000); אין קובץ באחסון — `/api/documents/[id]` מרנדר את
-  התשובות מה-`fields` הקפואים של ההגשה דרך `renderSubmissionHtml` (packages/domain)
+- **תמונות ייחוס לצמחים:** רק CC0 / CC BY / CC BY-SA, תמיד עם קרדיט, ואף תמונה בלי רשומה ב-`herb-reference-images.json`; חומר המרפא היבש לפני הצמח החי; כל תמונה נבדקת בעין לפני commit. הסקריפטים והגלריה — `apps/web/features/inventory/CLAUDE.md`
+- **שאלונים:** תבניות ב-`features/forms/library.ts`; כל הגשה היא שורה ב-`patient_documents` עם `file_path = 'form-submission:<id>'` ומצוירת מה-`fields` הקפואים — `apps/web/features/forms/CLAUDE.md`
 - **תאריכים:** תמיד `components/date-input.tsx` (dd/mm/yyyy עם לוח שנה), לא `type="date"` ישיר —
   הדפדפן מציג את הפורמט לפי שפת הדפדפן ולא לפי הדף. טפסי react-hook-form: `watch`/`setValue`
 - **מיון רשימות מדפדפות:** `components/sort-link-th.tsx` + `lib/sort-params.ts` — הכותרת היא קישור
@@ -364,10 +276,7 @@
 - **גודל שורות בטבלה:** `TableWrapper responsive` מציג את `TableSizeControl` (חבילה משותפת);
   הבחירה נשמרת ב-localStorage ומוחלת כ-`data-table-size` על העוטף, הכללים ב-`globals.css`.
   המילים מגיעות מ-`UiLabelsProvider` ב-layout — לא מעבירים תוויות לכל טבלה
-- **אריחי סטטוס במטופלים:** הסדר וההסתרה של המשתמש ב-`features/patients/tile-layout.ts`
-  (טהור, עם בדיקות), נשמרים ב-localStorage; אריח חדש שלא נשמר סדר עבורו נכנס בסוף, לא נעלם
-- **ניווט המאגר:** ברשימות — שורה אחת עם החיפוש; בדפי רשומה (מונוגרף, עריכה, חדש, השוואה) —
-  `<ReferenceNav compact />` בחריץ `actions` של `PageHeader`, לא שורה משלו מתחת לכותרת
+- **אריחי סטטוס במטופלים:** הסדר וההסתרה ב-`features/patients/tile-layout.ts` (טהור, עם בדיקות); אריח חדש נכנס בסוף, לא נעלם — `apps/web/features/patients/CLAUDE.md`
 - **מבנה דף אחיד:** כותרת דף רק דרך `PageHeader` מ-`@clinic/ui` (חריצים `actions`
   לפעולה הראשית, `banner` לאזהרה, `below` לפס תחת הכותרת — לא שוליים שליליים);
   ניווט משנה ומסננים ב-URL דרך `components/segmented-links.tsx`, בחירה
@@ -419,22 +328,8 @@
   כדי שהכפתורים לידו לא יזוזו
 - **מסננים בטלפון:** `FilterDisclosure` הוא `<details>` על שולחן ומגירה מתחת ל-`md`;
   הילדים הם קישורים, ולכן הבחירה מנווטת והמגירה פשוט נסגרת
-- **היומן בטלפון:** ברירת המחדל "יום" נקבעת בשרת מה-user agent (`calendar/page.tsx`), לא
-  ב-`router.replace` אחרי שהשבוע כבר צויר; `?view=` בכתובת תמיד גובר, ובורר התצוגה מוצג
-  בכל רוחב. השעות נגללות בתוך `[data-time-grid]` עם שורת הימים דביקה, ו-`NowLine` גולל את
-  הפאנל (לא את החלון) ל"עכשיו"
-- **לוח הבקרה מגיע עם המספרים:** שאילתות הווידג'טים ב-`features/dashboard/queries/*`
-  (פונקציה של client, גוף אחד לשרת ולדפדפן); `loaders.ts` (`server-only`) מריץ אותן בעמוד
-  לציור הראשון ומעביר דרך `DashboardProvider.initialData`; `useAsyncData(fetcher, deps,
-  { initial })` מדלג על הטעינה הראשונה. ווידג'ט חדש = מודול ב-`queries` + שורת `run` ב-loaders;
-  בלעדיה הוא פשוט נטען בדפדפן כמו פעם. `WidgetLoading` הוא שלד, לא ספינר
-- **הפורטל:** כל מסך מחובר עטוף ב-`portal-shell.tsx` (קישור דילוג, כותרת, `PortalNav`,
-  `main#main-content`, פוטר עם שפה ויציאה) — לא `<main>` משלו. שאלון = מסך משלו
-  (`forms/[id]`), בשלבים לפי הסעיפים שהקליניקה כתבה (`@clinic/domain/forms/steps`,
-  נבדק): אימות לכל שלב, מלא בשליחה, וחזרה לשלב הבעייתי. הסכמה נפתחת לאישור רק אחרי
-  גלילה לסוף המסמך. קובץ יומן (`.ics`) נכתב ב-`@clinic/domain/ics` ומוגש משלושה
-  מקומות: פיד היומן, `/api/appointments/[id]/ics` בפורטל (RLS), ו-`/api/confirm/[token]/ics`
-  הציבורי (אותו token ואותה הגבלת קצב כמו הדף)
+- **לוח הבקרה ותרשימים:** ווידג'ט חדש = מודול ב-`queries` + שורת `run` ב-`loaders.ts`; צבע תרשים חדש = משתנה `--chart-*` בהיר וכהה ובודק הפלטה של מיומנות dataviz לפני; כל פרוסה ועמודה עם תווית ומספר, הצבע לעולם לא לבדו. הפרטים ועוגות הפורמולה — `apps/web/features/dashboard/CLAUDE.md`
+- **הפורטל:** כל מסך מחובר עטוף ב-`portal-shell.tsx`; שאלון בשלבים לפי הסעיפים; כניסה עם סיסמה רק לקליניקה `is_synthetic` (הדלת לבודקי החנויות). הפרטים — `apps/portal/CLAUDE.md`
 - **הדפסה:** הכללים המשותפים ב-`base.css` (`@page` A4, `.no-print`, שבירת עמוד, ומחלקה
   לכל מה שהמעטפת מסמנת ב-`data-tab-bar`/`data-top-bar`/`data-sidebar-panel`/
   `data-open-files-slot`, שנעלם על הנייר; `data-scroll-panel`/`data-time-grid` מודפסים
@@ -443,14 +338,6 @@
 - **אייקוני מסך הבית:** `app/manifest.ts` + `app/apple-icon.png` + `public/icons/*.png` בשתי
   האפליקציות, מיוצרים מ-`app/icon.svg` ב-`node scripts/render-icons.mjs` (Edge headless,
   בלי ספריית תמונות). שינוי ב-SVG = להריץ שוב
-- **תרשימים:** צבעי תרשים הם משתני `--chart-*` ב-`globals.css` (בהיר וכהה בנפרד, לא הכהיה אוטומטית), ולפני שמוסיפים
-  צבע מריצים את בודק הפלטה של מיומנות dataviz על כל הסדרה בשני המצבים: אין שני צבעים סמוכים שקשה להבדיל ביניהם
-  בעיוורון צבעים, וכל פרוסה/עמודה נושאת תווית ומספר לידה — הצבע לעולם לא לבדו. עוגות הפורמולה
-  (`features/inventory/formula-composition.tsx`, החישוב ב-`packages/domain/src/formula-composition.ts`): לפי מספר
-  הצמחים, טבע מקופל לחמש רצועות (שמונה גוונים של אדום-כחול לא נבדלים), הרווח בין פרוסות הוא `--color-white`,
-  ובעמודה צרה בצד הרחוק של דף הפורמולה. **הצבעים לפי המשתמש:** חם אדום, קר כחול, ניטרלי אפור; חמוץ ירוק, מתוק
-  צהוב, חריף אדום, תפל אפור בהיר מאוד, מר חום; סדר הפרוסות בעוגת הטעמים (`TASTE_ORDER`) מרחיק אדום מירוק ומחום.
-  כל פרוסה יודעת את הצמחים שלה: מעבר עכבר/פוקוס/לחיצה על שורה במקרא פותח את רשימת הצמחים מתחתיה
 - **השעון של הדף, לא `Date.now()` בזמן ציור:** קומפוננטת client שמצוירת גם בשרת ומחליטה "באיחור"/"היום" לפי
   `new Date()` נשברת בהידרציה כשמשימה נופלת בין שני הציורים (React #418, לוח הבקרה ב-smoke). הדף מחשב
   `renderedAt = new Date().toISOString()` פעם אחת ומעביר אותו (`DashboardContextValue.renderedAt` →
@@ -462,210 +349,14 @@
   `monthStartIn`, `dateKeyIn`, `startOfWeekIn`…) בשרת ובדפדפן כאחד — "היום" הוא של
   הקליניקה (`clinics.timezone`), לא של השרת, אחרת ה-HTML מהשרת וההידרציה חולקים על
   המספר. `computeStats` ב-`dashboard/kpi-stats.ts` מקבל `timeZone` ונבדק על יום קבוע
-- **השוואת מחירים:** הטבלאות `shop_*` הן היחידות **בלי `clinic_id`** — מחיר של חנות הוא אותה עובדה
-  לכל קליניקה, ולכן נקרא פעם אחת לכל השירות. RLS: `select` לחבר קליניקה בלבד; כתיבה רק מהפונקציות
-  של המיגרציה (service_role) ומשתי פונקציות אדמין שבודקות `is_platform_admin()`. הקורא הוא
-  `supabase/functions/fetch-shop-prices`; הלוגיקה כולה ב-`_shared/shop-prices/` — TypeScript נקי (בלי
-  Deno/Node, ייבוא עם `.ts`, תחביר "ניתן למחיקה" בלבד) שנבדק מ-`apps/web` דרך ה-alias `@shop/*` ורץ
-  ב-`scripts/shop-prices-dry-run.mjs` תחת Node. **נקראים רק שם, מחיר, קישור ומזהים** — לא תיאור ולא תמונה.
-  נימוס בקוד, לא בהגדרה: `fetcher.ts` (השהיה לכל host, User-Agent עם כתובת קשר, בקשות מותנות, 429/503)
-  ו-`robots.ts` (נקרא בכל ריצה). חנות נקראת רק כש-`status = active`; שלוש חנויות ה-HTML נשארות
-  `awaiting_permission` עד אישור בכתב. סיווג (`taxonomy.ts` → `classify.ts`): הרחקה לפי השם גוברת
-  על הכול, אחריה כללי השם, ורק אז הקטגוריה של החנות. איחוד (`match.ts`): טביעת-אצבע
-  `brand|item|size|pack`; בלי מותג מוכר — מיזוג רק על מילים זהות (שמרני בכוונה). כיוונון = להריץ
-  `node scripts/shop-prices-dry-run.mjs --store=<slug> --offline` ולקרוא את `test-results/prices/dryrun-*.txt`;
-  השמות האמיתיים ב-`__fixtures__` הם הבדיקות. בממשק: `components/external-link.tsx` לכל קישור
-  שיוצא מהאפליקציה (חלון חדש, noopener, מוכרז לקורא מסך), והכיתוב "המחירים נקראים מדפי המוצר…" מופיע בראש הרשימה.
-  **תמונות:** לעולם לא מהחנויות. `scripts/fetch-shop-images.mjs` מביא מ-Commons (דרך `scripts/lib/commons.mjs`,
-  אותם שלושה רישיונות כמו הצמחים) תמונה לפי מוצר רק כשהמקור מזכיר את המותג, ואחרת לפי קטגוריה; manifest
-  ב-`features/prices/shop-images.json`, `shopImageFor()` בוחר, הקרדיט המלא ב-`/prices/credits`. כל תמונה
-  נבדקת בעין לפני commit — חיפוש לפי מילה מביא גם קטלוג זרעים מ-1901, מיצג על תעלה בשם "tdp" ואיור של אוזן;
-  קטגוריה בלי תמונה ראויה נשארת בלי תמונה
-- **רפואה מערבית (מאגר מידע ← רפואה מערבית):** `med_entries` / `med_links` (migration 42) הן טבלאות משותפות
-  **בלי `clinic_id`**, כמו `shop_*`: קריאה לחבר קליניקה, אין policies לכתיבה, והטעינה רק דרך `med_import`
-  (אדמין פלטפורמה) — `med_refresh_quotes` ל-service role בלבד, `revoke execute … from anon, authenticated`
-  במפורש. הזהות של ערך היא Wikidata QID והכתובת היא `slug`. **שתי שכבות טקסט:** `quotes` — ציטוטים באנגלית
-  מהמקור מילה במילה (MedlinePlus נחלת הכלל, openFDA CC0, NHS OGL v3) עם תאריך ורישיון, ושם חיים המינונים
-  ותופעות הלוואי, **לעולם לא מנוסחים מחדש**; `sections.he` — הערך שלנו, שנכתב מהחומר הזה בלבד
-  (`scripts/medicine/hebrew.mjs`, או ביד ב-`supabase/seed/medicine/hebrew-manual.json` שגובר), ומסומן על המסך
-  "נכתב מהמקורות; טרם אומת" עד ש-`status = 'verified'`. `status` = `draft` → `cross_checked` (שני מקורות מסכימים,
-  `lib/cross-check.mjs`) → `verified` (אדם); הצבע מ-`MED_STATUS_TONES`. ויקיפדיה רק כקישור (share-alike); לא
-  ICD-11, SNOMED, DrugBank ולא עלונים ישראליים — רק קישור למאגר משרד הבריאות בהצהרה שבכל ערך. עלון FDA נבחר
-  רק לתכשיר **חד-רכיבי** (`singleIngredient` ב-`openfda.mjs`; הריצה הראשונה הביאה בוטלביטל-אספירין-קפאין
-  ל"אספירין"). התאמת MedlinePlus: MeSH, ואז שם של 5 אותיות ומעלה שאינו ראשי תיבות. בממשק: הלשונית הרביעית של
-  `ReferenceNav` (כל הלשוניות עם אייקון; `Stethoscope`), `features/medicine/medicine-body.tsx` הוא הגוף המשותף
-  לדף ולחלון (`loadReferenceCard` kind `'medicine'`, chip בקו כחול מ-`reference-context.tsx`), אייקון לפי סוג
-  (`Activity`/`Thermometer`/`Pill`), גוון `sky` במקום ירקן. תוכן NHS מחייב לוגו + קישור בכל דף (`NhsAttribution`;
-  הלוגו הרשמי ב-`public/medicine/nhs-logo.svg`, לא מצויר מחדש) ורענון כל 7 ימים. הצנרת והפקודות ב-
-  `scripts/medicine/README.md`; הייבוא (`import.mjs`) שואל את פרטי האדמין בטרמינל (הסיסמה מוסתרת, `lib/prompt.mjs`)
-  או לוקח אותם ממשתני סביבה — לעולם לא משורת הפקודה, כי PowerShell שומר אותה בקובץ היסטוריה.
-  **הקורפוס המלא** (`wikidata.mjs --all`): מקורות הטקסט הם MedlinePlus, MedlinePlus Genetics (נחלת הכלל, מחלות
-  נדירות; `genetics.mjs`), FDA ו-NHS — ערך בלי אף אחד מהם **לא נכנס** (נרשם בדוח, `--keep-thin` משאיר); פרקי
-  ICD-10 V–Z יוצאים, פרק R הופך לתסמין, ATC V/Q יוצאים. **בדיקה כפולה:** זהות = קוד משותף לשני מקורות
-  (MeSH/OMIM/ICD-10-CM/RxCUI דרך `rxnorm.mjs`/UNII) ב-`cross_check.identity`, לא התאמת שם; עובדות = `status`;
-  העברית = `hebrew.mjs --review` (קריאה שנייה נפרדת) + `verify-hebrew.mjs` (כל מספר בעברית קיים במקור), התוצאות
-  ב-`hebrew_meta.review/numbers` ומוצגות בדף; `--redo-flagged` כותב מחדש מה שנפסל. עלוני ה-FDA לקורפוס המלא
-  נקראים דרך DailyMed (`dailymed.mjs`: רשימה לפי שם, כותרת חד-רכיבית, מסמך SPL אחד; אותו רשומה כמו `openfda.mjs`) —
-  openFDA מחזיר מגה-בייטים לבקשה ומוגבל ל-1,000 ביום בלי מפתח. פריט עם קוד ATC קצר מ-7 תווים הוא קבוצה, לא תרופה.
-  **ויקיפדיה** (`wikipedia.mjs`) היא המקור האחרון ונקראת רק למה שהשאר לא כיסו; היא share-alike, ולכן ערך שהעברית
-  שלו משם מסומן בדף עם קישור, גרסה ורישיון (`hebrew_meta.model = 'wikipedia-he'`), ו-`build.mjs` מעדיף עליה כל
-  עברית אחרת. כותרת "מינון" בוויקיפדיה נזרקת (`lib/wiki-sections.mjs`) — מינון מגיע רק מהעלון.
-  **השכבה הישראלית** (`israel-drugs.mjs` → עמודת `israel`): התכשירים הרשומים כאן לכל חומר פעיל, שם בעברית, מספר
-  רישום, צורה, מרשם, סל וקישור לעלון באתר משרד הבריאות — **עובדות וקישורים בלבד**, בלי טקסט מהעלון.
-  **בדיקות מעבדה** (`kind = 'lab_test'`): הטקסט מ-MedlinePlus Medical Tests, הקוד מ-LOINC (zip שהמשתמש מוריד
-  ידנית אחרי רישום, ל-`.cache/medicine/loinc/`), והחיבור ביניהם מ-MedlinePlus Connect — ולכן הוא נחשב זהות
-  מאומתת. הקישור `diagnoses` מחבר בדיקה למחלה. **טווחי ערכים תקינים לא נאספים** (של המעבדה, משתנים לפי גיל
-  ומין) והדף אומר להשוות לתשובת המעבדה.
-  **דף הערך מקופל:** כל סעיף (סקירה, תסמינים, טיפול, הקישורים, התכשירים בישראל, הציטוטים, המקורות) הוא
-  `Collapsible` עם `titleAs={headingLevel}`; רק הסקירה (ובתרופה "למה משמשת") פתוחה. התקציר לא מוצג כשיש סעיפים
-  (הוא המשפטים הראשונים של הסקירה); הסטטוס וההערה על מקור העברית יושבים ב"מקורות" בתחתית, לא מעל הטקסט; הייחוס
-  לוויקיפדיה/NHS נשאר גלוי (דרישת רישיון). כותרת הדף היא השם בעברית ולידו באנגלית ותו לא — הסרגל העליון מהדהד
-  את הטקסט של ה-h1 ("מחלהאסתמה" נולד מ-`sr-only` בתוכו).
-  **המאגר בתיק:** "תרופות", "מחלות כרוניות" ו"אבחנה מערבית" נשארים טקסט חופשי; `<MedicineMentions text>` מתחת לשדה
-  מציג צ'יפים לערכים שזוהו בו (`findMedicineMentions`, server action, חצי שנייה אחרי ההקלדה). ההתאמה ב-
-  `packages/domain/src/medicine-mentions.ts` (טהור, נבדק): מילים שלמות בלבד, עברית עם תחילית `[בלהומשכ]{1,2}`, לטינית עם
-  ריבוי, מינימום 3 אותיות בעברית ו-4 בלטינית — רק מחלות ותרופות, לא תסמינים ("כאב" בכל תיק). אינדקס השמות
-  (`features/medicine/name-index.ts`) נקרא בדפים של אלף (תקרת PostgREST) ונשמר בזיכרון השרת לשעה — הוא של הקורפוס,
-  לא של מטופל; הטקסט של המטופל נבדק בזיכרון ולא נרשם בשום מקום.
-  **תמונות:** `scripts/medicine/images.mjs` מביא מקומונס את התמונה ש-P18 מצביע עליה (CC0/BY/BY-SA בלבד; "אדם"
-  בתיאור או בקטגוריה נפסל אוטומטית), `image-sheets.mjs` מייצר גיליונות לבדיקה בעין, והפסולים נרשמים
-  ב-`medicine-image-rejects.json` לפי כותרת. **כל תמונה נבדקת בעין לפני commit** — הסינון האוטומטי החמיץ פרצוף
-  של חולה, ילד עם פורפורה, חתול בהרדמה ופוסטר. `build.mjs` מכניס את `medicine-images.json` ל-`image`;
-  הקרדיט תמיד מוצג (`MedicinePicture`) וגם ב-`/reference/medicine/credits`.
-  **פסק דין של אדם (migration 44):** `verified` ו-`flagged` נכתבים רק ב-`med_set_status(id, verdict, note)` — אדמין
-  פלטפורמה בלבד, `'clear'` מחזיר לפסק של המקורות — עם `reviewed_at/by/by_name` ו-`review_note` על השורה, ושניהם
-  שורדים ייבוא. הכפתורים ב-`MedicineReviewBox` בדף הערך (מוצג רק ל-`scope.context.isPlatformAdmin`); ערך מסומן
-  "לתיקון" מציג את ההערה ב-`Alert` בראש הדף; הכרטיס ב-`/platform` (`platform-card.tsx`) מציג `med_stats()` ואת
-  הרשימה לתיקון
-- **הספרייה המקצועית (RAG, migration 45):** `library_sources`/`library_chunks` (pgvector, Voyage `voyage-3-large`
-  1024) משותפות בלי `clinic_id` כמו `med_entries`: חברים קוראים, הטעינה רק ב-`scripts/library/ingest.mjs` כאדמין
-  פלטפורמה (חשבון שירות של גוגל שמשותף עם תיקייה אחת; המפתח מחוץ לריפו). המענה ב-`/api/library/ask` (route
-  handler, `maxDuration = 60`, same-origin) ולא server action, כי ה-JSON הוא החוזה: שדה `disclaimer`
-  (`LIBRARY_DISCLAIMER_HE`) **בכל תשובה, בכל סטטוס**. הסדר קדוש: מכסה → `findPii` (ת"ז עם ספרת ביקורת, טלפון,
-  אימייל, כרטיס — נדחה לפני כל ספק) → שליפה (וקטור + טקסט, RRF, סף דמיון) → מודל רק אם יש ראיות → `checkGrounding`
-  (כל `[n]` נשלף, יש ציטוט, כל מספר בקטעים **או בכותרת/עמוד של הקטע**) → קריאה שנייה ששופטת **משפטים** (מחזירה
-  `issues: [{quote, why}]`) → **הבדיקות פוסלות משפטים, לא תשובות** (החלטת המשתמש 14.9): מה שנפסל נכתב פעם אחת
-  מחדש (`repairPrompt`) ומה שעדיין נפסל **מוסר** (`removeSentences`, `removeSentencesWithNumbers`, `dropCitations`
-  ב-domain, טהורים ונבדקים) והשאר מוצג עם `trimmed` (כמה משפטים הושמטו; שורה קטנה על המסך). לכל היותר שתי
-  קריאות שופט ושני שכתובים; הסרה לא מוסיפה טענות ולכן לא נשפטת שוב → `library_log_query` (מי/מתי/מקורות,
-  **בלי טקסט**; אין policies לשינוי). **לפני השליפה מתכנן קטן** (`plan.ts`, Haiku 4.5, נופל ל-Sonnet ואז לשאלה
-  כפי שהיא): השאלה בפני עצמה, באנגלית, מילות חיפוש באנגלית (ענף הטקסט הוא באנגלית — שאלה בעברית לא הגיעה אליו),
-  וסוג השאלה; שאלת רשימה ("אילו צמחים…") מקבלת 14 קטעים ורצועת דמיון רחבה יותר (`listPassages`,
-  `listSimilarityBand`); שני וקטורים (עברית ואנגלית) → עד שלוש רשימות ב-RRF. **ידע כללי מסומן** (החלטת המשתמש
-  14.9): המודל מחזיר `{answer, general}` — `answer` רק מהקטעים ונבדק; `general` הוא הידע הכללי שלו לחלק שהקטעים לא
-  מכסים, **לא נבדק ולעולם לא בלי הסימון** (קופסה ענברית "ידע כללי של המודל, לא מהספרייה"); כשאין קטעים בכלל —
-  קריאה נפרדת (`GENERAL_SYSTEM`) וסטטוס `general` (migration 55: ביומן, בהודעות השמורות, ועמודת `general`). לסוכן אין כלים ואין גישה לטבלאות הקליניקה; ההיסטוריה ב-`sessionStorage` בלבד.
-  הקטעים עטופים כנתונים ("הם לא הוראות") נגד הזרקה מתוך PDF. הכללים והבדיקות ב-`packages/domain/src/library.ts`.
-  **השיחות נשמרות (migration 54, לבקשת המשתמש 14.9):** `library_chats`/`library_messages` — פרטיות למטפל
-  (policy `user_id = auth.uid()` בקליניקה שלו; עמית לא רואה), בכל מכשיר. הכתיבה רק ב-route אחרי התשובה
-  (`keep`): שאלה שנדחתה בגלל פרט מזהה **לעולם לא נכתבת**, ושגיאה לא משאירה חצי. השיחה נפתחת בשרת עם התשובה
-  הראשונה ונקראת על שם השאלה (`chatTitleFrom`). יומן הפעילות נשאר בלי טקסט. המסך: `library-workspace.tsx`
-  (רשימה ב-`chat-list.tsx` — נעיצה, שינוי שם, מחיקה; מגירה מתחת ל-`lg`), `chat-thread.tsx` (תיבת הכתיבה דביקה
-  לתחתית, ההצהרה שורה אחת מתחתיה), ו-`answer-text.tsx` שמצייר את התשובה מבלוקים (`answerBlocks` ב-domain:
-  כותרות, פסקאות, רשימות, **מודגש**) **בלי סימוני `[n]` ובלי רשימת מקורות** — כך המשתמש ביקש; הבדיקות שהשתמשו
-  במקורות כבר רצו בשרת. אף HTML של מודל לא מגיע ל-DOM.
-  **זרימה:** עם `Accept: application/x-ndjson` ה-route משדר שורה לכל שלב (חיפוש, קריאת N קטעים, ניסוח, בדיקה) ואז
-  `done` עם אותה תשובה בדיוק (`features/library/ndjson.ts` קורא אותה בדפדפן); **הטקסט לעולם לא נשלח לפני הבדיקות**,
-  והכתיבה "תוך כדי" שרואים היא חשיפה הדרגתית בדפדפן של תשובה שכבר אושרה (`RevealedText`, מכבד reduced-motion,
-  הטקסט המלא ב-sr-only מהפריים הראשון).
-  **מה נקרא:** PDF (pdfjs), docx (mammoth), doc (word-extractor, ונופל ל-**Word עצמו** דרך PowerShell/COM
-  ב-`lib/word.mjs` כשהוא נכשל — רוב ה-.doc העבריים מפילים אותו; `Documents.Open` עם ארגומנט אחד בלבד, PowerShell
-  לא מעביר את הבוליאנים), rtf (`rtfToText` ב-`lib/extract.mjs`, cp1255 ו-\\u עם דילוג על ה-fallback), pptx/xlsx/epub
-  (jszip), txt/md, וקובצי גוגל (Docs/Slides/Sheets מיוצאים). **סריקה ותמונה = Google Cloud Vision** (`lib/vision.mjs`,
-  `files:annotate` בחלקים של 5 עמודים דרך `lib/pdf.mjs`, מספרי עמודים אמיתיים, `languageHints: he,en`) באותו חשבון
-  שירות (scope `cloud-vision`); כשה-API כבוי או בלי חיוב, הטעינה אומרת זאת פעם אחת, סופרת ורושמת ב-`needs-ocr.json`
-  וממשיכה. **OCR של Drive לא אפשרי**: לחשבון שירות אין מכסת אחסון, גם בתיקייה משותפת כ-Editor (הקובץ בבעלות היוצר).
-  הטקסט שחולץ נשמר ב-`.cache/library/text/<sha256>.json` (`EXTRACT_VERSION`), כך ש-OCR רץ פעם אחת. `ingest.mjs
-  --only=<מילה>` לקובץ אחד. **עותקים:** אותו קובץ בכמה תיקיות (אותו checksum של Drive; מסמך גוגל לפי hash של
-  הייצוא) נטען פעם אחת תחת הנתיב הראשון, והעותקים האחרים נשארים בחוץ או מוסרים אם ריצה קודמת טענה אותם — חצי
-  מהספרייה הראשונה הייתה עותקים (94 מקורות, 46,786 קטעים), וכל עותק תפס מקום ברשימת שמונת הקטעים. בשליפה
-  `distinctByContent` (domain) מקפל קטעים זהים לפני החיתוך לשמונה, כי גם מהדורות עם checksum שונה חוזרות על
-  אותו טקסט. **הקריאה למודל בלי `temperature`** — דגמי Claude 5 דוחים את הפרמטר (400 "deprecated for this
-  model"), וכל שאלה חזרה כ-`error` עד שהוסר.
-  **האינדקס (migration 48):** HNSW על `embedding::halfvec(1024)` (חצי דיוק — הגרף של 86 אלף וקטורים במלוא הדיוק
-  לא נכנס לזיכרון של המכונה הקטנה, ובנייה מקבילית נופלת על "could not resize shared memory segment"), נבנה עם
-  `max_parallel_maintenance_workers = 0`; `library_search` משווה באותו ביטוי כדי שהאינדקס ישמש. **החיפוש רץ כבעל
-  הטבלאות (`security definer`, migration 53) ובודק חברות בעצמו** — תחת RLS אינדקס משרת רק תנאי שהאופרטור שלו
-  `leakproof`, ו-`@@` של חיפוש הטקסט אינו כזה: כחבר קליניקה ענף הטקסט סרק את כל הטבלה (8 שניות, timeout) בעוד
-  שאותה שאילתה כבעלים לקחה אלפית שנייה. ה-policies על הטבלאות נשארות לקריאה ישירה, עטופות
-  `(select current_clinic_id())` כדי שישולמו פעם אחת לשאילתה ולא לכל שורה (migrations 50–51; ספירה של 80 אלף
-  שורות עשתה 80 אלף בדיקות חברות). `tenant_isolation.sql` מריץ את החיפוש כחבר (מוצא), כמטופל בפורטל (כלום)
-  וכאנונימי (insufficient_privilege). טעינה גדולה =
-  `supabase/maintenance/library-index-off.sql` לפני, `library-index-on.sql` + `library-vacuum.sql` אחרי; בלי
-  אינדקס, חיפוש על ספרייה גדולה חורג מ-8 השניות של PostgREST. `upload.mjs` שולח 20 פסקאות לקריאה ומקטין לחצי
-  כשהמסד לא עומד בזמן.
-  **ריענון אתרים (migration 47):** `supabase/functions/refresh-library` רץ בתזמון עם ה-service role וקורא שוב דפי
-  אתר שעבר עליהם שבוע — בקשה מותנית (`etag`/`last_modified` על השורה), hash של הטקסט, וכתיבה מחדש רק כשהשתנה;
-  דפים חדשים הם עדיין של `crawl.mjs`. הלוגיקה ב-`_shared/library/refresh.ts` (נבדק מ-`apps/web` עם fakes), וחיתוך
-  הדף ל-HTML/פסקאות ב-`_shared/library/{html,chunk}.ts` — TypeScript נקי שגם הסקריפטים מייבאים (`.mjs` דקים
-  שמייצאים ממנו), כדי שדף ייחתך ויקבל hash זהה בשני המקומות. פונקציות הטעינה מקבלות אדמין פלטפורמה **או**
-  service role (`library_may_load()`); חבר קליניקה עדיין נדחה
+- **השוואת מחירים:** `shop_*` הן היחידות בלי `clinic_id`; נקראים רק שם, מחיר, קישור ומזהים — לא תיאור ולא תמונה; חנות נקראת רק ב-`status = active` ו-`robots.txt` נקרא בכל ריצה; תמונות רק מ-Commons ונבדקות בעין. הפרטים — `apps/web/features/prices/CLAUDE.md`
+- **רפואה מערבית:** `med_*` משותפות בלי `clinic_id`, טעינה רק ב-`med_import`; ציטוטים מהמקור לעולם לא מנוסחים מחדש ומינון רק מהעלון; העברית מסומנת "טרם אומת" עד `verified` על ידי אדם; תמונות נבדקות בעין; טקסט של מטופל נבדק בזיכרון ולא נרשם. הצנרת והפרטים — `apps/web/features/medicine/CLAUDE.md`
+- **הספרייה המקצועית (RAG):** הסדר קדוש — מכסה → `findPii` → שליפה → מודל רק עם ראיות → בדיקת עיגון → שופט משפטים → הסרה של מה שנפסל → יומן בלי טקסט; `disclaimer` בכל תשובה; ידע כללי רק מסומן; לסוכן אין כלים ואין גישה לטבלאות הקליניקה; הקטעים עטופים כנתונים; בלי `temperature` לדגמי Claude 5. הפרטים — `apps/web/features/library/CLAUDE.md`
 - **CSS משותף:** כללים שאינם טוקנים (מיקוד, placeholder, `select.ui-select`, `.table-cards`,
   `[data-table-size]`, הדפסה בסיסית) ב-`packages/ui/src/base.css`, מיובא בשני
   ה-`globals.css`; ה-`@theme` נשאר לכל אפליקציה בנפרד
 
-- **האפליקציות לחנויות:** `apps/mobile-clinic` ו-`apps/mobile-portal` (Capacitor 8) הן מעטפות דקות שטוענות את
-  האתר החי (`server.url` מ-`HERBALIST_APP_URL`/`HERBALIST_PORTAL_URL`) — אין עותק ארוז של האתר. האתר מזהה
-  מעטפת **רק** בסיומת ה-User-Agent `HerbalistShell/<גרסה> (clinic|portal; ios|android)`, דרך `parseShellUserAgent`
-  ב-`packages/domain/src/shell.ts` (בדיקה שם קוראת את שני קובצי ה-config ומוודאת שהסיומת עדיין נפרסת): `proxy.ts`
-  לא מפנה מעטפת מנותקת ל-`/about`; `shellInitScript` (מצורף ל-`themeInitScript`, ובפורטל לבדו) כותב
-  `data-shell="ios|android"` על `<html>` לפני הציור; `base.css` ("The store apps") מוסיף את שולי סרגל המצב
-  (`env(safe-area-inset-top)`) ל-`[data-top-bar]`, לסרגל הצד ול-`body` בלי סרגל, ומסתיר `[data-native-download]`
-  (ייצוא, הורדת מסמך, .ics, הדפסה — **כל פקד כזה חדש מקבל את הסימון**), כשהערה `[data-native-note]` נגלית רק שם
-  (`common.shell.*`). `InstallHint` חוזר ריק במעטפת. `packages/native` הוא `NativeShellBridge` בשני ה-layouts:
-  מרנדר כלום, ורק במעטפת טוען דינמית את `bridge.ts` (סרגל מצב לפי `data-theme`, כפתור החזרה באנדרואיד —
-  סוגר דיאלוג/חלונית פתוחים ב-Escape לפני `history.back` — `appUrlOpen`, הסתרת ה-splash). `pnpm smoke -- --shell`
-  פותח ארבעה מסכים עם ה-UA של המעטפת ובודק את כל זה. אייקונים ומסכי פתיחה: `node scripts/render-mobile-assets.mjs`
-  ואז `pnpm --filter @clinic/mobile-<app> assets` (מ-`app/icon.svg`; לא לגעת ב-`res/mipmap-*` וב-`Assets.xcassets`
-  ביד). הבנייה וההעלאה ב-`.github/workflows/mobile-android.yml` ו-`mobile-ios.yml` (ידני או תג `mobile-v*`; iOS
-  דרך `scripts/fastlane/Fastfile` על runner של מק — אין מק אצל המשתמש). שמות ה-secrets, הצעדים בחנויות והמגבלות
-  (14 יום בדיקה סגורה בגוגל, 4.2 של אפל) ב-`MOBILE.md`, שהוא המדריך למשתמש. גרסה בחנות = `version` ב-`package.json`
-  של המעטפת; `versionCode`/build number = מספר ההרצה. ה-Firebase files וה-keystores לעולם לא ב-git
-
-- **מחיקת חשבון (migration 40):** `request_account_deletion(p_reason)` היא הדרך היחידה. מטופל בפורטל: משתמש ה-auth נמחק,
-  השורה ב-`patient_portal_access` משוחררת ונסגרת, התיק הרפואי נשאר אצל הקליניקה. איש צוות: **tombstone** — sessions,
-  identities, גורם האימות, האימייל והסיסמה נמחקים והחברות נמחקת, אבל שורת ה-`profiles` נשארת עם שם, תואר ומספר רישיון,
-  כי `practitioner_id … on delete restrict` ורשומה רפואית חייבת לומר מי טיפל (טלפון ותמונה נמחקים). בעלים יחיד עם
-  מטופלים → `needs_review` (`clinic_has_records`); עם צוות אחר ובלי בעלים נוסף → `clinic_needs_owner`; קליניקה ריקה →
-  נמחקת (הטריגר `memberships_keep_owner` מכבד את `herbalist.deleting_account` שהפונקציה מציבה). הבקשות ב-
-  `account_deletion_requests` (בלי FK ל-auth — השורה שורדת את המשתמש; אימייל נשמר רק לבקשה שממתינה), נקראות ונסגרות
-  ב-`/platform` (`platform_deletion_requests`, `platform_resolve_deletion_request`). UI: `features/settings/delete-account.tsx`
-  (איזור אישי, הכרטיס האחרון, אישור בהקלדת שם הקליניקה), בפורטל `/account` מהפוטר; הדף הציבורי `/delete-account`.
-  בדיקה: `supabase/tests/account_deletion.sql` — להריץ אחרי כל שינוי במחיקה או ב-FK ל-`profiles`
-- **דפים משפטיים:** `(site)/privacy`, `terms`, `delete-account` (ובפורטל `privacy`/`terms`, noindex, מקושרים מדף הכניסה
-  ומהפוטר). הטקסט כולו ב-`legal.*` במסרים: `sections.<id>.{title, body[]}`, ופסקה היא מחרוזת או `{items: []}` — מצויר
-  ב-`LegalArticle` מ-`@clinic/ui` דרך `legal-page.tsx` של כל אפליקציה. פרטי המפעיל בסוגריים מרובעים = placeholder
-  באמבר עם אזהרה, עד שהעו"ד מאשר (GO-LIVE.md §2) ומוחקים את הסוגריים. דף ציבורי חדש = `robots.ts` + `sitemap.ts` +
-  הפוטר ב-`site-frame.tsx` + `PUBLIC_ROUTES` ב-smoke + `ROUTES` ב-`check-a11y.mjs`. בדיקות המסרים מקבלות רשימות
-  (`Array<string | Messages>`) בגלל הפסקאות האלה
-- **דלת לבודקי החנויות בפורטל:** דף הכניסה מקבל גם את **הקוד** מאותו מייל (`signInWithCode` → `verifyOtp` type email;
-  תבנית ה-Magic Link ב-Supabase חייבת להכיל `{{ .Token }}`), ובתחתית `<details>` "כניסה עם סיסמה": `signInWithPassword`
-  ואז `portal_password_login_allowed()` — אמת רק כשהקליניקה `is_synthetic`, אחרת signOut והודעה. שני המסלולים מוגבלים
-  בקצב דרך `@clinic/db/rate-limit` (הועבר מ-`apps/web/lib/rate-limit.ts`, שנשאר re-export)
-
-- **התראות בטלפון (migration 41):** `device_push_tokens` (טלפון = שורה של הבעלים; נכתבת רק ב-`register_push_device`,
-  שקושר את השורה למי שקרא ולקליניקה שלו; `unregister_push_device` ביציאה). `message_log.channel` קיבל `'push'` —
-  ה-`recipient` הוא user id (לא מספר) ו-`link_url` הוא היעד של הלחיצה; `clinic_tasks.remind_via` קיבל `'push'`;
-  `clinics.reminder_push_enabled`. **ההחלטה ב-SQL:** `enqueue_due_reminders` שולח push כשלמטופל יש טלפון רשום
-  (`patient_portal_access.user_id` → `device_push_tokens` עם `app = 'portal'`) והקליניקה מסכימה, אחרת בערוץ
-  הקליניקה; הגוף הוא `render_push_reminder` — **בלי שם המטופל** (עובר דרך Google/Apple). `enqueue_due_task_alerts`
-  שולח push לטלפון של יוצר המשימה (`app = 'clinic'`), ובלי טלפון — `skipped` עם `no_device`. השולח
-  (`supabase/functions/dispatch-messages`, adapter `fcm`: FCM HTTP v1, JWT ב-WebCrypto, ה-secret
-  `FCM_SERVICE_ACCOUNT_JSON`) מוחק טוקן שהשירות לא מכיר, וכך הריצה השעתית הבאה נופלת לערוץ הרגיל בלי מנגנון נוסף.
-  `mark_message_sent` מקבל גם את ה-service role — בלי זה כל שליחה אוטומטית הייתה נשארת `queued` ויוצאת שוב.
-  במסך ההודעות שורת push מוצגת עם פעמון ובלי נמען; בדיאלוג המשימה "התראה בטלפון" זמינה רק כשיש טלפון רשום
-  (שאילתה מהדפדפן, RLS של הבעלים). `tenant_isolation.sql` בודק שטלפון של קליניקה אחרת לא נראה
-
-- **התראות בטלפון — צד האפליקציה:** `packages/native/src/push.ts` עוטף את `@capacitor-firebase/messaging` (נטען דינמית,
-  רק במעטפת). `PushRegistration` יושב בשני ה-frames המחוברים (`(app)/layout.tsx`, `portal-shell.tsx`) עם ה-server
-  action של האפליקציה (`registerPushDevice` / `registerPortalPushDevice` → `register_push_device`): רושם את הטוקן
-  כשההרשאה כבר ניתנה, מאזין לרוטציה של טוקן, ועוקב אחרי לחיצה על התראה רק לכתובת באותו origin. ההרשאה נשאלת
-  **רק** מהכרטיס "התראות בטלפון" (`PushSettings`, ב-`/account` של שתי האפליקציות) — לא בהפעלה. הטוקן נשמר גם
-  בעוגייה `herbalist-push-token`, וה-sign-out (`handleSignOut`, `portalSignOut`) קורא ממנה ומבטל את הרישום לפני
-  היציאה. במעטפות: `App.entitlements` (`aps-environment`), `UIBackgroundModes`, שלושת ה-hooks ב-`AppDelegate`,
-  `GoogleService-Info.plist` / `google-services.json` **לא ב-git** — ה-workflows כותבים אותם מ-secrets ונכשלים
-  בלעדיהם; `experimental.ios.spm.packageOptions` ב-config בגלל התנגשות זהות ב-SPM; באנדרואיד האייקון הקטן הוא
-  `ic_launcher_foreground` והערוץ `reminders`
+- **האפליקציות לחנויות והתראות בטלפון:** מעטפות דקות סביב האתר החי, מזוהות רק בסיומת ה-User-Agent `HerbalistShell/…`; כל פקד הורדה/הדפסה חדש מקבל `data-native-download`; ההרשאה ל-push נשאלת רק מכרטיס "התראות בטלפון"; קובצי Firebase ו-keystores לעולם לא ב-git. הפרטים — `packages/native/CLAUDE.md`
 
 ## לפני commit
 
