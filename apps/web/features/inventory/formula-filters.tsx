@@ -10,7 +10,14 @@ import {
 
 const PATH = '/reference/formulas';
 
-export async function FormulaFilters({ filters }: { filters: FormulaFilterState }) {
+/** `keep` carries the column sort through every chip — see `HerbFilters`. */
+export async function FormulaFilters({
+  filters,
+  keep = {},
+}: {
+  filters: FormulaFilterState;
+  keep?: Record<string, string>;
+}) {
   const tf = await getTranslations('inventory.formulas.fields');
   const tKind = await getTranslations('inventory.formulas.category');
   const tReview = await getTranslations('inventory.review');
@@ -29,7 +36,7 @@ export async function FormulaFilters({ filters }: { filters: FormulaFilterState 
         value,
         label: tKind(value),
         selected: filters.kind.includes(value),
-        href: { pathname: PATH, query: toggledFormulaQuery(filters, 'kind', value) },
+        href: { pathname: PATH, query: { ...toggledFormulaQuery(filters, 'kind', value), ...keep } },
         className: filters.kind.includes(value)
           ? 'bg-accent text-accent-fg shadow-xs'
           : 'bg-ink-100 text-ink-700 hover:bg-ink-200 hover:text-ink-900',
@@ -43,7 +50,7 @@ export async function FormulaFilters({ filters }: { filters: FormulaFilterState 
         value,
         label: tFormulaTcm(value),
         selected: filters.cat.includes(value),
-        href: { pathname: PATH, query: toggledFormulaQuery(filters, 'cat', value) },
+        href: { pathname: PATH, query: { ...toggledFormulaQuery(filters, 'cat', value), ...keep } },
       })),
     },
     {
@@ -57,7 +64,7 @@ export async function FormulaFilters({ filters }: { filters: FormulaFilterState 
           selected: filters.review,
           href: {
             pathname: PATH,
-            query: formulaFilterQuery({ ...filters, review: !filters.review }),
+            query: { ...formulaFilterQuery({ ...filters, review: !filters.review }), ...keep },
           },
           className: 'bg-amber-100 text-amber-900 ring-1 ring-amber-300',
         },
@@ -71,7 +78,7 @@ export async function FormulaFilters({ filters }: { filters: FormulaFilterState 
       activeCount={activeFormulaFilterCount(filters)}
       clearHref={{
         pathname: PATH,
-        query: formulaFilterQuery({ q: filters.q, cat: [], kind: [], review: false }),
+        query: { ...formulaFilterQuery({ q: filters.q, cat: [], kind: [], review: false }), ...keep },
       }}
     />
   );

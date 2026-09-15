@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useSyncExternalStore } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { useTranslations } from 'next-intl';
 import { SlidersHorizontal } from 'lucide-react';
 import { Button, Dialog, DialogContent, DialogFooter } from '@clinic/ui';
@@ -12,6 +12,15 @@ import { Button, Dialog, DialogContent, DialogFooter } from '@clinic/ui';
  * starts open whenever something is already filtered — an active filter must
  * never be able to hide behind a closed lid, or the reader is left wondering
  * why rows are missing.
+ *
+ * **The lid belongs to the reader, not to the filter count.** It used to be
+ * `open={activeCount > 0}` straight from the props, which meant clearing the
+ * last filter shut the whole panel: you pressed "clear", the chips vanished
+ * along with the clear link itself, and the only evidence anything had
+ * happened was rows appearing below. That reads as a button that does not
+ * work, and it made removing a filter cost a reopen every time. So the count
+ * may *open* the lid — a filter arriving from a link elsewhere must not hide —
+ * and never closes it. Only the summary does that.
  *
  * On a phone the same filters would push the list a screen down, so there
  * the lid is a button that opens them as a drawer, with the count of what is
@@ -49,6 +58,16 @@ export function FilterDisclosure({
   const tc = useTranslations('common');
   const phone = usePhone();
   const [open, setOpen] = useState(false);
+
+  // Same value on the server and on the first client render, so the lid does
+  // not flicker; after that it is this state and the summary that move it.
+  const [expanded, setExpanded] = useState(activeCount > 0);
+  useEffect(() => {
+    // Opens, never closes. Arriving from a chip on a herb's page brings a
+    // filter with it and the panel has to show it; clearing one leaves the
+    // panel exactly where the reader put it.
+    if (activeCount > 0) setExpanded(true);
+  }, [activeCount]);
 
   const badge =
     activeCount > 0 ? (
@@ -88,7 +107,11 @@ export function FilterDisclosure({
 
   return (
     <details
-      open={activeCount > 0}
+      open={expanded}
+      // Without this React and the element disagree the moment the summary is
+      // clicked, and the next render snaps the lid back to where React thinks
+      // it was.
+      onToggle={(event) => setExpanded(event.currentTarget.open)}
       className="rounded-card border border-ink-200 bg-white [&[open]_.facet-chevron]:rotate-180"
     >
       <summary className="flex min-h-10 list-none items-center gap-2 px-3 py-2 text-sm font-medium text-ink-700 transition-colors hover:bg-ink-50">

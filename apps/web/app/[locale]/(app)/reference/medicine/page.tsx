@@ -5,7 +5,6 @@ import { Link } from '@clinic/i18n/navigation';
 import { MED_KINDS, type MedKind } from '@clinic/domain';
 import { PageHeader } from '@/components/app-shell';
 import { CATALOGUE_PAGE, Pagination, pageFrom, pageRange } from '@/components/pagination';
-import { RememberQuery } from '@/components/remember-query';
 import { SegmentedLinks } from '@/components/segmented-links';
 import { getClinicScope } from '@/lib/session';
 import { ReferenceNav } from '@/features/reference/reference-nav';
@@ -90,7 +89,6 @@ export default async function MedicinePage({
       <PageHeader title={t('title')} description={t('count', { count })} />
 
       <div className="mb-4 space-y-3">
-        <RememberQuery id="medicine" keys={['q', 'kind']} />
         <div className="flex flex-wrap items-center justify-between gap-2">
           <ReferenceNav />
           <CatalogueSearch initialQuery={term} placeholder={t('searchPlaceholder')} />

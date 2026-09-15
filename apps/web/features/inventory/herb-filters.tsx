@@ -11,8 +11,21 @@ import {
 
 const PATH = '/reference/herbs';
 
-/** The four materia medica axes a herb is looked up by, plus the review flag. */
-export async function HerbFilters({ filters }: { filters: HerbFilterState }) {
+/**
+ * The four materia medica axes a herb is looked up by, plus the review flag.
+ *
+ * `keep` is whatever else belongs in the URL and is none of this component's
+ * business — the column sort. Every chip rebuilds the query from the filter
+ * state alone, so anything not rebuilt is silently dropped, and picking a
+ * category used to reset a list the reader had just sorted by weight.
+ */
+export async function HerbFilters({
+  filters,
+  keep = {},
+}: {
+  filters: HerbFilterState;
+  keep?: Record<string, string>;
+}) {
   const tf = await getTranslations('inventory.herbs.fields');
   const tReview = await getTranslations('inventory.review');
   const [tTcm, tTemp, tTaste, tChannel] = await Promise.all([
@@ -36,7 +49,7 @@ export async function HerbFilters({ filters }: { filters: HerbFilterState }) {
       value,
       label: label(value),
       selected: filters[facet].includes(value),
-      href: { pathname: PATH, query: toggledQuery(filters, facet, value) },
+      href: { pathname: PATH, query: { ...toggledQuery(filters, facet, value), ...keep } },
     })),
   });
 
@@ -56,7 +69,7 @@ export async function HerbFilters({ filters }: { filters: HerbFilterState }) {
           selected: filters.review,
           href: {
             pathname: PATH,
-            query: herbFilterQuery({ ...filters, review: !filters.review }),
+            query: { ...herbFilterQuery({ ...filters, review: !filters.review }), ...keep },
           },
           className: 'bg-amber-100 text-amber-900 ring-1 ring-amber-300',
         },
@@ -70,14 +83,17 @@ export async function HerbFilters({ filters }: { filters: HerbFilterState }) {
       activeCount={activeFilterCount(filters)}
       clearHref={{
         pathname: PATH,
-        query: herbFilterQuery({
-          q: filters.q,
-          cat: [],
-          temp: [],
-          taste: [],
-          chan: [],
-          review: false,
-        }),
+        query: {
+          ...herbFilterQuery({
+            q: filters.q,
+            cat: [],
+            temp: [],
+            taste: [],
+            chan: [],
+            review: false,
+          }),
+          ...keep,
+        },
       }}
     />
   );

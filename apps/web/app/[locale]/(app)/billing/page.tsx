@@ -17,7 +17,6 @@ import type { Invoice, Patient } from '@clinic/db/types';
 import { INVOICE_STATUS_TONES, statusTone } from '@clinic/domain';
 import { PageHeader } from '@/components/app-shell';
 import { Pagination, pageFrom, pageRange } from '@/components/pagination';
-import { RememberQuery } from '@/components/remember-query';
 import { SegmentedLinks } from '@/components/segmented-links';
 import { getClinicScope } from '@/lib/session';
 import { formatDate } from '@clinic/i18n';
@@ -100,7 +99,6 @@ export default async function BillingPage({
 
       {invoices.length > 0 || status ? (
         <div className="mb-4 space-y-3">
-          <RememberQuery id="billing" keys={['status']} />
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-card border border-ink-200 bg-white px-4 py-2.5 text-sm">
             <span className="text-ink-600">{t('outstanding')}</span>
             <span dir="ltr" className="font-semibold tabular-nums text-ink-900">

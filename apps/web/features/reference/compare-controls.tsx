@@ -60,16 +60,21 @@ export function CompareToggle({
  * scrolls away is a button that is never pressed.
  *
  * Renders nothing when nothing is ticked, so it costs no space until it is
- * doing something.
+ * doing something — and nothing when what is ticked belongs to another
+ * catalogue. The selection survives navigation on purpose (it survives paging
+ * through a long list, which is the whole reason it is in storage at all), but
+ * three ticked herbs following you onto the acupuncture points is a row about
+ * a screen you have left. It is still there when you go back to the herbs.
  */
-export function CompareTray() {
+export function CompareTray({ kind }: { kind: CompareKind }) {
   const t = useTranslations('reference.compare');
   const tc = useTranslations('common');
-  const items = useCompare();
+  const all = useCompare();
+  // Ticking a second kind clears the first, so this is all of it or none of it.
+  const items = all.filter((item) => item.kind === kind);
 
   if (items.length === 0) return null;
 
-  const kind = items[0]!.kind;
   const href = `/reference/compare?kind=${kind}&ids=${items.map((item) => item.id).join(',')}`;
   const enough = items.length >= 2;
 

@@ -30,6 +30,7 @@ import {
   Td,
   Textarea,
   Th,
+  useToast,
 } from '@clinic/ui';
 import {
   DOSE_TIMINGS,
@@ -77,9 +78,11 @@ interface HerbRow {
  * Anything the catalogue has never carried is kept verbatim, because refusing it
  * does not stop it being prescribed, it just moves the record onto paper.
  *
- * The preparation and the total sit above the list rather than beside each line,
- * because they are decided once for the whole prescription. The unit follows
- * from the preparation instead of being a second menu that can disagree with it.
+ * What is being given comes first: the search for a formula, or the list of
+ * herbs. The preparation and the total sit under it rather than beside each
+ * line, because they are decided once for the whole prescription and they are
+ * decided *about* something that has to be chosen first. The unit follows from
+ * the preparation instead of being a second menu that can disagree with it.
  *
  * With a total given, the numbers against each herb are read as *parts* and the
  * actual weights are worked out from them — put 100g against nine herbs marked
@@ -115,6 +118,7 @@ export function DispensePanel({
   const locale = useLocale() as Locale;
   const format = useFormatter();
   const router = useRouter();
+  const { toast } = useToast();
 
   const [mode, setMode] = useState<'formula' | 'herb'>('formula');
   const [formulaChoice, setFormulaChoice] = useState<ComboboxValue | null>(null);
@@ -402,29 +406,53 @@ export function DispensePanel({
       // A prescription naming something off-catalogue cannot be allocated either,
       // whatever the clinic holds.
       const allocatable = tracksInventory && payload.formula_id !== null && !payload.custom_formula;
-      const result = allocatable ? await dispenseHerbs(payload) : await recordPrescription(payload);
 
-      if (!result.ok) {
-        setError(result.error);
-        return;
+      /*
+       * Every way out of here says something.
+       *
+       * It used to say nothing at all on success — the form cleared, the page
+       * refreshed, and whether the prescription had been written was a matter
+       * of scrolling down to the list and counting. And the failures that never
+       * reach `result` — a server action that throws rather than returns — left
+       * the button un-pressing itself and no message anywhere, which reads
+       * exactly like a button that does not work.
+       */
+      try {
+        const result = allocatable ? await dispenseHerbs(payload) : await recordPrescription(payload);
+
+        if (!result.ok) {
+          setError(result.error);
+          toast({ tone: 'danger', title: describeError(result.error) });
+          return;
+        }
+        reset();
+        toast({ tone: 'success', title: tracksInventory ? t('dispensed') : t('prescribed') });
+        router.refresh();
+      } catch {
+        // The action never returned — the connection dropped mid-write, or it
+        // threw. Which of the two it was is not something to put on the screen.
+        setError({ key: 'common.errorGeneric' });
+        toast({ tone: 'danger', title: tc('errorGeneric') });
       }
-      reset();
-      router.refresh();
     });
   }
 
-  function renderError() {
-    if (!error) return null;
-    if (error.key === 'inventory.dispensing.insufficientStock') {
+  /** The same sentence for the inline alert and for the toast. */
+  function describeError(reason: { key: string; values?: Record<string, string | number> }): string {
+    if (reason.key === 'inventory.dispensing.insufficientStock') {
       return t('insufficientStock', {
-        herb: String(error.values?.herb ?? ''),
-        required: String(error.values?.required ?? ''),
-        available: String(error.values?.available ?? ''),
+        herb: String(reason.values?.herb ?? ''),
+        required: String(reason.values?.required ?? ''),
+        available: String(reason.values?.available ?? ''),
       });
     }
-    if (error.key === 'errors.encounterLocked') return tErrors('encounterLocked');
-    if (error.key === 'errors.formulaOrItemsRequired') return tErrors('formulaOrItemsRequired');
+    if (reason.key === 'errors.encounterLocked') return tErrors('encounterLocked');
+    if (reason.key === 'errors.formulaOrItemsRequired') return tErrors('formulaOrItemsRequired');
     return tc('errorGeneric');
+  }
+
+  function renderError() {
+    return error ? describeError(error) : null;
   }
 
   return (
@@ -466,47 +494,6 @@ export function DispensePanel({
                 ]}
               />
               <GranuleCalculator className="ms-auto" />
-            </div>
-
-            {/* Decided once for the whole prescription, so it sits above the list
-                rather than being repeated against every line. */}
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Field label={tPrep('label')} htmlFor="preparation">
-                <Select
-                  id="preparation"
-                  value={preparation}
-                  onChange={(event) => {
-                    const next = event.target.value as HerbPreparation;
-                    setPreparation(next);
-                    // Grams is not an option for capsules. Rather than leave an
-                    // impossible unit selected, the default for the new format
-                    // is taken — the picker beside the amount is one click away
-                    // if it is the wrong one.
-                    setDoseUnit(preparationUnit(next));
-                  }}
-                >
-                  {HERB_PREPARATIONS.map((option) => (
-                    <option key={option} value={option}>
-                      {tPrep(option)}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
-
-              <Field
-                label={`${t('totalQuantity')} · ${tUnit(unit)}`}
-                htmlFor="total_quantity"
-                hint={mode === 'herb' ? t('totalQuantityHint') : undefined}
-              >
-                <LtrInput
-                  id="total_quantity"
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  value={totalQuantity}
-                  onChange={(event) => setTotalQuantity(event.target.value)}
-                />
-              </Field>
             </div>
 
             {mode === 'formula' ? (
@@ -614,6 +601,54 @@ export function DispensePanel({
                 </div>
               </div>
             )}
+
+            {/* Decided once for the whole prescription, so it sits under the list
+                rather than being repeated against every line.
+
+                Under, not over. What is being given is the first decision and
+                the one the whole panel is about, so the search for it is the
+                first field; the form it comes in and the amount are settings
+                on that choice, and a practitioner who opened the panel to look
+                a formula up had to pass two fields they had not thought about
+                yet to reach the box they came for. */}
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label={tPrep('label')} htmlFor="preparation">
+                <Select
+                  id="preparation"
+                  value={preparation}
+                  onChange={(event) => {
+                    const next = event.target.value as HerbPreparation;
+                    setPreparation(next);
+                    // Grams is not an option for capsules. Rather than leave an
+                    // impossible unit selected, the default for the new format
+                    // is taken — the picker beside the amount is one click away
+                    // if it is the wrong one.
+                    setDoseUnit(preparationUnit(next));
+                  }}
+                >
+                  {HERB_PREPARATIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {tPrep(option)}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+
+              <Field
+                label={`${t('totalQuantity')} · ${tUnit(unit)}`}
+                htmlFor="total_quantity"
+                hint={mode === 'herb' ? t('totalQuantityHint') : undefined}
+              >
+                <LtrInput
+                  id="total_quantity"
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={totalQuantity}
+                  onChange={(event) => setTotalQuantity(event.target.value)}
+                />
+              </Field>
+            </div>
 
             {/* How to take it. Under the list on purpose: it is the last thing
                 decided and the first thing the patient reads, and it applies to
@@ -838,25 +873,45 @@ export function DispensePanel({
                         />
                       ) : null}
                       <div className="min-w-0 flex-1">
-                        <button
-                          type="button"
-                          onClick={() => setDetail(record)}
-                          title={t('details')}
-                          dir="auto"
-                          className="max-w-full truncate text-start text-sm font-medium text-jade-800 underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
-                        >
-                          {name}
-                        </button>
-                        {/* How it is taken, in one line and large: the form,
-                            then the day's dose — the two things asked about
-                            on the phone a week later. The date is a line of
-                            its own underneath, and the total sits at the end. */}
-                        <p className="mt-0.5 flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
+                        {/* The name and the amount, together and in the row's
+                            own weight. "Which formula, and how much of it" is
+                            one question asked at a glance, and the two halves
+                            of the answer used to be on different lines in
+                            different sizes — the name in body text and the
+                            total in the small grey at the end of the dosing
+                            line, behind a label. A flex row rather than one
+                            string: the name is often pinyin, and a dash typed
+                            between Latin and Hebrew text lands wherever the
+                            bidi algorithm decides. */}
+                        <div className="flex min-w-0 flex-wrap items-baseline gap-x-2">
+                          <button
+                            type="button"
+                            onClick={() => setDetail(record)}
+                            title={t('details')}
+                            dir="auto"
+                            className="max-w-full truncate text-start text-base font-semibold text-jade-800 underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+                          >
+                            {name}
+                          </button>
+                          <span aria-hidden className="text-ink-400">
+                            —
+                          </span>
                           <span className="text-sm font-semibold text-ink-900">
+                            <span className="tabular-nums">
+                              {format.number(recordTotal(record))}{' '}
+                              {tUnit(record.items[0]?.unit ?? unit)}
+                            </span>
+                          </span>
+                        </div>
+                        {/* How it is taken: the form, then the day's dose — the
+                            other thing asked about on the phone a week later.
+                            The date is a line of its own underneath. */}
+                        <p className="mt-0.5 flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
+                          <span className="text-sm text-ink-700">
                             {record.preparation ? tPrep(record.preparation) : <Dash />}
                           </span>
                           {daily ? (
-                            <span className="text-sm font-semibold text-ink-900">
+                            <span className="text-sm text-ink-700">
                               <span className="tabular-nums">
                                 {format.number(daily.amount)} {tUnit(daily.unit)}
                               </span>{' '}
@@ -865,12 +920,6 @@ export function DispensePanel({
                           ) : (
                             <span className="text-sm text-ink-500">{t('noDosing')}</span>
                           )}
-                          <span className="text-xs text-ink-500">
-                            {t('totalShort')}{' '}
-                            <span className="tabular-nums">
-                              {format.number(recordTotal(record))} {tUnit(record.items[0]?.unit ?? unit)}
-                            </span>
-                          </span>
                         </p>
                         <p className="text-xs text-ink-500" dir="ltr">
                           {formatDateTime(new Date(record.dispensed_at))}

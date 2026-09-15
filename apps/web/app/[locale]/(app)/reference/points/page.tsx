@@ -6,9 +6,8 @@ import type { AcupuncturePoint } from '@clinic/db/types';
 import { POINT_BODY_AREAS, POINT_CATEGORIES, POINT_CHANNELS } from '@clinic/domain';
 import { PageHeader } from '@/components/app-shell';
 import { CATALOGUE_PAGE, Pagination, pageFrom, pageRange } from '@/components/pagination';
-import { RememberQuery } from '@/components/remember-query';
 import { SortLinkTh } from '@/components/sort-link-th';
-import { parseSort, type SortState } from '@/lib/sort-params';
+import { parseSort, sortQuery, type SortState } from '@/lib/sort-params';
 import { getClinicScope } from '@/lib/session';
 import { ReferenceNav } from '@/features/reference/reference-nav';
 import { CompareToggle, CompareTray } from '@/features/reference/compare-controls';
@@ -107,7 +106,6 @@ export default async function PointsPage({
       <PageHeader title={t('title')} description={t('count', { count: count ?? points.length })} />
 
       <div className="mb-4 space-y-3">
-        <RememberQuery id="points" keys={['q', 'channel', 'area', 'category', 'review', 'sort', 'dir']} />
         {/* Three rows of filter chips over an empty catalogue are furniture with
             nothing to filter; they appear with the first point. */}
         <PointSearch
@@ -117,6 +115,7 @@ export default async function PointsPage({
           category={category}
           review={review}
           withFilters={points.length > 0 || Boolean(term || channel || area || category || review)}
+          keep={sortQuery(sort, POINT_DEFAULT_SORT)}
         />
       </div>
 
@@ -215,7 +214,7 @@ export default async function PointsPage({
         </TableWrapper>
       )}
 
-      <CompareTray />
+      <CompareTray kind="point" />
       <Pagination
         page={page}
         size={CATALOGUE_PAGE}

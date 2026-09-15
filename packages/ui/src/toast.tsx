@@ -22,9 +22,17 @@ import { focusRing } from './focus';
  *
  * Accessibility, by the rules rather than by feel: one polite live region that
  * exists from the first render (a region created together with its message is
- * not announced); a `danger` toast never leaves on its own; timers stop while
- * the pointer or focus is on a toast; Escape closes the focused one; and no
- * more than three are shown, the oldest giving way.
+ * not announced); timers stop while the pointer or focus is on a toast; Escape
+ * closes the focused one; and no more than three are shown, the oldest giving
+ * way.
+ *
+ * Every toast leaves by itself, a failure included. A `danger` toast used to
+ * stay until the X was pressed, on the reasoning that bad news should not slip
+ * past — in practice it left a red box parked in the corner of every screen
+ * until someone dismissed it by hand. It gets twice as long instead, which is
+ * time enough to read a sentence and act on it. What must not disappear is not
+ * news about a finished action at all: a validation error or a locked record
+ * stays inline, on the form, where this component never reaches.
  */
 
 export interface ToastOptions {
@@ -33,7 +41,7 @@ export interface ToastOptions {
   tone?: AlertTone;
   title: React.ReactNode;
   description?: React.ReactNode;
-  /** Milliseconds before it goes. Ignored for `danger`, which stays until closed. */
+  /** Milliseconds before it goes. Defaults to longer for `danger`, which is read rather than glanced at. */
   duration?: number;
   action?: { label: string; onClick: () => void };
 }
@@ -56,6 +64,12 @@ export interface ToastApi {
 const ToastContext = React.createContext<ToastApi | null>(null);
 
 const DEFAULT_DURATION_MS = 5000;
+/**
+ * A failure is a sentence to read, not a word to glance at, so it gets twice
+ * as long — and the timer stops the moment the pointer or the keyboard is on
+ * it, so reading it slowly never loses it mid-sentence.
+ */
+const DANGER_DURATION_MS = 10000;
 const MAX_VISIBLE = 3;
 /** If `animationend` never arrives — animations switched off at the OS, a throttled tab — the toast still goes. */
 const EXIT_FALLBACK_MS = 400;
@@ -107,7 +121,10 @@ export function ToastProvider({
 
   const schedule = React.useCallback(
     (item: ToastRecord) => {
-      if (item.tone === 'danger') return;
+      // One already on its way out owns its timer slot: rescheduling here — the
+      // pointer leaving the toast as it fades — would replace the removal with
+      // another countdown.
+      if (item.leaving) return;
       clearTimer(item.id);
       timers.current.set(
         item.id,
@@ -120,12 +137,14 @@ export function ToastProvider({
   const toast = React.useCallback(
     (options: ToastOptions) => {
       counter += 1;
+      const tone = options.tone ?? 'info';
       const record: ToastRecord = {
         id: options.id ?? `toast-${counter}`,
-        tone: options.tone ?? 'info',
+        tone,
         title: options.title,
         description: options.description,
-        duration: options.duration ?? DEFAULT_DURATION_MS,
+        duration:
+          options.duration ?? (tone === 'danger' ? DANGER_DURATION_MS : DEFAULT_DURATION_MS),
         action: options.action,
         leaving: false,
       };

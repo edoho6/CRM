@@ -4,7 +4,6 @@ import { Button, EmptyState } from '@clinic/ui';
 import { Link } from '@clinic/i18n/navigation';
 import { PageHeader } from '@/components/app-shell';
 import { Pagination, pageFrom } from '@/components/pagination';
-import { RememberQuery } from '@/components/remember-query';
 import { parseSort, sortQuery } from '@/lib/sort-params';
 import { getClinicScope } from '@/lib/session';
 import { CatalogueSearch } from '@/features/reference/catalogue-search';
@@ -85,9 +84,8 @@ export default async function PricesPage({
       />
 
       <div className="mb-4 space-y-3">
-        <RememberQuery id="prices" keys={['q', 'cat', 'min', 'sort', 'dir']} />
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <PriceFilters filters={filters} />
+          <PriceFilters filters={filters} keep={sortQuery(sort, PRICE_DEFAULT_SORT)} />
           <CatalogueSearch initialQuery={filters.q} placeholder={t('search')} />
         </div>
       </div>

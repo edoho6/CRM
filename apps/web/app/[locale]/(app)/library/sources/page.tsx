@@ -5,7 +5,6 @@ import { formatDate } from '@clinic/i18n';
 import { PageHeader } from '@/components/app-shell';
 import { ExternalLink } from '@/components/external-link';
 import { Pagination, pageFrom, pageRange } from '@/components/pagination';
-import { RememberQuery } from '@/components/remember-query';
 import { SegmentedLinks } from '@/components/segmented-links';
 import { getClinicScope } from '@/lib/session';
 import { LibraryNav } from '@/features/library/library-nav';
@@ -77,7 +76,6 @@ export default async function LibrarySourcesPage({
     <>
       <PageHeader title={t('title')} description={t('subtitle')} below={<LibraryNav current="sources" />} />
       <PageBody width="wide">
-        <RememberQuery id="library-sources" keys={['kind']} />
         <SegmentedLinks
           label={t('kindHeading')}
           size="sm"

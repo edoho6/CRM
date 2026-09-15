@@ -1,10 +1,10 @@
 'use client';
 
-import { useTransition } from 'react';
 import { useTranslations } from 'next-intl';
+import { X } from 'lucide-react';
 import { POINT_BODY_AREAS, POINT_CATEGORIES, POINT_CHANNELS } from '@clinic/domain';
 import { cn } from '@clinic/ui';
-import { Link, usePathname, useRouter } from '@clinic/i18n/navigation';
+import { Link, usePathname } from '@clinic/i18n/navigation';
 import { CatalogueSearch } from './catalogue-search';
 import { ReferenceNav } from './reference-nav';
 import { FilterDisclosure } from '@/features/inventory/filter-disclosure';
@@ -25,6 +25,7 @@ export function PointSearch({
   category,
   review = false,
   withFilters = true,
+  keep = {},
 }: {
   initialQuery: string;
   channel: string;
@@ -34,6 +35,8 @@ export function PointSearch({
   review?: boolean;
   /** False over an empty catalogue: chips with nothing to filter are furniture. */
   withFilters?: boolean;
+  /** What else belongs in the URL and is not a filter — the column sort. */
+  keep?: Record<string, string>;
 }) {
   const t = useTranslations('reference.points');
   const tFilters = useTranslations('inventory.herbs.filters');
@@ -43,9 +46,17 @@ export function PointSearch({
   const tCategory = useTranslations('reference.pointCategory');
   const tc = useTranslations('common');
   const pathname = usePathname();
-  const router = useRouter();
-  const [, startTransition] = useTransition();
 
+  /*
+   * The URL this chip leads to.
+   *
+   * Every chip rebuilds the whole query, so anything not rebuilt here is
+   * dropped — which is how picking a channel used to throw away a sort the
+   * reader had just chosen. `keep` is what the page hands in for that.
+   *
+   * Passing `''` clears a facet, and `??` is deliberate: an empty string is a
+   * value ("no channel"), only `undefined` means "leave this one alone".
+   */
   const query = (next: { channel?: string; area?: string; category?: string; review?: boolean }) => {
     const params: Record<string, string> = {};
     if (initialQuery) params.q = initialQuery;
@@ -57,7 +68,7 @@ export function PointSearch({
     if (nextArea) params.area = nextArea;
     if (nextCategory) params.category = nextCategory;
     if (nextReview) params.review = '1';
-    return params;
+    return { ...params, ...keep };
   };
 
   const chip = (selected: boolean) =>
@@ -96,7 +107,7 @@ export function PointSearch({
                 key={entry}
                 href={{ pathname, query: query({ channel: channel === entry ? '' : entry }) }}
                 scroll={false}
-                aria-pressed={channel === entry}
+                aria-current={channel === entry ? 'true' : undefined}
                 className={chip(channel === entry)}
               >
                 {tChannel(entry)}
@@ -121,9 +132,8 @@ export function PointSearch({
                 key={entry}
                 href={{ pathname, query: query({ area: area === entry ? '' : entry }) }}
                 scroll={false}
-                aria-pressed={area === entry}
+                aria-current={area === entry ? 'true' : undefined}
                 className={chip(area === entry)}
-                onClick={() => startTransition(() => router.refresh())}
               >
                 {tArea(entry)}
               </Link>
@@ -148,7 +158,7 @@ export function PointSearch({
                 key={entry}
                 href={{ pathname, query: query({ category: category === entry ? '' : entry }) }}
                 scroll={false}
-                aria-pressed={category === entry}
+                aria-current={category === entry ? 'true' : undefined}
                 className={chip(category === entry)}
               >
                 {tCategory(entry)}
@@ -163,7 +173,7 @@ export function PointSearch({
             <Link
               href={{ pathname, query: query({ review: !review }) }}
               scroll={false}
-              aria-pressed={review}
+              aria-current={review ? 'true' : undefined}
               className={cn(
                 'rounded-full px-2.5 py-1 text-xs font-medium whitespace-nowrap transition-all',
                 review
@@ -175,6 +185,25 @@ export function PointSearch({
             </Link>
           </div>
         </fieldset>
+
+        {/* One way out of all of them, in the same place and the same words as
+            the herb and formula catalogues. Without it the only way back to the
+            full list was to find the "all" chip in each row that was set. */}
+        {activeCount > 0 ? (
+          <div className="border-t border-ink-100 pt-3">
+            <Link
+              href={{
+                pathname,
+                query: query({ channel: '', area: '', category: '', review: false }),
+              }}
+              scroll={false}
+              className="inline-flex items-center gap-1 text-xs text-ink-500 underline-offset-2 hover:text-ink-800 hover:underline"
+            >
+              <X className="h-3 w-3" aria-hidden />
+              {tc('clear')}
+            </Link>
+          </div>
+        ) : null}
       </FilterDisclosure>
       ) : null}
     </div>

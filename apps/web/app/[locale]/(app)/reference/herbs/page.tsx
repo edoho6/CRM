@@ -15,9 +15,8 @@ import type { Herb, HerbStockLevel } from '@clinic/db/types';
 import { TEMPERATURES, type Locale } from '@clinic/domain';
 import { PageHeader } from '@/components/app-shell';
 import { CATALOGUE_PAGE, Pagination, pageFrom, pageRange } from '@/components/pagination';
-import { RememberQuery } from '@/components/remember-query';
 import { SortLinkTh } from '@/components/sort-link-th';
-import { compareComputed, parseSort, type SortState } from '@/lib/sort-params';
+import { compareComputed, parseSort, sortQuery, type SortState } from '@/lib/sort-params';
 import { TcmChip, TcmChips } from '@/components/tcm-chip';
 import { pageTitle } from '@/lib/page-title';
 import { doseRangeLabel } from '@/features/inventory/dose-range';
@@ -196,10 +195,6 @@ export default async function HerbsPage({
       />
 
       <div className="mb-4 space-y-3">
-        <RememberQuery
-          id="herbs"
-          keys={['q', 'cat', 'temp', 'taste', 'chan', 'review', 'sort', 'dir']}
-        />
         {/* The catalogue switch and the search share a row: one line of
             furniture over the list instead of three. */}
         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -209,7 +204,7 @@ export default async function HerbsPage({
             <CatalogueSearch initialQuery={filters.q} placeholder={t('searchPlaceholder')} />
           </div>
         </div>
-        <HerbFilters filters={filters} />
+        <HerbFilters filters={filters} keep={sortQuery(sort, HERB_DEFAULT_SORT)} />
       </div>
 
       {herbs.length === 0 ? (
@@ -388,7 +383,7 @@ export default async function HerbsPage({
 
       {/* Fixed to the bottom of the window, so ticking a row far down the
           catalogue still leaves the Compare button in reach. */}
-      <CompareTray />
+      <CompareTray kind="herb" />
       <Pagination
         page={page}
         size={CATALOGUE_PAGE}

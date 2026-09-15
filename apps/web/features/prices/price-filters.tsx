@@ -12,8 +12,18 @@ const PATH = '/prices';
 /** Shop categories have no TCM colour scale; every chip wears the same neutral. */
 const CHIP = 'bg-ink-100 text-ink-900';
 
-/** The categories a clinic buys, and the switch to the products two or more shops carry. */
-export async function PriceFilters({ filters }: { filters: PriceFilterState }) {
+/**
+ * The categories a clinic buys, and the switch to the products two or more
+ * shops carry. `keep` carries the column sort through every chip — see
+ * `HerbFilters`.
+ */
+export async function PriceFilters({
+  filters,
+  keep = {},
+}: {
+  filters: PriceFilterState;
+  keep?: Record<string, string>;
+}) {
   const t = await getTranslations('prices');
   const facets: Facet[] = [
     {
@@ -24,7 +34,7 @@ export async function PriceFilters({ filters }: { filters: PriceFilterState }) {
         value,
         label: t(`categories.${value}`),
         selected: filters.cat.includes(value),
-        href: { pathname: PATH, query: toggledCategory(filters, value) },
+        href: { pathname: PATH, query: { ...toggledCategory(filters, value), ...keep } },
         className: CHIP,
       })),
     },
@@ -37,7 +47,7 @@ export async function PriceFilters({ filters }: { filters: PriceFilterState }) {
           value: 'compared',
           label: t('filters.comparedOnly'),
           selected: filters.compared,
-          href: { pathname: PATH, query: priceFilterQuery({ ...filters, compared: !filters.compared }) },
+          href: { pathname: PATH, query: { ...priceFilterQuery({ ...filters, compared: !filters.compared }), ...keep } },
           className: CHIP,
         },
       ],
@@ -47,7 +57,7 @@ export async function PriceFilters({ filters }: { filters: PriceFilterState }) {
     <FacetFilters
       facets={facets}
       activeCount={activePriceFilterCount(filters)}
-      clearHref={{ pathname: PATH, query: priceFilterQuery({ q: filters.q, cat: [], compared: false }) }}
+      clearHref={{ pathname: PATH, query: { ...priceFilterQuery({ q: filters.q, cat: [], compared: false }), ...keep } }}
     />
   );
 }

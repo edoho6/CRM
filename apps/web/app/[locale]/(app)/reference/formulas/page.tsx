@@ -15,9 +15,8 @@ import type { HerbFormulaWithItems } from '@clinic/db/types';
 import type { Locale } from '@clinic/domain';
 import { PageHeader } from '@/components/app-shell';
 import { CATALOGUE_PAGE, Pagination, pageFrom, pageRange } from '@/components/pagination';
-import { RememberQuery } from '@/components/remember-query';
 import { SortLinkTh } from '@/components/sort-link-th';
-import { compareComputed, parseSort, type SortState } from '@/lib/sort-params';
+import { compareComputed, parseSort, sortQuery, type SortState } from '@/lib/sort-params';
 import { TcmChip } from '@/components/tcm-chip';
 import { getClinicScope } from '@/lib/session';
 import { formulaChineseName, formulaPrimaryName, herbPrimaryName } from '@/lib/display';
@@ -150,12 +149,11 @@ export default async function FormulasPage({
       />
 
       <div className="mb-4 space-y-3">
-        <RememberQuery id="formulas" keys={['q', 'cat', 'kind', 'review', 'sort', 'dir']} />
         <div className="flex flex-wrap items-center justify-between gap-2">
           <ReferenceNav />
           <CatalogueSearch initialQuery={filters.q} placeholder={t('searchPlaceholder')} />
         </div>
-        <FormulaFilters filters={filters} />
+        <FormulaFilters filters={filters} keep={sortQuery(sort, FORMULA_DEFAULT_SORT)} />
       </div>
 
       {formulas.length === 0 ? (
@@ -267,7 +265,7 @@ export default async function FormulasPage({
         </TableWrapper>
       )}
 
-      <CompareTray />
+      <CompareTray kind="formula" />
       <Pagination
         page={page}
         size={CATALOGUE_PAGE}
