@@ -32,9 +32,14 @@ instead.
 | `SMS_019_TOKEN` | …an API token made in the account's settings (shown once)… |
 | `SMS_SENDER` | …and the sender name patients see: up to eleven English letters and digits. All three, or no SMS. |
 
-WhatsApp needs no secret of its own: it goes through `SMS_019_TOKEN`, from
-each clinic's own line (`clinics.whatsapp_number`, entered in Settings →
-Messages). A row whose clinic has no line fails with `no_whatsapp_number`.
+| `MAKE_OUTBOUND_URL` | A Make (or any) webhook: every message of the channels below is posted there as JSON (`_shared/messaging/webhook.ts` documents the body), and a scenario hands it on — to ManyChat, typically. Where set, it takes the channel from 019. |
+| `MAKE_OUTBOUND_SECRET` | Optional; sent as `x-herbalist-secret` so the scenario can refuse strangers. |
+| `MAKE_OUTBOUND_CHANNELS` | Which channels go to the webhook: `whatsapp` (default) or `whatsapp,sms`. |
+
+WhatsApp through 019 needs no secret of its own: it goes through
+`SMS_019_TOKEN`, from each clinic's own line (`clinics.whatsapp_number`,
+entered in Settings → Messages). A row whose clinic has no line fails with
+`no_whatsapp_number`. Through Make, the line is ManyChat's business.
 
 ### Who may wake it
 
@@ -125,6 +130,19 @@ supabase functions deploy whatsapp-inbound --no-verify-jwt
 as the Push URL of the WhatsApp line. The service retries a non-200 answer
 for a while, so the function answers 200 for every well-formed event —
 including ones the database dropped — because a retry would change nothing.
+
+### The plain shape, from a ManyChat flow or a Make scenario
+
+The same address with the clinic's line appended (`&to=972…`) accepts:
+
+```json
+{ "event": "message", "id": "optional", "from": "972501234567", "name": "Dana", "text": "אגיע", "media_url": "optional", "timestamp": "optional" }
+{ "event": "status", "id": "the id the sender posted, or the service's", "status": "sent | delivered | read | failed" }
+```
+
+A message without an id is named by its sender, text and minute, so a retry
+within the minute is one row. `_shared/messaging/inbound.ts` folds the shape
+into 019's before the database sees it.
 
 ## fetch-shop-prices
 

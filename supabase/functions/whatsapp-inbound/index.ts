@@ -13,6 +13,10 @@
 // find the clinic by its line and write under it with no session, which
 // only the service role may do — and the web app, by design, holds none.
 //
+// Two dialects are accepted: 019's push, and the plain shape a practitioner's
+// own ManyChat flow or Make scenario posts (`event: "message"` / `"status"`,
+// see DEPLOY.md), folded into the first by _shared/messaging/inbound.ts.
+//
 // Secrets (Dashboard → Edge Functions → Secrets):
 //   WHATSAPP_INBOUND_SECRET — the address given to the service ends in
 //                             `?key=<this>`; without it, nothing is accepted
@@ -39,7 +43,9 @@ Deno.serve(async (request) => {
   } catch {
     return Response.json({ ok: false, reason: 'not_json' }, { status: 400 });
   }
-  const event = parsePush(raw);
+  // A practitioner's own scenario may not know the clinic's line; the
+  // address can carry it (`&to=972…`) for the messages it forwards.
+  const event = parsePush(raw, { fallbackTo: url.searchParams.get('to') });
   if (event.hook === 'ignored') return Response.json({ ok: false, reason: event.reason });
 
   const supabase = createClient(

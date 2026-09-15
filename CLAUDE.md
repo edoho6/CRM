@@ -250,7 +250,11 @@
   הפתיחה (kind `conversation_opener`). הודעה אוטומטית ב-WhatsApp נכתבת גם לשיחה (`whatsapp_note_outbound`).
   המסך: `features/whatsapp/*` — רשימה + שיחה (מגירה מתחת ל-`lg`), polling כל 10 שניות; `/messages/queue` הוא
   התור הישן; מהתיק — כפתור "WhatsApp" (`?patient=`). קובץ שמטופל שולח נשמר רק כקישור של השירות (שבוע), לא
-  בתיק — שלב הבא
+  בתיק — שלב הבא. **ערוץ Make (המשתמש עובד עם Make + ManyChat, 15.9):** `MAKE_OUTBOUND_URL` מפנה את הערוצים
+  שב-`MAKE_OUTBOUND_CHANNELS` (ברירת מחדל whatsapp) ל-webhook (`_shared/messaging/webhook.ts`, גוף JSON מתועד
+  ב-DEPLOY.md, `provider_message_id` = ה-id שלנו אלא אם התרחיש ענה עם `id`), ו-`whatsapp-inbound` מקבל גם את
+  הצורה הפשוטה `{event: message|status}` (`&to=` בכתובת כשהתרחיש לא יודע את הקו; הודעה בלי id מקבלת שם
+  סינתטי לפי שולח+טקסט+דקה). 019 נשאר החלופה, ול-SMS
 - **זימון אונליין:** `/book/[slug]` קורא וכותב רק דרך `booking_clinic` /
   `booking_slots` / `booking_request` (anon, security definer). השעות הפנויות
   מחושבות **ב-SQL** מאותן טבלאות שהיומן קורא, כדי שהעמוד והיומן לא יחלקו

@@ -90,6 +90,96 @@ select cron.schedule(
 
 ---
 
+## חיבור דרך Make ו-ManyChat — כשה-WhatsApp כבר שם
+
+למי שמספר ה-WhatsApp שלו כבר מחובר ל-ManyChat ומריץ אוטומציות ב-Make: המערכת לא צריכה ספק נוסף.
+היא שולחת כל הודעה ל-webhook של Make (ותרחיש שם מעביר אותה ל-ManyChat), ומקבלת את מה שמטופלים כותבים
+מ-ManyChat או מ-Make בפורמט פשוט. SMS לא עובר בדרך הזו (ל-ManyChat אין SMS בישראל); ל-SMS אפשר בעתיד 019
+(הסעיף הבא), ועד אז "אימות בקוד SMS" בזימון האונליין נשאר כבוי.
+
+### חלק 1 · מהמערכת ל-WhatsApp (תרחיש Make "Herbalist → WhatsApp")
+
+1. ב-Make: **Create a new scenario** ← המודול הראשון **Webhooks ← Custom webhook** ← **Add** ← שם
+   `Herbalist outbound` ← **Save** ← מעתיקים את הכתובת (מתחילה ב-`https://hook.eu`… `.make.com/`).
+2. ב-Supabase ← **Edge Functions ← Secrets**:
+   - `MAKE_OUTBOUND_URL` — הכתובת מצעד 1.
+   - `MAKE_OUTBOUND_SECRET` — רשות: מחרוזת אקראית. המערכת שולחת אותה בכותרת `x-herbalist-secret`, ובתרחיש
+     אפשר לסנן לפיה (Filter) כדי שאף אחד אחר לא יפעיל אותו.
+   - `DISPATCH_SECRET` — אם עדיין אין (מחרוזת אקראית; זהה לזו שב-`cron.schedule` של `dispatch-messages`).
+3. בטרמינל של VS Code:
+
+   ```
+   npx supabase@latest functions deploy dispatch-messages --no-verify-jwt
+   ```
+
+   ולוודא שהתזמון קיים (SQL editor: `select jobname from cron.job;` ← צריך `dispatch-messages`; אם לא, ההוראה
+   ב-`supabase/functions/README.md`).
+4. **ללמד את Make את השדות**: בתרחיש לוחצים על ה-webhook ← **Redetermine data structure**, ובמערכת ←
+   הגדרות ← הודעות ← "הודעת ניסיון" ← WhatsApp ← "שליחת הודעת ניסיון". תוך חמש דקות Make מקבל דוגמה.
+   מה שמגיע, לכל הודעה:
+
+   ```json
+   {
+     "id": "המזהה של ההודעה במערכת",
+     "channel": "whatsapp",
+     "kind": "appointment_reminder",
+     "to": "972501234567",
+     "to_local": "0501234567",
+     "body": "הטקסט המלא של ההודעה",
+     "template_id": null,
+     "params": [],
+     "from": "972500000001"
+   }
+   ```
+
+   `kind` הוא סוג ההודעה: `appointment_reminder`, `treatment_followup`, `birthday`, `inactive_reengage`,
+   `review_request`, `chat` (תשובה מתיבת השיחות), `chat_template` (פתיחת שיחה), `test_message`.
+   `template_id` מלא רק כשההודעה חייבת תבנית מאושרת (מחוץ ל-24 השעות של Meta); אז `params` הם ערכי
+   המשתנים לפי הסדר (הטבלה בסעיף ב של 019 תקפה גם כאן).
+5. אחרי ה-webhook מוסיפים את המודולים של **ManyChat**: לאתר את המנוי לפי `to` (חיפוש לפי מספר טלפון; אם
+   אין — יצירת מנוי WhatsApp עם `to`), ואז שליחת הודעה עם `body`. כשה-`template_id` לא ריק — לשלוח את
+   התבנית/הפלואו ששמו ב-`template_id` במקום `body` (Router עם תנאי "template_id exists"). שמות המודולים
+   ב-Make משתנים מעט בין גרסאות; מה שצריך: "מצא מנוי לפי טלפון", "צור מנוי", "שלח הודעה", "שלח פלואו".
+6. **Run once** לבדיקה, ואז מפעילים את התרחיש (Scheduling: ON, immediately).
+
+**מה בודקים:** הודעת הניסיון מגיעה ל-WhatsApp שלך, ובמערכת ← הודעות ← "תור השליחה" השורה מסומנת
+"נשלח · דרך Make". מעכשיו כל תזכורת והודעה אוטומטית יוצאת כך.
+
+### חלק 2 · מ-WhatsApp למערכת (ManyChat ← המערכת)
+
+1. Secret `WHATSAPP_INBOUND_SECRET` ופריסת `whatsapp-inbound` — כמו בסעיף ג של 019 (צעד 2 שם).
+2. הכתובת שמקבלת, עם המספר שלך בסופה:
+
+   ```
+   https://<מזהה-הפרויקט>.supabase.co/functions/v1/whatsapp-inbound?key=<הסוד>&to=<972501234567>
+   ```
+
+   ואותו מספר גם בהגדרות ← הודעות ← "קו ה-WhatsApp של הקליניקה".
+3. ב-ManyChat ← **Automation** ← הפלואו **Default Reply** (זה שרץ על כל הודעה שאין לה מענה אחר) ← מוסיפים
+   Action **External Request** (זמין ב-Pro): Method `POST`, URL = הכתובת מצעד 2, Headers:
+   `Content-Type: application/json`, Body (Raw JSON):
+
+   ```json
+   {"event":"message","from":"{{whatsapp_phone}}","name":"{{first_name}} {{last_name}}","text":"{{last_input_text}}"}
+   ```
+
+   את השדות בסוגריים בוחרים מרשימת השדות של ManyChat (מספר ה-WhatsApp של המנוי, שם פרטי, שם משפחה, "Last
+   Text Input"); השמות המדויקים שם יכולים להיות שונים מעט. **את אותה פעולה מוסיפים גם לפלואו של "אגיע" /
+   "לא אגיע"** (מילות המפתח של אישור הגעה), כדי שהלחיצה תגיע למערכת ותעדכן את התור. אפשר גם דרך Make:
+   External Request ל-webhook של Make, ומודול **HTTP ← Make a request** ששולח את אותו JSON לכתובת המערכת.
+4. סטטוסים (רשות): אם התרחיש יודע מתי הודעה נמסרה או נקראה, שולחים לאותה כתובת
+   `{"event":"status","id":"<ה-id שהגיע בחלק 1>","status":"delivered"}` (ערכים: `sent`, `delivered`, `read`,
+   `failed`). בלי זה, הודעה שיצאה דרך Make מסומנת "נשלח" (✓ אחד) ונשארת כך.
+
+**מה בודקים:** כותבים "שלום" מטלפון אחר לקו הקליניקה — תוך שניות זה מופיע בהודעות ← שיחות, עם מספר אדום ליד
+"הודעות" בתפריט; עונים מהמערכת, וההודעה מגיעה לטלפון.
+
+**מה שונה מ-019:** הודעה שנתפסה בפלואו אחר של הבוט מגיעה למערכת רק אם הוספת שם את ה-External Request;
+קובץ שמטופל שולח מגיע כהודעה בלי הקובץ, אלא אם הפלואו מעביר גם `media_url`; ודוחות מסירה מגיעים רק אם
+בנית אותם (חלק 2, צעד 4).
+
+---
+
 ## חיבור SMS ו-WhatsApp דרך 019 — כדי שההודעות יצאו לבד
 
 עד שמחברים שירות שליחה, התזכורות מחכות במסך "הודעות" ונשלחות ביד. הספק שנבחר הוא **019**

@@ -206,3 +206,56 @@ describe('what WhatsApp sends us', () => {
     expect(calls).toHaveLength(1);
   });
 });
+
+describe('a practitioner\'s own scenario', () => {
+  it('folds the plain message shape into the service\'s, naming a message that came without an id', async () => {
+    const { parsePush, syntheticId } = await import('@messaging/inbound.ts');
+    const withId = parsePush({ event: 'message', id: 'wamid.1', from: '+972 50-123-4567', name: 'דנה', text: 'אגיע', timestamp: '2026-09-15T10:00:00Z' }, { fallbackTo: '972500000001' });
+    expect(withId).toMatchObject({ hook: 'new', payload: { unique: 'wamid.1', from: '+972 50-123-4567', to: '972500000001', senderName: 'דנה', type: 'text', body: 'אגיע', timestamp: '1789466400' } });
+    const bare = parsePush({ event: 'message', from: '972501234567', text: 'שלום' }, { fallbackTo: '972500000001' });
+    expect(bare.hook).toBe('new');
+    if (bare.hook === 'new') {
+      expect(String(bare.payload.unique)).toMatch(/^gen-[0-9a-f]{8}-[0-9a-f]+$/);
+      expect(bare.payload.to).toBe('972500000001');
+    }
+    const again = parsePush({ event: 'message', from: '972501234567', text: 'שלום' }, { fallbackTo: '972500000001' });
+    expect(again.hook === 'new' && bare.hook === 'new' && again.payload.unique === bare.payload.unique).toBe(true);
+    expect(syntheticId('a', 'b', 120)).toBe(syntheticId('a', 'b', 179));
+    expect(syntheticId('a', 'b', 120)).not.toBe(syntheticId('a', 'b', 180));
+    expect(parsePush({ event: 'message', from: '972501234567', text: 'x' })).toEqual({ hook: 'ignored', reason: 'no_line' });
+    expect(parsePush({ event: 'message', text: 'x', to: '972500000001' })).toEqual({ hook: 'ignored', reason: 'no_sender' });
+    const withMedia = parsePush({ event: 'message', from: '972501234567', to: '972500000001', media_url: 'https://x/y.jpg' });
+    expect(withMedia).toMatchObject({ hook: 'new', payload: { type: 'document', media: 'https://x/y.jpg', body: '' } });
+  });
+
+  it('turns a status word into the service\'s tick, and ignores what it does not know', async () => {
+    const { parsePush } = await import('@messaging/inbound.ts');
+    expect(parsePush({ event: 'status', id: 'm1', status: 'read' })).toEqual({ hook: 'update', payload: { status: 'OK', hook: 'update', unique: 'm1', ack: 3 } });
+    expect(parsePush({ event: 'status', id: 'm1', status: 'Delivered' })).toMatchObject({ hook: 'update', payload: { ack: 2 } });
+    expect(parsePush({ event: 'status', id: 'm1', status: 'failed' })).toMatchObject({ hook: 'update', payload: { ack: 0 } });
+    expect(parsePush({ event: 'status', id: 'm1', status: 'lost' })).toEqual({ hook: 'ignored', reason: 'unknown_hook' });
+    expect(parsePush({ event: 'status', status: 'read' })).toEqual({ hook: 'ignored', reason: 'no_id' });
+    expect(parsePush({ event: 'party' })).toEqual({ hook: 'ignored', reason: 'unknown_hook' });
+  });
+
+  it('posts the documented body to the Make webhook and takes its answer as the name', async () => {
+    const { createWebhookProvider, webhookPayload } = await import('@messaging/webhook.ts');
+    const accepted = fakeFetch(200, 'Accepted' as unknown as object);
+    const provider = createWebhookProvider({ url: 'https://hook.eu2.make.com/abc', secret: 's3', fetch: accepted.fetch });
+    const row = message({ channel: 'whatsapp', template_key: 'chat', recipient: '050-123-4567', whatsappSource: '972500000001', params: ['דנה'] });
+    expect(await provider.send(row)).toEqual({ ok: true, providerId: 'm1' });
+    expect(accepted.calls[0]!.url).toBe('https://hook.eu2.make.com/abc');
+    expect(accepted.calls[0]!.init?.headers).toMatchObject({ 'x-herbalist-secret': 's3' });
+    expect(JSON.parse(String(accepted.calls[0]!.init?.body))).toEqual(webhookPayload(row, '972501234567'));
+    expect(webhookPayload(row, '972501234567')).toEqual({
+      id: 'm1', channel: 'whatsapp', kind: 'chat', to: '972501234567', to_local: '0501234567',
+      body: 'שלום דנה, תזכורת לתור', template_id: null, params: ['דנה'], from: '972500000001',
+    });
+
+    const named = fakeFetch(200, { id: 'wamid.77' });
+    expect(await createWebhookProvider({ url: 'https://hook', fetch: named.fetch }).send(row)).toEqual({ ok: true, providerId: 'wamid.77' });
+    const refused = fakeFetch(410, {});
+    expect(await createWebhookProvider({ url: 'https://hook', fetch: refused.fetch }).send(row)).toEqual({ ok: false, errorCode: 'http_410' });
+    expect(await createWebhookProvider({ url: 'https://hook', fetch: named.fetch }).send(message({ recipient: '+1 212 555 0100' }))).toEqual({ ok: false, errorCode: 'foreign_number' });
+  });
+});

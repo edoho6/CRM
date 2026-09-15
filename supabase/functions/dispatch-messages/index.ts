@@ -47,6 +47,7 @@
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2';
 import { buildTemplateMap, skipReason, templateIdFor } from '../_shared/messaging/policy.ts';
 import { createSms019Provider } from '../_shared/messaging/sms-019.ts';
+import { createWebhookProvider } from '../_shared/messaging/webhook.ts';
 import { createWhatsapp019Provider } from '../_shared/messaging/whatsapp-019.ts';
 import type { Channel, Provider, QueuedMessage, SendResult } from '../_shared/messaging/types.ts';
 
@@ -93,6 +94,27 @@ function whatsappProvider(): Provider | null {
   const token = Deno.env.get('SMS_019_TOKEN');
   if (!token) return null;
   return createWhatsapp019Provider({ token, fetch: (input, init) => fetch(input, init) });
+}
+
+/**
+ * The practitioner's own Make webhook, for the channels it names (WhatsApp
+ * by default): the message is posted there as JSON and a scenario hands it
+ * to ManyChat or whatever they use. Where it is set, it takes the channel;
+ * 019 keeps the rest.
+ */
+function makeProvider(): { provider: Provider; channels: Set<Channel> } | null {
+  const url = Deno.env.get('MAKE_OUTBOUND_URL')?.trim();
+  if (!url) return null;
+  const channels = new Set(
+    (Deno.env.get('MAKE_OUTBOUND_CHANNELS') ?? 'whatsapp')
+      .split(',')
+      .map((value) => value.trim().toLowerCase())
+      .filter((value): value is Channel => value === 'whatsapp' || value === 'sms'),
+  );
+  return {
+    provider: createWebhookProvider({ url, secret: Deno.env.get('MAKE_OUTBOUND_SECRET'), name: 'make', fetch: (input, init) => fetch(input, init) }),
+    channels,
+  };
 }
 
 /* ---------------------------------------------------------------------------
@@ -480,10 +502,11 @@ Deno.serve(async (request) => {
     // An empty body is the schedule's.
   }
 
+  const make = makeProvider();
   const providers: Record<Channel, Provider | null> = {
     email: resendProvider(),
-    sms: smsProvider(),
-    whatsapp: whatsappProvider(),
+    sms: make?.channels.has('sms') ? make.provider : smsProvider(),
+    whatsapp: make?.channels.has('whatsapp') ? make.provider : whatsappProvider(),
     push: pushProvider(supabase),
   };
 
