@@ -60,6 +60,33 @@ declare
   v_count      integer;
 begin
   -- ==========================================================================
+  -- First: is the schema complete?
+  -- ==========================================================================
+  -- Every check below assumes its tables are there. Without that, the first
+  -- missing one aborts two hundred lines in with a bare "relation does not
+  -- exist", which reads as a broken test rather than as a migration nobody
+  -- ran. Name the file to run instead. A check that cannot run must never
+  -- look like a check that passed, so this refuses rather than skips.
+  declare
+    v_missing text := '';
+    v_sep     text := '';
+  begin
+    if to_regclass('public.clinic_automations') is null then
+      v_missing := v_missing || v_sep || '54_messaging_automations_to_run.sql'; v_sep := ', ';
+    end if;
+    if to_regclass('public.whatsapp_conversations') is null then
+      v_missing := v_missing || v_sep || '55_whatsapp_inbox_to_run.sql'; v_sep := ', ';
+    end if;
+    if to_regclass('public.catalogue_herbs') is null then
+      v_missing := v_missing || v_sep || '56_reference_catalogue_to_run.sql'; v_sep := ', ';
+    end if;
+    if v_missing <> '' then
+      raise exception 'This database has not run: %. Run it in the SQL editor, then run this file again.', v_missing;
+    end if;
+  end;
+  raise notice 'ok   every table these checks need is present';
+
+  -- ==========================================================================
   -- Fixtures — created as the session role, which owns the tables and so is
   -- not subject to RLS. That is the point: the setup must be able to write
   -- rows the tests will then try, and fail, to reach.
@@ -640,6 +667,14 @@ begin
   exception
     when insufficient_privilege then null;
   end;
+  -- The facts-based dataset (migration 57) goes in through catalogue_import, platform admin only.
+  begin
+    perform public.catalogue_import('herbs', '[{"pinyin":"Iso Injected Herb"}]'::jsonb);
+    raise exception 'FAIL: a clinic member loaded the catalogue dataset';
+  exception
+    when insufficient_privilege then null;
+    when undefined_function then null; -- before migration 57
+  end;
   begin
     perform public.body_point_set('ISO1', 'bilateral', -0.2, 0.5, 0.1);
     raise exception 'FAIL: a clinic member who is not a platform admin moved a 3D coordinate';
@@ -651,6 +686,13 @@ begin
     raise exception 'FAIL: clinic A loaded the catalogue into clinic B';
   exception
     when insufficient_privilege then null;
+  end;
+  begin
+    perform public.clinic_refresh_catalogue_text(v_clinic_b);
+    raise exception 'FAIL: clinic A refreshed the catalogue text of clinic B';
+  exception
+    when insufficient_privilege then null;
+    when undefined_function then null; -- before migration 57
   end;
   begin
     perform public.med_set_status(v_med, 'flagged', 'a note');
