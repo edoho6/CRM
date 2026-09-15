@@ -113,14 +113,19 @@ begin
   -- 2–4 · Loading: inserts, fills, links, stubs — and keeps corrections
   -- ------------------------------------------------------------------------
   v_result := public.clinic_load_catalogue();
-  if (v_result ->> 'herbs_added')::integer <> 0 then
-    raise exception 'FAIL: % herb(s) added although both already existed', v_result ->> 'herbs_added';
-  end if;
-  if (v_result ->> 'formulas_added')::integer <> 1 then raise exception 'FAIL: formula not added: %', v_result; end if;
-  if (v_result ->> 'items_added')::integer <> 2 then raise exception 'FAIL: % ingredient(s) linked, expected 2', v_result ->> 'items_added'; end if;
-  if (v_result ->> 'points_added')::integer <> 2 then raise exception 'FAIL: % point(s) added, expected 2', v_result ->> 'points_added'; end if;
 
-  select functions, english_name into v_text, v_x from public.herbs where clinic_id = v_clinic and lower(pinyin_name) = 'cat herb two';
+  -- Everything below asks about this test's own rows, never about totals: the
+  -- catalogue is shared, and by the time anyone runs this file again it holds
+  -- the real 376 herbs. A test that counted them would fail for being right.
+  select count(*) into v_count from public.herbs where clinic_id = v_clinic and lower(pinyin_name) = 'cat herb two';
+  if v_count <> 1 then raise exception 'FAIL: the load made % row(s) for a herb the clinic already had', v_count; end if;
+  select count(*) into v_count from public.herbs where clinic_id = v_clinic and lower(pinyin_name) = 'cat herb one';
+  if v_count <> 1 then raise exception 'FAIL: the load made % row(s) for the stub the clinic already had', v_count; end if;
+  select count(*) into v_count from public.herb_formulas where clinic_id = v_clinic and lower(name_pinyin) = 'cat tang';
+  if v_count <> 1 then raise exception 'FAIL: the formula arrived % time(s)', v_count; end if;
+  select count(*) into v_count from public.acupuncture_points where clinic_id = v_clinic and code in ('CT1', 'CT2');
+  if v_count <> 2 then raise exception 'FAIL: % of the 2 points arrived', v_count; end if;
+
   select functions into v_text from public.herbs where clinic_id = v_clinic and lower(pinyin_name) = 'cat herb two';
   if v_text <> 'My own words' then raise exception 'FAIL: the load overwrote a correction (%)', v_text; end if;
   select english_name into v_text from public.herbs where clinic_id = v_clinic and lower(pinyin_name) = 'cat herb two';
@@ -140,7 +145,7 @@ begin
   select category, needs_review into v_text, v_flag from public.herb_formulas where clinic_id = v_clinic and lower(name_pinyin) = 'cat tang';
   if v_text <> 'classical' or not v_flag then raise exception 'FAIL: a loaded formula must be classical and flagged for review'; end if;
 
-  select location, bilateral into v_text, v_flag from public.acupuncture_points where clinic_id = v_clinic and code = 'CT1';
+  select location into v_text from public.acupuncture_points where clinic_id = v_clinic and code = 'CT1';
   if v_text <> 'Located here' then raise exception 'FAIL: the point''s clinical text was not loaded'; end if;
   select bilateral into v_flag from public.acupuncture_points where clinic_id = v_clinic and code = 'CT2';
   if v_flag then raise exception 'FAIL: the midline point was loaded as bilateral'; end if;
@@ -159,14 +164,14 @@ begin
   end if;
   select location into v_text from public.acupuncture_points where clinic_id = v_clinic and code = 'CT1';
   if v_text <> 'Where I say it is' then raise exception 'FAIL: the second load overwrote a corrected point'; end if;
-  if (v_result ->> 'catalogue_herbs')::integer <> 2 then raise exception 'FAIL: the report miscounts the catalogue: %', v_result; end if;
+  if (v_result ->> 'catalogue_herbs')::integer < 2 then raise exception 'FAIL: the report miscounts the catalogue: %', v_result; end if;
   raise notice 'ok   loading twice changes nothing';
 
   -- ------------------------------------------------------------------------
   -- 6 · Who may write what
   -- ------------------------------------------------------------------------
-  select count(*) into v_count from public.catalogue_herbs;
-  if v_count <> 2 then raise exception 'FAIL: a member sees % catalogue herb(s), expected 2', v_count; end if;
+  select count(*) into v_count from public.catalogue_herbs where lower(pinyin) in ('cat herb one', 'cat herb two');
+  if v_count <> 2 then raise exception 'FAIL: a member sees % of the 2 catalogue herbs', v_count; end if;
   begin
     insert into public.catalogue_herbs (pinyin) values ('Injected');
     raise exception 'FAIL: a member wrote the shared catalogue';
@@ -274,12 +279,18 @@ begin
   v_new_clinic := public.create_clinic_for_current_user('Newbie Clinic');
 
   perform set_config('role', 'postgres', true);
-  select count(*) into v_count from public.herbs where clinic_id = v_new_clinic;
-  if v_count < 2 then raise exception 'FAIL: the new clinic has % herb(s)', v_count; end if;
-  select count(*) into v_count from public.acupuncture_points where clinic_id = v_new_clinic;
-  if v_count <> 2 then raise exception 'FAIL: the new clinic has % point(s)', v_count; end if;
-  select count(*) into v_count from public.herb_formulas where clinic_id = v_new_clinic;
-  if v_count <> 1 then raise exception 'FAIL: the new clinic has % formula(s)', v_count; end if;
+  -- Named rows again, not totals: whatever else the catalogue holds by then,
+  -- the clinic made a moment ago must hold this test's two herbs, its formula
+  -- and its two points.
+  select count(*) into v_count from public.herbs
+   where clinic_id = v_new_clinic and lower(pinyin_name) in ('cat herb one', 'cat herb two');
+  if v_count <> 2 then raise exception 'FAIL: the new clinic has % of the 2 herbs', v_count; end if;
+  select count(*) into v_count from public.acupuncture_points
+   where clinic_id = v_new_clinic and code in ('CT1', 'CT2');
+  if v_count <> 2 then raise exception 'FAIL: the new clinic has % of the 2 points', v_count; end if;
+  select count(*) into v_count from public.herb_formulas
+   where clinic_id = v_new_clinic and lower(name_pinyin) = 'cat tang';
+  if v_count <> 1 then raise exception 'FAIL: the new clinic has % copies of the formula', v_count; end if;
   raise notice 'ok   a new clinic starts with the catalogue';
 
   raise notice ' ';
