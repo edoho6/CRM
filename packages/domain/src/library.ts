@@ -88,6 +88,17 @@ export const LIBRARY_LIMITS = {
   minSimilarity: 0.45,
   /** A passage further than this below the best one is left out. */
   similarityBand: 0.15,
+  /** Terms the narrowed word search keeps when the strict one finds nothing. */
+  narrowKeywords: 3,
+  /**
+   * Passages the narrowed word search may add. Three of eight, because the
+   * rows it finds are the weaker evidence and they enter the fold at the top
+   * of their own ranking: asked for six, they took six of the eight slots
+   * with pages that merely mention the formula, while the monograph the
+   * meaning search had found was pushed out. Three keeps the half alive
+   * without letting it decide the answer.
+   */
+  narrowPassages: 3,
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -388,6 +399,29 @@ export function planFallback(question: string): SearchPlan {
 }
 
 /** The planner's JSON, with every field checked and the fallback for whatever is missing. */
+/**
+ * The word search asks for every term at once — one passage holding all of
+ * "Xiao Yao San formula composition ingredients" — and for most questions
+ * there is none, so half the search returns nothing (eight of eleven
+ * measured questions). The relaxation is fewer terms, all of them still
+ * required: the planner writes the distinctive words first, and a passage
+ * holding those three is sound evidence. Joining the terms with OR instead
+ * was tried and withdrawn — it matched a large part of the library and ran
+ * past the database's eight seconds (migrations 58–59).
+ *
+ * Null when there is nothing to narrow: the query already asks for three
+ * terms or fewer, so the retry would only repeat the search that just failed.
+ */
+export function narrowedQuery(keywords: readonly string[]): string | null {
+  // Counted in words, not in the planner's entries: an entry is a short
+  // phrase ("contraindicated pregnancy", "Xiao Yao San"), so keeping three
+  // entries kept six words and asked for all six — the very thing that
+  // found nothing. Measured: three words 0.8s and 20 rows, six words none.
+  const words = keywords.join(' ').split(/\s+/).filter((word) => word.length > 0);
+  if (words.length <= LIBRARY_LIMITS.narrowKeywords) return null;
+  return words.slice(0, LIBRARY_LIMITS.narrowKeywords).join(' ');
+}
+
 export function parsePlan(value: unknown, question: string): SearchPlan {
   const fallback = planFallback(question);
   if (!value || typeof value !== 'object') return fallback;

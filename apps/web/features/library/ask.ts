@@ -12,6 +12,7 @@ import {
   distinctByContent,
   dropCitations,
   findPii,
+  narrowedQuery,
   removeSentences,
   removeSentencesWithNumbers,
   rrfMerge,
@@ -21,7 +22,7 @@ import {
   type LibraryStage,
   type LibraryStatus,
 } from '@clinic/domain';
-import { LIBRARY_MODEL, LibraryUnavailableError, callClaude, parseJsonReply } from './claude';
+import { LIBRARY_EFFORT, LIBRARY_MODEL, LibraryUnavailableError, callClaude, parseJsonReply } from './claude';
 import { planSearch } from './plan';
 import { ANSWER_SYSTEM, GENERAL_SYSTEM, REVIEW_SYSTEM, answerPrompt, generalPrompt, repairPrompt, reviewPrompt, type PromptPassage } from './prompts';
 import { embedQueries } from './voyage';
@@ -112,11 +113,22 @@ interface ModelAnswer {
 
 const MIN_ANSWER_CHARS = 120;
 
+/**
+ * The route is cut off at sixty seconds, and a rewrite is the one step that
+ * can be left out without loosening anything: what the checks named is then
+ * struck instead of written again, which is the stricter outcome, not the
+ * looser one. A measured rewrite of a fourteen-passage answer takes about
+ * forty seconds, so it is only started while most of the minute is left.
+ */
+const ROUTE_BUDGET_MS = 52_000;
+const REWRITE_MS = 25_000;
+
 export async function askLibrary(db: SupabaseClient, input: AskInput, onStage?: StageListener): Promise<AskResult> {
   const started = Date.now();
   const question = input.question.trim();
   const history = input.history.slice(-LIBRARY_LIMITS.historyTurns * 2);
   const usage = { input: 0, output: 0 };
+  const timeForRewrite = () => Date.now() - started + REWRITE_MS < ROUTE_BUDGET_MS;
 
   const log = async (status: LibraryStatus, sources: LogSource[], spent?: boolean) => {
     try {
@@ -182,6 +194,26 @@ export async function askLibrary(db: SupabaseClient, input: AskInput, onStage?: 
     rankings.push(byMeaning);
     if (byWords.length) rankings.push(byWords);
   }
+
+  // The word half found nothing, which is the usual outcome: it asks for
+  // every term in one passage. One more search with the first three terms,
+  // all of them still required (`narrowedQuery` carries the why, and why
+  // not OR). Only its word rows are taken — its vector rows are the ones
+  // already collected, and counting them twice would weight the meaning
+  // ranking twice in the fold below.
+  const narrowed = textHits.size === 0 ? narrowedQuery(plan.keywords) : null;
+  if (narrowed) {
+    const retry = await db.rpc('library_search', { p_embedding: embeddings[0], p_query: narrowed, p_limit: LIBRARY_LIMITS.narrowPassages });
+    const byFewerWords: string[] = [];
+    for (const row of (retry.data ?? []) as SearchRow[]) {
+      if (row.via !== 'text') continue;
+      byId.set(row.chunk_id, byId.get(row.chunk_id) ?? row);
+      byFewerWords.push(row.chunk_id);
+      textHits.add(row.chunk_id);
+    }
+    if (byFewerWords.length) rankings.push(byFewerWords);
+  }
+
   const best = Math.max(0, ...vectorScore.values());
   // A list question ("which herbs…") spreads its items across many sources:
   // it takes more passages and keeps ones further below the best match.
@@ -208,7 +240,7 @@ export async function askLibrary(db: SupabaseClient, input: AskInput, onStage?: 
   /** The model's own knowledge, asked for on its own when the library holds nothing. */
   const generalOnly = async (): Promise<string> => {
     onStage?.('writing');
-    const spoken = await callClaude({ system: GENERAL_SYSTEM, messages: [{ role: 'user', content: generalPrompt(question, history) }], maxTokens: 6000 });
+    const spoken = await callClaude({ system: GENERAL_SYSTEM, messages: [{ role: 'user', content: generalPrompt(question, history) }], maxTokens: 6000, effort: LIBRARY_EFFORT });
     usage.input += spoken.inputTokens;
     usage.output += spoken.outputTokens;
     const parsed = parseJsonReply<{ general?: string }>(spoken.text);
@@ -252,7 +284,7 @@ export async function askLibrary(db: SupabaseClient, input: AskInput, onStage?: 
   // same ceiling: a low one cut an answer mid-JSON and a verdict to nothing.
   const write = async (content: string): Promise<ModelAnswer | null> => {
     onStage?.('writing');
-    const spoken = await callClaude({ system: ANSWER_SYSTEM, messages: [{ role: 'user', content }], maxTokens: 8000 });
+    const spoken = await callClaude({ system: ANSWER_SYSTEM, messages: [{ role: 'user', content }], maxTokens: 8000, effort: LIBRARY_EFFORT });
     usage.input += spoken.inputTokens;
     usage.output += spoken.outputTokens;
     return parseJsonReply<ModelAnswer>(spoken.text);
@@ -267,7 +299,7 @@ export async function askLibrary(db: SupabaseClient, input: AskInput, onStage?: 
   // The second reading: which sentences do the passages not support?
   const judge = async (text: string): Promise<{ faithful: boolean; issues: Issue[] }> => {
     onStage?.('checking');
-    const spoken = await callClaude({ system: REVIEW_SYSTEM, messages: [{ role: 'user', content: reviewPrompt(text, passages) }], maxTokens: 4000 });
+    const spoken = await callClaude({ system: REVIEW_SYSTEM, messages: [{ role: 'user', content: reviewPrompt(text, passages) }], maxTokens: 4000, effort: LIBRARY_EFFORT });
     usage.input += spoken.inputTokens;
     usage.output += spoken.outputTokens;
     const verdict = parseJsonReply<{ faithful?: boolean; issues?: unknown }>(spoken.text);
@@ -299,7 +331,7 @@ export async function askLibrary(db: SupabaseClient, input: AskInput, onStage?: 
   let grounding = checkGrounding(answer, groundingPassages);
   if (!grounding.ok) {
     const objections = grounding.problems.map((p) => (p.kind === 'number_not_in_sources' ? `the number ${p.detail} is not in the cited passages` : p.kind === 'unknown_citation' ? `the marker ${p.detail} names no passage` : p.detail));
-    const again = await write(repairPrompt(question, history, passages, answer, objections));
+    const again = timeForRewrite() ? await write(repairPrompt(question, history, passages, answer, objections)) : null;
     if (usable(again)) answer = again.answer;
     onStage?.('checking');
     grounding = checkGrounding(answer, groundingPassages);
@@ -325,7 +357,7 @@ export async function askLibrary(db: SupabaseClient, input: AskInput, onStage?: 
       answer = struck.text;
       trimmed += struck.removed;
     } else {
-      const again = await write(repairPrompt(question, history, passages, answer, verdict.issues.map((i) => (i.why ? `${i.why}: "${i.quote}"` : i.quote))));
+      const again = timeForRewrite() ? await write(repairPrompt(question, history, passages, answer, verdict.issues.map((i) => (i.why ? `${i.why}: "${i.quote}"` : i.quote)))) : null;
       if (usable(again)) {
         answer = again.answer;
         grounding = checkGrounding(answer, groundingPassages);

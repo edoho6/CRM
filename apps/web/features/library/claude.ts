@@ -20,6 +20,21 @@ export const LIBRARY_MODEL = 'claude-sonnet-5';
 /** The planner's model: it turns a question into searches, a job for a small, fast model. */
 export const LIBRARY_PLAN_MODEL = 'claude-haiku-4-5-20251001';
 
+/**
+ * How deeply the model thinks before it writes. Sonnet 5 thinks adaptively
+ * whether or not it is asked to, and at the default effort ("high") that
+ * thinking is most of the wait: one measured question spent 88 seconds
+ * writing and 38 more being judged — two minutes against a route that is
+ * cut off at sixty seconds, so on a deployment every question failed.
+ * At "low" the same question wrote in 38 seconds and was judged in 2,
+ * with the same passages cited and the grounding checks clean; the work
+ * here is quoting and arranging what the passages say, which is not where
+ * deeper thinking pays. The checks, not the thinking, are what keep the
+ * answer honest. `effort` is rejected by Haiku 4.5, so the planner is
+ * called without it.
+ */
+export const LIBRARY_EFFORT = 'low';
+
 export class LibraryUnavailableError extends Error {
   constructor(message: string) {
     super(message);
@@ -38,12 +53,15 @@ export async function callClaude({
   messages,
   maxTokens,
   model = LIBRARY_MODEL,
+  effort,
   signal,
 }: {
   system: string;
   messages: { role: 'user' | 'assistant'; content: string }[];
   maxTokens: number;
   model?: string;
+  /** Left out for the planner: Haiku 4.5 answers 400 to `output_config`. */
+  effort?: string;
   signal?: AbortSignal;
 }): Promise<ClaudeReply> {
   const key = process.env.ANTHROPIC_API_KEY?.trim();
@@ -64,7 +82,7 @@ export async function callClaude({
     const response = await fetch(ENDPOINT, {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-api-key': key, 'anthropic-version': API_VERSION },
-      body: JSON.stringify({ model, max_tokens: maxTokens, system, messages }),
+      body: JSON.stringify({ model, max_tokens: maxTokens, system, messages, ...(effort ? { output_config: { effort } } : {}) }),
       signal,
     });
     if (!response.ok) throw new LibraryUnavailableError(`http_${response.status}`);

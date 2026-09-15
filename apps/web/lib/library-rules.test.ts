@@ -7,6 +7,7 @@ import {
   dropCitations,
   findPii,
   isIsraeliId,
+  narrowedQuery,
   numbersIn,
   parsePlan,
   planFallback,
@@ -137,6 +138,23 @@ describe('parsePlan', () => {
   });
 });
 
+describe('narrowedQuery', () => {
+  it('keeps the first three terms, and asks for nothing when there is nothing to narrow', () => {
+    // The strict search wants one passage holding every term, and for most
+    // questions there is none; three terms still name the subject.
+    expect(narrowedQuery(['Xiao', 'Yao', 'San', 'formula', 'composition'])).toBe('Xiao Yao San');
+    expect(narrowedQuery([' kidney ', 'yin', '', 'deficiency', 'signs'])).toBe('kidney yin deficiency');
+    // Counted in words, not in the planner's entries: an entry is a short
+    // phrase, and three of those were six words — which is what found
+    // nothing in the first place (measured against the real library).
+    expect(narrowedQuery(['Xiao Yao San', 'composition formula', 'ingredients Chinese medicine'])).toBe('Xiao Yao San');
+    expect(narrowedQuery(['contraindicated pregnancy', 'abortifacient herbs'])).toBe('contraindicated pregnancy abortifacient');
+    // Three words or fewer would only repeat the search that just found nothing.
+    expect(narrowedQuery(['Shang', 'Han', 'Lun'])).toBeNull();
+    expect(narrowedQuery(['Shang Han Lun'])).toBeNull();
+    expect(narrowedQuery([])).toBeNull();
+  });
+});
 describe('rrfMerge', () => {
   it('lifts what both rankings hold, and keeps what only one does', () => {
     const merged = rrfMerge([
