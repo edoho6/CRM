@@ -76,6 +76,7 @@ export default async function HerbsPage({
   const tReview = await getTranslations('inventory.review');
   const tc = await getTranslations('common');
   const tCompare = await getTranslations('reference.compare');
+  const tCatalogue = await getTranslations('settings.catalogue');
   const format = await getFormatter();
 
   const scope = await getClinicScope();
@@ -218,9 +219,16 @@ export default async function HerbsPage({
           description={filters.q ? undefined : t('emptyBody')}
           action={
             filters.q ? undefined : (
-              <Button asChild size="sm">
-                <Link href="/reference/herbs/new">{t('new')}</Link>
-              </Button>
+              <span className="inline-flex flex-wrap justify-center gap-2">
+                {/* An empty catalogue is filled from Settings, where the shared
+                    catalogue is copied into the clinic with one click. */}
+                <Button asChild size="sm">
+                  <Link href="/settings#catalogue">{tCatalogue('load')}</Link>
+                </Button>
+                <Button asChild size="sm" variant="secondary">
+                  <Link href="/reference/herbs/new">{t('new')}</Link>
+                </Button>
+              </span>
             )
           }
         />

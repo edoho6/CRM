@@ -39,6 +39,8 @@ import {
   herbPrimaryName,
 } from '@/lib/display';
 import { ReferenceNav } from '@/features/reference/reference-nav';
+import { ApproveButton } from '@/features/reference/approve-button';
+import { ReviewedLine } from '@/features/reference/reviewed-line';
 import { HerbImageCard } from '@/features/inventory/herb-image-card';
 import { HerbGalleryProvider } from '@/features/inventory/herb-gallery';
 import { loadHerbGalleryEntries } from '@/features/inventory/herb-gallery-entries';
@@ -149,6 +151,11 @@ export default async function HerbDetailPage({
   const batches = tracksInventory ? (batchesResult.data ?? []) : [];
   const movements = tracksInventory ? (movementsResult.data ?? []) : [];
   const uses = (usesResult.data ?? []).filter((use) => use.formula);
+  // A formula adapted for one patient during a treatment is a record of that
+  // treatment, not a place a practitioner looks a herb up in. The classics
+  // and the clinic's own formulas are the table; the adapted ones fold away.
+  const catalogueUses = uses.filter((use) => use.formula!.category !== 'modified');
+  const modifiedUses = uses.filter((use) => use.formula!.category === 'modified');
   const remaining = Number(level?.total_remaining ?? 0);
   const chinese = herbChineseName(herb);
   const botanical = herbBotanicalName(herb);
@@ -205,9 +212,14 @@ export default async function HerbDetailPage({
 
       {herb.needs_review ? (
         <Alert tone="warning" className="mb-4">
-          {tReview('hint')}
+          <span className="flex flex-wrap items-center justify-between gap-2">
+            <span>{tReview('hint')}</span>
+            <ApproveButton kind="herb" id={herb.id} />
+          </span>
         </Alert>
-      ) : null}
+      ) : (
+        <ReviewedLine reviewedAt={herb.reviewed_at} reviewedByName={herb.reviewed_by_name} className="mb-4" />
+      )}
 
       {/* The three things a practitioner reaches for before anything else: how
           much to give, how hot or cold it runs, and which group it belongs to.
@@ -395,7 +407,7 @@ export default async function HerbDetailPage({
             <CardBody className="p-0">
               {uses.length === 0 ? (
                 <p className="px-4 py-6 text-center text-sm text-ink-500">{t('usedInEmpty')}</p>
-              ) : (
+              ) : catalogueUses.length === 0 ? null : (
                 <TableWrapper inset responsive>
                   <SortableTable defaultSortKey="name">
                     <thead>
@@ -406,7 +418,7 @@ export default async function HerbDetailPage({
                       </tr>
                     </thead>
                     <SortBody locale={locale}>
-                      {uses.map((use) => {
+                      {catalogueUses.map((use) => {
                         const formula = use.formula!;
                         const formulaChinese = formulaChineseName(formula);
                         return (
@@ -460,6 +472,32 @@ export default async function HerbDetailPage({
                   </SortableTable>
                 </TableWrapper>
               )}
+              {modifiedUses.length > 0 ? (
+                <details className="border-t border-ink-100 px-4 py-3 text-sm">
+                  <summary className="cursor-pointer text-ink-700 underline-offset-2 hover:underline">
+                    {t('usedInModified', { count: modifiedUses.length })}
+                  </summary>
+                  <p className="mt-1 text-xs text-ink-500">{t('usedInModifiedHint')}</p>
+                  <ul className="mt-2 space-y-1">
+                    {modifiedUses.map((use) => {
+                      const formula = use.formula!;
+                      return (
+                        <li key={formula.id} className="flex flex-wrap items-baseline justify-between gap-x-3">
+                          <Link
+                            href={`/reference/formulas/${formula.id}`}
+                            className="text-jade-800 underline-offset-2 hover:underline"
+                          >
+                            {formulaPrimaryName(formula, locale as Locale)}
+                          </Link>
+                          <span className="text-xs text-ink-600 tabular-nums">
+                            {format.number(Number(use.dosage))} {tUnit(use.unit)}
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </details>
+              ) : null}
             </CardBody>
           </Card>
 

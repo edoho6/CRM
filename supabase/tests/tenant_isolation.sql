@@ -277,6 +277,11 @@ begin
   values ('drug', 'iso-drug', 'Iso drug', 'תרופת בדיקה', 'draft')
   returning id into v_med;
 
+  -- The shared reference catalogue and the 3D body's coordinates (migration
+  -- 56) are shared the same way: members read, nobody signed in writes.
+  insert into public.catalogue_herbs (pinyin, english) values ('Iso Catalogue Herb', 'Isolation herb');
+  insert into public.body_points (code, side_type, x, y, z) values ('ISO1', 'bilateral', -0.1, 0.5, 0.1);
+
   -- The professional library too: one source with one passage, so that the
   -- search itself can be asked, as each identity, whether it answers.
   insert into public.library_sources (kind, locator, title)
@@ -616,6 +621,37 @@ begin
   exception
     when insufficient_privilege then null;
   end;
+  -- The reference catalogue and the 3D coordinates: read, never written.
+  select count(*) into v_count from public.catalogue_herbs where pinyin = 'Iso Catalogue Herb';
+  if v_count <> 1 then raise exception 'FAIL: a clinic member cannot read the shared catalogue'; end if;
+  select count(*) into v_count from public.body_points where code = 'ISO1';
+  if v_count <> 1 then raise exception 'FAIL: a clinic member cannot read the 3D coordinates'; end if;
+  begin
+    insert into public.catalogue_herbs (pinyin) values ('Iso Injected Herb');
+    raise exception 'FAIL: a clinic member wrote the shared catalogue';
+  exception
+    when insufficient_privilege then null;
+  end;
+  update public.catalogue_herbs set english = 'Changed' where pinyin = 'Iso Catalogue Herb';
+  if found then raise exception 'FAIL: a clinic member changed the shared catalogue'; end if;
+  begin
+    perform public.catalogue_upsert_herb('Iso Injected Herb', null, null, null, null, null, null, null, null, null, null, null, null, null);
+    raise exception 'FAIL: a clinic member ran a catalogue seed function';
+  exception
+    when insufficient_privilege then null;
+  end;
+  begin
+    perform public.body_point_set('ISO1', 'bilateral', -0.2, 0.5, 0.1);
+    raise exception 'FAIL: a clinic member who is not a platform admin moved a 3D coordinate';
+  exception
+    when insufficient_privilege then null;
+  end;
+  begin
+    perform public.clinic_load_catalogue(v_clinic_b);
+    raise exception 'FAIL: clinic A loaded the catalogue into clinic B';
+  exception
+    when insufficient_privilege then null;
+  end;
   begin
     perform public.med_set_status(v_med, 'flagged', 'a note');
     raise exception 'FAIL: a clinic member flagged a medicine entry';
@@ -883,6 +919,10 @@ begin
   if v_count <> 0 then raise exception 'FAIL: the portal patient read % shop row(s)', v_count; end if;
   select count(*) into v_count from public.med_entries;
   if v_count <> 0 then raise exception 'FAIL: the portal patient read % medicine entr(ies)', v_count; end if;
+  select count(*) into v_count from public.catalogue_herbs;
+  if v_count <> 0 then raise exception 'FAIL: the portal patient read % catalogue herb(s)', v_count; end if;
+  select count(*) into v_count from public.body_points;
+  if v_count <> 0 then raise exception 'FAIL: the portal patient read % 3D coordinate(s)', v_count; end if;
   -- …and the library search, which runs as the owner, answers a signed-in
   -- account without a clinic with nothing — by text and by vector alike.
   select count(*) into v_count from public.library_search(v_probe_vec, 'zzzisolationword', 5);
@@ -966,6 +1006,16 @@ begin
   if v_count <> 0 then raise exception 'FAIL: anonymous read returned % shop price(s)', v_count; end if;
   select count(*) into v_count from public.med_entries;
   if v_count <> 0 then raise exception 'FAIL: anonymous read returned % medicine entr(ies)', v_count; end if;
+  select count(*) into v_count from public.catalogue_points;
+  if v_count <> 0 then raise exception 'FAIL: anonymous read returned % catalogue point(s)', v_count; end if;
+  select count(*) into v_count from public.body_points;
+  if v_count <> 0 then raise exception 'FAIL: anonymous read returned % 3D coordinate(s)', v_count; end if;
+  begin
+    perform public.clinic_load_catalogue();
+    raise exception 'FAIL: an anonymous caller ran the catalogue load';
+  exception
+    when insufficient_privilege then null;
+  end;
   select count(*) into v_count from public.clinic_invitations;
   if v_count <> 0 then raise exception 'FAIL: anonymous read returned % invitation(s)', v_count; end if;
   select count(*) into v_count from public.encounter_signatures;

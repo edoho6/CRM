@@ -66,6 +66,7 @@ export default async function FormulasPage({
 
   const t = await getTranslations('inventory.formulas');
   const tFormulaTcm = await getTranslations('inventory.formulaTcmCategory');
+  const tKind = await getTranslations('inventory.formulas.category');
   const tReview = await getTranslations('inventory.review');
   const tc = await getTranslations('common');
   const tCompare = await getTranslations('reference.compare');
@@ -90,6 +91,7 @@ export default async function FormulasPage({
       );
     }
     if (filters.cat.length) query = query.in('tcm_category', filters.cat);
+    if (filters.kind.length) query = query.in('category', filters.kind);
     if (filters.review) query = query.eq('needs_review', true);
     return query;
   };
@@ -148,7 +150,7 @@ export default async function FormulasPage({
       />
 
       <div className="mb-4 space-y-3">
-        <RememberQuery id="formulas" keys={['q', 'cat', 'review', 'sort', 'dir']} />
+        <RememberQuery id="formulas" keys={['q', 'cat', 'kind', 'review', 'sort', 'dir']} />
         <div className="flex flex-wrap items-center justify-between gap-2">
           <ReferenceNav />
           <CatalogueSearch initialQuery={filters.q} placeholder={t('searchPlaceholder')} />
@@ -214,6 +216,14 @@ export default async function FormulasPage({
                           {formulaPrimaryName(formula, locale as Locale)}
                         </span>
                         {chinese ? <span className="text-base text-ink-600">{chinese}</span> : null}
+                        {/* A classical formula needs no label; the two kinds a
+                            clinic makes itself are named, so a row built for
+                            one patient is not mistaken for the canon. */}
+                        {formula.category !== 'classical' ? (
+                          <Badge tone="neutral" className="align-middle">
+                            {tKind(formula.category)}
+                          </Badge>
+                        ) : null}
                       </Link>
                       {formula.name_english ? (
                         <span className="block text-xs text-ink-500" dir="ltr">

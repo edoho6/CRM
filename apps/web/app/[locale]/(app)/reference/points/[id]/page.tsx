@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Pencil } from 'lucide-react';
 import { Alert, Badge, Button, Card, CardBody, CardHeader, CardTitle, Dash, DetailRow } from '@clinic/ui';
 import { Link } from '@clinic/i18n/navigation';
 import type { AcupuncturePoint } from '@clinic/db/types';
@@ -8,6 +8,8 @@ import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
 import { ReferenceNav } from '@/features/reference/reference-nav';
 import { BodyMap, type MappedPoint } from '@/features/reference/body-map';
+import { ApproveButton } from '@/features/reference/approve-button';
+import { ReviewedLine } from '@/features/reference/reviewed-line';
 import { pageTitle } from '@/lib/page-title';
 
 export const generateMetadata = pageTitle('reference.points', 'single');
@@ -40,6 +42,7 @@ export default async function PointDetailPage({
   const tArea = await getTranslations('reference.bodyArea');
   const tPointCategory = await getTranslations('reference.pointCategory');
   const tReview = await getTranslations('inventory.review');
+  const tc = await getTranslations('common');
 
   const scope = await getClinicScope();
   if (!scope) return null;
@@ -109,10 +112,19 @@ export default async function PointDetailPage({
             {tChannel(point.channel)}
           </span>
         }
-        actions={<ReferenceNav compact />}
+        actions={
+          <>
+            <ReferenceNav compact />
+            <Button asChild variant="secondary">
+              <Link href={`/reference/points/${point.id}/edit`}>
+                <Pencil className="h-4 w-4" />
+                {tc('edit')}
+              </Link>
+            </Button>
+          </>
+        }
         // Previous and next along the channel are navigation, not actions on
-        // this point, so they sit under the heading rather than in the slot
-        // the other pages use for "edit".
+        // this point, so they sit under the heading rather than beside "edit".
         below={
           previous || next ? (
             <div className="flex items-center gap-1">
@@ -147,11 +159,16 @@ export default async function PointDetailPage({
             <CardHeader>
               <CardTitle>{t('sections.clinical')}</CardTitle>
               {point.needs_review ? (
-                <Badge tone="warning">
-                  <AlertTriangle className="h-3 w-3" />
-                  {tReview('badge')}
-                </Badge>
-              ) : null}
+                <span className="inline-flex flex-wrap items-center gap-2">
+                  <Badge tone="warning">
+                    <AlertTriangle className="h-3 w-3" />
+                    {tReview('badge')}
+                  </Badge>
+                  <ApproveButton kind="point" id={point.id} />
+                </span>
+              ) : (
+                <ReviewedLine reviewedAt={point.reviewed_at} reviewedByName={point.reviewed_by_name} />
+              )}
             </CardHeader>
             <CardBody>
               {point.point_categories.length > 0 ? (

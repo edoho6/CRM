@@ -1599,6 +1599,7 @@ async function main() {
     add('reference/herbs/[id]/edit', herbIds, (id) => `/reference/herbs/${id}/edit`);
     add('reference/formulas/[id]', formulaIds, (id) => `/reference/formulas/${id}`);
     add('reference/points/[id]', pointIds, (id) => `/reference/points/${id}`);
+    add('reference/points/[id]/edit', pointIds, (id) => `/reference/points/${id}/edit`);
     add('reference/medicine/[slug]', medicineSlugs, (slug) => `/reference/medicine/${slug}`);
     if (herbIds.length >= 2) dynamic.push(`/reference/compare?kind=herb&ids=${herbIds.join(',')}`);
 

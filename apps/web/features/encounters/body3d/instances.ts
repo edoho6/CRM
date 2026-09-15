@@ -1,7 +1,7 @@
 import { placementSide, toPointPlacement } from '@clinic/domain';
 import type { MappedPoint } from '@/features/reference/body-map';
 import type { Vec3 } from './frame';
-import { findBodyPoint, positionFor, type BodySide } from './points';
+import { findBodyPoint, positionFor, type BodyPointMap, type BodySide } from './points';
 
 /**
  * One marker on the 3D body.
@@ -49,14 +49,15 @@ function keyFor(code: string, side: BodySide): string {
  *
  * Pure: the input is exactly what the flat chart receives, so the two views
  * can never disagree about what was chosen. Only the coordinate source
- * differs.
+ * differs, and it is passed in rather than imported, so the page decides
+ * where the numbers come from.
  */
-export function buildPointInstances(points: MappedPoint[]): PointInstancesResult {
+export function buildPointInstances(points: MappedPoint[], positions: BodyPointMap): PointInstancesResult {
   const instances = new Map<string, PointInstance>();
   const missing = new Set<string>();
 
   for (const point of points) {
-    const entry = findBodyPoint(point.code);
+    const entry = findBodyPoint(positions, point.code);
     if (!entry) {
       missing.add(point.code);
       continue;
@@ -64,8 +65,7 @@ export function buildPointInstances(points: MappedPoint[]): PointInstancesResult
     for (const side of sidesFor(point, entry.sideType)) {
       const key = keyFor(point.code, side);
       if (instances.has(key)) continue;
-      const placed = positionFor(point.code, side);
-      if (!placed) continue;
+      const placed = positionFor(entry, side);
       instances.set(key, {
         key,
         code: point.code,

@@ -31,6 +31,8 @@ import {
   herbPrimaryName,
 } from '@/lib/display';
 import { ReferenceNav } from '@/features/reference/reference-nav';
+import { ApproveButton } from '@/features/reference/approve-button';
+import { ReviewedLine } from '@/features/reference/reviewed-line';
 import { FormulaComposition } from '@/features/inventory/formula-composition';
 import { pageTitle } from '@/lib/page-title';
 
@@ -157,10 +159,13 @@ export default async function FormulaDetailPage({
       />
 
       {formula.needs_review ? (
-        <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-          {tReview('hint')}
-        </p>
-      ) : null}
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          <span>{tReview('hint')}</span>
+          <ApproveButton kind="formula" id={formula.id} />
+        </div>
+      ) : (
+        <ReviewedLine reviewedAt={formula.reviewed_at} reviewedByName={formula.reviewed_by_name} className="mb-4" />
+      )}
 
       {/* Same idea as the herb page: the figures you need before reading a word. */}
       <section className="mb-5 rounded-card border border-ink-200 bg-white p-4">

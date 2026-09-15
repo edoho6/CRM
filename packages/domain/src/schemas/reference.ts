@@ -8,6 +8,7 @@ import {
   HERB_UNITS,
   ORDER_LIST_STATUSES,
   POINT_BODY_AREAS,
+  POINT_CATEGORIES,
   POINT_CHANNELS,
   POINT_REGIONS,
 } from '../enums';
@@ -57,10 +58,43 @@ export const acupuncturePointFormSchema = z.object({
   indications: optionalText(2000),
   needling: optionalText(1000),
   cautions: optionalText(1000),
+  /** Classical categories: five-shu, yuan-source, back-shu, front-mu and the rest. */
+  point_categories: z.array(z.enum(POINT_CATEGORIES)).default([]),
   is_active: z.boolean().default(true),
 });
 
 export type AcupuncturePointFormValues = z.input<typeof acupuncturePointFormSchema>;
+export type AcupuncturePointFormData = z.output<typeof acupuncturePointFormSchema>;
+
+const coordinate = z.number().finite();
+
+/**
+ * Where a point sits on the 3D body (the `body_points` table): metres in
+ * the frame `features/encounters/body3d/frame.ts` documents. A bilateral
+ * point is stored on the patient's right (x < 0) and mirrored when drawn;
+ * a midline point has x = 0. The table enforces both; the schema only
+ * refuses what could never be a coordinate.
+ */
+export const bodyPointSchema = z.object({
+  code: z
+    .string()
+    .trim()
+    .regex(/^[A-Za-z]{1,4}\d{1,3}$/, { error: 'invalid_code' })
+    .transform((value) => value.toUpperCase()),
+  sideType: z.enum(['bilateral', 'midline']),
+  position: z.object({
+    x: coordinate.min(-1.5).max(1.5),
+    y: coordinate.min(0).max(1.75),
+    z: coordinate.min(-1).max(1),
+  }),
+  approach: z
+    .object({ x: coordinate, y: coordinate, z: coordinate })
+    .optional(),
+  validated: z.boolean().default(false),
+  note: z.string().trim().max(500).optional(),
+});
+
+export type BodyPointValues = z.input<typeof bodyPointSchema>;
 
 /**
  * A line on the order list.

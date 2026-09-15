@@ -34,6 +34,7 @@ import { useAutosave } from '@/lib/use-autosave';
 import { HeaderTools } from '@/components/header-tools';
 import type { MappedPoint } from '@/features/reference/body-map';
 import { HumanBody3D } from './body3d/human-body-3d';
+import type { BodyPointRow } from './body3d/points';
 import { PointsEditor, type PointOption, type PointRow } from './points-editor';
 import { EncounterCompare, type PreviousEncounter } from './encounter-compare';
 import {
@@ -159,6 +160,8 @@ export function EncounterForm({
   isSigned,
   pointCatalogue,
   pointPositions,
+  bodyPoints = [],
+  canPlaceBodyPoints = false,
   protocols,
   previousEncounters,
   tonguePhotos,
@@ -175,6 +178,10 @@ export function EncounterForm({
   pointCatalogue: PointOption[];
   /** Where each catalogued point sits on the body chart, keyed by point id. */
   pointPositions: Record<string, PointPosition>;
+  /** Where points sit on the 3D body — every row of body_points. */
+  bodyPoints?: BodyPointRow[];
+  /** True for a platform admin, who may place points on the 3D body. */
+  canPlaceBodyPoints?: boolean;
   /** Saved protocols, for filling the points in from one. */
   protocols: TreatmentProtocol[];
   /** This patient's earlier treatments, newest first, for the comparison. */
@@ -721,6 +728,9 @@ export function EncounterForm({
                           point's card over the page; the page itself stays. */}
                           <HumanBody3D
                             points={mappedPoints}
+                            positions={bodyPoints}
+                            catalogue={pointCatalogue}
+                            canPlace={canPlaceBodyPoints}
                             onSelect={(point) => {
                               if (referenceSheet)
                                 referenceSheet.open({

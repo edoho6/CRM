@@ -24,6 +24,7 @@ import { getClinicScope } from '@/lib/session';
 import { logRecordAccess } from '@/lib/access-log';
 import { EncounterForm } from '@/features/encounters/encounter-form';
 import type { TonguePhoto } from '@/features/encounters/tongue-photos';
+import type { BodyPointRow } from '@/features/encounters/body3d/points';
 import type { Sketch } from '@/features/encounters/sketches';
 import { prescriptionKey } from '@/features/encounters/prescription-key';
 import { formulaPrimaryName, herbPrimaryName } from '@/lib/display';
@@ -155,6 +156,7 @@ export default async function EncounterPage({
     tonguePhotosResult,
     sketchesResult,
     signaturesResult,
+    bodyPointsResult,
   ] = await Promise.all([
       scope.supabase.from('tcm_notes').select('*').eq('encounter_id', id).maybeSingle<TcmNote>(),
       scope.supabase
@@ -292,6 +294,15 @@ export default async function EncounterPage({
         .order('reopened_at', { ascending: false })
         .limit(10)
         .returns<EncounterSignature[]>(),
+      // Where each point sits on the 3D body — service-wide rows, a few
+      // hundred at most. Until migration 56 has run the table does not
+      // exist, the query fails, and the model simply lists its points
+      // instead of drawing them.
+      scope.supabase
+        .from('body_points')
+        .select('code, side_type, x, y, z, approach_x, approach_y, approach_z, validated, note')
+        .limit(1000)
+        .returns<BodyPointRow[]>(),
     ]);
 
   // Opening a treatment record is reading a patient's clinical notes, and is
@@ -324,6 +335,7 @@ export default async function EncounterPage({
     english: point.english_name,
     chinese: point.chinese_name,
     region: point.default_region,
+    bilateral: point.bilateral,
     location: point.location,
     actions: point.actions,
     indications: point.indications,
@@ -484,6 +496,8 @@ export default async function EncounterPage({
         isSigned={isSigned}
         pointCatalogue={pointCatalogue}
         pointPositions={pointPositions}
+        bodyPoints={bodyPointsResult.data ?? []}
+        canPlaceBodyPoints={scope.context.isPlatformAdmin}
         protocols={protocolsResult.data ?? []}
         previousEncounters={previousEncounters}
         tonguePhotos={tonguePhotos}

@@ -5,10 +5,12 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Button, SegmentedControl, Skeleton, cn } from '@clinic/ui';
 import { BodyMap, type MappedPoint } from '@/features/reference/body-map';
+import type { PointOption } from '@/features/encounters/points-editor';
 import type { PointInstance } from './instances';
 import type { CameraView, ViewRequest } from './body-camera-controls';
 import type { PickEvent } from './body-model';
 import type { EditorBridge } from './body-scene';
+import { toBodyPointMap, type BodyPointMap, type BodyPointPosition, type BodyPointRow } from './points';
 import { useBodyPointInstances } from './use-body-point-instances';
 import { useThemeColors } from './use-theme-colors';
 import { SceneErrorBoundary } from './scene-error-boundary';
@@ -21,14 +23,11 @@ import { SceneErrorBoundary } from './scene-error-boundary';
 const BodyScene = dynamic(() => import('./body-scene'), { ssr: false, loading: () => null });
 
 /*
- * The point editor exists in development builds only. The condition is a
- * build-time constant, so a production bundle carries neither the component
- * nor its chunk.
+ * The placement tool is loaded only when it is opened: a platform admin sees
+ * the button, nobody else does, and the chunk never travels to a page that
+ * cannot use it.
  */
-const PointEditor =
-  process.env.NODE_ENV === 'development'
-    ? dynamic(() => import('./point-editor'), { ssr: false, loading: () => null })
-    : null;
+const PointPlacer = dynamic(() => import('./point-placer'), { ssr: false, loading: () => null });
 
 type ViewMode = '2d' | '3d';
 const MODE_STORAGE_KEY = 'herbalist.bodyView';
@@ -50,26 +49,48 @@ function readStoredMode(): ViewMode | null {
  * It is a mirror of the list, not a second input — the same `MappedPoint[]`
  * the flat chart has always received drives it, so the two views can never
  * disagree about what was prescribed. The 3D body only changes where a
- * point is drawn, and only for points that have a recorded coordinate; the
- * rest are named underneath rather than guessed at.
+ * point is drawn, and only for points that have a recorded coordinate
+ * (`body_points`, passed in as `positions`); the rest are named underneath
+ * rather than guessed at.
  *
- * The flat chart stays one switch away. The coordinate set is small and
- * unvalidated until someone checks it against a reference, and a practitioner who
- * prefers the schematic loses nothing by choosing it.
+ * The flat chart stays one switch away. A practitioner who prefers the
+ * schematic loses nothing by choosing it.
+ *
+ * `canPlace` opens the placement tool: where a point sits on the model is
+ * decided by a person, for every clinic at once, and only a platform admin
+ * may write it. In development the tool also opens with `?pointEditor=1`,
+ * so the click-to-coordinate part can be tried without an admin account
+ * (saving still needs one).
  */
 export function HumanBody3D({
   points,
+  positions,
+  catalogue = [],
+  canPlace = false,
   onSelect,
   className,
 }: {
   points: MappedPoint[];
+  /** Every row of body_points, as the page loaded it. */
+  positions: BodyPointRow[];
+  /** The point catalogue, for the placement tool's picker. */
+  catalogue?: PointOption[];
+  /** True for a platform admin. */
+  canPlace?: boolean;
   /** Called when a marker or its chip is activated, to open the point's page. */
   onSelect?: (point: MappedPoint) => void;
   className?: string;
 }) {
   const t = useTranslations('encounters.body3d');
   const colors = useThemeColors();
-  const { instances, missingCodes } = useBodyPointInstances(points);
+
+  // The coordinates, as loaded — and as changed by the placement tool
+  // without waiting for the page to reload.
+  const [positionMap, setPositionMap] = useState<BodyPointMap>(() => toBodyPointMap(positions));
+  useEffect(() => {
+    setPositionMap(toBodyPointMap(positions));
+  }, [positions]);
+  const { instances, missingCodes } = useBodyPointInstances(points, positionMap);
 
   const [mode, setMode] = useState<ViewMode>('3d');
   useEffect(() => {
@@ -108,18 +129,35 @@ export function HumanBody3D({
     if (point) onSelect?.(point);
   };
 
-  // Development-only editor state. In production `PointEditor` is null and
-  // none of this is reachable.
-  const [editorOpen, setEditorOpen] = useState(false);
-  const [picked, setPicked] = useState<PickEvent | null>(null);
+  // The placement tool: offered to an admin, and in development to anyone
+  // who asks for it in the address.
+  const [devEditor, setDevEditor] = useState(false);
   useEffect(() => {
-    if (!PointEditor) return;
-    setEditorOpen(new URLSearchParams(window.location.search).get('pointEditor') === '1');
+    if (process.env.NODE_ENV !== 'development') return;
+    setDevEditor(new URLSearchParams(window.location.search).get('pointEditor') === '1');
   }, []);
+  const placerAvailable = canPlace || devEditor;
+  const [placing, setPlacing] = useState(false);
+  const [picked, setPicked] = useState<PickEvent | null>(null);
   const editor = useMemo<EditorBridge | null>(
-    () => (editorOpen ? { onPick: setPicked, preview: picked?.position ?? null } : null),
-    [editorOpen, picked],
+    () => (placing ? { onPick: setPicked, preview: picked?.position ?? null } : null),
+    [placing, picked],
   );
+  const clearPick = useCallback(() => setPicked(null), []);
+  const onSaved = useCallback((entry: BodyPointPosition) => {
+    setPositionMap((current) => {
+      const next = new Map(current);
+      next.set(entry.code, entry);
+      return next;
+    });
+  }, []);
+  const onDeleted = useCallback((code: string) => {
+    setPositionMap((current) => {
+      const next = new Map(current);
+      next.delete(code);
+      return next;
+    });
+  }, []);
 
   const sideLabel = (side: PointInstance['side']) =>
     side === 'right' ? t('sideRight') : side === 'left' ? t('sideLeft') : t('sideMidline');
@@ -154,6 +192,21 @@ export function HumanBody3D({
                 {t(view)}
               </Button>
             ))}
+            {placerAvailable ? (
+              <Button
+                type="button"
+                variant={placing ? 'secondary' : 'ghost'}
+                size="sm"
+                className="h-7 px-2 text-xs"
+                aria-pressed={placing}
+                onClick={() => {
+                  setPlacing((current) => !current);
+                  setPicked(null);
+                }}
+              >
+                {placing ? t('placeClose') : t('placeToggle')}
+              </Button>
+            ) : null}
           </div>
         ) : null}
       </div>
@@ -256,8 +309,15 @@ export function HumanBody3D({
             {t('modelCaption')}
           </figcaption>
 
-          {PointEditor && editorOpen ? (
-            <PointEditor picked={picked} onClear={() => setPicked(null)} />
+          {placing ? (
+            <PointPlacer
+              catalogue={catalogue}
+              positions={positionMap}
+              picked={picked}
+              onClear={clearPick}
+              onSaved={onSaved}
+              onDeleted={onDeleted}
+            />
           ) : null}
         </figure>
       )}

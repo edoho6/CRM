@@ -1,51 +1,75 @@
 import { describe, expect, it } from 'vitest';
-import { BODY_POINT_POSITIONS, findBodyPoint, positionFor } from './points';
+import { findBodyPoint, positionFor, toBodyPointMap, toBodyPointPosition, type BodyPointRow } from './points';
 
-describe('the point coordinate layer', () => {
-  it('stores bilateral points on the right and midline points on the midline', () => {
-    for (const entry of BODY_POINT_POSITIONS) {
-      if (entry.sideType === 'bilateral') {
-        expect(entry.position.x, `${entry.code} must be stored on the right (x < 0)`).toBeLessThan(0);
-      } else {
-        expect(entry.position.x, `${entry.code} must sit on the midline`).toBe(0);
-      }
-    }
+function row(overrides: Partial<BodyPointRow> & { code: string }): BodyPointRow {
+  return {
+    side_type: 'bilateral',
+    x: -0.18,
+    y: 0.42,
+    z: -0.03,
+    approach_x: -0.6,
+    approach_y: 0,
+    approach_z: 0.8,
+    validated: false,
+    note: null,
+    ...overrides,
+  };
+}
+
+describe('folding body_points rows', () => {
+  it('reads numerics whether they arrive as numbers or as strings', () => {
+    const entry = toBodyPointPosition(row({ code: 'ST36', x: '-0.18', y: '0.42', z: '-0.03', approach_x: '-0.6' }));
+    expect(entry?.position).toEqual({ x: -0.18, y: 0.42, z: -0.03 });
+    expect(entry?.approach).toEqual({ x: -0.6, y: 0, z: 0.8 });
   });
 
-  it('keeps every coordinate inside a 1.75 m body', () => {
-    for (const entry of BODY_POINT_POSITIONS) {
-      expect(entry.position.y).toBeGreaterThanOrEqual(0);
-      expect(entry.position.y).toBeLessThanOrEqual(1.75);
-    }
+  it('upper-cases the code, so a row written as st36 still matches the catalogue', () => {
+    const map = toBodyPointMap([row({ code: 'st36' })]);
+    expect(findBodyPoint(map, 'ST36')?.code).toBe('ST36');
+    expect(findBodyPoint(map, 'st36')?.code).toBe('ST36');
   });
 
-  it('has no duplicate codes', () => {
-    const codes = BODY_POINT_POSITIONS.map((entry) => entry.code);
-    expect(new Set(codes).size).toBe(codes.length);
+  it('leaves out the approach when any of its three numbers is missing', () => {
+    const entry = toBodyPointPosition(row({ code: 'ST36', approach_y: null }));
+    expect(entry?.approach).toBeUndefined();
   });
 
-  it('is honest about validation', () => {
-    // When the first point is validated, this test should change — not be deleted.
-    expect(BODY_POINT_POSITIONS.every((entry) => entry.validated === false)).toBe(true);
-    expect(findBodyPoint('ST36')?.validated).toBe(false);
+  it('pins a midline point to x = 0 whatever the row says', () => {
+    const entry = toBodyPointPosition(row({ code: 'DU20', side_type: 'midline', x: 0.02, y: 1.75, z: 0 }));
+    expect(entry?.position.x).toBe(0);
+    expect(entry?.sideType).toBe('midline');
+  });
+
+  it('skips a row whose coordinate is not a number rather than inventing one', () => {
+    const map = toBodyPointMap([row({ code: 'BL60', y: 'nope' }), row({ code: 'ST36' })]);
+    expect(map.size).toBe(1);
+    expect(findBodyPoint(map, 'BL60')).toBeUndefined();
+  });
+
+  it('shares one empty map for no rows, so a page without coordinates costs nothing', () => {
+    expect(toBodyPointMap([])).toBe(toBodyPointMap(null));
+    expect(toBodyPointMap(undefined).size).toBe(0);
   });
 });
 
 describe('positionFor', () => {
+  const st36 = toBodyPointPosition(row({ code: 'ST36' }))!;
+  const du20 = toBodyPointPosition(row({ code: 'DU20', side_type: 'midline', x: 0, y: 1.75, z: 0, approach_x: 0, approach_y: 1, approach_z: 0 }))!;
+
   it('mirrors a bilateral point across the midline for the left side', () => {
-    const right = positionFor('ST36', 'right');
-    const left = positionFor('ST36', 'left');
-    expect(right).not.toBeNull();
-    expect(left?.position).toEqual({ ...right!.position, x: -right!.position.x });
-    expect(left?.approach?.x).toBeCloseTo(-right!.approach!.x);
-    expect(left?.approach?.z).toBeCloseTo(right!.approach!.z);
+    const right = positionFor(st36, 'right');
+    const left = positionFor(st36, 'left');
+    expect(left.position).toEqual({ ...right.position, x: -right.position.x });
+    expect(left.approach?.x).toBeCloseTo(-right.approach!.x);
+    expect(left.approach?.z).toBeCloseTo(right.approach!.z);
   });
 
   it('answers a midline point the same whatever side is asked for', () => {
-    expect(positionFor('DU20', 'left')).toEqual(positionFor('DU20', 'midline'));
+    expect(positionFor(du20, 'left')).toEqual(positionFor(du20, 'midline'));
   });
 
-  it('returns null for a point with no coordinate rather than inventing one', () => {
-    expect(positionFor('BL60', 'right')).toBeNull();
+  it('carries the validation flag through, so an unchecked number is drawn as one', () => {
+    expect(positionFor(st36, 'right').validated).toBe(false);
+    expect(positionFor({ ...st36, validated: true }, 'left').validated).toBe(true);
   });
 });

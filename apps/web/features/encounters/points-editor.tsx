@@ -109,6 +109,8 @@ export interface PointOption {
   english: string | null;
   chinese: string | null;
   region: PointRegion;
+  /** False for a midline point. The 3D placement tool starts such a point on the midline. */
+  bilateral?: boolean;
   /** The catalogue's prose, shown on hover so a point is checked without leaving the note. */
   location?: string | null;
   actions?: string | null;

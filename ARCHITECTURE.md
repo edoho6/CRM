@@ -69,8 +69,10 @@ pnpm 9 עם Turborepo, Node 20.9 ומעלה. `pnpm-workspace.yaml` מכיל `app
 - `supabase/tests/*.sql` — בדיקות שנדבקות לאותו עורך: בונות נתונים בטרנזקציה ומסיימות ב-`rollback`.
   `tenant_isolation.sql` רץ אחרי כל מיגרציה שמוסיפה טבלה או policy.
 - `supabase/seed.sql` יוצר את הקליניקה הראשונה והופך את משתמש ה-auth הראשון לבעלים.
-  `supabase/seed/{herbs,formulas,points,medicine}` הם קטלוגי הייחוס; פונקציות הטעינה שלהם בוחרות את
-  הקליניקה **הוותיקה ביותר** כשלא מעבירים מזהה.
+  `supabase/seed/{herbs,formulas,points}` ממלאים את **הקטלוג המשותף** (`catalogue_*`, בלי `clinic_id`;
+  `node scripts/bundle-seeds.mjs` אורז אותם לקובצי `2_…`/`3_…_to_run.sql`), וכל קליניקה מעתיקה אותו לרשימות
+  שלה ב-`clinic_load_catalogue()` — מהכרטיס "מאגר המידע" בהגדרות, או לבד ביום שהיא נוצרת.
+  `supabase/seed/medicine` הוא מאגר הרפואה המערבית, שנטען בסקריפט.
 - `supabase/maintenance/*.sql` — כיבוי/הדלקה של אינדקס הספרייה, vacuum, אבחון.
 - `packages/db/src/types.ts` מתעדכן ביד עם כל מיגרציה שמשנה עמודה (`pnpm db:types` קיים אבל הקובץ
   המיוצר לא בשימוש).

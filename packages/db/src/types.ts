@@ -546,6 +546,10 @@ export interface Herb {
   image_url: string | null;
   image_attribution: string | null;
   needs_review: boolean;
+  /** A person's approval (migration 56): when, who, and the name as it was then. */
+  reviewed_at?: string | null;
+  reviewed_by?: string | null;
+  reviewed_by_name?: string | null;
   data_source: string | null;
   category: HerbCategory;
   default_unit: HerbUnit;
@@ -651,6 +655,10 @@ export interface HerbFormula {
   reorder_threshold_doses: number | null;
   image_url: string | null;
   needs_review: boolean;
+  /** A person's approval (migration 56): when, who, and the name as it was then. */
+  reviewed_at?: string | null;
+  reviewed_by?: string | null;
+  reviewed_by_name?: string | null;
   data_source: string | null;
   is_active: boolean;
   created_by: string | null;
@@ -924,6 +932,10 @@ export interface AcupuncturePoint {
   /** Classical categories: five-shu, yuan-source, back-shu, front-mu and the rest. */
   point_categories: PointCategory[];
   needs_review: boolean;
+  /** A person's approval (migration 56): when, who, and the name as it was then. */
+  reviewed_at?: string | null;
+  reviewed_by?: string | null;
+  reviewed_by_name?: string | null;
   data_source: string | null;
   is_active: boolean;
   created_at: string;

@@ -1,6 +1,6 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { MapPin } from 'lucide-react';
-import { EmptyState, Table, TableWrapper, Td, Tr, Dash } from '@clinic/ui';
+import { Button, EmptyState, Table, TableWrapper, Td, Tr, Dash } from '@clinic/ui';
 import { Link } from '@clinic/i18n/navigation';
 import type { AcupuncturePoint } from '@clinic/db/types';
 import { POINT_BODY_AREAS, POINT_CATEGORIES, POINT_CHANNELS } from '@clinic/domain';
@@ -44,6 +44,7 @@ export default async function PointsPage({
     channel?: string;
     area?: string;
     category?: string;
+    review?: string;
     page?: string;
     sort?: string;
     dir?: string;
@@ -52,6 +53,7 @@ export default async function PointsPage({
   const { locale } = await params;
   const rawParams = await searchParams;
   const { q = '', channel = '', area = '', category = '', page: pageParam } = rawParams;
+  const review = rawParams.review === '1';
   const page = pageFrom(pageParam);
   const sort = parseSort(rawParams, POINT_SORT_KEYS, POINT_DEFAULT_SORT);
   setRequestLocale(locale);
@@ -61,6 +63,7 @@ export default async function PointsPage({
   const tArea = await getTranslations('reference.bodyArea');
   const tc = await getTranslations('common');
   const tCompare = await getTranslations('reference.compare');
+  const tCatalogue = await getTranslations('settings.catalogue');
 
   const scope = await getClinicScope();
   if (!scope) return null;
@@ -93,6 +96,8 @@ export default async function PointsPage({
   if (category && (POINT_CATEGORIES as readonly string[]).includes(category)) {
     query = query.contains('point_categories', [category]);
   }
+  // The review queue: what a practitioner still has to read and confirm.
+  if (review) query = query.eq('needs_review', true);
 
   const { data, count } = await query.returns<AcupuncturePoint[]>();
   const points = data ?? [];
@@ -102,7 +107,7 @@ export default async function PointsPage({
       <PageHeader title={t('title')} description={t('count', { count: count ?? points.length })} />
 
       <div className="mb-4 space-y-3">
-        <RememberQuery id="points" keys={['q', 'channel', 'area', 'category', 'sort', 'dir']} />
+        <RememberQuery id="points" keys={['q', 'channel', 'area', 'category', 'review', 'sort', 'dir']} />
         {/* Three rows of filter chips over an empty catalogue are furniture with
             nothing to filter; they appear with the first point. */}
         <PointSearch
@@ -110,15 +115,25 @@ export default async function PointsPage({
           channel={channel}
           area={area}
           category={category}
-          withFilters={points.length > 0 || Boolean(term || channel || area || category)}
+          review={review}
+          withFilters={points.length > 0 || Boolean(term || channel || area || category || review)}
         />
       </div>
 
       {points.length === 0 ? (
         <EmptyState
           icon={<MapPin className="h-8 w-8" />}
-          title={term ? tc('noResults') : t('empty')}
-          description={term ? undefined : t('emptyBody')}
+          title={term || review ? tc('noResults') : t('empty')}
+          description={term || review ? undefined : t('emptyBody')}
+          action={
+            term || review ? undefined : (
+              // An empty catalogue is filled from Settings, where the shared
+              // catalogue is copied into the clinic with one click.
+              <Button asChild size="sm">
+                <Link href="/settings#catalogue">{tCatalogue('load')}</Link>
+              </Button>
+            )
+          }
         />
       ) : (
         <TableWrapper responsive>
