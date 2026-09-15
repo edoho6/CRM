@@ -21,6 +21,12 @@ export const MESSAGE_ERROR_KEYS = [
   'synthetic_clinic',
   'provider_error',
   'skipped_by_staff',
+  'no_whatsapp_number',
+  'not_delivered',
+  'template_not_approved',
+  'daily_limit',
+  'rate_limit',
+  'outdated_app',
 ] as const;
 
 export type MessageErrorKey = (typeof MESSAGE_ERROR_KEYS)[number] | 'other';

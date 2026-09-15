@@ -50,6 +50,7 @@ import { LanguageSwitcher } from './language-switcher';
 import { ThemeToggle } from './theme-toggle';
 import { UserMenu } from './user-menu';
 import { TaskBell } from './task-bell';
+import { MessagesBadge } from './messages-badge';
 import { LinkPending } from './link-pending';
 import { GlobalSearch } from '@/features/quick-bar/global-search';
 import { QuickCreateMenu } from '@/features/quick-bar/quick-create-menu';
@@ -320,9 +321,11 @@ export function AppShell({
               <span data-sidebar-expanded-only className={iconOnly ? 'sr-only' : 'truncate'}>
                 {label}
               </span>
+              {/* How many WhatsApp threads wait unread, beside the word. */}
+              {item.href === '/messages' && !iconOnly ? <MessagesBadge className="ms-auto" /> : null}
               {/* A dot that appears when this link is the one being waited
                   on. Hidden in the icon rail, where there is no room. */}
-              {!iconOnly ? <LinkPending className="ms-auto" /> : null}
+              {!iconOnly ? <LinkPending className={item.href === '/messages' ? 'ms-1' : 'ms-auto'} /> : null}
             </Link>
           );
         })}

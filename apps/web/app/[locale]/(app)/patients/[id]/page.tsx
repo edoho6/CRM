@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { CalendarPlus, ClipboardList, Pencil } from 'lucide-react';
+import { CalendarPlus, ClipboardList, MessageCircle, Pencil } from 'lucide-react';
 import {
   Dash,
   Badge,
@@ -484,6 +484,16 @@ export default async function PatientDetailPage({
                 {tApp('new')}
               </Link>
             </Button>
+            {/* The WhatsApp thread with this patient, inside the system —
+                opened or made from the file's number. */}
+            {patient.phone ? (
+              <Button asChild variant="secondary">
+                <Link href={{ pathname: '/messages', query: { patient: patient.id } }}>
+                  <MessageCircle className="h-4 w-4" />
+                  {t('whatsappChat')}
+                </Link>
+              </Button>
+            ) : null}
             <Button asChild variant="secondary">
               <Link href={`/patients/${patient.id}/edit`}>
                 <Pencil className="h-4 w-4" />

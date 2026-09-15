@@ -251,6 +251,29 @@ export const automationSettingsSchema = z.object({
 
 export type AutomationSettingsValues = z.input<typeof automationSettingsSchema>;
 
+/**
+ * The clinic's WhatsApp line, as verified with the sending service. Typed in
+ * any shape — with spaces, a plus, dashes — and kept as the digits the
+ * service wants: 972 and the number without its leading zero.
+ */
+export const whatsappLineSchema = z.object({
+  whatsapp_number: z
+    .union([z.string(), z.null()])
+    .optional()
+    .transform((value) => {
+      const digits = (value ?? '').replace(/\D/g, '');
+      if (!digits) return null;
+      if (digits.startsWith('00972')) return `972${digits.slice(5)}`;
+      if (digits.startsWith('972')) return digits;
+      if (digits.startsWith('0')) return `972${digits.slice(1)}`;
+      return digits;
+    })
+    .refine((value) => value === null || /^972\d{8,9}$/.test(value), { error: 'invalid_phone' }),
+  opener_template_id: optionalText(80),
+});
+
+export type WhatsappLineValues = z.input<typeof whatsappLineSchema>;
+
 /** The clinic's Google page, where the review request points. Only a secure address, or nothing. */
 export const googleReviewUrlSchema = z.object({
   google_review_url: optionalText(500).refine((value) => value === null || /^https:\/\/\S+$/.test(value), {

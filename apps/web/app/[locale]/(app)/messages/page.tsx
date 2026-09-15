@@ -1,86 +1,80 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { PageBody } from '@clinic/ui';
+import type { Locale } from '@clinic/domain';
+import { redirect } from '@clinic/i18n/navigation';
 import { PageHeader } from '@/components/app-shell';
-import { Pagination, pageFrom, pageRange } from '@/components/pagination';
 import { getClinicScope } from '@/lib/session';
-import { MessageQueue, type QueueRow } from '@/features/messages/message-queue';
+import { listConversations, loadConversation, openConversationForPatient } from '@/features/whatsapp/actions';
+import { InboxWorkspace } from '@/features/whatsapp/inbox-workspace';
+import { MessagesNav } from '@/features/whatsapp/messages-nav';
+import type { PatientOption } from '@/features/whatsapp/types';
 import { pageTitle } from '@/lib/page-title';
 
 export const generateMetadata = pageTitle('messages', 'title');
 
-const SELECT =
-  '*, patient:patients(id, full_name), appointment:appointments(id, start_at)';
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
- * What is waiting to be sent, and what went.
- *
- * Reminders are queued by the hour from the diary; task alerts by the minute.
- * The queue is what a practitioner works through in the evening until a
- * sending service takes it over — and the history is the answer to "did she
- * get the reminder".
+ * WhatsApp, inside the system. The page brings the threads with it, and the
+ * one named in the address (`?c=`) with its messages, so the first paint is
+ * the conversation and not a spinner. `?patient=` — the button in a file —
+ * opens or makes that patient's thread and lands on it.
  */
 export default async function MessagesPage({
   params,
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{ c?: string | string[]; patient?: string | string[] }>;
 }) {
   const { locale } = await params;
-  const { page: pageParam } = await searchParams;
-  const page = pageFrom(pageParam);
   setRequestLocale(locale);
-  const t = await getTranslations('messages');
-
   const scope = await getClinicScope();
   if (!scope) return null;
+  const t = await getTranslations('messages');
+  const query = await searchParams;
 
-  const monthAgo = new Date();
-  monthAgo.setDate(monthAgo.getDate() - 30);
+  const patientParam = typeof query.patient === 'string' ? query.patient : null;
+  if (patientParam && UUID.test(patientParam)) {
+    const opened = await openConversationForPatient(patientParam);
+    if (opened.ok) {
+      redirect({ href: { pathname: '/messages', query: { c: opened.data.id } }, locale: locale as Locale });
+    }
+  }
 
-  const [queuedResult, failedResult, historyResult] = await Promise.all([
+  const [list, { data: patientRows }, { data: opener }] = await Promise.all([
+    listConversations(),
     scope.supabase
-      .from('message_log')
-      .select(SELECT)
-      .eq('status', 'queued')
-      .order('created_at', { ascending: true })
-      .limit(200)
-      .returns<QueueRow[]>(),
-    // What the sending service refused, with its reason: the person is the
-    // fallback, so these come back as cards with the manual path.
+      .from('patients')
+      .select('id, full_name, phone')
+      .eq('is_active', true)
+      .order('last_name')
+      .order('first_name')
+      .limit(2000)
+      .returns<{ id: string; full_name: string; phone: string | null }[]>(),
     scope.supabase
-      .from('message_log')
-      .select(SELECT)
-      .eq('status', 'failed')
-      .gte('created_at', monthAgo.toISOString())
-      .order('created_at', { ascending: false })
-      .limit(100)
-      .returns<QueueRow[]>(),
-    scope.supabase
-      .from('message_log')
-      .select(SELECT, { count: 'exact' })
-      .in('status', ['sent', 'skipped'])
-      .gte('created_at', monthAgo.toISOString())
-      .order('created_at', { ascending: false })
-      .range(...pageRange(page))
-      .returns<QueueRow[]>(),
+      .from('clinic_automations')
+      .select('whatsapp_template_id')
+      .eq('kind', 'conversation_opener')
+      .maybeSingle<{ whatsapp_template_id: string | null }>(),
   ]);
+  const conversations = list.ok ? list.data : [];
+  const wanted = typeof query.c === 'string' ? query.c : null;
+  const initialActiveId = wanted && conversations.some((row) => row.id === wanted) ? wanted : null;
+  const thread = initialActiveId ? await loadConversation(initialActiveId) : null;
+  const patients: PatientOption[] = (patientRows ?? []).map((row) => ({ id: row.id, fullName: row.full_name, phone: row.phone }));
 
   return (
     <>
-      <PageHeader title={t('title')} description={t('subtitle')} />
-      <PageBody width="narrow">
-        <MessageQueue
-          queued={queuedResult.data ?? []}
-          failed={failedResult.data ?? []}
-          history={historyResult.data ?? []}
-        />
-        <Pagination
-          page={page}
-          total={historyResult.count ?? null}
-          shown={historyResult.data?.length ?? 0}
-          pathname="/messages"
-          query={{}}
+      <PageHeader title={t('title')} description={t('inbox.subtitle')} below={<MessagesNav current="inbox" />} />
+      <PageBody width="wide">
+        <InboxWorkspace
+          lineConfigured={Boolean(scope.context.clinic.whatsapp_number)}
+          openerConfigured={Boolean(opener?.whatsapp_template_id?.trim())}
+          conversations={conversations}
+          initialActiveId={initialActiveId}
+          initialMessages={thread?.ok ? thread.data.messages : []}
+          patients={patients}
         />
       </PageBody>
     </>

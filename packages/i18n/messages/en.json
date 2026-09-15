@@ -74,6 +74,84 @@
       "skipped": "Not sent"
     },
     "pushQueued": "Reaches the phone app within minutes; nothing to send by hand.",
+    "queueTitle": "Sending queue",
+    "nav": {
+      "label": "Messages",
+      "inbox": "Conversations",
+      "queue": "Sending queue"
+    },
+    "inbox": {
+      "subtitle": "WhatsApp conversations with patients, from inside the system.",
+      "notConnected": "To receive and send messages here, enter the clinic's WhatsApp line under Settings → Messages.",
+      "toSettings": "To settings",
+      "list": "Conversations",
+      "open": "Open the conversation list",
+      "search": "Search by name or number",
+      "filterLabel": "Filter",
+      "filters": {
+        "all": "All",
+        "unread": "Unread",
+        "closed": "Closed"
+      },
+      "empty": "No conversations yet. A message a patient sends to the clinic's line will appear here.",
+      "noMatch": "No matching conversations.",
+      "newConversation": "New conversation",
+      "newIntro": "Choose a patient with a phone number in their file; the conversation opens and waits for the first message.",
+      "choosePatient": "Patient",
+      "start": "Open conversation",
+      "noPhone": "This file has no phone number WhatsApp can reach.",
+      "unreadCount": "{count, plural, one {One unread message} other {# unread messages}}",
+      "unreadThreads": "{count, plural, one {One unread conversation} other {# unread conversations}}",
+      "selectPrompt": "Choose a conversation from the list, or open a new one.",
+      "threadEmpty": "Nothing has been said here yet.",
+      "unknownContact": "Unknown number",
+      "linkPatient": "Link to a file",
+      "linkTitle": "Whose file is this conversation?",
+      "link": "Link",
+      "unlink": "Unlink from the file",
+      "newPatient": "New file",
+      "openFile": "Open file",
+      "close": "Close the conversation",
+      "reopen": "Reopen",
+      "closed": "Closed",
+      "composer": "Message",
+      "send": "Send",
+      "windowOpen": "Free text may still go for {hours, plural, one {an hour} other {# hours}} — until a day after the patient's last message.",
+      "windowClosed": "More than a day has passed since the patient's last message. By WhatsApp's rules only an approved template may go now; once the patient replies, free text is allowed again.",
+      "sendOpener": "Send the opening message",
+      "openerMissing": "There is no approved opening template yet.",
+      "openerBody": "Hello {name}, this is {clinic}. We have an update for you — you can reply here.",
+      "attachment": "Attachment",
+      "attachmentHint": "(available for a week)",
+      "kinds": {
+        "text": "Message",
+        "image": "Photo",
+        "audio": "Voice message",
+        "video": "Video",
+        "document": "Document",
+        "location": "Location",
+        "contacts": "Contact",
+        "reaction": "Reaction",
+        "order": "Order",
+        "list": "List choice",
+        "button": "Button tap",
+        "template": "Template",
+        "other": "Message"
+      },
+      "status": {
+        "queued": "Waiting to send",
+        "sending": "Sending",
+        "sent": "Sent",
+        "delivered": "Delivered",
+        "read": "Read",
+        "failed": "Not sent",
+        "received": "Received"
+      },
+      "retry": "Send again",
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "templateSent": "Sent as a template"
+    },
     "failedTitle": "Not sent",
     "failedIntro": "Messages the sending service refused, with the reason. Send them by hand, or let them go.",
     "kinds": {
@@ -109,6 +187,12 @@
       "synthetic_clinic": "The clinic is marked as a sandbox — messages to patients are not sent.",
       "provider_error": "The messaging service did not answer as expected.",
       "skipped_by_staff": "Not sent, by decision.",
+      "no_whatsapp_number": "The clinic's WhatsApp line is not entered under Settings → Messages.",
+      "not_delivered": "The message was not delivered — the number is probably not on WhatsApp.",
+      "template_not_approved": "The template is not yet approved on WhatsApp.",
+      "daily_limit": "The daily WhatsApp message limit was reached.",
+      "rate_limit": "Too many messages in a short time; try again in a few minutes.",
+      "outdated_app": "The patient's WhatsApp is too old for this message.",
       "other": "Sending failed."
     }
   },
@@ -713,6 +797,7 @@
     "sendWhatsApp": "Send a WhatsApp message",
     "callPhone": "Call",
     "treatmentStatus": "Patient status",
+    "whatsappChat": "WhatsApp",
     "rowMenu": {
       "label": "Actions for {name}",
       "open": "Open file",
@@ -2260,6 +2345,15 @@
           "placeholders": "You can use '{name}', '{clinic}' and '{link}' — the Google page link. The removal line is added at the end on its own.",
           "noUrl": "For this message to go, the clinic's Google page link is needed — in the \"Google page\" card below."
         }
+      },
+      "whatsapp": {
+        "title": "The clinic's WhatsApp line",
+        "intro": "The number verified with the messaging service. Messages patients send to it arrive on the Messages screen, and replies go out from it.",
+        "number": "Number",
+        "numberHint": "International form, e.g. 972501234567 (or 050-1234567 — converted on its own).",
+        "opener": "Opening template id",
+        "openerHint": "An approved template that opens a conversation with a patient who has not written for a day. The wording to submit: \"{text}\"",
+        "invalid": "The number has to be an Israeli one, e.g. 972501234567."
       },
       "review": {
         "title": "Google page",

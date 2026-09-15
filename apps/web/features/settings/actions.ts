@@ -16,6 +16,7 @@ import {
   closurePeriodSchema,
   practitionerProfileSchema,
   scheduleExceptionSchema,
+  whatsappLineSchema,
   workingHoursSchema,
   HOME_PATHS,
 } from '@clinic/domain';
@@ -540,6 +541,34 @@ export async function saveAutomation(kind: string, input: unknown): Promise<Acti
     .from('clinic_automations')
     .upsert({ clinic_id: scope.context.clinic.id, kind, ...parsed.data }, { onConflict: 'clinic_id,kind' });
   if (error) return actionError(error);
+  return actionOk();
+}
+
+/**
+ * The clinic's WhatsApp line and the template that opens a conversation.
+ * The number is the clinic's own row; the template id lives with the other
+ * automations' under its own kind, read by the composer and the sender.
+ */
+export async function saveWhatsappLine(input: unknown): Promise<ActionResult> {
+  const scope = await getClinicScope();
+  if (!scope) return actionError(new Error('unauthorized'));
+
+  const parsed = whatsappLineSchema.safeParse(input);
+  if (!parsed.success) return actionError(new Error('validation'));
+
+  const { error } = await scope.supabase
+    .from('clinics')
+    .update({ whatsapp_number: parsed.data.whatsapp_number })
+    .eq('id', scope.context.clinic.id);
+  if (error) return actionError(error);
+
+  const { error: openerError } = await scope.supabase
+    .from('clinic_automations')
+    .upsert(
+      { clinic_id: scope.context.clinic.id, kind: 'conversation_opener', whatsapp_template_id: parsed.data.opener_template_id },
+      { onConflict: 'clinic_id,kind' },
+    );
+  if (openerError) return actionError(openerError);
   return actionOk();
 }
 

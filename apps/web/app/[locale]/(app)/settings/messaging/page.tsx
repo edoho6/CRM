@@ -9,6 +9,7 @@ import { ReminderTemplateForm } from '@/features/settings/reminder-template-form
 import { AutomationCard } from '@/features/settings/automation-card';
 import { GoogleReviewCard } from '@/features/settings/google-review-card';
 import { TestMessageCard } from '@/features/settings/test-message-card';
+import { WhatsappLineCard } from '@/features/settings/whatsapp-line-card';
 import { pageTitle } from '@/lib/page-title';
 
 export const generateMetadata = pageTitle('settings', 'messaging.title');
@@ -23,6 +24,7 @@ export default async function MessagingSettingsPage({ params }: { params: Promis
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations('settings');
+  const tInbox = await getTranslations('messages.inbox');
 
   const scope = await getClinicScope();
   if (!scope) return null;
@@ -63,6 +65,11 @@ export default async function MessagingSettingsPage({ params }: { params: Promis
           phone={scope.context.profile?.phone ?? null}
           email={auth?.user?.email ?? null}
           latest={latestTest ?? null}
+        />
+        <WhatsappLineCard
+          number={clinic.whatsapp_number ?? null}
+          openerTemplateId={byKind.get('conversation_opener')?.whatsapp_template_id ?? null}
+          openerText={tInbox('openerBody', { name: '{{1}}', clinic: '{{2}}' })}
         />
         {AUTOMATION_KINDS.map((kind) => (
           <AutomationCard
