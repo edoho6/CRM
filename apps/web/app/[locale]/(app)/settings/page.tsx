@@ -4,7 +4,6 @@ import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
 import { SettingsNav } from '@/features/settings/settings-nav';
 import { ClinicSettingsForm } from '@/features/settings/clinic-settings-form';
-import { ReminderTemplateForm } from '@/features/settings/reminder-template-form';
 import { pageTitle } from '@/lib/page-title';
 
 export const generateMetadata = pageTitle('settings', 'title');
@@ -21,17 +20,11 @@ export default async function SettingsPage({ params }: { params: Promise<{ local
     <>
       <PageHeader title={t('title')} description={t('subtitle')} below={<SettingsNav />} />
       <PageBody width="narrow">
+        {/* The reminder's wording moved to the Messages tab, with everything
+            else the clinic sends on its own. */}
         <ClinicSettingsForm
           name={scope.context.clinic.name}
           tracksInventory={scope.context.clinic.tracks_inventory !== false}
-        />
-        <ReminderTemplateForm
-          template={scope.context.clinic.reminder_template ?? null}
-          enabled={scope.context.clinic.reminders_enabled !== false}
-          hoursBefore={scope.context.clinic.reminder_hours_before ?? 24}
-          channel={scope.context.clinic.reminder_channel ?? 'whatsapp'}
-          pushEnabled={scope.context.clinic.reminder_push_enabled !== false}
-          clinicName={scope.context.clinic.name}
         />
       </PageBody>
     </>

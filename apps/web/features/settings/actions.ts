@@ -1,8 +1,12 @@
 'use server';
 
 import { z } from 'zod';
+import { getTranslations } from 'next-intl/server';
 import {
+  AUTOMATION_KINDS,
   appointmentTypeSchema,
+  automationSettingsSchema,
+  googleReviewUrlSchema,
   patientTagSchema,
   reminderSettingsSchema,
   roomSchema,
@@ -497,6 +501,99 @@ export async function saveReminderSettings(input: unknown): Promise<ActionResult
     })
     .eq('id', scope.context.clinic.id);
 
+  if (error) return actionError(error);
+
+  // The reminder's WhatsApp template lives with the other automations' —
+  // one table the sender reads for every kind — under the reminder's own key.
+  const { error: templateError } = await scope.supabase
+    .from('clinic_automations')
+    .upsert(
+      {
+        clinic_id: scope.context.clinic.id,
+        kind: 'appointment_reminder',
+        whatsapp_template_id: parsed.data.whatsapp_template_id,
+      },
+      { onConflict: 'clinic_id,kind' },
+    );
+  if (templateError) return actionError(templateError);
+  return actionOk();
+}
+
+/* ---------------------------------------------------------------------------
+ * The automated messages
+ * ------------------------------------------------------------------------ */
+
+/**
+ * One automation's settings. The kind is checked against the four the
+ * database knows, and the clinic is the session's: a crafted request cannot
+ * switch a message on for someone else's patients.
+ */
+export async function saveAutomation(kind: string, input: unknown): Promise<ActionResult> {
+  const scope = await getClinicScope();
+  if (!scope) return actionError(new Error('unauthorized'));
+
+  if (!(AUTOMATION_KINDS as readonly string[]).includes(kind)) return actionError(new Error('validation'));
+  const parsed = automationSettingsSchema.safeParse(input);
+  if (!parsed.success) return actionError(new Error('validation'));
+
+  const { error } = await scope.supabase
+    .from('clinic_automations')
+    .upsert({ clinic_id: scope.context.clinic.id, kind, ...parsed.data }, { onConflict: 'clinic_id,kind' });
+  if (error) return actionError(error);
+  return actionOk();
+}
+
+export async function saveGoogleReviewUrl(input: unknown): Promise<ActionResult> {
+  const scope = await getClinicScope();
+  if (!scope) return actionError(new Error('unauthorized'));
+
+  const parsed = googleReviewUrlSchema.safeParse(input);
+  if (!parsed.success) return actionError(new Error('validation'));
+
+  const { error } = await scope.supabase
+    .from('clinics')
+    .update({ google_review_url: parsed.data.google_review_url })
+    .eq('id', scope.context.clinic.id);
+  if (error) return actionError(error);
+  return actionOk();
+}
+
+const TEST_CHANNELS = ['sms', 'whatsapp', 'email'] as const;
+
+/**
+ * A message to yourself, queued like any other.
+ *
+ * It goes to the practitioner's own phone (or, by email, their own address),
+ * never to a patient, and the sender lets it through even from a clinic
+ * marked as a sandbox — it is how you find out the service is connected.
+ */
+export async function sendTestMessage(channel: unknown): Promise<ActionResult> {
+  const scope = await getClinicScope();
+  if (!scope) return actionError(new Error('unauthorized'));
+  if (!(TEST_CHANNELS as readonly unknown[]).includes(channel)) return actionError(new Error('validation'));
+  const via = channel as (typeof TEST_CHANNELS)[number];
+
+  let recipient: string | null = null;
+  if (via === 'email') {
+    const { data } = await scope.supabase.auth.getUser();
+    recipient = data.user?.email ?? null;
+  } else {
+    recipient = scope.context.profile?.phone?.trim() || null;
+  }
+  if (!recipient) return actionError(new Error('no_recipient'));
+
+  const clinic = scope.context.clinic;
+  const t = await getTranslations('settings.messaging.test');
+  const { error } = await scope.supabase.from('message_log').insert({
+    clinic_id: clinic.id,
+    channel: via,
+    template_key: 'test_message',
+    recipient,
+    body: t('body', { clinic: clinic.name }),
+    subject: via === 'email' ? clinic.name : null,
+    params: [clinic.name],
+    status: 'queued',
+  });
   if (error) return actionError(error);
   return actionOk();
 }

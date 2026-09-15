@@ -18,6 +18,7 @@ const SECTIONS = [
   { href: '/account', labelKey: 'account', exact: false },
   { href: '/settings/team', labelKey: 'team', exact: false },
   { href: '/settings/booking', labelKey: 'booking', exact: false },
+  { href: '/settings/messaging', labelKey: 'messaging', exact: false },
   { href: '/settings/tags', labelKey: 'tags', exact: false },
   { href: '/settings/access', labelKey: 'access', exact: false },
   { href: '/settings/consent', labelKey: 'consent', exact: false },

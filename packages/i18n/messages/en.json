@@ -73,7 +73,24 @@
       "failed": "Failed",
       "skipped": "Not sent"
     },
-    "pushQueued": "Reaches the phone app within minutes; nothing to send by hand."
+    "pushQueued": "Reaches the phone app within minutes; nothing to send by hand.",
+    "errors": {
+      "auth_failed": "The messaging service's connection details are wrong.",
+      "no_credit": "The 019 account has run out of credit.",
+      "no_permission": "The 019 account may not send at the moment.",
+      "bad_number": "The phone number is not valid.",
+      "foreign_number": "Only Israeli numbers can be sent to.",
+      "needs_template": "WhatsApp needs an approved template for this message. It can be sent by hand.",
+      "blocked": "The number is blocked from receiving messages.",
+      "too_long": "The message is too long.",
+      "bad_sender": "The sender name must be up to 11 English letters or digits.",
+      "no_recipient": "No phone or email in the file.",
+      "no_device": "No phone with the app.",
+      "synthetic_clinic": "The clinic is marked as a sandbox — messages to patients are not sent.",
+      "provider_error": "The messaging service did not answer as expected.",
+      "skipped_by_staff": "Not sent, by decision.",
+      "other": "Sending failed."
+    }
   },
   "platform": {
     "title": "All clinics",
@@ -2171,7 +2188,72 @@
       "preview": "How it will read",
       "sampleName": "Dana",
       "pushEnabled": "A phone notification for whoever installed the app",
-      "pushHint": "A patient with our app installed and signed in gets the reminder as a phone notification, with no message on the channel above. If the notification cannot be delivered, the message goes out on the usual channel an hour later."
+      "pushHint": "A patient with our app installed and signed in gets the reminder as a phone notification, with no message on the channel above. If the notification cannot be delivered, the message goes out on the usual channel an hour later.",
+      "whatsappTemplateId": "WhatsApp template id",
+      "whatsappTemplateHint": "The id of the WhatsApp-approved template for the reminder, from the messaging service's account. Without one the reminder goes as free text — which only reaches a patient who wrote to the clinic in the last 24 hours."
+    },
+    "messaging": {
+      "title": "Automated messages",
+      "subtitle": "What goes to patients on its own, when, and in which words. All on the channel chosen for reminders.",
+      "enabled": "On",
+      "template": "Wording",
+      "preview": "How it will read",
+      "sampleName": "Dana",
+      "hourHint": "An hour between 6 and 20. The message goes at that hour or after it, never at night.",
+      "whatsappTemplateId": "WhatsApp template id",
+      "whatsappTemplateHint": "The id of the WhatsApp-approved template for this message, from the messaging service's account. Without one the message goes as free text — which only reaches a patient who wrote to the clinic in the last 24 hours.",
+      "consentNote": "Sent only to patients who agreed to hear from the clinic (marketing consent, in the file or the portal). Every message ends with a removal link — the spam law requires it.",
+      "kinds": {
+        "treatment_followup": {
+          "title": "Follow-up after treatment",
+          "intro": "A short message after the treatment: how are you feeling. A service message — sent to every patient who was treated, once per treatment.",
+          "timing": "Hours after the treatment",
+          "placeholders": "You can use '{name}' and '{clinic}' — they are filled in with the patient's and the clinic's names."
+        },
+        "birthday": {
+          "title": "Birthday greeting",
+          "intro": "A greeting on the day, to patients with a date of birth in their file. Once a year.",
+          "timing": "From which hour",
+          "placeholders": "You can use '{name}' and '{clinic}'. The removal line is added at the end on its own."
+        },
+        "inactive_reengage": {
+          "title": "Reaching lapsed patients",
+          "intro": "To a patient in active treatment with no appointment ahead and no visit for a while. At most once every six months.",
+          "timing": "From which hour",
+          "days": "After how many days without a visit",
+          "placeholders": "You can use '{name}', '{clinic}' and '{booking_link}' — the online booking link, when the page is on. The removal line is added at the end on its own."
+        },
+        "review_request": {
+          "title": "Google review request",
+          "intro": "After a visit, a link to the clinic's Google page. At most once every six months per patient.",
+          "timing": "Hours after the treatment",
+          "placeholders": "You can use '{name}', '{clinic}' and '{link}' — the Google page link. The removal line is added at the end on its own.",
+          "noUrl": "For this message to go, the clinic's Google page link is needed — in the \"Google page\" card below."
+        }
+      },
+      "review": {
+        "title": "Google page",
+        "url": "Link for writing a review",
+        "hint": "In Google Business Profile: \"Ask for reviews\" → copy the link. Starts with https://",
+        "invalid": "The link has to start with https://"
+      },
+      "test": {
+        "title": "Test message",
+        "intro": "A message to you, to see that the sending service is connected. It goes within minutes, and what became of it shows here.",
+        "channel": "Channel",
+        "recipient": "To you:",
+        "noPhone": "There is no phone number in your area.",
+        "toAccount": "Add one",
+        "noEmail": "The account has no email address.",
+        "send": "Send a test message",
+        "queued": "The message is queued. It goes within minutes.",
+        "failed": "The message could not be queued.",
+        "latest": "Latest message",
+        "waiting": "Waiting to be sent.",
+        "notConnected": "The message has been waiting for more than ten minutes — the sending service is probably not connected yet.",
+        "refresh": "Check again",
+        "body": "A test message from {clinic}: the messaging service is connected."
+      }
     },
     "title": "Settings",
     "subtitle": "Clinic-wide preferences",
@@ -2201,7 +2283,8 @@
       "billing": "Billing",
       "consent": "Consent documents",
       "account": "My area",
-      "team": "Team"
+      "team": "Team",
+      "messaging": "Messages"
     },
     "access": {
       "title": "Access log",

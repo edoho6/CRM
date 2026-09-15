@@ -1496,7 +1496,7 @@ const STATIC_ROUTES = [
   '/inventory', '/inventory?tab=low', '/inventory/batches', '/inventory/batches/receive',
   '/inventory/suppliers', '/prices', '/prices?cat=needles&min=2', '/prices/credits', '/billing', '/billing/new',
   '/billing/settings', '/reports', '/assistant',
-  '/settings', '/settings/team', '/settings/access', '/settings/booking', '/settings/consent', '/settings/tags',
+  '/settings', '/settings/team', '/settings/access', '/settings/booking', '/settings/messaging', '/settings/consent', '/settings/tags',
   '/account', '/account/protocols', '/account/schedule', '/accessibility', '/verify',
 ];
 const PUBLIC_ROUTES = ['/about', '/accessibility', '/privacy', '/terms', '/delete-account', '/login', '/signup', '/setup', '/join/00000000-0000-4000-8000-000000000000'];

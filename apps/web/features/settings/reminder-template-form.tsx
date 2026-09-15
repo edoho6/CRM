@@ -39,6 +39,7 @@ export function ReminderTemplateForm({
   hoursBefore,
   channel,
   pushEnabled,
+  whatsappTemplateId,
   clinicName,
 }: {
   template: string | null;
@@ -46,6 +47,8 @@ export function ReminderTemplateForm({
   hoursBefore: number;
   channel: MessageChannel;
   pushEnabled: boolean;
+  /** The approved WhatsApp template that says the reminder, from the sending service. */
+  whatsappTemplateId: string | null;
   clinicName: string;
 }) {
   const t = useTranslations('settings.reminders');
@@ -58,6 +61,7 @@ export function ReminderTemplateForm({
   const [hours, setHours] = useState(String(hoursBefore));
   const [via, setVia] = useState<MessageChannel>(channel);
   const [push, setPush] = useState(pushEnabled);
+  const [templateId, setTemplateId] = useState(whatsappTemplateId ?? '');
   const [isPending, startTransition] = useTransition();
 
   // The built-in wording lives with the reminder itself, so the dialog that
@@ -78,6 +82,7 @@ export function ReminderTemplateForm({
         reminder_hours_before: hours,
         reminder_channel: via,
         reminder_push_enabled: push,
+        whatsapp_template_id: templateId,
       });
       if (!result.ok) {
         toast({ tone: 'danger', title: tc('errorGeneric') });
@@ -146,6 +151,19 @@ export function ReminderTemplateForm({
             {preview}
           </p>
         </div>
+        {/* A message the clinic starts on WhatsApp must be a template Meta
+            approved; the wording above is what to submit, and the id is what
+            comes back. */}
+        {via === 'whatsapp' ? (
+          <Field label={t('whatsappTemplateId')} htmlFor="reminder_wa_template" hint={t('whatsappTemplateHint')}>
+            <LtrInput
+              id="reminder_wa_template"
+              value={templateId}
+              maxLength={80}
+              onChange={(event) => setTemplateId(event.target.value)}
+            />
+          </Field>
+        ) : null}
         <div className="flex justify-end">
           <Button type="button" size="sm" disabled={isPending} onClick={save}>
             {tc('save')}
