@@ -1556,6 +1556,9 @@ async function main() {
     await checkText('confirm page noindex', `${baseUrl}/he/confirm/00000000-0000-4000-8000-000000000000`, (html) => [
       /<meta name="robots" content="noindex/i.test(html) ? null : 'no noindex meta tag on the confirmation page',
     ]);
+    await checkText('unsubscribe page noindex', `${baseUrl}/he/unsubscribe/00000000-0000-4000-8000-000000000000`, (html) => [
+      /<meta name="robots" content="noindex/i.test(html) ? null : 'no noindex meta tag on the removal page',
+    ]);
     if (portalUp) {
       await checkText('portal robots.txt', `${portalUrl}/robots.txt`, (text) => [
         /^Disallow:\s*\/\s*$/m.test(text) ? null : 'the portal is not disallowed',

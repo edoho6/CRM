@@ -38,7 +38,7 @@ export default async function MessagesPage({
   const monthAgo = new Date();
   monthAgo.setDate(monthAgo.getDate() - 30);
 
-  const [queuedResult, historyResult] = await Promise.all([
+  const [queuedResult, failedResult, historyResult] = await Promise.all([
     scope.supabase
       .from('message_log')
       .select(SELECT)
@@ -46,10 +46,20 @@ export default async function MessagesPage({
       .order('created_at', { ascending: true })
       .limit(200)
       .returns<QueueRow[]>(),
+    // What the sending service refused, with its reason: the person is the
+    // fallback, so these come back as cards with the manual path.
+    scope.supabase
+      .from('message_log')
+      .select(SELECT)
+      .eq('status', 'failed')
+      .gte('created_at', monthAgo.toISOString())
+      .order('created_at', { ascending: false })
+      .limit(100)
+      .returns<QueueRow[]>(),
     scope.supabase
       .from('message_log')
       .select(SELECT, { count: 'exact' })
-      .neq('status', 'queued')
+      .in('status', ['sent', 'skipped'])
       .gte('created_at', monthAgo.toISOString())
       .order('created_at', { ascending: false })
       .range(...pageRange(page))
@@ -60,7 +70,11 @@ export default async function MessagesPage({
     <>
       <PageHeader title={t('title')} description={t('subtitle')} />
       <PageBody width="narrow">
-        <MessageQueue queued={queuedResult.data ?? []} history={historyResult.data ?? []} />
+        <MessageQueue
+          queued={queuedResult.data ?? []}
+          failed={failedResult.data ?? []}
+          history={historyResult.data ?? []}
+        />
         <Pagination
           page={page}
           total={historyResult.count ?? null}

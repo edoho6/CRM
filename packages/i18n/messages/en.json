@@ -74,6 +74,26 @@
       "skipped": "Not sent"
     },
     "pushQueued": "Reaches the phone app within minutes; nothing to send by hand.",
+    "failedTitle": "Not sent",
+    "failedIntro": "Messages the sending service refused, with the reason. Send them by hand, or let them go.",
+    "kinds": {
+      "appointment_reminder": "Appointment reminder",
+      "task_alert": "Task reminder",
+      "booking_code": "Booking verification code",
+      "treatment_followup": "Follow-up after treatment",
+      "birthday": "Birthday greeting",
+      "inactive_reengage": "Reaching a lapsed patient",
+      "review_request": "Review request",
+      "test_message": "Test message",
+      "other": "Message"
+    },
+    "providers": {
+      "manual": "sent by hand",
+      "resend": "by email",
+      "fcm": "as a phone notification",
+      "sms019": "by SMS through 019",
+      "whatsapp019": "by WhatsApp through 019"
+    },
     "errors": {
       "auth_failed": "The messaging service's connection details are wrong.",
       "no_credit": "The 019 account has run out of credit.",
@@ -153,6 +173,16 @@
     "changeLater": "You can come back to this link and change your answer.",
     "addToCalendar": "Add to calendar",
     "directions": "Directions"
+  },
+  "unsubscribe": {
+    "greeting": "Hello {name},",
+    "intro": "Here you can stop receiving news and greetings from {clinic}.",
+    "confirm": "Stop these messages",
+    "remindersStay": "Reminders for appointments you booked will still arrive.",
+    "done": "Done. News and greetings will no longer be sent; appointment reminders will still arrive.",
+    "already": "You have already stopped these messages. Appointment reminders will still arrive.",
+    "expired": "This link is no longer valid.",
+    "error": "Something went wrong. Please try again in a moment."
   },
   "tasks": {
     "remindWhen": "Remind",
@@ -2773,7 +2803,8 @@
       "portal": "Through the portal",
       "paper_form": "Paper form",
       "phone": "Phone",
-      "email": "Email"
+      "email": "Email",
+      "link": "A link in a message"
     },
     "exportTitle": "Export the patient file",
     "exportBody": "Everything in the patient's file, in one download: details, medical history, appointments, treatments, prescriptions, documents, consents, and who opened the file and when.",

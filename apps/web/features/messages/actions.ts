@@ -21,13 +21,19 @@ export async function refreshMessageQueue(): Promise<ActionResult<{ queued: numb
   const scope = await getClinicScope();
   if (!scope) return actionError(new Error('unauthorized'));
 
-  const [{ data: reminders, error }, { data: alerts, error: alertsError }] = await Promise.all([
+  const [
+    { data: reminders, error },
+    { data: alerts, error: alertsError },
+    { data: automations, error: automationsError },
+  ] = await Promise.all([
     scope.supabase.rpc('enqueue_due_reminders', { p_base_url: baseUrl() }),
     scope.supabase.rpc('enqueue_due_task_alerts'),
+    scope.supabase.rpc('enqueue_due_automations', { p_base_url: baseUrl() }),
   ]);
   if (error) return actionError(error);
   if (alertsError) return actionError(alertsError);
-  return actionOk({ queued: Number(reminders ?? 0) + Number(alerts ?? 0) });
+  if (automationsError) return actionError(automationsError);
+  return actionOk({ queued: Number(reminders ?? 0) + Number(alerts ?? 0) + Number(automations ?? 0) });
 }
 
 /**
@@ -48,7 +54,11 @@ export async function markMessageSent(id: string): Promise<ActionResult> {
   return actionOk();
 }
 
-/** Dropped from the queue without sending — the patient rang, or the message is wrong. */
+/**
+ * Dropped without sending — the patient rang, or the message is wrong. A
+ * message the service refused can be dropped the same way, once its reason
+ * has been read.
+ */
 export async function skipMessage(id: string): Promise<ActionResult> {
   const scope = await getClinicScope();
   if (!scope) return actionError(new Error('unauthorized'));
@@ -57,7 +67,7 @@ export async function skipMessage(id: string): Promise<ActionResult> {
     .from('message_log')
     .update({ status: 'skipped', error_code: 'skipped_by_staff' })
     .eq('id', id)
-    .eq('status', 'queued');
+    .in('status', ['queued', 'failed']);
   if (error) return actionError(error);
   return actionOk();
 }
