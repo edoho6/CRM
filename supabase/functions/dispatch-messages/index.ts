@@ -18,36 +18,26 @@
 //   EMAIL_FROM                — e.g. "Herbalist <reminders@your-domain>"
 //   FCM_SERVICE_ACCOUNT_JSON  — enables phone notifications: the service
 //                               account file Firebase hands out, pasted whole
-//   SMS_PROVIDER              — none yet; the adapter below is the seam
+//   SMS_019_USERNAME          — enables SMS through 019 (019sms.co.il): the
+//   SMS_019_TOKEN               account's user name, an API token made in its
+//   SMS_SENDER                  settings, and the sender name patients see
+//                               (up to eleven English letters and digits)
+//   WHATSAPP_019_SOURCE       — enables WhatsApp through the same 019 account:
+//                               the clinic's WhatsApp number as verified there,
+//                               international without a plus (972…)
 //
-// Nothing about a patient is logged here. A failed send records a short
-// error code on the row and nothing else.
+// The adapters themselves are plain TypeScript in ../_shared/messaging, run
+// by this function and tested by the web app. Nothing about a patient is
+// logged here. A failed send records a short error code on the row and
+// nothing else, and is never retried on its own: the reason is something a
+// person fixes (credit, a number, a missing template), and the Messages
+// screen shows it with the manual path beside it.
 
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2';
-
-type Channel = 'sms' | 'whatsapp' | 'email' | 'push';
-
-interface QueuedMessage {
-  id: string;
-  channel: Channel;
-  template_key: string;
-  recipient: string | null;
-  body: string;
-  subject: string | null;
-  link_url: string | null;
-  appointment_id: string | null;
-}
-
-interface SendResult {
-  ok: boolean;
-  providerId?: string;
-  errorCode?: string;
-}
-
-interface Provider {
-  name: string;
-  send(message: QueuedMessage): Promise<SendResult>;
-}
+import { buildTemplateMap, skipReason, templateIdFor } from '../_shared/messaging/policy.ts';
+import { createSms019Provider } from '../_shared/messaging/sms-019.ts';
+import { createWhatsapp019Provider } from '../_shared/messaging/whatsapp-019.ts';
+import type { Channel, Provider, QueuedMessage, SendResult } from '../_shared/messaging/types.ts';
 
 /* ---------------------------------------------------------------------------
  * Providers. One per channel; adding one is adding an object here.
@@ -78,17 +68,21 @@ function resendProvider(): Provider | null {
   };
 }
 
-/**
- * SMS and WhatsApp: no provider is connected yet. When one is chosen, this is
- * the only place that changes — return an object like the email one above,
- * keyed on the provider's environment variables.
- */
+/** SMS through 019, once its three secrets are set. */
 function smsProvider(): Provider | null {
-  return null;
+  const username = Deno.env.get('SMS_019_USERNAME');
+  const token = Deno.env.get('SMS_019_TOKEN');
+  const sender = Deno.env.get('SMS_SENDER');
+  if (!username || !token || !sender) return null;
+  return createSms019Provider({ username, token, sender, fetch: (input, init) => fetch(input, init) });
 }
 
+/** WhatsApp through the same 019 account, once the clinic's number is set. */
 function whatsappProvider(): Provider | null {
-  return null;
+  const token = Deno.env.get('SMS_019_TOKEN');
+  const source = Deno.env.get('WHATSAPP_019_SOURCE');
+  if (!token || !source) return null;
+  return createWhatsapp019Provider({ token, source: source.replace(/\D/g, ''), fetch: (input, init) => fetch(input, init) });
 }
 
 /* ---------------------------------------------------------------------------
@@ -232,6 +226,21 @@ function pushProvider(supabase: SupabaseClient): Provider | null {
  * The run
  * ------------------------------------------------------------------------ */
 
+/** A queued row as the query returns it, with its clinic's sandbox mark joined in. */
+interface QueuedRow {
+  id: string;
+  clinic_id: string;
+  channel: Channel;
+  template_key: string;
+  recipient: string | null;
+  body: string;
+  subject: string | null;
+  link_url: string | null;
+  appointment_id: string | null;
+  params: string[] | null;
+  clinic: { is_synthetic: boolean } | { is_synthetic: boolean }[] | null;
+}
+
 Deno.serve(async (request) => {
   const secret = Deno.env.get('DISPATCH_SECRET');
   if (!secret || request.headers.get('x-dispatch-secret') !== secret) {
@@ -257,16 +266,50 @@ Deno.serve(async (request) => {
 
   const { data, error } = await supabase
     .from('message_log')
-    .select('id, channel, template_key, recipient, body, subject, link_url, appointment_id')
+    .select('id, clinic_id, channel, template_key, recipient, body, subject, link_url, appointment_id, params, clinic:clinics(is_synthetic)')
     .eq('status', 'queued')
     .in('channel', channels)
     .order('created_at', { ascending: true })
     .limit(100);
   if (error) return Response.json({ error: 'read_failed' }, { status: 500 });
 
+  const rows = (data ?? []) as unknown as QueuedRow[];
+
+  // The WhatsApp templates of every clinic in this batch, read once: a
+  // template id pasted after a row was queued still applies to it.
+  const clinicIds = [...new Set(rows.map((row) => row.clinic_id))];
+  const { data: templateRows } = clinicIds.length
+    ? await supabase
+        .from('clinic_automations')
+        .select('clinic_id, kind, whatsapp_template_id')
+        .in('clinic_id', clinicIds)
+    : { data: [] };
+  const templates = buildTemplateMap(
+    (templateRows ?? []) as { clinic_id: string; kind: string; whatsapp_template_id: string | null }[],
+  );
+
   let sent = 0;
   let failed = 0;
-  for (const message of (data ?? []) as QueuedMessage[]) {
+  let skipped = 0;
+  for (const row of rows) {
+    const clinic = Array.isArray(row.clinic) ? row.clinic[0] : row.clinic;
+    const message: QueuedMessage = {
+      ...row,
+      params: Array.isArray(row.params) ? row.params.map(String) : null,
+      whatsappTemplateId: templateIdFor(templates, row.clinic_id, row.template_key),
+      clinicSynthetic: clinic?.is_synthetic === true,
+    };
+
+    const reason = skipReason(message);
+    if (reason) {
+      await supabase
+        .from('message_log')
+        .update({ status: 'skipped', error_code: reason })
+        .eq('id', message.id);
+      skipped += 1;
+      continue;
+    }
+
     const provider = providers[message.channel]!;
     let result: SendResult;
     try {
@@ -295,5 +338,5 @@ Deno.serve(async (request) => {
     }
   }
 
-  return Response.json({ sent, failed });
+  return Response.json({ sent, failed, skipped });
 });

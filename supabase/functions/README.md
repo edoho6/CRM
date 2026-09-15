@@ -28,9 +28,28 @@ instead.
 | `RESEND_API_KEY` | Enables email through resend.com. |
 | `EMAIL_FROM` | The sender, e.g. `Herbalist <reminders@your-domain>`. |
 | `FCM_SERVICE_ACCOUNT_JSON` | Enables phone notifications through Firebase Cloud Messaging: the service-account JSON file Firebase hands out (Project settings → Service accounts → Generate new private key), pasted whole. |
+| `SMS_019_USERNAME` | Enables SMS through 019 (019sms.co.il): the account's user name… |
+| `SMS_019_TOKEN` | …an API token made in the account's settings (shown once)… |
+| `SMS_SENDER` | …and the sender name patients see: up to eleven English letters and digits. All three, or no SMS. |
+| `WHATSAPP_019_SOURCE` | Enables WhatsApp through the same 019 account: the clinic's WhatsApp number as verified there, international without a plus (`972…`). Needs `SMS_019_TOKEN` too. |
 
-SMS and WhatsApp have no provider yet. When one is chosen, `smsProvider()` /
-`whatsappProvider()` in `index.ts` are the only places that change.
+SMS and WhatsApp go through 019. The adapters are plain TypeScript in
+`_shared/messaging/` (run here, tested from `apps/web` through the
+`@messaging/*` alias): the phone number is folded into the form the service
+wants, the service's status numbers become short codes (`no_credit`,
+`bad_number`, `needs_template`), and nothing of its text is kept.
+
+WhatsApp has a rule of Meta's: a message the clinic starts must be a
+template Meta approved; free text is allowed only within a day of the patient
+writing. A row whose kind has a template id on `clinic_automations` (pasted
+in Settings → Messages) goes as that template with the row's `params` as its
+variables; a row without one is tried as free text and, refused, is marked
+`needs_template` for the manual path. A clinic marked as a sandbox
+(`is_synthetic`) sends nothing to its patients — its rows are marked
+`skipped` — except the practitioner's own `test_message`.
+
+Nothing is retried on its own. A failed row keeps its code and stays on the
+Messages screen, where a person sends it by hand or fixes what the code names.
 
 Phone notifications (`push` rows, migration 41): the row's `recipient` is a
 user id and the phones are looked up in `device_push_tokens` here. A token

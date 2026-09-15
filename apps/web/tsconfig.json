@@ -4,7 +4,8 @@
     "plugins": [{ "name": "next" }],
     "paths": {
       "@/*": ["./*"],
-      "@shop/*": ["../../supabase/functions/_shared/shop-prices/*"]
+      "@shop/*": ["../../supabase/functions/_shared/shop-prices/*"],
+      "@messaging/*": ["../../supabase/functions/_shared/messaging/*"]
     },
     "allowImportingTsExtensions": true,
     "types": ["node"]
