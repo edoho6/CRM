@@ -10,11 +10,16 @@ import { pageTitle } from '@/lib/page-title';
 
 export const generateMetadata = pageTitle('settings', 'title');
 
-/** A row count and nothing else; null when the table is not there to count. */
+/**
+ * A row count and nothing else; null when the table is not there to count.
+ * A HEAD request against a missing table comes back without a body, and
+ * the client reports that as no count rather than as an error — so a
+ * missing count is read as a missing table, never as zero rows.
+ */
 async function countRows(supabase: SupabaseClient, table: string): Promise<number | null> {
   const { count, error } = await supabase.from(table).select('*', { count: 'exact', head: true });
-  if (error) return null;
-  return count ?? 0;
+  if (error || count === null || count === undefined) return null;
+  return count;
 }
 
 /**
