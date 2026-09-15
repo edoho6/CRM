@@ -123,6 +123,8 @@ pnpm 9 עם Turborepo, Node 20.9 ומעלה. `pnpm-workspace.yaml` מכיל `app
 - `scripts/seed-sandbox-month.mjs` ממלא קליניקת בדיקות (או את הקליניקה של המשתמש עם `--me`) דרך ה-API.
 - `scripts/library/` — טעינת הספרייה המקצועית מדרייב ומאתרים (README שם).
 - `scripts/medicine/` — צנרת מאגר הרפואה המערבית (README שם).
+- `scripts/catalogue/` — הטקסט של צמחים, פורמולות ונקודות מעובדות של ברא ו-American Dragon, בניסוח שלנו
+  בשתי השפות (README שם); הקוראים והבדיקות ב-`supabase/functions/_shared/catalogue/`.
 - `scripts/fetch-herb-*.mjs`, `scripts/fetch-shop-images.mjs` — תמונות ברישיון חופשי עם manifest.
 - `scripts/render-*.mjs` — אייקונים, תמונת שיתוף, צילומי מסך לדף הבית ולחנויות.
 - `scripts/pull/` — משיכת מידע מחשבונות של המשתמש בלי סיסמאות בצ'אט (README שם).

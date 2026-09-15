@@ -256,7 +256,9 @@ pnpm 9 + Turborepo, Node 20.9+. ההתקנה והחיבור ל-Supabase ב-`READ
   כסגור בסקריפט הפתיחה ובודק אותו רק בביקור `?install-hint=1`
 - **שם הקליניקה בראש התפריט** הוא קישור ל-`profiles.home_path` (migration 38, `HOME_PATHS` ב-domain),
   שנבחר ב"איזור אישי ← מראה"
-- **מאגר המידע:** צמח, פורמולה ונקודה בדף הטיפול הם `ReferenceChip` שפותח מונוגרף בחלון מעל הדף, לא ניווט; בדפי רשומה `<ReferenceNav compact />` בחריץ `actions`. הקטלוג המשותף (`catalogue_*`, בלי `clinic_id`) נטען לקליניקה רק ב-`clinic_load_catalogue()` — ממלא חסרים, לעולם לא דורס תיקון; `needs_review` יורד בעריכה קלינית או ב"אישור" שרושם מי ומתי. הפרטים — `apps/web/features/reference/CLAUDE.md`
+- **מאגר המידע:** צמח, פורמולה ונקודה בדף הטיפול הם `ReferenceChip` שפותח מונוגרף בחלון מעל הדף, לא ניווט; בדפי רשומה `<ReferenceNav compact />` בחריץ `actions`. הקטלוג המשותף (`catalogue_*`, בלי `clinic_id`) נטען לקליניקה רק ב-`clinic_load_catalogue()` — ממלא חסרים, לעולם לא דורס תיקון; `needs_review` יורד בעריכה קלינית או ב"אישור" שרושם מי ומתי. הטקסט הקליני של הקטלוג נכתב מעובדות של ברא
+  ו-American Dragon בניסוח שלנו, בעברית ובאנגלית (`scripts/catalogue/`, migration 57) — לא מועתק ולא מהידע של
+  המודל. הפרטים — `apps/web/features/reference/CLAUDE.md`
 - **דף הטיפול:** רשומה חתומה נפתחת רק ב-`reopen_encounter(id, reason)` — לעולם לא עריכה שקטה; הקואורדינטות של הגוף התלת-ממדי חיות רק בטבלה המשותפת `body_points` (נכתבת רק על ידי אדמין פלטפורמה מכלי המיקום), והדגם glb בלי Draco/טקסטורות; `zoom-frame.tsx` הוא המקום היחיד לקואורדינטות פיזיות; כתב יד נשמר כ-PNG ב-`patient_documents`. סידור הפאנלים, ההשוואה והפרטים — `apps/web/features/encounters/CLAUDE.md`
 - **הגדלת טקסט 200%:** `pnpm smoke -- --zoom` מציב `html { font-size: 200% }` לפני הציור ובודק בכל מסך
   שהדף לא גולל הצידה ושאף תיבה לא חותכת טקסט שלא נועד להיחתך. מה שנשבר ותוקן: רוחב מינימלי קבוע

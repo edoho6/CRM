@@ -5,7 +5,8 @@
     "paths": {
       "@/*": ["./*"],
       "@shop/*": ["../../supabase/functions/_shared/shop-prices/*"],
-      "@messaging/*": ["../../supabase/functions/_shared/messaging/*"]
+      "@messaging/*": ["../../supabase/functions/_shared/messaging/*"],
+      "@catalogue/*": ["../../supabase/functions/_shared/catalogue/*"]
     },
     "allowImportingTsExtensions": true,
     "types": ["node"]

@@ -1,7 +1,19 @@
 import { notFound } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { AlertTriangle, Pencil } from 'lucide-react';
-import { Alert, Badge, Button, Card, CardBody, CardHeader, CardTitle, Dash, DetailRow } from '@clinic/ui';
+import {
+  Alert,
+  Badge,
+  Button,
+  Card,
+  CardBody,
+  CardHeader,
+  CardTitle,
+  Dash,
+  DetailRow,
+} from '@clinic/ui';
+import { localizedField } from '@clinic/domain';
+import { SourcesLine } from '@/features/reference/sources-line';
 import { Link } from '@clinic/i18n/navigation';
 import type { AcupuncturePoint } from '@clinic/db/types';
 import { PageHeader } from '@/components/app-shell';
@@ -167,7 +179,10 @@ export default async function PointDetailPage({
                   <ApproveButton kind="point" id={point.id} />
                 </span>
               ) : (
-                <ReviewedLine reviewedAt={point.reviewed_at} reviewedByName={point.reviewed_by_name} />
+                <ReviewedLine
+                  reviewedAt={point.reviewed_at}
+                  reviewedByName={point.reviewed_by_name}
+                />
               )}
             </CardHeader>
             <CardBody>
@@ -186,21 +201,22 @@ export default async function PointDetailPage({
               ) : null}
               <dl>
                 <DetailRow label={t('fields.location')}>
-                  <Prose text={point.location} />
+                  <Prose text={localizedField(point, 'location', locale)} />
                 </DetailRow>
                 <DetailRow label={t('fields.actions')}>
-                  <Prose text={point.actions} />
+                  <Prose text={localizedField(point, 'actions', locale)} />
                 </DetailRow>
                 <DetailRow label={t('fields.indications')}>
-                  <Prose text={point.indications} />
+                  <Prose text={localizedField(point, 'indications', locale)} />
                 </DetailRow>
                 <DetailRow label={t('fields.needling')}>
-                  <Prose text={point.needling} />
+                  <Prose text={localizedField(point, 'needling', locale)} />
                 </DetailRow>
                 <DetailRow label={t('fields.cautions')}>
-                  <Prose text={point.cautions} />
+                  <Prose text={localizedField(point, 'cautions', locale)} />
                 </DetailRow>
               </dl>
+              <SourcesLine row={point} className="mt-3" />
               {hasClinicalText ? (
                 <p className="mt-3 border-t border-ink-100 pt-2 text-xs leading-relaxed text-ink-600">
                   {t('clinicalSource')}

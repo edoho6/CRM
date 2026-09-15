@@ -154,6 +154,8 @@ export const TCM_CATEGORY_STYLES: Record<TcmCategory, ChipStyle> = {
   extinguish_wind: style('bg-teal-50 text-teal-700 ring-1 ring-teal-200', 'bg-teal-300'),
   expel_parasites: style('bg-lime-50 text-lime-800 ring-1 ring-lime-200', 'bg-lime-300'),
   external_application: style('bg-neutral-100 text-neutral-700 ring-1 ring-neutral-300', 'bg-neutral-400'),
+  // Western herbs sit outside the materia medica's families: a stone tone of their own.
+  western: style('bg-stone-100 text-stone-700 ring-1 ring-stone-300', 'bg-stone-400'),
   other: style('bg-ink-100 text-ink-700 ring-1 ring-ink-200', 'bg-ink-300'),
 };
 

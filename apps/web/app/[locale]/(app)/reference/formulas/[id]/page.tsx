@@ -19,7 +19,8 @@ import {
 } from '@clinic/ui';
 import { Link } from '@clinic/i18n/navigation';
 import type { FormulaStockLevel, Herb, HerbFormula, HerbFormulaItem } from '@clinic/db/types';
-import { TEMPERATURES, type Locale } from '@clinic/domain';
+import { TEMPERATURES, localizedField, type Locale } from '@clinic/domain';
+import { SourcesLine } from '@/features/reference/sources-line';
 import { PageHeader } from '@/components/app-shell';
 import { TcmChip, TcmChips } from '@/components/tcm-chip';
 import { getClinicScope } from '@/lib/session';
@@ -164,7 +165,11 @@ export default async function FormulaDetailPage({
           <ApproveButton kind="formula" id={formula.id} />
         </div>
       ) : (
-        <ReviewedLine reviewedAt={formula.reviewed_at} reviewedByName={formula.reviewed_by_name} className="mb-4" />
+        <ReviewedLine
+          reviewedAt={formula.reviewed_at}
+          reviewedByName={formula.reviewed_by_name}
+          className="mb-4"
+        />
       )}
 
       {/* Same idea as the herb page: the figures you need before reading a word. */}
@@ -371,59 +376,62 @@ export default async function FormulaDetailPage({
           </Card>
 
           <div className="grid gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('clinical')}</CardTitle>
-            </CardHeader>
-            <CardBody>
-              <dl>
-                <DetailRow label={tf('actions')}>
-                  <Prose text={formula.actions} />
-                </DetailRow>
-                <DetailRow label={tf('indications')}>
-                  <Prose text={formula.indications} />
-                </DetailRow>
-                <DetailRow label={tf('contraindications')}>
-                  <Prose text={formula.contraindications} />
-                </DetailRow>
-                {formula.modifications ? (
-                  <DetailRow label={tf('modifications')}>
-                    <Prose text={formula.modifications} />
+            <Card>
+              <CardHeader>
+                <CardTitle>{t('clinical')}</CardTitle>
+              </CardHeader>
+              <CardBody>
+                <dl>
+                  <DetailRow label={tf('actions')}>
+                    <Prose text={localizedField(formula, 'actions', locale)} />
                   </DetailRow>
-                ) : null}
-                {formula.description ? (
-                  <DetailRow label={tf('description')}>
-                    <Prose text={formula.description} />
+                  <DetailRow label={tf('indications')}>
+                    <Prose text={localizedField(formula, 'indications', locale)} />
                   </DetailRow>
-                ) : null}
-              </dl>
-            </CardBody>
-          </Card>
+                  <DetailRow label={tf('contraindications')}>
+                    <Prose text={localizedField(formula, 'contraindications', locale)} />
+                  </DetailRow>
+                  {formula.modifications ? (
+                    <DetailRow label={tf('modifications')}>
+                      <Prose text={formula.modifications} />
+                    </DetailRow>
+                  ) : null}
+                  {formula.description ? (
+                    <DetailRow label={tf('description')}>
+                      <Prose text={formula.description} />
+                    </DetailRow>
+                  ) : null}
+                </dl>
+                <SourcesLine row={formula} className="mt-3" />
+              </CardBody>
+            </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>{tc('name')}</CardTitle>
-            </CardHeader>
-            <CardBody>
-              <dl>
-                <DetailRow label={tf('namePinyin')}>
-                  <span dir="ltr">{formula.name_pinyin ?? <Dash />}</span>
-                </DetailRow>
-                <DetailRow label={tf('nameChinese')}>{formula.name_chinese ?? <Dash />}</DetailRow>
-                <DetailRow label={tf('nameEnglish')}>
-                  <span dir="ltr">{formula.name_english ?? <Dash />}</span>
-                </DetailRow>
-                {formula.name_hebrew ? (
-                  <DetailRow label={tf('nameHebrew')}>{formula.name_hebrew}</DetailRow>
-                ) : null}
-                <DetailRow label={tf('sourceText')}>
-                  <span dir="ltr" className="italic">
-                    {formula.source_text ?? <Dash />}
-                  </span>
-                </DetailRow>
-              </dl>
-            </CardBody>
-          </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>{tc('name')}</CardTitle>
+              </CardHeader>
+              <CardBody>
+                <dl>
+                  <DetailRow label={tf('namePinyin')}>
+                    <span dir="ltr">{formula.name_pinyin ?? <Dash />}</span>
+                  </DetailRow>
+                  <DetailRow label={tf('nameChinese')}>
+                    {formula.name_chinese ?? <Dash />}
+                  </DetailRow>
+                  <DetailRow label={tf('nameEnglish')}>
+                    <span dir="ltr">{formula.name_english ?? <Dash />}</span>
+                  </DetailRow>
+                  {formula.name_hebrew ? (
+                    <DetailRow label={tf('nameHebrew')}>{formula.name_hebrew}</DetailRow>
+                  ) : null}
+                  <DetailRow label={tf('sourceText')}>
+                    <span dir="ltr" className="italic">
+                      {formula.source_text ?? <Dash />}
+                    </span>
+                  </DetailRow>
+                </dl>
+              </CardBody>
+            </Card>
           </div>
         </div>
 
@@ -431,7 +439,13 @@ export default async function FormulaDetailPage({
           <h2 id="formula-composition" className="text-base font-semibold text-ink-900">
             {t('composition.title')}
           </h2>
-          <FormulaComposition herbs={items.map((item) => (item.herb ? { ...item.herb, name: herbPrimaryName(item.herb, locale as Locale) } : null))} />
+          <FormulaComposition
+            herbs={items.map((item) =>
+              item.herb
+                ? { ...item.herb, name: herbPrimaryName(item.herb, locale as Locale) }
+                : null,
+            )}
+          />
         </aside>
       </div>
     </>

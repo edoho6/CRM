@@ -551,6 +551,10 @@ export interface Herb {
   reviewed_by?: string | null;
   reviewed_by_name?: string | null;
   data_source: string | null;
+  /** The clinical fields in English (migration 57): {functions, indications, cautions, dosage_notes}; the columns hold the Hebrew. */
+  text_en?: Record<string, string | null> | null;
+  /** Where the facts came from: [{name, url, title}]. */
+  sources?: unknown;
   category: HerbCategory;
   default_unit: HerbUnit;
   properties: string | null;
@@ -660,6 +664,10 @@ export interface HerbFormula {
   reviewed_by?: string | null;
   reviewed_by_name?: string | null;
   data_source: string | null;
+  /** The clinical fields in English (migration 57): {actions, indications, contraindications}; the columns hold the Hebrew. */
+  text_en?: Record<string, string | null> | null;
+  /** Where the facts came from: [{name, url, title}]. */
+  sources?: unknown;
   is_active: boolean;
   created_by: string | null;
   created_at: string;
@@ -937,6 +945,10 @@ export interface AcupuncturePoint {
   reviewed_by?: string | null;
   reviewed_by_name?: string | null;
   data_source: string | null;
+  /** The clinical fields in English (migration 57): {location, actions, indications, needling, cautions}; the columns hold the Hebrew. */
+  text_en?: Record<string, string | null> | null;
+  /** Where the facts came from: [{name, url, title}]. */
+  sources?: unknown;
   is_active: boolean;
   created_at: string;
   updated_at: string;

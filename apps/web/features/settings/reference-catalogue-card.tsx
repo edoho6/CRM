@@ -3,9 +3,22 @@
 import { useState, useTransition } from 'react';
 import { useTranslations } from 'next-intl';
 import { BookOpen } from 'lucide-react';
-import { Alert, Button, Card, CardBody, CardHeader, CardTitle, Spinner, useToast } from '@clinic/ui';
+import {
+  Alert,
+  Button,
+  Card,
+  CardBody,
+  CardHeader,
+  CardTitle,
+  Spinner,
+  useToast,
+} from '@clinic/ui';
 import { useRouter } from '@clinic/i18n/navigation';
-import { loadReferenceCatalogue, type CatalogueLoadResult } from '@/features/reference/catalogue-actions';
+import {
+  loadReferenceCatalogue,
+  refreshReferenceCatalogueText,
+  type CatalogueLoadResult,
+} from '@/features/reference/catalogue-actions';
 
 export interface CatalogueCounts {
   /** Rows in the shared catalogue; null when the catalogue is not installed yet. */
@@ -26,6 +39,7 @@ export function ReferenceCatalogueCard({ counts }: { counts: CatalogueCounts }) 
   const router = useRouter();
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [result, setResult] = useState<CatalogueLoadResult | null>(null);
 
   const installed = counts.catalogue !== null;
@@ -47,10 +61,37 @@ export function ReferenceCatalogueCard({ counts }: { counts: CatalogueCounts }) 
         return;
       }
       setResult(outcome.data);
-      const added = outcome.data.herbs_added + outcome.data.formulas_added + outcome.data.points_added;
-      toast({ tone: 'success', title: added > 0 ? t('loaded', { count: added }) : t('nothingToAdd') });
+      const added =
+        outcome.data.herbs_added + outcome.data.formulas_added + outcome.data.points_added;
+      toast({
+        tone: 'success',
+        title: added > 0 ? t('loaded', { count: added }) : t('nothingToAdd'),
+      });
       router.refresh();
     });
+
+  // The facts-based text (migration 57): every entry nobody approved follows the catalogue.
+  const refresh = () => {
+    setIsRefreshing(true);
+    startTransition(async () => {
+      try {
+        const outcome = await refreshReferenceCatalogueText();
+        if (!outcome.ok) {
+          toast({ tone: 'danger', title: tc('errorGeneric') });
+          return;
+        }
+        setResult(outcome.data.loaded);
+        const count =
+          outcome.data.herbs_refreshed +
+          outcome.data.formulas_refreshed +
+          outcome.data.points_refreshed;
+        toast({ tone: 'success', title: t('refreshed', { count }) });
+        router.refresh();
+      } finally {
+        setIsRefreshing(false);
+      }
+    });
+  };
 
   const rows: Array<{ key: 'herbs' | 'formulas' | 'points'; label: string }> = [
     { key: 'herbs', label: t('herbs') },
@@ -115,11 +156,27 @@ export function ReferenceCatalogueCard({ counts }: { counts: CatalogueCounts }) 
         ) : null}
 
         <p className="text-xs leading-relaxed text-ink-600">{t('safe')}</p>
+        <p className="text-xs leading-relaxed text-ink-600">{t('refreshHint')}</p>
 
-        <div className="flex items-center justify-end gap-3">
+        <div className="flex flex-wrap items-center justify-end gap-3">
           {complete ? <span className="text-xs text-ink-600">{t('upToDate')}</span> : null}
-          <Button type="button" size="sm" disabled={isPending || !installed || empty} onClick={load}>
-            {isPending ? <Spinner className="h-4 w-4" /> : null}
+          <Button
+            type="button"
+            size="sm"
+            variant="secondary"
+            disabled={isPending || !installed || empty}
+            onClick={refresh}
+          >
+            {isRefreshing ? <Spinner className="h-4 w-4" /> : null}
+            {t('refresh')}
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            disabled={isPending || !installed || empty}
+            onClick={load}
+          >
+            {isPending && !isRefreshing ? <Spinner className="h-4 w-4" /> : null}
             {t('load')}
           </Button>
         </div>

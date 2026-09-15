@@ -27,8 +27,9 @@ import type {
   StockMovement,
   Supplier,
 } from '@clinic/db/types';
-import type { HerbUnit, Locale } from '@clinic/domain';
+import { localizedField, type HerbUnit, type Locale } from '@clinic/domain';
 import { PageHeader } from '@/components/app-shell';
+import { SourcesLine } from '@/features/reference/sources-line';
 import { TcmChip, TcmChips } from '@/components/tcm-chip';
 import { getClinicScope } from '@/lib/session';
 import {
@@ -218,7 +219,11 @@ export default async function HerbDetailPage({
           </span>
         </Alert>
       ) : (
-        <ReviewedLine reviewedAt={herb.reviewed_at} reviewedByName={herb.reviewed_by_name} className="mb-4" />
+        <ReviewedLine
+          reviewedAt={herb.reviewed_at}
+          reviewedByName={herb.reviewed_by_name}
+          className="mb-4"
+        />
       )}
 
       {/* The three things a practitioner reaches for before anything else: how
@@ -331,10 +336,13 @@ export default async function HerbDetailPage({
                 <DetailRow label={t('fields.pharmaceuticalName')}>
                   <span dir="ltr">{herb.pharmaceutical_name ?? <Dash />}</span>
                 </DetailRow>
-                {herb.dosage_notes ? (
-                  <DetailRow label={t('fields.dosageNotes')}>{herb.dosage_notes}</DetailRow>
+                {localizedField(herb, 'dosage_notes', locale) ? (
+                  <DetailRow label={t('fields.dosageNotes')}>
+                    {localizedField(herb, 'dosage_notes', locale)}
+                  </DetailRow>
                 ) : null}
               </dl>
+              <SourcesLine row={herb} className="mt-3" />
             </CardBody>
           </Card>
         </div>
@@ -347,13 +355,13 @@ export default async function HerbDetailPage({
             <CardBody>
               <dl>
                 <DetailRow label={t('fields.functions')}>
-                  <Prose text={herb.functions} />
+                  <Prose text={localizedField(herb, 'functions', locale)} />
                 </DetailRow>
                 <DetailRow label={t('fields.indications')}>
-                  <Prose text={herb.indications} />
+                  <Prose text={localizedField(herb, 'indications', locale)} />
                 </DetailRow>
                 <DetailRow label={t('fields.cautions')}>
-                  <Prose text={herb.cautions} />
+                  <Prose text={localizedField(herb, 'cautions', locale)} />
                 </DetailRow>
                 {herb.properties ? (
                   <DetailRow label={t('fields.properties')}>{herb.properties}</DetailRow>
@@ -384,9 +392,11 @@ export default async function HerbDetailPage({
                     </span>
                   </DetailRow>
                   <DetailRow label={t('fields.reorderThreshold')}>
-                    {herb.reorder_threshold === null
-                      ? <Dash />
-                      : format.number(Number(herb.reorder_threshold))}
+                    {herb.reorder_threshold === null ? (
+                      <Dash />
+                    ) : (
+                      format.number(Number(herb.reorder_threshold))
+                    )}
                   </DetailRow>
                 </dl>
                 <OrderDialog
@@ -434,14 +444,19 @@ export default async function HerbDetailPage({
                               {/* Pinyin and Chinese are one left-to-right run; a margin
                                   alone vanished between them in the Hebrew page, so the
                                   gap is a flex gap on a left-to-right box. */}
-                              <span dir="ltr" className="inline-flex flex-wrap items-baseline gap-x-3">
+                              <span
+                                dir="ltr"
+                                className="inline-flex flex-wrap items-baseline gap-x-3"
+                              >
                                 <Link
                                   href={`/reference/formulas/${formula.id}`}
                                   className="font-medium text-jade-800 underline-offset-2 hover:underline"
                                 >
                                   {formulaPrimaryName(formula, locale as Locale)}
                                 </Link>
-                                {formulaChinese ? <span className="text-ink-600">{formulaChinese}</span> : null}
+                                {formulaChinese ? (
+                                  <span className="text-ink-600">{formulaChinese}</span>
+                                ) : null}
                               </span>
                               {use.notes ? (
                                 <span className="block text-sm text-ink-700">{use.notes}</span>
@@ -482,7 +497,10 @@ export default async function HerbDetailPage({
                     {modifiedUses.map((use) => {
                       const formula = use.formula!;
                       return (
-                        <li key={formula.id} className="flex flex-wrap items-baseline justify-between gap-x-3">
+                        <li
+                          key={formula.id}
+                          className="flex flex-wrap items-baseline justify-between gap-x-3"
+                        >
                           <Link
                             href={`/reference/formulas/${formula.id}`}
                             className="text-jade-800 underline-offset-2 hover:underline"

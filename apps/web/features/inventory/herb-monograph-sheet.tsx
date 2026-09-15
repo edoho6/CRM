@@ -1,12 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useFormatter, useTranslations } from 'next-intl';
+import { useFormatter, useLocale, useTranslations } from 'next-intl';
 import { BookOpen } from 'lucide-react';
 import { Alert, Button, Dash, DetailRow, Dialog, DialogContent, Spinner } from '@clinic/ui';
 import type { Herb } from '@clinic/db/types';
+import { localizedField } from '@clinic/domain';
 import { Link } from '@clinic/i18n/navigation';
 import { TcmChip, TcmChips } from '@/components/tcm-chip';
+import { SourcesLine } from '@/features/reference/sources-line';
 import { herbBotanicalName, herbChineseName, herbPrimaryName } from '@/lib/display';
 import { loadHerbMonograph } from './herb-monograph-action';
 import { doseRangeLabel } from './dose-range';
@@ -112,6 +114,7 @@ export function HerbMonographSheet({
  */
 export function HerbMonographBody({ herb }: { herb: Herb }) {
   const t = useTranslations('inventory.herbs');
+  const locale = useLocale();
   const ti = useTranslations('inventory.image');
   const tCategory = useTranslations('inventory.category');
   const tTcm = useTranslations('inventory.tcmCategory');
@@ -185,21 +188,28 @@ export function HerbMonographBody({ herb }: { herb: Herb }) {
 
       <dl>
         <DetailRow label={t('fields.functions')}>
-          <Prose text={herb.functions} />
+          <Prose text={localizedField(herb, 'functions', locale)} />
         </DetailRow>
         <DetailRow label={t('fields.indications')}>
-          <Prose text={herb.indications} />
+          <Prose text={localizedField(herb, 'indications', locale)} />
         </DetailRow>
         <DetailRow label={t('fields.cautions')}>
-          <Prose text={herb.cautions} />
+          <Prose text={localizedField(herb, 'cautions', locale)} />
         </DetailRow>
-        {herb.properties ? <DetailRow label={t('fields.properties')}>{herb.properties}</DetailRow> : null}
+        {herb.properties ? (
+          <DetailRow label={t('fields.properties')}>{herb.properties}</DetailRow>
+        ) : null}
         <DetailRow label={t('fields.category')}>{tCategory(herb.category)}</DetailRow>
         <DetailRow label={t('fields.pharmaceuticalName')}>
           <span dir="ltr">{herb.pharmaceutical_name ?? <Dash />}</span>
         </DetailRow>
-        {herb.dosage_notes ? <DetailRow label={t('fields.dosageNotes')}>{herb.dosage_notes}</DetailRow> : null}
+        {localizedField(herb, 'dosage_notes', locale) ? (
+          <DetailRow label={t('fields.dosageNotes')}>
+            {localizedField(herb, 'dosage_notes', locale)}
+          </DetailRow>
+        ) : null}
       </dl>
+      <SourcesLine row={herb} />
 
       <div className="flex justify-end">
         <Button asChild variant="secondary">

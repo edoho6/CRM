@@ -437,6 +437,9 @@ export const TCM_CATEGORIES = [
   'extinguish_wind',
   'expel_parasites',
   'external_application',
+  // Western herbs and tinctures (Bara's second index): a group of their own,
+  // outside the materia medica's categories.
+  'western',
   'other',
 ] as const;
 export type TcmCategory = (typeof TCM_CATEGORIES)[number];

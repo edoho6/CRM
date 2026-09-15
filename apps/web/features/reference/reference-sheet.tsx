@@ -2,16 +2,28 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { usePathname } from '@clinic/i18n/navigation';
-import { useFormatter, useTranslations } from 'next-intl';
+import { useFormatter, useLocale, useTranslations } from 'next-intl';
 import { BookOpen } from 'lucide-react';
 import { Alert, Button, Dash, DetailRow, Dialog, DialogContent, Spinner } from '@clinic/ui';
 import { Link } from '@clinic/i18n/navigation';
+import { localizedField } from '@clinic/domain';
 import type { AcupuncturePoint, HerbFormulaWithItems } from '@clinic/db/types';
-import { formulaChineseName, formulaPrimaryName, herbBotanicalName, herbChineseName, herbPrimaryName } from '@/lib/display';
+import { SourcesLine } from './sources-line';
+import {
+  formulaChineseName,
+  formulaPrimaryName,
+  herbBotanicalName,
+  herbChineseName,
+  herbPrimaryName,
+} from '@/lib/display';
 import { HerbMonographBody } from '@/features/inventory/herb-monograph-sheet';
 import { MedicineBody } from '@/features/medicine/medicine-body';
 import { FormulaComposition } from '@/features/inventory/formula-composition';
-import { loadReferenceCard, type ReferenceCard, type ReferenceTarget } from './reference-card-action';
+import {
+  loadReferenceCard,
+  type ReferenceCard,
+  type ReferenceTarget,
+} from './reference-card-action';
 import { ReferenceChip, ReferenceSheetContext, useReferenceSheet } from './reference-context';
 
 /**
@@ -39,10 +51,10 @@ function cacheKey(target: ReferenceTarget): string {
   return JSON.stringify([
     target.kind,
     target.id ?? '',
-    'pinyin' in target ? target.pinyin ?? '' : '',
-    'name' in target ? target.name ?? '' : '',
-    'code' in target ? target.code ?? '' : '',
-    'slug' in target ? target.slug ?? '' : '',
+    'pinyin' in target ? (target.pinyin ?? '') : '',
+    'name' in target ? (target.name ?? '') : '',
+    'code' in target ? (target.code ?? '') : '',
+    'slug' in target ? (target.slug ?? '') : '',
   ]);
 }
 
@@ -92,7 +104,12 @@ export function ReferenceSheetProvider({ children }: { children: React.ReactNode
   return (
     <ReferenceSheetContext.Provider value={api}>
       {children}
-      <ReferenceDialog target={target} card={card} failed={failed} onClose={() => setTarget(null)} />
+      <ReferenceDialog
+        target={target}
+        card={card}
+        failed={failed}
+        onClose={() => setTarget(null)}
+      />
     </ReferenceSheetContext.Provider>
   );
 }
@@ -129,7 +146,9 @@ function ReferenceDialog({
       <span dir="ltr">{formulaChineseName(card.formula)}</span>
     ) : card?.kind === 'point' ? (
       <span dir="ltr">
-        {[card.point.pinyin_name, card.point.chinese_name, card.point.english_name].filter(Boolean).join(' · ')}
+        {[card.point.pinyin_name, card.point.chinese_name, card.point.english_name]
+          .filter(Boolean)
+          .join(' · ')}
       </span>
     ) : card?.kind === 'medicine' ? (
       <span dir="ltr">{card.entry.name_en}</span>
@@ -140,7 +159,12 @@ function ReferenceDialog({
   return (
     <Dialog open={target !== null} onOpenChange={(open) => !open && onClose()}>
       {target ? (
-        <DialogContent title={title} description={description || undefined} closeLabel={tc('close')} className="sm:max-w-2xl">
+        <DialogContent
+          title={title}
+          description={description || undefined}
+          closeLabel={tc('close')}
+          className="sm:max-w-2xl"
+        >
           {failed ? (
             <Alert tone="danger">{t('failed')}</Alert>
           ) : !card ? (
@@ -196,30 +220,35 @@ function FormulaBody({ formula }: { formula: HerbFormulaWithItems }) {
   const tTcm = useTranslations('inventory.formulaTcmCategory');
   const tUnit = useTranslations('inventory.unit');
   const format = useFormatter();
+  const locale = useLocale();
   const items = [...(formula.items ?? [])].sort((a, b) => a.sequence - b.sequence);
   const total = items.reduce((sum, item) => sum + Number(item.dosage), 0);
+  const actions = localizedField(formula, 'actions', locale);
+  const contraindications = localizedField(formula, 'contraindications', locale);
 
   return (
     <div className="space-y-4">
       <dl>
         <DetailRow label={t('fields.category')}>
           {tCategory(formula.category)}
-          {formula.tcm_category ? <span className="text-ink-600"> · {tTcm(formula.tcm_category)}</span> : null}
+          {formula.tcm_category ? (
+            <span className="text-ink-600"> · {tTcm(formula.tcm_category)}</span>
+          ) : null}
         </DetailRow>
         <DetailRow label={t('fields.description')}>
           <Prose text={formula.description} />
         </DetailRow>
         <DetailRow label={t('fields.indications')}>
-          <Prose text={formula.indications} />
+          <Prose text={localizedField(formula, 'indications', locale)} />
         </DetailRow>
-        {formula.actions ? (
+        {actions ? (
           <DetailRow label={t('fields.actions')}>
-            <Prose text={formula.actions} />
+            <Prose text={actions} />
           </DetailRow>
         ) : null}
-        {formula.contraindications ? (
+        {contraindications ? (
           <DetailRow label={t('fields.contraindications')}>
-            <Prose text={formula.contraindications} />
+            <Prose text={contraindications} />
           </DetailRow>
         ) : null}
         {formula.modifications ? (
@@ -232,15 +261,22 @@ function FormulaBody({ formula }: { formula: HerbFormulaWithItems }) {
             <Prose text={formula.dosage_notes} />
           </DetailRow>
         ) : null}
-        {formula.source_text ? <DetailRow label={t('fields.sourceText')}>{formula.source_text}</DetailRow> : null}
+        {formula.source_text ? (
+          <DetailRow label={t('fields.sourceText')}>{formula.source_text}</DetailRow>
+        ) : null}
       </dl>
+      <SourcesLine row={formula} />
 
       {items.length > 0 ? (
         <section aria-labelledby="reference-formula-composition" className="space-y-1.5">
           <h3 id="reference-formula-composition" className="text-sm font-semibold text-ink-900">
             {t('composition.title')}
           </h3>
-          <FormulaComposition herbs={items.map((item) => (item.herb ? { ...item.herb, name: herbPrimaryName(item.herb) } : null))} />
+          <FormulaComposition
+            herbs={items.map((item) =>
+              item.herb ? { ...item.herb, name: herbPrimaryName(item.herb) } : null,
+            )}
+          />
         </section>
       ) : null}
 
@@ -249,15 +285,26 @@ function FormulaBody({ formula }: { formula: HerbFormulaWithItems }) {
           <h3 id="reference-formula-items" className="text-sm font-semibold text-ink-900">
             {t('items')}
             <span className="ms-2 text-xs font-normal text-ink-600">
-              {tSheet('total', { amount: format.number(total), unit: tUnit(items[0]?.unit ?? 'gram') })}
+              {tSheet('total', {
+                amount: format.number(total),
+                unit: tUnit(items[0]?.unit ?? 'gram'),
+              })}
             </span>
           </h3>
           <ul className="divide-y divide-ink-100 rounded-lg border border-ink-200">
             {items.map((item) => (
-              <li key={item.id} className="flex items-baseline justify-between gap-3 px-3 py-1.5 text-sm">
+              <li
+                key={item.id}
+                className="flex items-baseline justify-between gap-3 px-3 py-1.5 text-sm"
+              >
                 {/* Each herb is a chip of its own: the formula's card opens the herb's. */}
                 <ReferenceChip
-                  target={{ kind: 'herb', id: item.herb?.id ?? null, pinyin: item.herb?.pinyin_name ?? null, label: herbPrimaryName(item.herb) }}
+                  target={{
+                    kind: 'herb',
+                    id: item.herb?.id ?? null,
+                    pinyin: item.herb?.pinyin_name ?? null,
+                    label: herbPrimaryName(item.herb),
+                  }}
                   dir="auto"
                   className="font-medium text-ink-900"
                 >
@@ -290,18 +337,27 @@ function PointBody({ point }: { point: AcupuncturePoint }) {
   const tChannel = useTranslations('reference.pointChannel');
   const tArea = useTranslations('reference.bodyArea');
   const tCategory = useTranslations('reference.pointCategory');
+  const locale = useLocale();
+  const cautions = localizedField(point, 'cautions', locale);
 
   return (
     <div className="space-y-4">
       <dl>
         <DetailRow label={t('fields.channel')}>{tChannel(point.channel)}</DetailRow>
-        {point.hebrew_name ? <DetailRow label={t('fields.code')}>{point.hebrew_name}</DetailRow> : null}
-        <DetailRow label={t('fields.bodyArea')}>{point.body_area ? tArea(point.body_area) : <Dash />}</DetailRow>
+        {point.hebrew_name ? (
+          <DetailRow label={t('fields.code')}>{point.hebrew_name}</DetailRow>
+        ) : null}
+        <DetailRow label={t('fields.bodyArea')}>
+          {point.body_area ? tArea(point.body_area) : <Dash />}
+        </DetailRow>
         {point.point_categories.length > 0 ? (
           <DetailRow label={t('fields.categories')}>
             <span className="flex flex-wrap gap-1">
               {point.point_categories.map((entry) => (
-                <span key={entry} className="rounded-full bg-ink-100 px-2 py-0.5 text-xs text-ink-700">
+                <span
+                  key={entry}
+                  className="rounded-full bg-ink-100 px-2 py-0.5 text-xs text-ink-700"
+                >
                   {tCategory(entry)}
                 </span>
               ))}
@@ -309,23 +365,24 @@ function PointBody({ point }: { point: AcupuncturePoint }) {
           </DetailRow>
         ) : null}
         <DetailRow label={t('fields.location')}>
-          <Prose text={point.location} />
+          <Prose text={localizedField(point, 'location', locale)} />
         </DetailRow>
         <DetailRow label={t('fields.actions')}>
-          <Prose text={point.actions} />
+          <Prose text={localizedField(point, 'actions', locale)} />
         </DetailRow>
         <DetailRow label={t('fields.indications')}>
-          <Prose text={point.indications} />
+          <Prose text={localizedField(point, 'indications', locale)} />
         </DetailRow>
         <DetailRow label={t('fields.needling')}>
-          <Prose text={point.needling} />
+          <Prose text={localizedField(point, 'needling', locale)} />
         </DetailRow>
-        {point.cautions ? (
+        {cautions ? (
           <DetailRow label={t('fields.cautions')}>
-            <span className="whitespace-pre-wrap text-amber-900">{point.cautions}</span>
+            <span className="whitespace-pre-wrap text-amber-900">{cautions}</span>
           </DetailRow>
         ) : null}
       </dl>
+      <SourcesLine row={point} />
 
       <div className="flex justify-end">
         <Button asChild variant="secondary">

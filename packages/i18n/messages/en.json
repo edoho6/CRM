@@ -1740,6 +1740,7 @@
       "extinguish_wind": "Extinguish wind, stop tremors",
       "expel_parasites": "Expel parasites",
       "external_application": "External application",
+      "western": "Western herbs",
       "other": "Other"
     },
     "temperature": {
@@ -2423,7 +2424,10 @@
       "safe": "Safe to press again at any time. Loading again fills what is missing and never overwrites a correction made by hand.",
       "upToDate": "The clinic is up to date",
       "notInstalled": "The shared catalogue is not installed in the service yet.",
-      "emptyCatalogue": "The shared catalogue is empty. Load the catalogue files into it first."
+      "emptyCatalogue": "The shared catalogue is empty. Load the catalogue files into it first.",
+      "refresh": "Refresh text from the catalogue",
+      "refreshHint": "The clinical text of every herb, formula or point not yet approved is replaced with the catalogue's current version. Approved and hand-edited entries stay as they are.",
+      "refreshed": "{count, plural, =0 {Nothing to refresh} one {One entry refreshed} other {# entries refreshed}}"
     },
     "title": "Settings",
     "subtitle": "Clinic-wide preferences",
@@ -2713,6 +2717,11 @@
       "point": "Acupuncture point",
       "total": "Total {amount} {unit}",
       "medicine": "Western medicine"
+    },
+    "sources": {
+      "title": "Facts gathered from:",
+      "bara": "Bara Herbs",
+      "americandragon": "American Dragon"
     }
   },
   "medicine": {
