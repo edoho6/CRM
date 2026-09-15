@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState, useTransition } from 'react';
+import { useCallback, useEffect, useMemo, useState, useTransition } from 'react';
 import { useFormatter, useTranslations } from 'next-intl';
 import { BookmarkPlus, Lock, MoreHorizontal } from 'lucide-react';
 import { MedicineMentions } from '@/features/medicine/medicine-mentions';
@@ -134,6 +134,24 @@ function toState(note: TcmNote | null): NoteState {
  * The dispensing panel is passed in rather than imported so this component stays
  * a pure form and the side column can hold anything.
  */
+/**
+ * Whether the viewport is at the `xl` breakpoint (1280px), where the treatment
+ * page is two columns. Starts `true` so the server's HTML and the first client
+ * render match (both draw the two-column desktop); a phone corrects it on mount
+ * and whenever the window crosses the breakpoint.
+ */
+function useIsWide(): boolean {
+  const [wide, setWide] = useState(true);
+  useEffect(() => {
+    const query = window.matchMedia('(min-width: 1280px)');
+    const sync = () => setWide(query.matches);
+    sync();
+    query.addEventListener('change', sync);
+    return () => query.removeEventListener('change', sync);
+  }, []);
+  return wide;
+}
+
 export function EncounterForm({
   encounterId,
   patientId,
@@ -424,6 +442,12 @@ export function EncounterForm({
    * one heading and its fields side by side, with the labels above them small
    * and quiet. The fields themselves are unchanged; only the furniture is gone.
    */
+  // Wide screens keep tongue and pulse in the side column; a phone lifts them
+  // to the top of the record, where the couch findings are read before the
+  // narrative and the 3-D body rather than after everything. Defaults to wide
+  // so the server and the first client render agree; the phone flips it on mount.
+  const isWide = useIsWide();
+
   const examinationCard = (
     <Card>
       <CardBody>
@@ -557,6 +581,11 @@ export function EncounterForm({
                 : tc('errorGeneric')}
             </Alert>
           ) : null}
+
+          {/* On a phone, tongue and pulse first — a single instance, so the
+            fields keep their ids; on a wide screen it lives in the side column
+            below instead. */}
+          {!isWide ? examinationCard : null}
 
           {/* The record's own fields, each a block that can be moved above or
             below the others — a practitioner who writes the history before
@@ -867,7 +896,9 @@ export function EncounterForm({
           storageKey="herbalist-encounter-panels-v2"
           editing={arranging}
           panels={[
-            { id: 'examination', title: tPanels('examination'), node: examinationCard },
+            // On a phone this card is shown at the top of the record instead
+            // (one instance, never both), so it drops out of the side column.
+            ...(isWide ? [{ id: 'examination', title: tPanels('examination'), node: examinationCard }] : []),
             // The wrappers are not decoration: `dispensePanel` and `formsPanel`
             // are elements built by the page and handed in as props, and each
             // needs a parent of its own so it is a single child rather than an
