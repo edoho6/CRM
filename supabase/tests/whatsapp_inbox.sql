@@ -173,14 +173,23 @@ begin
   -- ------------------------------------------------------------------------
   -- 6 · Claiming
   -- ------------------------------------------------------------------------
-  select count(*) into v_count from public.whatsapp_claim_outbound(10);
-  if v_count <> 1 then raise exception 'FAIL: expected to claim the one queued acknowledgement, claimed %', v_count; end if;
-  select count(*) into v_count from public.whatsapp_claim_outbound(10);
+  -- Two lines are waiting in Dana's thread: the tap on "אגיע" and the "לא
+  -- אגיע" that followed each got an acknowledgement (a decline is answered
+  -- too — "we'd be glad to find another time"). The sender claims every
+  -- queued row in the service, so only this thread's rows are counted:
+  -- a real clinic's queue must neither fail the check nor be part of it.
+  select count(*) into v_count from public.whatsapp_messages
+   where conversation_id = v_conv and direction = 'out' and status = 'queued';
+  if v_count <> 2 then raise exception 'FAIL: expected the two acknowledgements queued, found %', v_count; end if;
+  select count(*) into v_count from public.whatsapp_claim_outbound(200) where conversation_id = v_conv;
+  if v_count <> 2 then raise exception 'FAIL: expected to claim both queued acknowledgements, claimed %', v_count; end if;
+  select count(*) into v_count from public.whatsapp_claim_outbound(200) where conversation_id = v_conv;
   if v_count <> 0 then raise exception 'FAIL: a second claim took % row(s) again', v_count; end if;
-  update public.whatsapp_messages set claimed_at = now() - interval '16 minutes' where status = 'sending';
-  select count(*) into v_count from public.whatsapp_claim_outbound(10);
-  if v_count <> 1 then raise exception 'FAIL: a run that died was not offered again'; end if;
-  raise notice 'ok   a queued message is claimed once, and a dead run is retried';
+  update public.whatsapp_messages set claimed_at = now() - interval '16 minutes'
+   where conversation_id = v_conv and status = 'sending';
+  select count(*) into v_count from public.whatsapp_claim_outbound(200) where conversation_id = v_conv;
+  if v_count <> 2 then raise exception 'FAIL: a run that died was not offered again (% of 2 reclaimed)', v_count; end if;
+  raise notice 'ok   queued messages are claimed once, and a dead run is retried';
 
   -- ------------------------------------------------------------------------
   -- 7 · From the file
