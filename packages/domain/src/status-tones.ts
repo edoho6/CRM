@@ -69,12 +69,20 @@ export const INVOICE_STATUS_TONES: Record<string, StatusTone> = {
   cancelled: 'muted',
 };
 
-/** A message in the log: waiting to go, gone, refused by the service, or dropped on purpose. */
+/**
+ * A message in the log or a WhatsApp thread: waiting to go, gone (and, on
+ * WhatsApp, delivered or read), refused by the service, dropped on purpose,
+ * or the patient's own.
+ */
 export const MESSAGE_STATUS_TONES: Record<string, StatusTone> = {
   queued: 'warning',
+  sending: 'warning',
   sent: 'success',
+  delivered: 'success',
+  read: 'success',
   failed: 'danger',
   skipped: 'muted',
+  received: 'neutral',
 };
 
 export const ENCOUNTER_STATUS_TONES: Record<string, StatusTone> = {

@@ -11,6 +11,7 @@
 // Both numbers are international without a plus; the clinic's own is the
 // number verified in its 019 account.
 
+import { isContactId } from './inbound.ts';
 import { israeliInternational } from './phone.ts';
 import type { FetchLike, Provider, QueuedMessage, SendResult } from './types.ts';
 
@@ -19,8 +20,12 @@ export const WHATSAPP_019_TEMPLATE_ENDPOINT = 'https://019sms.co.il/whatsapp-api
 
 export interface Whatsapp019Options {
   token: string;
-  /** The clinic's WhatsApp number as verified with the service: `972…`. */
-  source: string;
+  /**
+   * The line a send goes out from when the row names none: a clinic's own
+   * number as verified with the service (`972…`). Each row may carry its
+   * clinic's line instead, which is how more than one clinic shares a token.
+   */
+  source?: string | null;
   fetch: FetchLike;
 }
 
@@ -54,19 +59,23 @@ export function createWhatsapp019Provider(options: Whatsapp019Options): Provider
   return {
     name: '019-whatsapp',
     async send(message: QueuedMessage): Promise<SendResult> {
-      const destination = israeliInternational(message.recipient);
-      if (!destination) return { ok: false, errorCode: message.recipient ? 'foreign_number' : 'no_recipient' };
+      // A person who hides their number is addressed by the id Meta gave them.
+      const raw = message.recipient?.trim() ?? '';
+      const destination = isContactId(raw) ? raw : israeliInternational(raw);
+      if (!destination) return { ok: false, errorCode: raw ? 'foreign_number' : 'no_recipient' };
+      const source = (message.whatsappSource ?? options.source ?? '').replace(/\D/g, '');
+      if (!source) return { ok: false, errorCode: 'no_whatsapp_number' };
 
       const templateId = message.whatsappTemplateId?.trim();
       const url = templateId ? WHATSAPP_019_TEMPLATE_ENDPOINT : WHATSAPP_019_MESSAGE_ENDPOINT;
       const payload = templateId
         ? {
-            source: options.source,
+            source,
             destination,
             templateId,
             dynamicFieldsObject: dynamicFields(message.params),
           }
-        : { source: options.source, destination, message: message.body };
+        : { source, destination, message: message.body };
 
       const response = await options.fetch(url, {
         method: 'POST',

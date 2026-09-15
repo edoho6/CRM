@@ -568,9 +568,27 @@ export type ConsentMethod = (typeof CONSENT_RECORD_METHODS)[number];
 export const AUTOMATION_KINDS = ['treatment_followup', 'birthday', 'inactive_reengage', 'review_request'] as const;
 export type AutomationKind = (typeof AUTOMATION_KINDS)[number];
 
-/** Every row `clinic_automations` may hold: the four, plus the reminder — for its WhatsApp template id alone. */
-export const AUTOMATION_ROW_KINDS = ['appointment_reminder', ...AUTOMATION_KINDS] as const;
+/**
+ * Every row `clinic_automations` may hold: the four, plus two that carry a
+ * WhatsApp template id alone — the reminder, and the template that opens a
+ * conversation more than a day after the patient last wrote.
+ */
+export const AUTOMATION_ROW_KINDS = ['appointment_reminder', 'conversation_opener', ...AUTOMATION_KINDS] as const;
 export type AutomationRowKind = (typeof AUTOMATION_ROW_KINDS)[number];
+
+/** What a WhatsApp message is, as the service names it; a template is one the clinic sent as such. */
+export const WHATSAPP_MESSAGE_KINDS = [
+  'text', 'image', 'audio', 'video', 'document', 'location', 'button', 'list',
+  'reaction', 'contacts', 'order', 'template', 'other',
+] as const;
+export type WhatsappMessageKind = (typeof WHATSAPP_MESSAGE_KINDS)[number];
+
+/** Where a WhatsApp message stands: queued and sending are ours, the ticks are the service's, received is the patient's. */
+export const WHATSAPP_MESSAGE_STATUSES = ['queued', 'sending', 'sent', 'delivered', 'read', 'failed', 'received'] as const;
+export type WhatsappMessageStatus = (typeof WHATSAPP_MESSAGE_STATUSES)[number];
+
+/** How long after the patient's last message the clinic may still write free text; after that, a template. */
+export const WHATSAPP_WINDOW_HOURS = 24;
 
 /**
  * The kinds the law counts as advertising (תיקון 40 לחוק התקשורת): they go

@@ -46,6 +46,8 @@ import type {
   Temperature,
   TreatmentModality,
   TreatmentStatus,
+  WhatsappMessageKind,
+  WhatsappMessageStatus,
 } from '@clinic/domain';
 
 /**
@@ -91,6 +93,8 @@ export interface Clinic {
   booking_verify_sms: boolean;
   /** The clinic's Google page, where the review request points. Null switches that message off. */
   google_review_url: string | null;
+  /** The clinic's WhatsApp line as verified with the sending service (972…); pushes are matched to it, sends go from it. */
+  whatsapp_number: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -356,6 +360,51 @@ export interface ClinicAutomation {
   whatsapp_template_id: string | null;
   created_at: string;
   updated_at: string;
+}
+
+/**
+ * One WhatsApp thread: the clinic and one contact — a number as WhatsApp
+ * writes it, or the opaque id Meta sends for a hidden number — and the file
+ * it belongs to once that is known. Never deleted; closed instead.
+ */
+export interface WhatsappConversation {
+  id: string;
+  clinic_id: string;
+  contact_key: string;
+  phone: string | null;
+  contact_name: string | null;
+  patient_id: string | null;
+  status: 'open' | 'closed';
+  unread_count: number;
+  last_message_at: string;
+  last_message_preview: string | null;
+  /** When the patient last wrote: free text may go for a day after it. */
+  last_inbound_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** One WhatsApp message either way, with the service's ticks as they arrive. */
+export interface WhatsappMessage {
+  id: string;
+  clinic_id: string;
+  conversation_id: string;
+  direction: 'in' | 'out';
+  kind: WhatsappMessageKind;
+  body: string | null;
+  /** The service's link to a file the patient sent; it keeps files a week. */
+  media_url: string | null;
+  provider_message_id: string | null;
+  template_id: string | null;
+  params: string[] | null;
+  status: WhatsappMessageStatus;
+  error_code: string | null;
+  sent_by: string | null;
+  claimed_at: string | null;
+  created_at: string;
+  sent_at: string | null;
+  delivered_at: string | null;
+  read_at: string | null;
 }
 
 /** A phone registered for notifications: the owner's own row, written only by register_push_device. */

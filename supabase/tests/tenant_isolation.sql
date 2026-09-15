@@ -241,6 +241,14 @@ begin
   insert into public.patient_consents (clinic_id, patient_id, kind, granted, method)
   values (v_clinic_b, v_patient_b, 'marketing', true, 'in_person');
 
+  -- A WhatsApp thread in each clinic, with a message from the patient.
+  insert into public.whatsapp_conversations (clinic_id, contact_key, phone, patient_id)
+  values (v_clinic_a, '972500000000', '972500000000', v_patient_a),
+         (v_clinic_b, '972500000001', '972500000001', v_patient_b);
+  insert into public.whatsapp_messages (clinic_id, conversation_id, direction, kind, body, status)
+  select c.clinic_id, c.id, 'in', 'text', 'Iso chat ' || c.contact_key, 'received'
+    from public.whatsapp_conversations c where c.clinic_id in (v_clinic_a, v_clinic_b);
+
   -- A booking in each room, so the feeds and the confirmation link have
   -- something to leak if they were going to.
   insert into public.appointments (clinic_id, patient_id, practitioner_id, room_id, start_at, end_at)
@@ -473,6 +481,35 @@ begin
   select count(*) into v_count from public.patient_unsubscribe_tokens;
   if v_count <> 0 then raise exception 'FAIL: a removal token was readable (% row(s))', v_count; end if;
   raise notice 'ok   automation settings, their queue and the removal tokens isolated';
+
+  -- The WhatsApp threads: A sees its own, writes only outbound into its own,
+  -- and cannot call the functions the sending service is given.
+  select count(*) into v_count from public.whatsapp_conversations where clinic_id = v_clinic_b;
+  if v_count <> 0 then raise exception 'FAIL: WhatsApp conversations leaked across clinics'; end if;
+  select count(*) into v_count from public.whatsapp_messages where clinic_id = v_clinic_b;
+  if v_count <> 0 then raise exception 'FAIL: WhatsApp messages leaked across clinics'; end if;
+  select count(*) into v_count from public.whatsapp_messages where clinic_id = v_clinic_a;
+  if v_count <> 1 then raise exception 'FAIL: clinic A cannot read its own WhatsApp thread'; end if;
+  begin
+    insert into public.whatsapp_messages (clinic_id, conversation_id, direction, kind, body, status)
+    select v_clinic_a, c.id, 'in', 'text', 'forged', 'received' from public.whatsapp_conversations c where c.clinic_id = v_clinic_a;
+    raise exception 'FAIL: a member wrote an inbound WhatsApp message by hand';
+  exception
+    when insufficient_privilege then null;
+  end;
+  begin
+    perform public.whatsapp_receive('{"hook":"new"}'::jsonb);
+    raise exception 'FAIL: a clinic member ran the WhatsApp push function';
+  exception
+    when insufficient_privilege then null;
+  end;
+  begin
+    perform public.whatsapp_claim_outbound(1);
+    raise exception 'FAIL: a clinic member claimed the WhatsApp queue';
+  exception
+    when insufficient_privilege then null;
+  end;
+  raise notice 'ok   WhatsApp threads isolated, inbound written only by the service';
 
   select count(*) into v_count from public.locations where clinic_id = v_clinic_b;
   if v_count <> 0 then raise exception 'FAIL: locations leaked across clinics'; end if;
@@ -949,6 +986,14 @@ begin
   if v_count <> 0 then raise exception 'FAIL: a guessed removal token showed a page to an anonymous caller'; end if;
   select count(*) into v_count from public.clinic_automations;
   if v_count <> 0 then raise exception 'FAIL: anonymous read returned % automation setting(s)', v_count; end if;
+  select count(*) into v_count from public.whatsapp_messages;
+  if v_count <> 0 then raise exception 'FAIL: anonymous read returned % WhatsApp message(s)', v_count; end if;
+  begin
+    perform public.whatsapp_ack('{"hook":"update","unique":"x","ack":3}'::jsonb);
+    raise exception 'FAIL: an anonymous caller ran the WhatsApp acknowledgement function';
+  exception
+    when insufficient_privilege then null;
+  end;
   raise notice 'ok   anonymous callers see nothing';
 
   -- The token functions are the only doors without a session. A guessed

@@ -181,3 +181,28 @@ describe('what the sender decides first', () => {
     expect(templateIdFor(map, 'c3', 'birthday')).toBeNull();
   });
 });
+
+describe('what WhatsApp sends us', () => {
+  it('tells the three events apart and drops anything else', async () => {
+    const { parsePush, isContactId } = await import('@messaging/inbound.ts');
+    expect(parsePush({ status: 'OK', hook: 'new', unique: 'M1', from: '972501234567', to: '972500000001', type: 'text', body: 'hi' })).toMatchObject({ hook: 'new' });
+    expect(parsePush({ hook: 'update', unique: 'M1', ack: 3 })).toMatchObject({ hook: 'update' });
+    expect(parsePush({ hook: 'system', unique: 'M1', messageUpdate: 8 })).toMatchObject({ hook: 'system' });
+    expect(parsePush({ hook: 'new' })).toEqual({ hook: 'ignored', reason: 'no_id' });
+    expect(parsePush({ hook: 'other', unique: 'x' })).toEqual({ hook: 'ignored', reason: 'unknown_hook' });
+    expect(parsePush('text')).toEqual({ hook: 'ignored', reason: 'not_object' });
+    expect(parsePush([1])).toEqual({ hook: 'ignored', reason: 'not_object' });
+    expect(isContactId('IL.45634521792468')).toBe(true);
+    expect(isContactId('972501234567')).toBe(false);
+  });
+
+  it('sends from the row\'s own clinic line, to a hidden-number id as given, and refuses without a line', async () => {
+    const ok = { success: true, ans: { status: 'OK', unique: 'W-1' } };
+    const { fetch, calls } = fakeFetch(200, ok);
+    const provider = createWhatsapp019Provider({ token: 't', fetch });
+    expect(await provider.send(message({ channel: 'whatsapp', whatsappSource: '972555555555', recipient: 'IL.45634521792468' }))).toEqual({ ok: true, providerId: 'W-1' });
+    expect(JSON.parse(String(calls[0]!.init?.body))).toMatchObject({ source: '972555555555', destination: 'IL.45634521792468' });
+    expect(await provider.send(message({ channel: 'whatsapp' }))).toEqual({ ok: false, errorCode: 'no_whatsapp_number' });
+    expect(calls).toHaveLength(1);
+  });
+});

@@ -23,6 +23,8 @@ export interface QueuedMessage {
   params: string[] | null;
   /** The approved WhatsApp template for this kind, when the clinic pasted one. */
   whatsappTemplateId?: string | null;
+  /** The clinic's own WhatsApp line, which a WhatsApp send goes out from. */
+  whatsappSource?: string | null;
   /** The row's clinic is a sandbox of fictional patients: nothing real may be sent to it. */
   clinicSynthetic: boolean;
 }
