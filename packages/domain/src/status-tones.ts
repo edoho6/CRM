@@ -69,6 +69,14 @@ export const INVOICE_STATUS_TONES: Record<string, StatusTone> = {
   cancelled: 'muted',
 };
 
+/** A message in the log: waiting to go, gone, refused by the service, or dropped on purpose. */
+export const MESSAGE_STATUS_TONES: Record<string, StatusTone> = {
+  queued: 'warning',
+  sent: 'success',
+  failed: 'danger',
+  skipped: 'muted',
+};
+
 export const ENCOUNTER_STATUS_TONES: Record<string, StatusTone> = {
   draft: 'warning',
   signed: 'success',

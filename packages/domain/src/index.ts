@@ -9,3 +9,4 @@ export * from './medicine-mentions';
 export * from './formula-composition';
 export * from './library';
 export * from './library-answer';
+export * from './messaging-templates';

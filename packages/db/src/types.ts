@@ -3,6 +3,7 @@ import type {
   MedRelation,
   MedStatus,
   AppointmentStatus,
+  AutomationRowKind,
   ConfirmationResponse,
   RemindChannel,
   ShopCategory,
@@ -88,6 +89,8 @@ export interface Clinic {
   booking_lead_hours: number;
   booking_horizon_days: number;
   booking_verify_sms: boolean;
+  /** The clinic's Google page, where the review request points. Null switches that message off. */
+  google_review_url: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -330,8 +333,29 @@ export interface MessageLogEntry {
   provider: string | null;
   provider_message_id: string | null;
   error_code: string | null;
+  /** The values of the template's variables, in order, for a WhatsApp template send. */
+  params: string[] | null;
   created_at: string;
   sent_at: string | null;
+}
+
+/**
+ * One automated message's settings for one clinic: on or off, its timing,
+ * its wording, and the WhatsApp template that says it. The reminder's row
+ * holds the template id only; its other settings live on the clinic.
+ */
+export interface ClinicAutomation {
+  id: string;
+  clinic_id: string;
+  kind: AutomationRowKind;
+  enabled: boolean;
+  delay_hours: number;
+  inactive_days: number;
+  send_hour: number;
+  template: string | null;
+  whatsapp_template_id: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 /** A phone registered for notifications: the owner's own row, written only by register_push_device. */

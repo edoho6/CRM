@@ -229,9 +229,34 @@ export const reminderSettingsSchema = z.object({
   reminder_channel: z.enum(['sms', 'whatsapp', 'email']).default('whatsapp'),
   // A patient with the app gets the reminder as a phone notification instead.
   reminder_push_enabled: z.boolean().default(true),
+  // The approved WhatsApp template that says the reminder, from the sending service.
+  whatsapp_template_id: optionalText(80),
 });
 
 export type ReminderSettingsValues = z.input<typeof reminderSettingsSchema>;
+
+/**
+ * One automated message's settings, as its card saves them. Every kind
+ * carries every field; the card shows the ones its kind uses (the delay for
+ * a follow-up, the hour for a greeting) and the rest keep their defaults.
+ */
+export const automationSettingsSchema = z.object({
+  enabled: z.boolean().default(false),
+  delay_hours: z.coerce.number().int().min(1).max(720).default(24),
+  inactive_days: z.coerce.number().int().min(14).max(730).default(90),
+  send_hour: z.coerce.number().int().min(6).max(20).default(10),
+  template: optionalText(1000),
+  whatsapp_template_id: optionalText(80),
+});
+
+export type AutomationSettingsValues = z.input<typeof automationSettingsSchema>;
+
+/** The clinic's Google page, where the review request points. Only a secure address, or nothing. */
+export const googleReviewUrlSchema = z.object({
+  google_review_url: optionalText(500).refine((value) => value === null || /^https:\/\/\S+$/.test(value), {
+    error: 'invalid_url',
+  }),
+});
 
 export const bookingSettingsSchema = z.object({
   booking_enabled: z.boolean().default(false),

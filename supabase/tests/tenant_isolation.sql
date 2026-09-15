@@ -230,6 +230,17 @@ begin
   values (v_clinic_a, 'whatsapp', 'iso_test', '0500000000', 'Iso message A', v_patient_a),
          (v_clinic_b, 'whatsapp', 'iso_test', '0500000001', 'Iso message B', v_patient_b);
 
+  -- How each clinic wants its automated messages: a row each, and a birthday
+  -- today with consent in B, so the automations job has something of B's to
+  -- queue that A must then not see.
+  insert into public.clinic_automations (clinic_id, kind, enabled, send_hour)
+  values (v_clinic_a, 'birthday', true, 6),
+         (v_clinic_b, 'birthday', true, 6);
+  update public.patients set date_of_birth = (now() at time zone 'Asia/Jerusalem')::date - interval '30 years'
+   where id = v_patient_b;
+  insert into public.patient_consents (clinic_id, patient_id, kind, granted, method)
+  values (v_clinic_b, v_patient_b, 'marketing', true, 'in_person');
+
   -- A booking in each room, so the feeds and the confirmation link have
   -- something to leak if they were going to.
   insert into public.appointments (clinic_id, patient_id, practitioner_id, room_id, start_at, end_at)
@@ -444,6 +455,24 @@ begin
   select count(*) into v_count from public.message_log where clinic_id <> v_clinic_a;
   if v_count <> 0 then raise exception 'FAIL: the queue showed % other clinic''s message(s)', v_count; end if;
   raise notice 'ok   blocked hours and the message log isolated';
+
+  -- The automations: A reads and writes its own rows only, and the job —
+  -- which may queue B's greeting today — leaves A seeing nothing of it, not
+  -- the message and not the removal token it made.
+  select count(*) into v_count from public.clinic_automations where clinic_id = v_clinic_b;
+  if v_count <> 0 then raise exception 'FAIL: automation settings leaked across clinics'; end if;
+  begin
+    insert into public.clinic_automations (clinic_id, kind, enabled) values (v_clinic_b, 'review_request', true);
+    raise exception 'FAIL: clinic A wrote an automation into clinic B';
+  exception
+    when insufficient_privilege then null;
+  end;
+  perform public.enqueue_due_automations('https://iso.test');
+  select count(*) into v_count from public.message_log where clinic_id <> v_clinic_a;
+  if v_count <> 0 then raise exception 'FAIL: the automations queue showed % other clinic''s message(s)', v_count; end if;
+  select count(*) into v_count from public.patient_unsubscribe_tokens;
+  if v_count <> 0 then raise exception 'FAIL: a removal token was readable (% row(s))', v_count; end if;
+  raise notice 'ok   automation settings, their queue and the removal tokens isolated';
 
   select count(*) into v_count from public.locations where clinic_id = v_clinic_b;
   if v_count <> 0 then raise exception 'FAIL: locations leaked across clinics'; end if;
@@ -916,6 +945,10 @@ begin
   end;
   select count(*) into v_count from public.library_chats;
   if v_count <> 0 then raise exception 'FAIL: anonymous read returned % library conversation(s)', v_count; end if;
+  select count(*) into v_count from public.unsubscribe_info(gen_random_uuid());
+  if v_count <> 0 then raise exception 'FAIL: a guessed removal token showed a page to an anonymous caller'; end if;
+  select count(*) into v_count from public.clinic_automations;
+  if v_count <> 0 then raise exception 'FAIL: anonymous read returned % automation setting(s)', v_count; end if;
   raise notice 'ok   anonymous callers see nothing';
 
   -- The token functions are the only doors without a session. A guessed

@@ -552,7 +552,32 @@ export type ConsentKind = (typeof CONSENT_KINDS)[number];
 
 /** How a decision reached the clinic. A signature and a click are not the same evidence. */
 export const CONSENT_METHODS = ['in_person', 'portal', 'paper_form', 'phone', 'email'] as const;
-export type ConsentMethod = (typeof CONSENT_METHODS)[number];
+/**
+ * Every way a decision can be recorded: the ones staff choose from above, and
+ * the one a patient takes alone — the removal link at the foot of a marketing
+ * message. Staff never pick `link`, which is why the picker keeps the shorter list.
+ */
+export const CONSENT_RECORD_METHODS = [...CONSENT_METHODS, 'link'] as const;
+export type ConsentMethod = (typeof CONSENT_RECORD_METHODS)[number];
+
+/**
+ * The automated messages a clinic can switch on, beyond the appointment
+ * reminder. Mirrored by the CHECK on `clinic_automations.kind` and by the
+ * `template_key` each one writes to the message log.
+ */
+export const AUTOMATION_KINDS = ['treatment_followup', 'birthday', 'inactive_reengage', 'review_request'] as const;
+export type AutomationKind = (typeof AUTOMATION_KINDS)[number];
+
+/** Every row `clinic_automations` may hold: the four, plus the reminder — for its WhatsApp template id alone. */
+export const AUTOMATION_ROW_KINDS = ['appointment_reminder', ...AUTOMATION_KINDS] as const;
+export type AutomationRowKind = (typeof AUTOMATION_ROW_KINDS)[number];
+
+/**
+ * The kinds the law counts as advertising (תיקון 40 לחוק התקשורת): they go
+ * only with a recorded marketing consent, and every one carries a way out.
+ * A follow-up after treatment is a service message, like the reminder.
+ */
+export const MARKETING_AUTOMATION_KINDS = ['birthday', 'inactive_reengage', 'review_request'] as const satisfies readonly AutomationKind[];
 
 /** What a patient can answer from the reminder link. Mirrored by the CHECK on `appointments.confirmation_response`. */
 export const CONFIRMATION_RESPONSES = ['confirmed', 'declined'] as const;
