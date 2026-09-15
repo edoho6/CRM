@@ -224,7 +224,20 @@
   שמחזיק service role, מוזרק על ידי Supabase, לא בקוד) או של אדם ממסך
   "הודעות" (`mark_message_sent`). ספק חדש = adapter אחד ב-`index.ts`.
   מספר/כתובת של מטופל נשמרים אצלנו בלבד; לספק מגיע רק מה שנשלח, ובלוג
-  נשמר קוד שגיאה קצר, לא תגובת הספק
+  נשמר קוד שגיאה קצר, לא תגובת הספק.
+  **הודעות אוטומטיות (migration 54):** `enqueue_due_automations()` (SQL, לפי שעה) ממלא ארבעה סוגים לפי
+  `clinic_automations` — מעקב אחרי טיפול, יום הולדת, חזרה למי שלא ביקר, בקשת חוות דעת — עם `params`
+  (ערכי המשתנים לפי סדר, לתבנית WhatsApp), חלון של 48 שעות אחורה, שעות אזרחיות בלבד, ובלי retry. שלושת
+  הסוגים השיווקיים נשלחים רק עם הסכמה שיווקית רשומה (`has_marketing_consent`) ומסתיימים בקישור הסרה
+  (`patient_unsubscribe_tokens`, בלי policies; `unsubscribe_marketing` כותב נסיגה ב-`patient_consents` עם
+  method `link`; הדף `/unsubscribe/[token]` מסיר רק בלחיצה, לא ב-GET). הנוסחים המובנים חיים גם ב-SQL
+  (`render_automation`) וגם ב-`packages/domain/src/messaging-templates.ts` לתצוגה המקדימה — בדיקה מחזיקה אותם
+  זהים. **השליחה:** המתאמים של 019 (SMS + WhatsApp) ב-`supabase/functions/_shared/messaging/` — TypeScript
+  נקי שנבדק מ-`apps/web` דרך `@messaging/*`; מספר טלפון מנורמל שם, קודי השירות הופכים לקודים קצרים
+  (`messages.errors.*`). WhatsApp ביוזמת העסק = תבנית מאושרת (`whatsapp_template_id` ב-`clinic_automations`,
+  גם לתזכורת תחת kind `appointment_reminder`); בלי מזהה — טקסט חופשי, ואם נדחה `needs_template` למסלול
+  הידני. קליניקה `is_synthetic` לא שולחת למטופלים (`skipped/synthetic_clinic`), חוץ מ-`test_message`
+  מהכרטיס בהגדרות ← הודעות
 - **זימון אונליין:** `/book/[slug]` קורא וכותב רק דרך `booking_clinic` /
   `booking_slots` / `booking_request` (anon, security definer). השעות הפנויות
   מחושבות **ב-SQL** מאותן טבלאות שהיומן קורא, כדי שהעמוד והיומן לא יחלקו

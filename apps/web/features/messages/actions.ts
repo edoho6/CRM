@@ -32,8 +32,11 @@ export async function refreshMessageQueue(): Promise<ActionResult<{ queued: numb
   ]);
   if (error) return actionError(error);
   if (alertsError) return actionError(alertsError);
-  if (automationsError) return actionError(automationsError);
-  return actionOk({ queued: Number(reminders ?? 0) + Number(alerts ?? 0) + Number(automations ?? 0) });
+  // The automations job arrived later than the other two (migration 54): a
+  // database that has not run it yet still fills the reminders, and the
+  // screen says nothing about the part it does not have.
+  const automationsQueued = automationsError ? 0 : Number(automations ?? 0);
+  return actionOk({ queued: Number(reminders ?? 0) + Number(alerts ?? 0) + automationsQueued });
 }
 
 /**
