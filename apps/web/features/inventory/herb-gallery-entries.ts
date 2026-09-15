@@ -13,7 +13,6 @@ type GalleryHerb = Pick<
   | 'pinyin_name'
   | 'chinese_name'
   | 'english_name'
-  | 'hebrew_name'
   | 'botanical_name'
   | 'image_url'
   | 'image_attribution'
@@ -31,7 +30,7 @@ export async function loadHerbGalleryEntries(
 ): Promise<HerbGalleryEntry[]> {
   const { data } = await supabase
     .from('herbs')
-    .select('id, pinyin_name, chinese_name, english_name, hebrew_name, botanical_name, image_url, image_attribution')
+    .select('id, pinyin_name, chinese_name, english_name, botanical_name, image_url, image_attribution')
     .order('pinyin_name', { ascending: true })
     .limit(2000)
     .returns<GalleryHerb[]>();
@@ -53,7 +52,6 @@ export async function loadHerbGalleryEntries(
         herb.pinyin_name,
         herb.chinese_name,
         herb.english_name,
-        herb.hebrew_name,
         herb.botanical_name,
       ]
         .filter(Boolean)

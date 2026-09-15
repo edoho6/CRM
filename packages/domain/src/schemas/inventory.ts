@@ -34,7 +34,6 @@ export const herbFormSchema = z
     pinyin_name: optionalText(120),
     chinese_name: optionalText(120),
     english_name: optionalText(160),
-    hebrew_name: optionalText(160),
     botanical_name: optionalText(200),
     pharmaceutical_name: optionalText(200),
     category: z.enum(HERB_CATEGORIES).default('granule'),
@@ -57,7 +56,7 @@ export const herbFormSchema = z
   })
   .refine(
     (value) =>
-      Boolean(value.pinyin_name || value.chinese_name || value.english_name || value.hebrew_name),
+      Boolean(value.pinyin_name || value.chinese_name || value.english_name),
     { error: 'at_least_one_name_required', path: ['pinyin_name'] },
   );
 
@@ -78,7 +77,6 @@ export const herbFormulaFormSchema = z.object({
   name_pinyin: optionalText(160),
   name_chinese: optionalText(160),
   name_english: optionalText(160),
-  name_hebrew: optionalText(160),
   category: z.enum(FORMULA_CATEGORIES).default('custom'),
   /** Traditional grouping, the formula-level counterpart of a herb's tcm_category. */
   tcm_category: optionalEnum(FORMULA_TCM_CATEGORIES),

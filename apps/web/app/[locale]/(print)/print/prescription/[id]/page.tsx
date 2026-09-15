@@ -19,8 +19,8 @@ import { Dash } from '@clinic/ui';
  * left as a multiplication to do with the kettle on.
  */
 const DISPENSING_SELECT =
-  '*, items:dispensing_items(*, herb:herbs(id, pinyin_name, chinese_name, english_name, hebrew_name)), ' +
-  'formula:herb_formulas(id, name_pinyin, name_english, name_hebrew)';
+  '*, items:dispensing_items(*, herb:herbs(id, pinyin_name, chinese_name, english_name)), ' +
+  'formula:herb_formulas(id, name_pinyin, name_english)';
 
 export default async function PrescriptionPrintPage({
   params,

@@ -66,7 +66,6 @@ export function PointForm({ point }: { point: AcupuncturePoint }) {
       pinyin_name: point.pinyin_name ?? '',
       chinese_name: point.chinese_name ?? '',
       english_name: point.english_name ?? '',
-      hebrew_name: point.hebrew_name ?? '',
       body_view: point.body_view,
       x: point.x ?? '',
       y: point.y ?? '',
@@ -131,9 +130,6 @@ export function PointForm({ point }: { point: AcupuncturePoint }) {
               </Field>
               <Field label={tf('english')} htmlFor="point_english">
                 <LtrInput id="point_english" {...register('english_name')} />
-              </Field>
-              <Field label={tf('hebrew')} htmlFor="point_hebrew">
-                <Input id="point_hebrew" {...register('hebrew_name')} />
               </Field>
             </FieldGrid>
           </CardBody>

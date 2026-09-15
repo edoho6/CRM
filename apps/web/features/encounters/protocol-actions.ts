@@ -22,7 +22,7 @@ interface PrescriptionSnapshot
     custom_name: string | null;
     quantity: number;
     preparation: string | null;
-    herb: Pick<Herb, 'id' | 'pinyin_name' | 'english_name' | 'hebrew_name'> | null;
+    herb: Pick<Herb, 'id' | 'pinyin_name' | 'english_name'> | null;
   }[];
 }
 
@@ -71,7 +71,7 @@ export async function saveProtocolFromEncounter(
       .select(
         'formula_id, preparation, days_supply, dose_amount, dose_unit, dose_timing, doses_per_day,' +
           ' items:dispensing_items(herb_id, custom_name, quantity, preparation,' +
-          ' herb:herbs(id, pinyin_name, english_name, hebrew_name))',
+          ' herb:herbs(id, pinyin_name, english_name))',
       )
       .eq('encounter_id', encounterId)
       .order('dispensed_at', { ascending: false })
@@ -97,15 +97,14 @@ export async function saveProtocolFromEncounter(
         /*
          * The name is stored beside the id so a protocol still reads after a
          * herb is retired from the catalogue. Pinyin first because that is the
-         * name a prescription is written in; the localised names are a fallback
-         * for a herb that has no pinyin recorded, and a line the catalogue never
+         * name a prescription is written in; the English name is a fallback for
+         * a herb that has no pinyin recorded, and a line the catalogue never
          * carried has only what was typed.
          */
         name:
           item.custom_name ??
           item.herb?.pinyin_name ??
           item.herb?.english_name ??
-          item.herb?.hebrew_name ??
           '',
         quantity: item.quantity,
         preparation: item.preparation ?? '',

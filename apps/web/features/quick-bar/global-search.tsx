@@ -21,6 +21,13 @@ import {
  * looking someone up is a glance, not a task that deserves to cover the screen.
  * Results appear as you type and only a click navigates, so scanning them never
  * moves you off the page you were on.
+ *
+ * Three separate lookups, each against names only. A patient's name is theirs
+ * alone: it is never matched against a herb or a formula, so searching for
+ * someone answers with the person and not with what they were prescribed. That
+ * held only by accident while the catalogue carried Hebrew names — the demo
+ * data named each patient's formula after them, and looking the patient up
+ * returned their prescriptions (15.9).
  */
 
 interface SearchResult {
@@ -37,7 +44,6 @@ interface HerbRow {
   pinyin_name: string | null;
   chinese_name: string | null;
   english_name: string | null;
-  hebrew_name: string | null;
   botanical_name: string | null;
 }
 
@@ -46,7 +52,6 @@ interface FormulaRow {
   name_pinyin: string | null;
   name_chinese: string | null;
   name_english: string | null;
-  name_hebrew: string | null;
 }
 
 const RESULTS_PER_GROUP = 5;
@@ -125,6 +130,9 @@ export function GlobalSearch() {
       const escaped = escapeTerm(term);
       if (escaped.length < MIN_QUERY_LENGTH) return [];
 
+      // Names, and for a patient the two other ways a clinic looks someone
+      // up. Nothing here reaches into a file: a prescription, a note or a
+      // dispensing line is not something the top bar searches.
       const [patients, herbs, formulas] = await Promise.all([
         supabase
           .from('patients')
@@ -134,17 +142,17 @@ export function GlobalSearch() {
           .limit(RESULTS_PER_GROUP),
         supabase
           .from('herbs')
-          .select('id, pinyin_name, chinese_name, english_name, hebrew_name, botanical_name')
+          .select('id, pinyin_name, chinese_name, english_name, botanical_name')
           .or(
-            `pinyin_name.ilike.%${escaped}%,chinese_name.ilike.%${escaped}%,english_name.ilike.%${escaped}%,hebrew_name.ilike.%${escaped}%,botanical_name.ilike.%${escaped}%`,
+            `pinyin_name.ilike.%${escaped}%,chinese_name.ilike.%${escaped}%,english_name.ilike.%${escaped}%,botanical_name.ilike.%${escaped}%`,
           )
           .eq('is_active', true)
           .limit(RESULTS_PER_GROUP),
         supabase
           .from('herb_formulas')
-          .select('id, name_pinyin, name_chinese, name_english, name_hebrew')
+          .select('id, name_pinyin, name_chinese, name_english')
           .or(
-            `name_pinyin.ilike.%${escaped}%,name_chinese.ilike.%${escaped}%,name_english.ilike.%${escaped}%,name_hebrew.ilike.%${escaped}%`,
+            `name_pinyin.ilike.%${escaped}%,name_chinese.ilike.%${escaped}%,name_english.ilike.%${escaped}%`,
           )
           .eq('is_active', true)
           .limit(RESULTS_PER_GROUP),

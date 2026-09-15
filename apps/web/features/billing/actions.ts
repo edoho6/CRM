@@ -70,7 +70,7 @@ export async function createInvoiceFromEncounter(
   const { data: dispensing } = await scope.supabase
     .from('dispensing_records')
     .select(
-      '*, items:dispensing_items(*, herb:herbs(id, pinyin_name, chinese_name, english_name, hebrew_name)), formula:herb_formulas(id, name_pinyin, name_english, name_hebrew)',
+      '*, items:dispensing_items(*, herb:herbs(id, pinyin_name, chinese_name, english_name)), formula:herb_formulas(id, name_pinyin, name_english)',
     )
     .eq('encounter_id', encounterId)
     .returns<DispensingRecordWithItems[]>();
@@ -84,7 +84,6 @@ export async function createInvoiceFromEncounter(
     const name =
       record.formula?.name_english ??
       record.formula?.name_pinyin ??
-      record.formula?.name_hebrew ??
       null;
 
     lines.push({

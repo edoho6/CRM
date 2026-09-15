@@ -81,7 +81,7 @@ export default async function PointsPage({
   if (term) {
     const escaped = term.replace(/[%,()]/g, ' ');
     query = query.or(
-      `code.ilike.%${escaped}%,pinyin_name.ilike.%${escaped}%,english_name.ilike.%${escaped}%,chinese_name.ilike.%${escaped}%,hebrew_name.ilike.%${escaped}%`,
+      `code.ilike.%${escaped}%,pinyin_name.ilike.%${escaped}%,english_name.ilike.%${escaped}%,chinese_name.ilike.%${escaped}%`,
     );
   }
   if (channel && (POINT_CHANNELS as readonly string[]).includes(channel)) {

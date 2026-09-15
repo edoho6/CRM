@@ -48,8 +48,8 @@ export const generateMetadata = pageTitle('inventory.stock', 'title');
  */
 
 const ORDER_SELECT =
-  '*, herb:herbs(id, pinyin_name, chinese_name, english_name, hebrew_name, default_unit), ' +
-  'formula:herb_formulas(id, name_pinyin, name_chinese, name_english, name_hebrew), ' +
+  '*, herb:herbs(id, pinyin_name, chinese_name, english_name, default_unit), ' +
+  'formula:herb_formulas(id, name_pinyin, name_chinese, name_english), ' +
   'supplier:suppliers(id, name)';
 
 export default async function StockRoomPage({

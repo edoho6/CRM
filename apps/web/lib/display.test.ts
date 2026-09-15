@@ -24,7 +24,6 @@ describe('herb naming', () => {
     pinyin_name: 'Huang Qi',
     chinese_name: '黄芪',
     english_name: 'Astragalus root',
-    hebrew_name: 'חואנג צ׳י',
     botanical_name: 'Astragalus membranaceus (Radix)',
   };
 
@@ -40,19 +39,19 @@ describe('herb naming', () => {
     ).toBe('黄芪');
   });
 
-  it('uses a Hebrew name only when nothing else exists', () => {
-    expect(
-      herbPrimaryName(
-        {
-          pinyin_name: null,
-          chinese_name: null,
-          english_name: null,
-          hebrew_name: 'חואנג צ׳י',
-          botanical_name: null,
-        },
-        'he',
-      ),
-    ).toBe('חואנג צ׳י');
+  it('never reads a Hebrew name, even from a row that still carries one', () => {
+    // The column survives in the database, filled by older imports; nothing in
+    // the interface reads it. A herb with no international name is nameless
+    // here rather than named in a transliteration only this clinic would
+    // recognise (15.9).
+    const legacy: Record<string, string | null> = {
+      pinyin_name: null,
+      chinese_name: null,
+      english_name: null,
+      botanical_name: null,
+      hebrew_name: 'חואנג צ׳י',
+    };
+    expect(herbPrimaryName(legacy, 'he')).toBe('');
   });
 
   it('returns an empty string for a missing herb rather than throwing', () => {
@@ -73,7 +72,6 @@ describe('herb naming', () => {
     const chineseOnly = {
       pinyin_name: null,
       english_name: null,
-      hebrew_name: null,
       botanical_name: null,
       chinese_name: '黄芪',
     };
@@ -92,7 +90,7 @@ describe('formula naming', () => {
   it('leads with the classical pinyin name', () => {
     expect(
       formulaPrimaryName(
-        { name_pinyin: 'Xiao Yao San', name_chinese: null, name_english: null, name_hebrew: null },
+        { name_pinyin: 'Xiao Yao San', name_chinese: null, name_english: null },
         'he',
       ),
     ).toBe('Xiao Yao San');
@@ -102,7 +100,6 @@ describe('formula naming', () => {
           name_pinyin: 'Xiao Yao San',
           name_chinese: '逍遥散',
           name_english: 'Free and Easy Wanderer',
-          name_hebrew: 'שיאו יאו סאן',
         },
         'he',
       ),
@@ -116,7 +113,6 @@ describe('formula naming', () => {
           name_pinyin: null,
           name_chinese: null,
           name_english: 'Free and Easy Wanderer',
-          name_hebrew: null,
         },
         'he',
       ),

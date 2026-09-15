@@ -59,7 +59,6 @@ export function FormulaForm({ formula, herbs }: { formula?: HerbFormulaWithItems
   const [namePinyin, setNamePinyin] = useState(formula?.name_pinyin ?? '');
   const [nameChinese, setNameChinese] = useState(formula?.name_chinese ?? '');
   const [nameEnglish, setNameEnglish] = useState(formula?.name_english ?? '');
-  const [nameHebrew, setNameHebrew] = useState(formula?.name_hebrew ?? '');
   const [tcmCategory, setTcmCategory] = useState<FormulaTcmCategory | ''>(
     formula?.tcm_category ?? '',
   );
@@ -100,7 +99,7 @@ export function FormulaForm({ formula, herbs }: { formula?: HerbFormulaWithItems
       setError(t('needsHerb'));
       return;
     }
-    if (!namePinyin && !nameChinese && !nameEnglish && !nameHebrew) {
+    if (!namePinyin && !nameChinese && !nameEnglish) {
       setError(tc('somethingMissing'));
       return;
     }
@@ -109,7 +108,6 @@ export function FormulaForm({ formula, herbs }: { formula?: HerbFormulaWithItems
       name_pinyin: namePinyin,
       name_chinese: nameChinese,
       name_english: nameEnglish,
-      name_hebrew: nameHebrew,
       // Classical / modified / custom was a question nobody answered; the
       // column stays, unshown, at what it was.
       category: formula?.category ?? 'custom',
@@ -169,13 +167,6 @@ export function FormulaForm({ formula, herbs }: { formula?: HerbFormulaWithItems
                   id="name_english"
                   value={nameEnglish}
                   onChange={(event) => setNameEnglish(event.target.value)}
-                />
-              </Field>
-              <Field label={tf('nameHebrew')} htmlFor="name_hebrew">
-                <Input
-                  id="name_hebrew"
-                  value={nameHebrew}
-                  onChange={(event) => setNameHebrew(event.target.value)}
                 />
               </Field>
               <Field label={tf('tcmCategory')} htmlFor="tcm_category">

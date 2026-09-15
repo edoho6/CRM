@@ -69,7 +69,6 @@ type FormulaUse = {
     | 'name_pinyin'
     | 'name_chinese'
     | 'name_english'
-    | 'name_hebrew'
     | 'tcm_category'
     | 'category'
     | 'is_active'
@@ -143,7 +142,7 @@ export default async function HerbDetailPage({
     scope.supabase
       .from('herb_formula_items')
       .select(
-        'dosage, unit, notes, formula:herb_formulas(id, name_pinyin, name_chinese, name_english, name_hebrew, tcm_category, category, is_active)',
+        'dosage, unit, notes, formula:herb_formulas(id, name_pinyin, name_chinese, name_english, tcm_category, category, is_active)',
       )
       .eq('herb_id', id)
       .returns<FormulaUse[]>(),

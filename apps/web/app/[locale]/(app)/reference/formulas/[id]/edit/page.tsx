@@ -27,7 +27,7 @@ export default async function EditFormulaPage({
     scope.supabase
       .from('herb_formulas')
       .select(
-        '*, items:herb_formula_items(*, herb:herbs(id, pinyin_name, chinese_name, english_name, hebrew_name, default_unit))',
+        '*, items:herb_formula_items(*, herb:herbs(id, pinyin_name, chinese_name, english_name, default_unit))',
       )
       .eq('id', id)
       .maybeSingle<HerbFormulaWithItems>(),

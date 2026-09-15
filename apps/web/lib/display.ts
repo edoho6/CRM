@@ -8,11 +8,12 @@ import {
 /**
  * Naming helpers.
  *
- * Herbs and formulas are named in English and Chinese regardless of which
- * language the interface is in. That is deliberate: the materia medica is shared
- * internationally in those two forms, a supplier's label is in Chinese, and a
- * Hebrew transliteration is a local convenience rather than an identifier. Pinyin
- * rides along as the romanised form the profession speaks in.
+ * Herbs, formulas and points are named in pinyin, Chinese and English
+ * regardless of which language the interface is in. That is deliberate: the
+ * materia medica is shared internationally in those forms, and a supplier's
+ * label is in Chinese. A Hebrew transliteration is not an identifier — two
+ * practitioners spell the same herb three ways — so the interface does not
+ * carry one (15.9).
  *
  * The `locale` argument is kept so callers stay uniform and so a future language
  * with its own established herb naming can be honoured without touching them.
@@ -22,7 +23,6 @@ interface HerbNames {
   pinyin_name?: string | null;
   chinese_name?: string | null;
   english_name?: string | null;
-  hebrew_name?: string | null;
   botanical_name?: string | null;
 }
 
@@ -42,7 +42,6 @@ export function herbPrimaryName(herb: HerbNames | null | undefined, _locale?: Lo
     herb.pinyin_name?.trim() ||
     herb.english_name?.trim() ||
     herb.chinese_name?.trim() ||
-    herb.hebrew_name?.trim() ||
     ''
   );
 }
@@ -73,19 +72,10 @@ export function herbSecondaryName(herb: HerbNames | null | undefined, _locale?: 
   return parts.join(' · ');
 }
 
-/** Searchable haystack covering every name a user might type. */
-export function herbSearchText(herb: HerbNames): string {
-  return [herb.pinyin_name, herb.chinese_name, herb.english_name, herb.hebrew_name]
-    .filter(Boolean)
-    .join(' ')
-    .toLowerCase();
-}
-
 interface FormulaNames {
   name_pinyin?: string | null;
   name_chinese?: string | null;
   name_english?: string | null;
-  name_hebrew?: string | null;
 }
 
 /** Pinyin leads here too: a formula is known by its classical name, Xiao Yao San. */
@@ -95,7 +85,6 @@ export function formulaPrimaryName(formula: FormulaNames | null | undefined, _lo
     formula.name_pinyin?.trim() ||
     formula.name_english?.trim() ||
     formula.name_chinese?.trim() ||
-    formula.name_hebrew?.trim() ||
     ''
   );
 }

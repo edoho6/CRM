@@ -344,9 +344,6 @@ function PointBody({ point }: { point: AcupuncturePoint }) {
     <div className="space-y-4">
       <dl>
         <DetailRow label={t('fields.channel')}>{tChannel(point.channel)}</DetailRow>
-        {point.hebrew_name ? (
-          <DetailRow label={t('fields.code')}>{point.hebrew_name}</DetailRow>
-        ) : null}
         <DetailRow label={t('fields.bodyArea')}>
           {point.body_area ? tArea(point.body_area) : <Dash />}
         </DetailRow>

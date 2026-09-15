@@ -43,11 +43,11 @@ import { pageTitle } from '@/lib/page-title';
 export const generateMetadata = pageTitle('encounters', 'single');
 
 const FORMULA_SELECT =
-  '*, items:herb_formula_items(*, herb:herbs(id, pinyin_name, chinese_name, english_name, hebrew_name, default_unit))';
+  '*, items:herb_formula_items(*, herb:herbs(id, pinyin_name, chinese_name, english_name, default_unit))';
 
 const DISPENSING_SELECT =
-  '*, items:dispensing_items(*, herb:herbs(id, pinyin_name, chinese_name, english_name, hebrew_name)), ' +
-  'formula:herb_formulas(id, name_pinyin, name_english, name_hebrew)';
+  '*, items:dispensing_items(*, herb:herbs(id, pinyin_name, chinese_name, english_name)), ' +
+  'formula:herb_formulas(id, name_pinyin, name_english)';
 
 /** Only what the picker and the chart need — not the clinical prose. */
 const POINT_SELECT =
@@ -92,7 +92,7 @@ interface PreviousRow {
   /** One-to-one, so an object or null in practice; typed loosely on purpose. */
   note: PreviousNote[] | PreviousNote | null;
   dispensing: {
-    formula: Pick<HerbFormula, 'id' | 'name_pinyin' | 'name_english' | 'name_hebrew'> | null;
+    formula: Pick<HerbFormula, 'id' | 'name_pinyin' | 'name_english'> | null;
     preparation: string | null;
     dose_amount: number | null;
     dose_unit: string | null;
@@ -102,7 +102,7 @@ interface PreviousRow {
       custom_name: string | null;
       quantity: number;
       unit: string | null;
-      herb: Pick<Herb, 'id' | 'pinyin_name' | 'chinese_name' | 'english_name' | 'hebrew_name'> | null;
+      herb: Pick<Herb, 'id' | 'pinyin_name' | 'chinese_name' | 'english_name'> | null;
     }[];
   }[];
 }
@@ -232,9 +232,9 @@ export default async function EncounterPage({
         .select(
           'id, encounter_date, note:tcm_notes(points_used),' +
             ' dispensing:dispensing_records(preparation, dose_amount, dose_unit, doses_per_day, dose_timing,' +
-            ' formula:herb_formulas(id, name_pinyin, name_english,' +
-            ' name_hebrew), items:dispensing_items(custom_name, quantity, unit,' +
-            ' herb:herbs(id, pinyin_name, chinese_name, english_name, hebrew_name)))',
+            ' formula:herb_formulas(id, name_pinyin, name_english),' +
+            ' items:dispensing_items(custom_name, quantity, unit,' +
+            ' herb:herbs(id, pinyin_name, chinese_name, english_name)))',
         )
         .eq('patient_id', encounter.patient_id)
         .neq('id', id)

@@ -51,7 +51,7 @@ export default async function BatchesPage({
   const { data, count } = await scope.supabase
     .from('herb_batches')
     .select(
-      '*, herb:herbs(id, pinyin_name, chinese_name, english_name, hebrew_name), supplier:suppliers(id, name)',
+      '*, herb:herbs(id, pinyin_name, chinese_name, english_name), supplier:suppliers(id, name)',
       { count: 'exact' },
     )
     .order('expiry_date', { ascending: true, nullsFirst: false })

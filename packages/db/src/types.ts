@@ -688,7 +688,7 @@ export interface HerbFormulaItem {
 export interface HerbFormulaItemWithHerb extends HerbFormulaItem {
   /** Nature and tastes are there when the reader asked for them (the formula card draws its pies from them). */
   herb:
-    | (Pick<Herb, 'id' | 'pinyin_name' | 'chinese_name' | 'english_name' | 'hebrew_name' | 'default_unit'> &
+    | (Pick<Herb, 'id' | 'pinyin_name' | 'chinese_name' | 'english_name' | 'default_unit'> &
         Partial<Pick<Herb, 'temperature' | 'tastes'>>)
     | null;
 }
@@ -717,7 +717,7 @@ export interface HerbBatch {
 }
 
 export interface HerbBatchWithHerb extends HerbBatch {
-  herb: Pick<Herb, 'id' | 'pinyin_name' | 'english_name' | 'hebrew_name' | 'chinese_name'> | null;
+  herb: Pick<Herb, 'id' | 'pinyin_name' | 'english_name' | 'chinese_name'> | null;
   supplier: Pick<Supplier, 'id' | 'name'> | null;
 }
 
@@ -799,12 +799,12 @@ export interface DispensingItem {
 }
 
 export interface DispensingItemWithHerb extends DispensingItem {
-  herb: Pick<Herb, 'id' | 'pinyin_name' | 'english_name' | 'hebrew_name' | 'chinese_name'> | null;
+  herb: Pick<Herb, 'id' | 'pinyin_name' | 'english_name' | 'chinese_name'> | null;
 }
 
 export interface DispensingRecordWithItems extends DispensingRecord {
   items: DispensingItemWithHerb[];
-  formula: Pick<HerbFormula, 'id' | 'name_pinyin' | 'name_english' | 'name_hebrew'> | null;
+  formula: Pick<HerbFormula, 'id' | 'name_pinyin' | 'name_english'> | null;
 }
 
 export interface DashboardLayoutRow {
@@ -975,11 +975,11 @@ export interface OrderListEntry {
 export interface OrderListEntryWithTarget extends OrderListEntry {
   herb: Pick<
     Herb,
-    'id' | 'pinyin_name' | 'chinese_name' | 'english_name' | 'hebrew_name' | 'default_unit'
+    'id' | 'pinyin_name' | 'chinese_name' | 'english_name' | 'default_unit'
   > | null;
   formula: Pick<
     HerbFormula,
-    'id' | 'name_pinyin' | 'name_chinese' | 'name_english' | 'name_hebrew'
+    'id' | 'name_pinyin' | 'name_chinese' | 'name_english'
   > | null;
   supplier: Pick<Supplier, 'id' | 'name'> | null;
 }

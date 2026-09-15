@@ -140,7 +140,7 @@ export default async function ComparePage({
     const { data } = await scope.supabase
       .from('herb_formulas')
       .select(
-        '*, items:herb_formula_items(dosage, unit, herb:herbs(pinyin_name, english_name, hebrew_name))',
+        '*, items:herb_formula_items(dosage, unit, herb:herbs(pinyin_name, english_name))',
       )
       .in('id', idList)
       .returns<HerbFormulaWithItems[]>();
@@ -175,7 +175,7 @@ export default async function ComparePage({
             (f.items ?? [])
               .map((item) => {
                 const name =
-                  item.herb?.pinyin_name ?? item.herb?.english_name ?? item.herb?.hebrew_name ?? '';
+                  item.herb?.pinyin_name ?? item.herb?.english_name ?? '';
                 return name ? `${name} ${item.dosage}${item.unit === 'gram' ? 'g' : ''}` : null;
               })
               .filter(Boolean)

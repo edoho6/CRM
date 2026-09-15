@@ -28,7 +28,7 @@ export type ReferenceCard =
 const UUID = /^[0-9a-f-]{36}$/i;
 
 const FORMULA_SELECT =
-  '*, items:herb_formula_items(*, herb:herbs(id, pinyin_name, chinese_name, english_name, hebrew_name, default_unit, temperature, tastes))';
+  '*, items:herb_formula_items(*, herb:herbs(id, pinyin_name, chinese_name, english_name, default_unit, temperature, tastes))';
 
 /** A clean, bounded lookup value; anything else is not a name. */
 function term(value: string | null | undefined): string | null {
@@ -53,7 +53,7 @@ export async function loadReferenceCard(target: ReferenceTarget): Promise<Action
     const attempts: (() => PromiseLike<{ data: Herb | null; error: { message: string } | null }>)[] = [];
     if (byId) attempts.push(() => db.from('herbs').select('*').eq('id', byId).maybeSingle<Herb>());
     if (pinyin) attempts.push(() => db.from('herbs').select('*').ilike('pinyin_name', pinyin).limit(1).maybeSingle<Herb>());
-    for (const column of ['hebrew_name', 'english_name', 'pinyin_name'] as const) {
+    for (const column of ['english_name', 'pinyin_name'] as const) {
       if (name) attempts.push(() => db.from('herbs').select('*').ilike(column, name).limit(1).maybeSingle<Herb>());
     }
     for (const attempt of attempts) {
@@ -69,7 +69,7 @@ export async function loadReferenceCard(target: ReferenceTarget): Promise<Action
     const name = term(target.name);
     const attempts: (() => PromiseLike<{ data: HerbFormulaWithItems | null; error: { message: string } | null }>)[] = [];
     if (byId) attempts.push(() => db.from('herb_formulas').select(FORMULA_SELECT).eq('id', byId).maybeSingle<HerbFormulaWithItems>());
-    for (const column of ['name_pinyin', 'name_hebrew', 'name_english'] as const) {
+    for (const column of ['name_pinyin', 'name_english'] as const) {
       if (name) {
         attempts.push(() =>
           db.from('herb_formulas').select(FORMULA_SELECT).ilike(column, name).limit(1).maybeSingle<HerbFormulaWithItems>(),

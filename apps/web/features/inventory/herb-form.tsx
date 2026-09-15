@@ -64,7 +64,6 @@ export function HerbForm({ herb }: { herb?: Herb }) {
       pinyin_name: herb?.pinyin_name ?? '',
       chinese_name: herb?.chinese_name ?? '',
       english_name: herb?.english_name ?? '',
-      hebrew_name: herb?.hebrew_name ?? '',
       botanical_name: herb?.botanical_name ?? '',
       pharmaceutical_name: herb?.pharmaceutical_name ?? '',
       category: herb?.category ?? 'granule',
@@ -133,9 +132,6 @@ export function HerbForm({ herb }: { herb?: Herb }) {
               </Field>
               <Field label={tf('englishName')} htmlFor="english_name">
                 <LtrInput id="english_name" {...register('english_name')} />
-              </Field>
-              <Field label={tf('hebrewName')} htmlFor="hebrew_name">
-                <Input id="hebrew_name" {...register('hebrew_name')} />
               </Field>
             </FieldGrid>
           </Section>

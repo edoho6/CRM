@@ -94,7 +94,7 @@ export default async function HerbsPage({
     if (filters.q) {
       const escaped = filters.q.replace(/[%,()]/g, ' ');
       query = query.or(
-        `pinyin_name.ilike.%${escaped}%,chinese_name.ilike.%${escaped}%,english_name.ilike.%${escaped}%,hebrew_name.ilike.%${escaped}%,botanical_name.ilike.%${escaped}%`,
+        `pinyin_name.ilike.%${escaped}%,chinese_name.ilike.%${escaped}%,english_name.ilike.%${escaped}%,botanical_name.ilike.%${escaped}%`,
       );
     }
     // Values within a facet are alternatives; the facets themselves narrow.

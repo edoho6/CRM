@@ -159,7 +159,7 @@ export function DispensePanel({
         label: formulaPrimaryName(formula, locale),
         secondary: formula.name_pinyin,
         tertiary: formula.name_chinese,
-        keywords: [formula.name_english, formula.name_hebrew].filter(Boolean).join(' '),
+        keywords: formula.name_english ?? '',
       })),
     [formulas, locale],
   );
@@ -171,7 +171,7 @@ export function DispensePanel({
         label: herbPrimaryName(herb, locale),
         secondary: herbSecondaryName(herb, locale),
         tertiary: herb.chinese_name,
-        keywords: [herb.pinyin_name, herb.english_name, herb.hebrew_name].filter(Boolean).join(' '),
+        keywords: [herb.pinyin_name, herb.english_name].filter(Boolean).join(' '),
       })),
     [herbs, locale],
   );
@@ -370,8 +370,10 @@ export function DispensePanel({
     const payload = {
       encounter_id: encounterId,
       formula_id: mode === 'formula' ? (formulaChoice?.id ?? null) : null,
-      // A formula typed rather than chosen becomes a named line, so the
-      // prescription is still a record instead of a blank.
+      // A formula typed rather than chosen becomes a named line on this
+      // prescription and nothing more. Inventing a formula for one patient
+      // must never quietly add a formula to the catalogue — the name lives on
+      // the treatment, where it was written.
       custom_formula:
         mode === 'formula' && formulaChoice && !formulaChoice.id ? formulaChoice.label : '',
       preparation,

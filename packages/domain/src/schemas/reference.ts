@@ -43,7 +43,6 @@ export const acupuncturePointFormSchema = z.object({
   pinyin_name: optionalText(80),
   chinese_name: optionalText(40),
   english_name: optionalText(120),
-  hebrew_name: optionalText(120),
   body_view: z.enum(BODY_VIEWS).default('front'),
   x: optionalNumber,
   y: optionalNumber,

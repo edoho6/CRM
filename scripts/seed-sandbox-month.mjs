@@ -290,7 +290,7 @@ async function main() {
     return;
   }
 
-  const herbs = await q(sb.from('herbs').select('id, pinyin_name, hebrew_name').eq('is_active', true).order('pinyin_name'), 'herbs');
+  const herbs = await q(sb.from('herbs').select('id, pinyin_name').eq('is_active', true).order('pinyin_name'), 'herbs');
   const points = await q(sb.from('acupuncture_points').select('code, bilateral').eq('is_active', true).order('code'), 'points');
   const types = await q(sb.from('appointment_types').select('id, name_he, default_duration_minutes').eq('is_active', true), 'types');
   const existingNames = new Set((await q(sb.from('patients').select('full_name'), 'names')).map((p) => p.full_name));
@@ -535,7 +535,8 @@ async function main() {
   const formulaRows = people.map((p) => ({
     clinic_id: clinic.id,
     name_pinyin: `${p.kase.formula[0]} jia jian`,
-    name_hebrew: `${p.kase.formula[1]} · ${p.fullName}`,
+    // Never the patient's name: a formula is named after the formula, and a
+    // name in here would come back when the practitioner searched for them.
     category: 'modified',
     description: `פורמולה מותאמת אישית ל${p.fullName}. אבחנה: ${p.kase.pattern}.`,
     indications: p.kase.complaint,

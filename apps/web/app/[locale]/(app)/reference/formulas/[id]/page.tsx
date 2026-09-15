@@ -55,7 +55,6 @@ type ItemRow = HerbFormulaItem & {
     | 'pinyin_name'
     | 'chinese_name'
     | 'english_name'
-    | 'hebrew_name'
     | 'botanical_name'
     | 'tcm_category'
     | 'temperature'
@@ -97,7 +96,7 @@ export default async function FormulaDetailPage({
   const { data: formula } = await scope.supabase
     .from('herb_formulas')
     .select(
-      '*, items:herb_formula_items(*, herb:herbs(id, pinyin_name, chinese_name, english_name, hebrew_name, botanical_name, tcm_category, temperature, tastes, default_unit))',
+      '*, items:herb_formula_items(*, herb:herbs(id, pinyin_name, chinese_name, english_name, botanical_name, tcm_category, temperature, tastes, default_unit))',
     )
     .eq('id', id)
     .maybeSingle<FormulaRow>();
@@ -431,9 +430,6 @@ export default async function FormulaDetailPage({
                   <DetailRow label={tf('nameEnglish')}>
                     <span dir="ltr">{formula.name_english ?? <Dash />}</span>
                   </DetailRow>
-                  {formula.name_hebrew ? (
-                    <DetailRow label={tf('nameHebrew')}>{formula.name_hebrew}</DetailRow>
-                  ) : null}
                   <DetailRow label={tf('sourceText')}>
                     <span dir="ltr" className="italic">
                       {formula.source_text ?? <Dash />}

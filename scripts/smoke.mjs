@@ -621,14 +621,13 @@ const flows = {
      sandbox — created on the first run, only opened on later ones — and
      the next plain run then opens billing/[id], forms/[id], herbs/[id]. */
   async writeHerb(page) {
-    const name = 'בדיקה אוטומטית';
     // The list is already filtered by the search term; any herb row means it exists.
     const existing = page.locator('main a[href*="/reference/herbs/"]:not([href$="/new"])').first();
     if ((await existing.count()) > 0) return { ok: true, detail: 'standing test herb already there' };
     await page.goto(new URL('/he/reference/herbs/new', page.url()).href, { waitUntil: 'domcontentloaded' });
     await page.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => {});
     await page.fill('#pinyin_name', 'Ce Shi Cao');
-    await page.fill('#hebrew_name', name);
+    await page.fill('#english_name', 'Automated test herb');
     await page.click('form button[type="submit"]');
     const created = await page.waitForURL(/\/reference\/herbs\/[0-9a-f-]{36}$/, { timeout: 15_000 }).then(() => true).catch(() => false);
     return { ok: created, detail: created ? 'created the standing test herb' : 'stayed on ' + page.url() };

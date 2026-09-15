@@ -48,7 +48,7 @@ const FORMULA_SORT_COLUMNS: Record<FormulaSortKey, string | null> = {
 };
 const FORMULA_DEFAULT_SORT: SortState<FormulaSortKey> = { key: 'name', dir: 'asc' };
 const FORMULA_SELECT =
-  '*, items:herb_formula_items(*, herb:herbs(id, pinyin_name, chinese_name, english_name, hebrew_name, default_unit))';
+  '*, items:herb_formula_items(*, herb:herbs(id, pinyin_name, chinese_name, english_name, default_unit))';
 
 export default async function FormulasPage({
   params,
@@ -86,7 +86,7 @@ export default async function FormulasPage({
     if (filters.q) {
       const escaped = filters.q.replace(/[%,()]/g, ' ');
       query = query.or(
-        `name_pinyin.ilike.%${escaped}%,name_chinese.ilike.%${escaped}%,name_english.ilike.%${escaped}%,name_hebrew.ilike.%${escaped}%,source_text.ilike.%${escaped}%`,
+        `name_pinyin.ilike.%${escaped}%,name_chinese.ilike.%${escaped}%,name_english.ilike.%${escaped}%,source_text.ilike.%${escaped}%`,
       );
     }
     if (filters.cat.length) query = query.in('tcm_category', filters.cat);
