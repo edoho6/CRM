@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useLayoutEffect, useState } from 'react';
+import { useLayoutEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { ChartColumn, ChevronLeft, Eye, EyeOff, LayoutGrid, RotateCcw, Rows3 } from 'lucide-react';
-import { ArrangeToggle, Button, SegmentedControl, cn } from '@clinic/ui';
+import { ChevronLeft, Eye, EyeOff, RotateCcw } from 'lucide-react';
+import { ArrangeToggle, Button, cn } from '@clinic/ui';
 import { usePathname, useRouter } from '@clinic/i18n/navigation';
 import { useSearchParams } from 'next/navigation';
 import { TREATMENT_STATUSES, type TreatmentStatus } from '@clinic/domain';
@@ -48,11 +48,7 @@ export interface StatusCounts {
  * is not the number another does, so "arrange" lets each put theirs first.
  */
 
-type Mode = 'tiles' | 'pills' | 'bar' | 'hidden';
-const MODES: readonly Mode[] = ['tiles', 'pills', 'bar', 'hidden'];
-const MODE_STORAGE_KEY = PREF_KEYS.kpiMode;
 const LAYOUT_STORAGE_KEY = PREF_KEYS.kpiLayout;
-const MODE_ICONS = { tiles: LayoutGrid, pills: Rows3, bar: ChartColumn, hidden: EyeOff } as const;
 
 type Tone = 'jade' | 'sky' | 'amber' | 'red' | 'ink';
 
@@ -89,30 +85,17 @@ export function PatientStatusSummary({ counts }: { counts: StatusCounts }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const [mode, setMode] = useState<Mode>('tiles');
   const [layout, setLayout] = useState<TileLayout>(EMPTY_TILE_LAYOUT);
   const [arranging, setArranging] = useState(false);
-  // Before paint, from the attribute the pre-paint script wrote (so a hidden
-  // strip is hidden by the stylesheet from the first frame), then the order.
+  // The remembered order, read before paint so the tiles do not reshuffle
+  // once React hydrates.
   useLayoutEffect(() => {
-    const stored = document.documentElement.dataset.kpiMode;
-    if (stored && (MODES as readonly string[]).includes(stored)) setMode(stored as Mode);
     try {
       setLayout(parseTileLayout(localStorage.getItem(LAYOUT_STORAGE_KEY)));
     } catch {
       // Site data blocked: the default order, and that is the whole cost.
     }
   }, []);
-
-  function chooseMode(next: Mode) {
-    setMode(next);
-    document.documentElement.dataset.kpiMode = next;
-    try {
-      localStorage.setItem(MODE_STORAGE_KEY, next);
-    } catch {
-      // As above.
-    }
-  }
 
   function saveLayout(next: TileLayout) {
     setLayout(next);
@@ -200,40 +183,32 @@ export function PatientStatusSummary({ counts }: { counts: StatusCounts }) {
 
   const all = [...diary, ...outcomes];
   const ordered = arrangeTiles(all, layout);
-  const isHidden = (item: Item) => layout.hidden.includes(item.key);
-  const visible = ordered.filter((item) => !isHidden(item));
   // An outcome nobody has yet is a tile that only adds noise and a filter that
   // leads to an empty list — dropped while reading, kept while arranging so it
   // can still be ordered or pinned. The diary tiles always show, 0 or not.
-  const shown = visible.filter((item) => arranging || !outcomes.includes(item) || item.value > 0);
-  const visibleOutcomes = outcomes.filter((item) => !isHidden(item) && (arranging || item.value > 0));
+  const shown = ordered.filter(
+    (item) =>
+      !layout.hidden.includes(item.key) &&
+      (arranging || !outcomes.includes(item) || item.value > 0),
+  );
 
+  /* The same switch as the dashboard's, the menu's and the treatment page's,
+     and in the same place: last, in the far corner.
+
+     Beside it there used to be four more: tiles, pills, a stacked bar, and off.
+     Four ways of drawing nine numbers is three more than anyone chooses
+     between, and the corner of the screen where the strip should be quietest
+     held five controls. The tiles were always the default and always what was
+     used; the others are gone, and hiding a number you do not watch is what
+     arranging is for. */
   const switcher = (
     <div className="flex shrink-0 items-center gap-2 self-end sm:self-auto">
-      <SegmentedControl
-        iconOnly
-        label={t('kpi.view')}
-        value={mode}
-        onChange={chooseMode}
-        options={MODES.map((candidate) => {
-          const Icon = MODE_ICONS[candidate];
-          return {
-            value: candidate,
-            label: t(`kpi.modes.${candidate}`),
-            icon: <Icon className="h-4 w-4" aria-hidden />,
-          };
-        })}
+      <ArrangeToggle
+        editing={arranging}
+        onToggle={() => setArranging((current) => !current)}
+        arrangeLabel={t('kpi.arrange')}
+        doneLabel={t('kpi.arrangeDone')}
       />
-      {/* The same switch as the dashboard's, the menu's and the treatment
-          page's, and in the same place: last, in the far corner. */}
-      {mode !== 'hidden' ? (
-        <ArrangeToggle
-          editing={arranging}
-          onToggle={() => setArranging((current) => !current)}
-          arrangeLabel={t('kpi.arrange')}
-          doneLabel={t('kpi.arrangeDone')}
-        />
-      ) : null}
     </div>
   );
 
@@ -243,40 +218,19 @@ export function PatientStatusSummary({ counts }: { counts: StatusCounts }) {
     <div className="space-y-2">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
         <div className="min-w-0 flex-1">
-          {mode === 'tiles' ? (
-            <div data-kpi-tiles>
-              <TileRow
-                items={arranging ? ordered : shown}
-                arranging={arranging}
-                hidden={layout.hidden}
-                onMove={(key, step) => saveLayout(moveTile(all, layout, key, step))}
-                onToggleHidden={(key) => saveLayout(toggleTileHidden(layout, key))}
-                labels={{
-                  earlier: t('kpi.moveEarlier'),
-                  later: t('kpi.moveLater'),
-                  hide: t('kpi.hideTile'),
-                  show: t('kpi.showTile'),
-                }}
-              />
-            </div>
-          ) : mode === 'pills' ? (
-            <div className="flex flex-wrap items-center gap-1">
-              {(arranging ? ordered : shown).map((item) => (
-                <Pill key={item.key} item={item} dimmed={arranging && isHidden(item)} />
-              ))}
-            </div>
-          ) : mode === 'bar' ? (
-            <div className="space-y-1.5">
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-                {visible
-                  .filter((item) => !outcomes.includes(item))
-                  .map((item) => (
-                    <TextStat key={item.key} item={item} />
-                  ))}
-              </div>
-              <StackedBar items={visibleOutcomes} />
-            </div>
-          ) : null}
+          <TileRow
+            items={arranging ? ordered : shown}
+            arranging={arranging}
+            hidden={layout.hidden}
+            onMove={(key, step) => saveLayout(moveTile(all, layout, key, step))}
+            onToggleHidden={(key) => saveLayout(toggleTileHidden(layout, key))}
+            labels={{
+              earlier: t('kpi.moveEarlier'),
+              later: t('kpi.moveLater'),
+              hide: t('kpi.hideTile'),
+              show: t('kpi.showTile'),
+            }}
+          />
         </div>
         {switcher}
       </div>
@@ -416,82 +370,5 @@ function ArrangeButton({
     >
       {children}
     </button>
-  );
-}
-
-function Pill({ item, dimmed = false }: { item: Item; dimmed?: boolean }) {
-  const style = TONES[item.tone];
-  return (
-    <button
-      type="button"
-      onClick={item.onClick}
-      aria-pressed={item.active}
-      className={cn(
-        'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs transition-colors',
-        item.active ? style.active : 'border-ink-200 bg-white text-ink-700 hover:bg-ink-50',
-        dimmed && 'opacity-50',
-      )}
-    >
-      <span aria-hidden className={cn('h-2 w-2 rounded-full', style.fill)} />
-      {item.label}
-      <span className={cn('font-semibold tabular-nums', style.text)}>{item.value}</span>
-    </button>
-  );
-}
-
-function TextStat({ item }: { item: Item }) {
-  const style = TONES[item.tone];
-  return (
-    <button
-      type="button"
-      onClick={item.onClick}
-      aria-pressed={item.active}
-      className={cn(
-        'rounded px-1 underline-offset-2 hover:underline',
-        item.active ? 'font-semibold text-ink-900' : 'text-ink-600',
-      )}
-    >
-      {item.label}{' '}
-      <span className={cn('font-semibold tabular-nums', style.text)}>{item.value}</span>
-    </button>
-  );
-}
-
-/**
- * One bar, the outcomes in proportion. The legend under it carries the
- * numbers and the words: a bar is for seeing the shape, and colour alone is
- * never asked to say which segment is which.
- */
-function StackedBar({ items }: { items: Item[] }) {
-  const total = items.reduce((sum, item) => sum + item.value, 0);
-  return (
-    <div className="space-y-1.5">
-      <div
-        role="img"
-        aria-label={items.map((item) => `${item.label}: ${item.value}`).join(', ')}
-        className="flex h-2.5 w-full overflow-hidden rounded-full bg-ink-100"
-      >
-        {total > 0
-          ? items
-              .filter((item) => item.value > 0)
-              .map((item) => (
-                <span
-                  key={item.key}
-                  title={`${item.label}: ${item.value}`}
-                  style={{ flexGrow: item.value, flexBasis: 0 }}
-                  className={cn(
-                    'block min-w-[3px] border-e border-white last:border-e-0',
-                    TONES[item.tone].fill,
-                  )}
-                />
-              ))
-          : null}
-      </div>
-      <div className="flex flex-wrap items-center gap-1">
-        {items.map((item) => (
-          <Pill key={item.key} item={item} />
-        ))}
-      </div>
-    </div>
   );
 }

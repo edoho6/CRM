@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { PageBody } from '@clinic/ui';
 import { PageHeader } from '@/components/app-shell';
+import { RegisterOpenFile } from '@/features/workspace/register-open-file';
 import { getClinicScope } from '@/lib/session';
 import { ReferenceNav } from '@/features/reference/reference-nav';
 import { MedicineBody, MedicineKindIcon } from '@/features/medicine/medicine-body';
@@ -32,6 +33,15 @@ export default async function MedicineEntryPage({ params }: { params: Promise<{ 
 
   return (
     <>
+      {/* Onto the tab strip in the shell, which knows the URL but not the
+          name on it. */}
+      <RegisterOpenFile
+        kind="medicine"
+        id={entry.id}
+        label={name}
+        href={`/reference/medicine/${entry.slug}`}
+      />
+
       {/* The title is the name in both languages and nothing else: the top bar
           echoes the heading's text once it scrolls away, and a kind label in
           it read "מחלהאסתמה". The kind is the line below, with the icon. */}

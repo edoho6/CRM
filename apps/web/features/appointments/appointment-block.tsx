@@ -71,7 +71,6 @@ export function AppointmentBlock({
   const color = appointment.appointment_type?.color ?? DEFAULT_ENTRY_COLOR;
   const isCancelled = appointment.status === 'cancelled';
   const widthPercent = 100 / columns;
-  const roomColor = appointment.room?.color ?? null;
   const start = new Date(appointment.start_at);
   const slotsToRem = (slots: number) => `${slots * slotHeightRem}rem`;
 
@@ -118,7 +117,7 @@ export function AppointmentBlock({
         // Logical offsets keep events flowing in reading order.
         insetInlineStart: `calc(${column * widthPercent}% + 2px)`,
         width: `calc(${widthPercent}% - 4px)`,
-        borderInlineStartColor: roomColor ?? color,
+        borderInlineStartColor: color,
         backgroundColor: isCancelled ? undefined : `${color}1a`,
         transform: keyTransform ?? CSS.Translate.toString(transform),
       }}

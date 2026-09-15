@@ -19,6 +19,7 @@ import type {
   TreatmentProtocol,
 } from '@clinic/db/types';
 import { PageHeader } from '@/components/app-shell';
+import { RegisterOpenFile } from '@/features/workspace/register-open-file';
 import { HeaderToolsSlot } from '@/components/header-tools';
 import { getClinicScope } from '@/lib/session';
 import { logRecordAccess } from '@/lib/access-log';
@@ -436,6 +437,19 @@ export default async function EncounterPage({
 
   return (
     <>
+      {/* Onto the tab strip in the shell, which knows the URL but not the
+          name on it. */}
+      <RegisterOpenFile
+        kind="encounter"
+        id={encounter.id}
+        label={
+          patientResult.data
+            ? `${patientResult.data.full_name} · ${formatDate(new Date(encounter.encounter_date))}`
+            : formatDate(new Date(encounter.encounter_date))
+        }
+        href={`/encounters/${encounter.id}`}
+      />
+
       <PageHeader
         title={t('encounterOn', {
           date: formatDate(new Date(encounter.encounter_date)),

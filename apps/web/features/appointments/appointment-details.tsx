@@ -8,9 +8,9 @@ import { APPOINTMENT_STATUS_TONES, statusTone, type Locale } from '@clinic/domai
 import type { AppointmentWithRelations } from '@clinic/db/types';
 import { appointmentTypeName, patientFullName } from '@/lib/display';
 import { StartEncounterButton } from '@/features/encounters/start-encounter-button';
+import { PhoneActions } from '@/components/phone-actions';
 import { ConfirmationBadge } from './confirmation-status';
 import { formatDateTime } from '@clinic/i18n';
-import { differenceInMinutes } from './date-utils';
 
 /**
  * One booking, read before it is touched.
@@ -44,7 +44,6 @@ export function AppointmentDetails({
   const open = appointment !== null;
   const start = appointment ? new Date(appointment.start_at) : null;
   const end = appointment ? new Date(appointment.end_at) : null;
-  const minutes = start && end ? differenceInMinutes(start, end) : 0;
   const isCancelled = appointment?.status === 'cancelled';
 
   return (
@@ -57,15 +56,22 @@ export function AppointmentDetails({
           className="max-w-md"
         >
           <dl className="divide-y divide-ink-100 text-sm">
-            {/* The day and the hours first: the diary was opened for them. */}
+            {/* The day and the hours first: the diary was opened for them.
+                A flex row with a gap rather than margins on inline spans — the
+                date ends in a numeral and the hours begin with one, and two
+                numerals either side of a margin in a Hebrew line ran together
+                into one long number. The length of the visit was a third
+                figure on the same line answering a question nobody had asked;
+                it is in the booking form, where it is set. */}
             <Row icon={<CalendarClock className="h-4 w-4" aria-hidden />} label={td('when')}>
-              <span className="font-medium text-ink-900">{format.dateTime(start, 'weekday')}</span>
-              {/* Isolated, so the dash between the hours stays between them in a
-                  Hebrew sentence. */}
-              <bdi className="ms-2 tabular-nums" dir="ltr">
-                {format.dateTime(start, 'time')}–{format.dateTime(end, 'time')}
-              </bdi>
-              <span className="ms-2 text-ink-500">· {td('duration', { minutes })}</span>
+              <span className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
+                <span className="font-medium text-ink-900">{format.dateTime(start, 'weekday')}</span>
+                {/* Isolated, so the dash between the hours stays between them in a
+                    Hebrew sentence. */}
+                <bdi className="tabular-nums" dir="ltr">
+                  {format.dateTime(start, 'time')}–{format.dateTime(end, 'time')}
+                </bdi>
+              </span>
             </Row>
 
             <Row label={t('type')}>
@@ -110,15 +116,14 @@ export function AppointmentDetails({
               </span>
             </Row>
 
+            {/* The number, with the two things anyone does with it. Ringing was
+                the only offer, and on a desk `tel:` usually does nothing at
+                all — while the message that actually gets sent between a
+                treatment and the next one is a WhatsApp. Same control as the
+                patient's file, so it behaves the same in both places. */}
             {appointment.patient?.phone ? (
               <Row icon={<Phone className="h-4 w-4" aria-hidden />} label={td('phone')}>
-                <a
-                  href={`tel:${appointment.patient.phone.replace(/[^\d+]/g, '')}`}
-                  dir="ltr"
-                  className="tabular-nums text-jade-800 underline-offset-2 hover:underline"
-                >
-                  {appointment.patient.phone}
-                </a>
+                <PhoneActions phone={appointment.patient.phone} />
               </Row>
             ) : null}
 

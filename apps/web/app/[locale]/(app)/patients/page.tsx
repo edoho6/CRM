@@ -14,7 +14,7 @@ import {
   Dash,
 } from '@clinic/ui';
 import { Link } from '@clinic/i18n/navigation';
-import { formatDateTime } from '@clinic/i18n';
+import { formatDate, formatTime, formatWeekday } from '@clinic/i18n';
 import { TREATMENT_STATUSES, type TreatmentStatus } from '@clinic/domain';
 import type { PatientTag, PatientWithDiary } from '@clinic/db/types';
 import { PageHeader } from '@/components/app-shell';
@@ -25,6 +25,7 @@ import { ageFromDateOfBirth } from '@/lib/display';
 import { PatientSearch } from '@/features/patients/patient-search';
 import { PatientStatusCell } from '@/features/patients/status-cell';
 import { PatientRowActions } from '@/features/patients/row-actions';
+import { PhoneActions } from '@/components/phone-actions';
 import { PatientStatusSummary, type StatusCounts } from '@/features/patients/status-summary';
 import { TagChipLink, type TagChip } from '@/features/patients/patient-tags';
 import { TAG_CLASSES } from '@/features/patients/tag-colors';
@@ -199,6 +200,25 @@ export default async function PatientsPage({
     return { pathname: '/patients' as const, query: next };
   };
 
+  /*
+   * The URL for one outcome, for the filter row.
+   *
+   * Anything but "in treatment" describes a file that is by definition no longer
+   * active, so choosing one has to widen the list past the active-only default
+   * or it comes back empty — the same rule the tiles apply, written once here
+   * for the row that is now the plain way to reach it. The page number goes: a
+   * different filter is a different list.
+   */
+  const statusHref = (value: TreatmentStatus | null) => {
+    const next: Record<string, string> = {};
+    if (q) next.q = q;
+    if (tag) next.tag = tag;
+    if (noUpcoming === '1') next.noUpcoming = '1';
+    if (value) next.status = value;
+    if ((value && value !== 'active') || (!value && inactive === '1')) next.inactive = '1';
+    return { pathname: '/patients' as const, query: next };
+  };
+
   return (
     <>
       <PageHeader
@@ -221,9 +241,33 @@ export default async function PatientsPage({
       <div className="mb-4 space-y-3">
         <PatientStatusSummary counts={counts} />
         <PatientSearch initialQuery={q} showInactive={inactive === '1'} />
-        {/* The status tiles above are the status filter; a second row of the
-            same choices as chips said everything twice. What is left here is
-            the one filter that is not a status: "nothing booked" is a fact
+
+        {/* Every outcome, as a filter you can find.
+            The tiles above filter too, but a tile is a number that happens to
+            be clickable — it is read as a statistic, and an outcome with nobody
+            in it yet is not drawn at all, so "show me everyone who stopped
+            partway" had no control anywhere on the page. This is the plain
+            row: all of them, always, with their counts. */}
+        <SegmentedLinks
+          label={t('treatmentStatus')}
+          size="sm"
+          items={[
+            {
+              href: statusHref(null),
+              label: tc('all'),
+              active: !status,
+              count: counts.total,
+            },
+            ...TREATMENT_STATUSES.map((value) => ({
+              href: statusHref(value),
+              label: t(`status.${value}`),
+              active: status === value,
+              count: counts.byStatus[value] ?? 0,
+            })),
+          ]}
+        />
+
+        {/* The one filter that is not a status: "nothing booked" is a fact
             about the diary, and it combines with any outcome. */}
         <SegmentedLinks
           label={t('noUpcomingFilter')}
@@ -288,8 +332,8 @@ export default async function PatientsPage({
                 <SortTh sortKey="name">{t('fields.fullName')}</SortTh>
                 <SortTh sortKey="phone">{t('fields.phone')}</SortTh>
                 <SortTh sortKey="age">{t('age')}</SortTh>
-                <SortTh sortKey="tags">{t('tags.column')}</SortTh>
                 <SortTh sortKey="next">{t('nextAppointment')}</SortTh>
+                <SortTh sortKey="tags">{t('tags.column')}</SortTh>
                 <SortTh sortKey="status">{t('treatmentStatus')}</SortTh>
                 <Th className="w-10 text-end">
                   <span className="sr-only">{tc('actions')}</span>
@@ -325,30 +369,27 @@ export default async function PatientsPage({
                       </Link>
                     </Td>
                     <Td>
-                      {patient.phone ? (
-                        <span dir="ltr" className="tabular-nums">
-                          {patient.phone}
-                        </span>
-                      ) : (
-                        <Dash />
-                      )}
+                      {/* Same control as the file and the diary: on a desk a
+                          `tel:` link usually does nothing, and the thing
+                          wanted is almost always the WhatsApp. */}
+                      {patient.phone ? <PhoneActions phone={patient.phone} /> : <Dash />}
                     </Td>
                     <Td>{age === null ? <Dash /> : age}</Td>
                     <Td>
-                      {patientTags.length > 0 ? (
-                        <span className="flex flex-wrap gap-1">
-                          {patientTags.map((entry) => (
-                            <TagChipLink key={entry.id} tag={entry} />
-                          ))}
-                        </span>
-                      ) : (
-                        <Dash />
-                      )}
-                    </Td>
-                    <Td>
+                      {/* Day, then date, then time, each its own run. As one
+                          string the weekday ran into the date and the date into
+                          the hour, and three fields read as one long number. */}
                       {patient.next_appointment_at ? (
-                        <span dir="ltr" className="tabular-nums">
-                          {formatDateTime(new Date(patient.next_appointment_at))}
+                        <span className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                          <span className="text-ink-700">
+                            {formatWeekday(patient.next_appointment_at, locale)}
+                          </span>
+                          <span dir="ltr" className="tabular-nums">
+                            {formatDate(patient.next_appointment_at)}
+                          </span>
+                          <span dir="ltr" className="font-medium tabular-nums text-ink-900">
+                            {formatTime(patient.next_appointment_at)}
+                          </span>
                         </span>
                       ) : (
                         <span
@@ -360,6 +401,17 @@ export default async function PatientsPage({
                         >
                           —
                         </span>
+                      )}
+                    </Td>
+                    <Td>
+                      {patientTags.length > 0 ? (
+                        <span className="flex flex-wrap gap-1">
+                          {patientTags.map((entry) => (
+                            <TagChipLink key={entry.id} tag={entry} />
+                          ))}
+                        </span>
+                      ) : (
+                        <Dash />
                       )}
                     </Td>
                     <Td>

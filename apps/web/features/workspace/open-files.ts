@@ -15,7 +15,31 @@
  * use it, and so the storage rules are written once.
  */
 
-export type OpenFileKind = 'patient' | 'encounter';
+/**
+ * What can sit on the strip.
+ *
+ * It began as patient files. In practice the strip is used the same way for
+ * everything looked up mid-clinic: three patients in play, and the two herbs
+ * and the point whose monographs you keep going back to while writing the
+ * prescription. Leaving those out meant the strip answered "where was I" for
+ * half the work and not the other half.
+ */
+export type OpenFileKind =
+  | 'patient'
+  | 'encounter'
+  | 'herb'
+  | 'formula'
+  | 'point'
+  | 'medicine';
+
+const KINDS: readonly OpenFileKind[] = [
+  'patient',
+  'encounter',
+  'herb',
+  'formula',
+  'point',
+  'medicine',
+];
 
 export interface OpenFile {
   kind: OpenFileKind;
@@ -43,7 +67,7 @@ function isOpenFile(value: unknown): value is OpenFile {
   if (!value || typeof value !== 'object') return false;
   const entry = value as Record<string, unknown>;
   return (
-    (entry.kind === 'patient' || entry.kind === 'encounter') &&
+    KINDS.includes(entry.kind as OpenFileKind) &&
     typeof entry.id === 'string' &&
     typeof entry.label === 'string' &&
     typeof entry.href === 'string'

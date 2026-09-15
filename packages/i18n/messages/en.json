@@ -817,13 +817,6 @@
     "treatmentStatusHint": "Only \"in treatment\" keeps the file in the working list.",
     "statusSaveFailed": "Not saved",
     "kpi": {
-      "view": "How the numbers show",
-      "modes": {
-        "tiles": "Tiles",
-        "pills": "Row",
-        "bar": "Bar",
-        "hidden": "Hidden"
-      },
       "notActive": "Not in treatment",
       "total": "All patients",
       "arrange": "Arrange the tiles",
@@ -972,9 +965,14 @@
       "treatment": "Open treatment",
       "start": "Start treatment"
     },
+    "rangeLayout": {
+      "label": "Range view",
+      "list": "List",
+      "calendar": "Calendar"
+    },
+    "countInDay": "{count, plural, one {One treatment} other {# treatments}}",
     "legend": {
       "title": "Legend",
-      "rooms": "Stripe — room:",
       "types": "Tint — treatment type:",
       "confirmation": "Attendance:"
     },

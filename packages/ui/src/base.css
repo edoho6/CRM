@@ -161,7 +161,7 @@
 [data-table-size='compact'] th,
 [data-table-size='compact'] td {
   padding: 0.25rem 0.5rem;
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
 }
 [data-table-size='large'] th,
 [data-table-size='large'] td {
@@ -232,7 +232,7 @@
     content: attr(data-label);
     flex: 0 0 auto;
     max-width: 45%;
-    font-size: 0.75rem;
+    font-size: 0.8125rem;
     line-height: 1.25;
     color: var(--color-ink-600);
     text-align: start;

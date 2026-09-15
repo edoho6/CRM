@@ -817,13 +817,6 @@
     "treatmentStatusHint": "רק \"מטופל פעיל\" מציג את התיק ברשימת העבודה.",
     "statusSaveFailed": "לא נשמר",
     "kpi": {
-      "view": "תצוגת המספרים",
-      "modes": {
-        "tiles": "אריחים",
-        "pills": "שורה",
-        "bar": "פס",
-        "hidden": "מוסתר"
-      },
       "notActive": "לא בטיפול",
       "total": "סך הכל",
       "arrange": "סידור האריחים",
@@ -972,9 +965,14 @@
       "treatment": "לטיפול",
       "start": "פתיחת טיפול"
     },
+    "rangeLayout": {
+      "label": "תצוגת הטווח",
+      "list": "רשימה",
+      "calendar": "יומן"
+    },
+    "countInDay": "{count, plural, one {טיפול אחד} two {שני טיפולים} other {# טיפולים}}",
     "legend": {
       "title": "מקרא",
-      "rooms": "פס צבע — חדר:",
       "types": "רקע — סוג טיפול:",
       "confirmation": "הגעה:"
     },

@@ -140,3 +140,19 @@ export function addMinutes(date: Date, minutes: number): Date {
 export function differenceInMinutes(later: Date, earlier: Date): number {
   return Math.round((later.getTime() - earlier.getTime()) / 60_000);
 }
+
+/**
+ * A chosen span, padded out to whole weeks so it can be drawn on a seven-column
+ * grid.
+ *
+ * A range of eleven days laid straight into seven columns puts Tuesday under
+ * Sunday on the second row, which is not a calendar, it is a table of eleven
+ * things. Padding to the week the range starts in and the week it ends in keeps
+ * every column one weekday, and the days outside the chosen span are drawn
+ * muted by the caller.
+ */
+export function rangeGridDays(from: Date, to: Date, limit = 120): Date[] {
+  const start = startOfWeek(from);
+  const end = addDays(startOfWeek(to), 6);
+  return daysBetween(start, end, limit);
+}

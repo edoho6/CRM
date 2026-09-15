@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { ClipboardList, User, X } from 'lucide-react';
+import { ClipboardList, FlaskConical, MapPin, Sprout, Stethoscope, User, X } from 'lucide-react';
 import { cn } from '@clinic/ui';
 import { Link, usePathname, useRouter } from '@clinic/i18n/navigation';
 import {
@@ -11,13 +11,32 @@ import {
   OPEN_FILES_EVENT,
   readOpenFiles,
   type OpenFile,
+  type OpenFileKind,
 } from './open-files';
+
+/**
+ * The face of each kind, and where closing the one you are looking at leaves
+ * you: the list it came from.
+ */
+const KIND_META: Record<OpenFileKind, { Icon: typeof User; list: string }> = {
+  patient: { Icon: User, list: '/patients' },
+  encounter: { Icon: ClipboardList, list: '/encounters' },
+  herb: { Icon: Sprout, list: '/reference/herbs' },
+  formula: { Icon: FlaskConical, list: '/reference/formulas' },
+  point: { Icon: MapPin, list: '/reference/points' },
+  medicine: { Icon: Stethoscope, list: '/reference/medicine' },
+};
 
 /**
  * The bar of open files, under the top bar.
  *
  * Behaves like the tab strip of an editor, because that is the thing it is: a
  * row of what you have open, one click to each, an X on each to be done with it.
+ *
+ * Everything opened from a record page lands here, not only patients: a herb's
+ * monograph, a formula, a point, a drug. Mid-clinic those are looked up the
+ * same way and returned to the same way, and a strip that held half of them
+ * answered "where was I" half the time.
  *
  * Renders nothing at all when nothing is open. A permanently empty strip above
  * every page is a row of pixels that costs something and says nothing.
@@ -69,7 +88,7 @@ export function OpenFilesBar() {
     // staying on a page you have just closed is the one wrong answer.
     if (!isActive) return;
     const next = remaining[remaining.length - 1];
-    router.push(next ? next.href : file.kind === 'patient' ? '/patients' : '/encounters');
+    router.push(next ? next.href : KIND_META[file.kind].list);
   }
 
   return (
@@ -77,7 +96,7 @@ export function OpenFilesBar() {
       <nav aria-label={t('openFiles')} className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto">
         {files.map((file) => {
           const isActive = pathname === file.href;
-          const Icon = file.kind === 'patient' ? User : ClipboardList;
+          const { Icon } = KIND_META[file.kind];
           return (
             <span
               key={`${file.kind}:${file.id}`}

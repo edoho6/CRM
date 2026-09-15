@@ -22,6 +22,7 @@ import type { FormulaStockLevel, Herb, HerbFormula, HerbFormulaItem } from '@cli
 import { TEMPERATURES, localizedField, type Locale } from '@clinic/domain';
 import { SourcesLine } from '@/features/reference/sources-line';
 import { PageHeader } from '@/components/app-shell';
+import { RegisterOpenFile } from '@/features/workspace/register-open-file';
 import { TcmChip, TcmChips } from '@/components/tcm-chip';
 import { getClinicScope } from '@/lib/session';
 import {
@@ -126,6 +127,15 @@ export default async function FormulaDetailPage({
 
   return (
     <>
+      {/* Onto the tab strip in the shell, which knows the URL but not the
+          name on it. */}
+      <RegisterOpenFile
+        kind="formula"
+        id={formula.id}
+        label={primary}
+        href={`/reference/formulas/${formula.id}`}
+      />
+
       <PageHeader
         title={
           <span className="flex flex-wrap items-baseline gap-x-3 gap-y-1">

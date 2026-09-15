@@ -17,6 +17,7 @@ import { SourcesLine } from '@/features/reference/sources-line';
 import { Link } from '@clinic/i18n/navigation';
 import type { AcupuncturePoint } from '@clinic/db/types';
 import { PageHeader } from '@/components/app-shell';
+import { RegisterOpenFile } from '@/features/workspace/register-open-file';
 import { getClinicScope } from '@/lib/session';
 import { ReferenceNav } from '@/features/reference/reference-nav';
 import { BodyMap, type MappedPoint } from '@/features/reference/body-map';
@@ -103,6 +104,15 @@ export default async function PointDetailPage({
 
   return (
     <>
+      {/* Onto the tab strip in the shell, which knows the URL but not the
+          name on it. */}
+      <RegisterOpenFile
+        kind="point"
+        id={point.id}
+        label={point.code}
+        href={`/reference/points/${point.id}`}
+      />
+
       <PageHeader
         title={
           <span className="flex flex-wrap items-baseline gap-x-3 gap-y-1">

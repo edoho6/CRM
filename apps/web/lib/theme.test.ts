@@ -12,7 +12,6 @@ describe('the pre-paint script', () => {
       PREF_KEYS.theme,
       PREF_KEYS.sidebarCollapsed,
       PREF_KEYS.tableSize,
-      PREF_KEYS.kpiMode,
       PREF_KEYS.gettingStartedHidden,
       PREF_KEYS.openFiles,
     ]) {
@@ -26,7 +25,6 @@ describe('the pre-paint script', () => {
       [PREF_KEYS.theme]: 'dark',
       [PREF_KEYS.sidebarCollapsed]: '1',
       [PREF_KEYS.tableSize]: 'compact',
-      [PREF_KEYS.kpiMode]: 'hidden',
       [PREF_KEYS.gettingStartedHidden]: '1',
     };
     const storage = { getItem: (key: string) => stored[key] ?? null };
@@ -49,7 +47,6 @@ describe('the pre-paint script', () => {
       theme: 'dark',
       sidebar: 'collapsed',
       tableSize: 'compact',
-      kpiMode: 'hidden',
       gettingStarted: 'hidden',
       openFiles: '1',
     });

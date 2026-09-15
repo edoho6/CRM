@@ -95,6 +95,24 @@
 /* Motion, focus and layering — identical to the staff app's block, and kept
    identical by `check:tokens`. See the comment there for why it is `static`. */
 @theme static {
+  /*
+     The two sizes the interface is actually written in.
+
+     Tailwind ships 12px for xs and 14px for sm, and this app leans on both
+     harder than a marketing page does: a diary legend, a table of doses, the
+     labels under every figure. At 12px on a clinic screen at arm's length
+     they are readable rather than read. A single notch up — 13 and 15 — lifts
+     861 uses at once without touching a single class name, and the line
+     heights move with them so the extra pixel does not tighten the rows.
+
+     Changed here rather than by rewriting classes: the scale is a decision
+     about the product, and it belongs in one place where the next person can
+     see what it is and move it again.
+  */
+  --text-xs: 0.8125rem;
+  --text-xs--line-height: calc(1.125 / 0.8125);
+  --text-sm: 0.9375rem;
+  --text-sm--line-height: calc(1.375 / 0.9375);
   --duration-fast: 120ms;
   --duration-base: 180ms;
   --duration-slow: 260ms;
@@ -197,6 +215,13 @@
   --color-focus-ring: #15803c;
 
   --z-index-sticky: 30;
+  /* The top bar sits one step above the rest of the sticky furniture. It is
+     the only one that opens a panel over the page — the global search — and a
+     sticky element with a z-index is its own stacking context, so that panel
+     can never climb past the bar it lives in. At the same layer as the
+     open-files strip it lost on DOM order, and the search results were drawn
+     behind the strip. */
+  --z-index-top-bar: 31;
   --z-index-overlay: 40;
   --z-index-popover: 50;
   --z-index-toast: 60;

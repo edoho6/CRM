@@ -10,6 +10,7 @@ import {
   fromDateKey,
   isSameDay,
   minutesSinceMidnight,
+  rangeGridDays,
   monthGridDays,
   startOfMonth,
   startOfWeek,
@@ -171,5 +172,21 @@ describe('daysBetween', () => {
 
   it('returns nothing when the range runs backwards', () => {
     expect(daysBetween(new Date(2026, 8, 5), new Date(2026, 8, 1))).toHaveLength(0);
+  });
+});
+
+describe('rangeGridDays', () => {
+  it('pads a span out to whole weeks', () => {
+    // A Wednesday to the Tuesday eleven days later: two weeks of seven.
+    const days = rangeGridDays(new Date(2026, 8, 2), new Date(2026, 8, 15));
+    expect(days).toHaveLength(21);
+    expect(days[0]!.getDay()).toBe(0);
+    expect(days.at(-1)!.getDay()).toBe(6);
+  });
+
+  it('keeps a single day in its own week', () => {
+    const days = rangeGridDays(new Date(2026, 8, 2), new Date(2026, 8, 2));
+    expect(days).toHaveLength(7);
+    expect(days.some((day) => isSameDay(day, new Date(2026, 8, 2)))).toBe(true);
   });
 });

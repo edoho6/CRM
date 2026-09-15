@@ -29,6 +29,7 @@ import type {
 } from '@clinic/db/types';
 import { localizedField, type HerbUnit, type Locale } from '@clinic/domain';
 import { PageHeader } from '@/components/app-shell';
+import { RegisterOpenFile } from '@/features/workspace/register-open-file';
 import { SourcesLine } from '@/features/reference/sources-line';
 import { TcmChip, TcmChips } from '@/components/tcm-chip';
 import { getClinicScope } from '@/lib/session';
@@ -170,6 +171,15 @@ export default async function HerbDetailPage({
 
   return (
     <>
+      {/* Onto the tab strip in the shell, which knows the URL but not the
+          name on it. */}
+      <RegisterOpenFile
+        kind="herb"
+        id={herb.id}
+        label={primary}
+        href={`/reference/herbs/${herb.id}`}
+      />
+
       <PageHeader
         title={
           <span className="flex flex-wrap items-baseline gap-x-3 gap-y-1">

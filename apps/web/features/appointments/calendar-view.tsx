@@ -18,7 +18,7 @@ import { ConfirmationDot } from './confirmation-status';
 import { BlockDayDialog } from './block-day-dialog';
 import { DayAddMenu } from './day-add-menu';
 import { NowLine } from './now-line';
-import { Button, PageHeader, SegmentedControl, cn, useToast } from '@clinic/ui';
+import { Button, Dialog, DialogContent, PageHeader, SegmentedControl, cn, useToast } from '@clinic/ui';
 import { describeActionError } from '@/lib/action-error';
 import { moveAppointment } from './actions';
 import { DateInput } from '@/components/date-input';
@@ -46,6 +46,8 @@ import {
   isSameMonth,
   minutesSinceMidnight,
   monthGridDays,
+  rangeGridDays,
+  startOfDay,
   startOfMonth,
   startOfWeek,
   toDateKey,
@@ -62,9 +64,15 @@ import { formatDate } from '@clinic/i18n';
  */
 export type CalendarViewMode = 'day' | 'week' | 'month' | 'range';
 
-/** Visible hours. Outside these the grid would be mostly empty scrolling. */
-const DAY_START_HOUR = 7;
-const DAY_END_HOUR = 22;
+/**
+ * Visible hours. Outside these the grid would be mostly empty scrolling.
+ *
+ * Six to eleven rather than seven to ten: an early treatment before work and a
+ * late one after it both fell outside the grid, and a booking the diary cannot
+ * draw is a booking you find out about from the patient.
+ */
+const DAY_START_HOUR = 6;
+const DAY_END_HOUR = 23;
 const SLOT_MINUTES = 30;
 /**
  * The height of one half hour, in rem rather than px, so the grid grows with
@@ -687,7 +695,7 @@ export function CalendarView({
         </div>
 
         {isTimeGrid && (roomLane.size > 0 || appointmentTypes.length > 1) ? (
-          <CalendarLegend rooms={rooms} appointmentTypes={appointmentTypes} locale={locale} />
+          <CalendarLegend appointmentTypes={appointmentTypes} locale={locale} />
         ) : null}
 
         {!isTimeGrid ? (
@@ -968,41 +976,28 @@ export function CalendarView({
 }
 
 /**
- * What the colours mean, said in words above the grid: the stripe on a
- * block is its room, the tint is its treatment type, the dot is whether the
- * patient said they are coming. A legend the diary carries itself, rather
- * than a convention to remember.
+ * What the colours mean, said in words above the grid: the tint on a block is
+ * its treatment type, the dot is whether the patient said they are coming. A
+ * legend the diary carries itself, rather than a convention to remember.
+ *
+ * The rooms used to be here too, as a stripe down the edge of every block and a
+ * row of colour keys above the week. Three colour systems on one grid is two
+ * more than anyone reads, and which room a treatment is in is a question asked
+ * by opening the booking, not by scanning the week. The stripe and its key are
+ * both gone; the room is still on the block and in the details.
  */
 function CalendarLegend({
-  rooms,
   appointmentTypes,
   locale,
 }: {
-  rooms: Room[];
   appointmentTypes: AppointmentType[];
   locale: Locale;
 }) {
   const t = useTranslations('appointments.legend');
   const tConfirmation = useTranslations('appointments.confirmation');
-  const activeRooms = rooms.filter((room) => room.is_active !== false);
   const activeTypes = appointmentTypes.filter((type) => type.is_active !== false);
   const body = (
     <>
-      {activeRooms.length > 0 ? (
-        <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1">
-          <span className="font-medium text-ink-700">{t('rooms')}</span>
-          {activeRooms.map((room) => (
-            <span key={room.id} className="inline-flex items-center gap-1">
-              <span
-                aria-hidden
-                className="h-3 w-1 rounded-sm"
-                style={{ backgroundColor: room.color }}
-              />
-              {room.name}
-            </span>
-          ))}
-        </span>
-      ) : null}
       {activeTypes.length > 1 ? (
         <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1">
           <span className="font-medium text-ink-700">{t('types')}</span>
@@ -1057,15 +1052,17 @@ function CalendarLegend({
 /**
  * Month and chosen-range views.
  *
- * Both are lists rather than time grids. Thirty days of a time grid at any
- * usable width gives columns too narrow to hold a patient's name, and the
- * question being asked over a month is not "what is the shape of Tuesday
- * afternoon" but "which days have something in them, and what".
+ * Neither is a time grid. Thirty days of a time grid at any usable width gives
+ * columns too narrow to hold a patient's name, and the question being asked
+ * over a month is not "what is the shape of Tuesday afternoon" but "which days
+ * have something in them, and what".
  *
  * The month keeps the calendar's shape — seven columns, whole weeks — because
- * that shape is how a month is read. The range is a plain agenda: an arbitrary
- * span has no shape to preserve, and days with nothing in them are dropped
- * rather than printed as empty rows.
+ * that shape is how a month is read. A chosen range can be read either way and
+ * the answer depends on the span: a fortnight has a shape worth seeing, a list
+ * of the six days that actually hold something is the faster answer for a
+ * quarter. So the range offers both, and remembers nothing — the choice is a
+ * glance, not a setting.
  */
 function MonthOrRangeView({
   days,
@@ -1090,60 +1087,143 @@ function MonthOrRangeView({
 }) {
   const t = useTranslations('appointments');
   const format = useFormatter();
+  const [rangeLayout, setRangeLayout] = useState<'list' | 'calendar'>('list');
 
   if (view === 'range') {
     const withSomething = days.filter((day) => (byDay.get(toDateKey(day))?.length ?? 0) > 0);
+    const first = days[0];
+    const last = days.at(-1);
+    const inRange = (day: Date) =>
+      Boolean(first && last && day >= startOfDay(first) && day <= startOfDay(last));
 
-    if (withSomething.length === 0) {
+    const layoutSwitch = (
+      <div className="flex justify-end">
+        <SegmentedControl
+          label={t('rangeLayout.label')}
+          value={rangeLayout}
+          onChange={setRangeLayout}
+          options={[
+            { value: 'list', label: t('rangeLayout.list') },
+            { value: 'calendar', label: t('rangeLayout.calendar') },
+          ]}
+        />
+      </div>
+    );
+
+    if (rangeLayout === 'calendar' && first && last) {
       return (
-        <div className="rounded-card border border-ink-200 bg-white p-8 text-center text-sm text-ink-600">
-          {t('noneInRange')}
+        <div className="space-y-3">
+          {layoutSwitch}
+          <MonthGrid
+            days={rangeGridDays(first, last)}
+            // Outside the *range*, not outside a month: the padding days that
+            // only exist so the weeks line up.
+            isOutside={(day) => !inRange(day)}
+            byDay={byDay}
+            availability={availability}
+            onOpen={onOpen}
+            onAddOn={onAddOn}
+            onBlockOn={onBlockOn}
+          />
         </div>
       );
     }
 
     return (
-      <div className="space-y-2">
-        {withSomething.map((day) => (
-          <section key={day.toISOString()} className="rounded-card border border-ink-200 bg-white">
-            <h3 className="border-b border-ink-100 px-3 py-2 text-sm font-semibold text-ink-900">
-              {format.dateTime(day, 'weekday')}
-            </h3>
-            <ul className="divide-y divide-ink-100">
-              {(byDay.get(toDateKey(day)) ?? []).map((appointment) => (
-                <li key={appointment.id}>
-                  <button
-                    type="button"
-                    onClick={() => onOpen(appointment)}
-                    className="flex w-full items-baseline gap-3 px-3 py-2 text-start text-sm hover:bg-ink-50"
-                  >
-                    <ConfirmationDot appointment={appointment} className="self-center" />
-                    <span dir="ltr" className="shrink-0 font-semibold tabular-nums text-ink-800">
-                      {format.dateTime(new Date(appointment.start_at), 'time')}
-                    </span>
-                    <span className="min-w-0 flex-1 truncate font-medium text-ink-900">
-                      {patientFullName(appointment.patient)}
-                    </span>
-                    {appointment.room ? (
-                      <span
-                        className="shrink-0 rounded px-1.5 text-xs leading-5"
-                        style={{ backgroundColor: `${appointment.room.color}33` }}
+      <div className="space-y-3">
+        {layoutSwitch}
+        {withSomething.length === 0 ? (
+          <div className="rounded-card border border-ink-200 bg-white p-8 text-center text-sm text-ink-600">
+            {t('noneInRange')}
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {withSomething.map((day) => (
+              <section key={day.toISOString()} className="rounded-card border border-ink-200 bg-white">
+                <h3 className="border-b border-ink-100 px-3 py-2 text-sm font-semibold text-ink-900">
+                  {format.dateTime(day, 'weekday')}
+                </h3>
+                <ul className="divide-y divide-ink-100">
+                  {(byDay.get(toDateKey(day)) ?? []).map((appointment) => (
+                    <li key={appointment.id}>
+                      <button
+                        type="button"
+                        onClick={() => onOpen(appointment)}
+                        className="flex w-full items-baseline gap-3 px-3 py-2 text-start text-sm hover:bg-ink-50"
                       >
-                        {appointment.room.name}
-                      </span>
-                    ) : null}
-                    <span className="shrink-0 truncate text-xs text-ink-600">
-                      {appointmentTypeName(appointment.appointment_type, locale)}
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </section>
-        ))}
+                        <ConfirmationDot appointment={appointment} className="self-center" />
+                        <span dir="ltr" className="shrink-0 font-semibold tabular-nums text-ink-800">
+                          {format.dateTime(new Date(appointment.start_at), 'time')}
+                        </span>
+                        <span className="min-w-0 flex-1 truncate font-medium text-ink-900">
+                          {patientFullName(appointment.patient)}
+                        </span>
+                        {appointment.room ? (
+                          <span className="shrink-0 truncate text-xs text-ink-600">
+                            {appointment.room.name}
+                          </span>
+                        ) : null}
+                        <span className="shrink-0 truncate text-xs text-ink-600">
+                          {appointmentTypeName(appointment.appointment_type, locale)}
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ))}
+          </div>
+        )}
       </div>
     );
   }
+
+  return (
+    <MonthGrid
+      days={days}
+      isOutside={(day) => !isSameMonth(day, anchor)}
+      byDay={byDay}
+      availability={availability}
+      onOpen={onOpen}
+      onAddOn={onAddOn}
+      onBlockOn={onBlockOn}
+    />
+  );
+}
+
+/**
+ * Seven columns of whole weeks, used by the month and by a range asked to look
+ * like one.
+ *
+ * A cell holds three bookings and then says how many more there are. That count
+ * used to be a sentence you could not act on — the day was full and the only
+ * way to read it was to switch to the day view and navigate to it. It opens the
+ * day now: every booking, the hour and the name, in the order they happen.
+ */
+function MonthGrid({
+  days,
+  isOutside,
+  byDay,
+  availability,
+  onOpen,
+  onAddOn,
+  onBlockOn,
+}: {
+  days: Date[];
+  /** Days drawn muted: another month, or padding around a chosen range. */
+  isOutside: (day: Date) => boolean;
+  byDay: Map<string, AppointmentWithRelations[]>;
+  availability: Availability;
+  onOpen: (appointment: AppointmentWithRelations) => void;
+  onAddOn: (day: Date) => void;
+  onBlockOn: (day: Date) => void;
+}) {
+  const t = useTranslations('appointments');
+  const tc = useTranslations('common');
+  const format = useFormatter();
+  const [dayOpen, setDayOpen] = useState<Date | null>(null);
+
+  const dayOpenAppointments = dayOpen ? (byDay.get(toDateKey(dayOpen)) ?? []) : [];
 
   return (
     <div className="overflow-x-auto rounded-card border border-ink-200 bg-white">
@@ -1164,15 +1244,19 @@ function MonthOrRangeView({
             const key = toDateKey(day);
             const dayAppointments = byDay.get(key) ?? [];
             const today = isSameDay(day, new Date());
-            // A closed day is tinted and named. The tint alone would be one more
-            // grey among several here; the word is what actually reads.
+            // A closed day is tinted, and says something only when there is
+            // something to say. "Closed" under every Saturday and every day off
+            // is a word repeated ten times a month that carries no information
+            // the grey does not; a closure with a reason written on it — a
+            // holiday, a course — is the opposite, and keeps its line.
             const closure = closureFor(day, availability);
             const closed = isClosedDay(day, availability);
             const dayWindows = blockedWindowsFor(day, availability);
-            // Leading and trailing days belong to the neighbouring months. They
-            // are shown, because a week that stops halfway is worse, but muted
-            // so the month being looked at is still obvious.
-            const outside = !isSameMonth(day, anchor);
+            // Leading and trailing days belong to the neighbouring months, or to
+            // the weeks a chosen range only partly covers. They are shown,
+            // because a week that stops halfway is worse, but muted so what is
+            // being looked at is still obvious.
+            const outside = isOutside(day);
 
             return (
               <div
@@ -1223,10 +1307,8 @@ function MonthOrRangeView({
                   </ul>
                 ) : null}
 
-                {closed ? (
-                  <p className="truncate px-1 text-xs text-ink-600">
-                    {closure?.reason ? closure.reason : t('closedDay')}
-                  </p>
+                {closed && closure?.reason ? (
+                  <p className="truncate px-1 text-xs text-ink-600">{closure.reason}</p>
                 ) : null}
 
                 <ul className="mt-0.5 space-y-0.5">
@@ -1251,8 +1333,14 @@ function MonthOrRangeView({
                     </li>
                   ))}
                   {dayAppointments.length > 3 ? (
-                    <li className="px-1 text-xs text-ink-600">
-                      {t('moreInDay', { count: dayAppointments.length - 3 })}
+                    <li>
+                      <button
+                        type="button"
+                        onClick={() => setDayOpen(day)}
+                        className="w-full rounded px-1 py-0.5 text-start text-xs text-ink-600 underline-offset-2 hover:bg-ink-100 hover:text-ink-900 hover:underline"
+                      >
+                        {t('moreInDay', { count: dayAppointments.length - 3 })}
+                      </button>
                     </li>
                   ) : null}
                 </ul>
@@ -1261,6 +1349,42 @@ function MonthOrRangeView({
           })}
         </div>
       </div>
+
+      {/* The whole day, opened from the count. Hour and name only: this answers
+          "what else is in there", and every line opens the booking itself. */}
+      <Dialog open={dayOpen !== null} onOpenChange={(open) => !open && setDayOpen(null)}>
+        {dayOpen ? (
+          <DialogContent
+            title={format.dateTime(dayOpen, 'weekday')}
+            description={t('countInDay', { count: dayOpenAppointments.length })}
+            closeLabel={tc('close')}
+            className="max-w-sm"
+          >
+            <ul className="divide-y divide-ink-100">
+              {dayOpenAppointments.map((appointment) => (
+                <li key={appointment.id}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDayOpen(null);
+                      onOpen(appointment);
+                    }}
+                    className="flex w-full items-baseline gap-2.5 rounded px-1 py-2 text-start text-sm hover:bg-ink-50"
+                  >
+                    <ConfirmationDot appointment={appointment} className="self-center" />
+                    <span dir="ltr" className="shrink-0 font-semibold tabular-nums text-ink-800">
+                      {format.dateTime(new Date(appointment.start_at), 'time')}
+                    </span>
+                    <span className="min-w-0 flex-1 truncate text-ink-900">
+                      {patientFullName(appointment.patient)}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </DialogContent>
+        ) : null}
+      </Dialog>
     </div>
   );
 }

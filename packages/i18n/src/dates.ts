@@ -75,3 +75,22 @@ export function formatTime(value: Date | string | number): string {
   const date = toDate(value);
   return date ? timeFormatter.format(date) : '—';
 }
+
+/**
+ * The weekday's name, in the language of the interface.
+ *
+ * The numeric formats above are deliberately locale-blind; a weekday is the
+ * opposite — "Tue" in a Hebrew sentence is the one part of a date that must be
+ * translated. Kept beside them so a caller that wants "day, date, time" has all
+ * three from one place, and formats each as its own run: a weekday followed
+ * straight by two numeric runs is three fields the bidi algorithm is free to
+ * reorder into one unreadable number.
+ */
+export function formatWeekday(value: Date | string | number, locale: string): string {
+  const date = toDate(value);
+  if (!date) return '—';
+  return new Intl.DateTimeFormat(locale === 'he' ? 'he-IL' : 'en-GB', {
+    timeZone: CLINIC_TIME_ZONE,
+    weekday: 'short',
+  }).format(date);
+}

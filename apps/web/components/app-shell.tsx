@@ -568,7 +568,7 @@ export function AppShell({
             for the search, which opens across the whole bar there. */}
         <header
           data-top-bar
-          className="relative sticky top-0 z-sticky flex h-15 items-center justify-between gap-2 border-b border-ink-200 bg-white/90 px-3 backdrop-blur-md sm:px-4"
+          className="relative sticky top-0 z-top-bar flex h-15 items-center justify-between gap-2 border-b border-ink-200 bg-white/90 px-3 backdrop-blur-md sm:px-4"
         >
           <div className="flex min-w-0 flex-1 items-center gap-1 sm:gap-2">
             {/* Beside the title rather than in the page: every screen has one,
@@ -595,7 +595,12 @@ export function AppShell({
             padding and a border came to 61px — while this sat at a
             hand-written 52px, so the strip stuck nine pixels *under* the
             header and was clipped on every scroll. A fixed header height is
-            the honest fix: one number, used twice. */}
+            the honest fix: one number, used twice.
+
+            One layer under the header, and that matters: both were `z-sticky`,
+            the strip comes later in the document, and so the search results
+            opening out of the header were painted behind it — a list of
+            matches you could not read. */}
         <div data-open-files-slot className="sticky top-15 z-sticky">
           <OpenFilesBar />
         </div>

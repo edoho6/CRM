@@ -1,5 +1,5 @@
 import { shellInitScript } from '@clinic/domain/shell';
-import { KPI_MODES, PREF_KEYS, TABLE_SIZES } from './prefs';
+import { PREF_KEYS, TABLE_SIZES } from './prefs';
 
 /**
  * Theme constants, in a plain module on purpose.
@@ -44,7 +44,6 @@ var m=document.querySelector('meta[name="theme-color"]');if(m)m.content=k?'${THE
 }catch(e){d.theme='light';}
 try{if(localStorage.getItem('${PREF_KEYS.sidebarCollapsed}')==='1')d.sidebar='collapsed';}catch(e){}
 try{var t=localStorage.getItem('${PREF_KEYS.tableSize}');if(${JSON.stringify(TABLE_SIZES)}.indexOf(t)>=0)d.tableSize=t;}catch(e){}
-try{var p=localStorage.getItem('${PREF_KEYS.kpiMode}');if(${JSON.stringify(KPI_MODES)}.indexOf(p)>=0)d.kpiMode=p;}catch(e){}
 try{if(localStorage.getItem('${PREF_KEYS.gettingStartedHidden}')==='1')d.gettingStarted='hidden';}catch(e){}
 try{var o=sessionStorage.getItem('${PREF_KEYS.openFiles}');if(o&&o!=='[]')d.openFiles='1';}catch(e){}
 })();${shellInitScript}`;

@@ -13,7 +13,6 @@ export const PREF_KEYS = {
   sidebarCollapsed: 'herbalist-sidebar-collapsed',
   navOrder: 'herbalist-nav-order',
   tableSize: 'herbalist-table-size',
-  kpiMode: 'herbalist-patient-kpi-mode',
   kpiLayout: 'herbalist-patient-kpi-layout',
   gettingStartedHidden: 'herbalist-getting-started-hidden',
   /** The home-screen hint, once dismissed; an overlay, so the pre-paint script has no line for it. */
@@ -23,7 +22,6 @@ export const PREF_KEYS = {
 } as const;
 
 export const TABLE_SIZES = ['compact', 'regular', 'large'] as const;
-export const KPI_MODES = ['tiles', 'pills', 'bar', 'hidden'] as const;
 
 /**
  * The `<html>` attributes the pre-paint script writes from the stored
@@ -36,7 +34,6 @@ export const KPI_MODES = ['tiles', 'pills', 'bar', 'hidden'] as const;
 export const LAYOUT_ATTRIBUTES = {
   sidebar: 'sidebar',
   tableSize: 'tableSize',
-  kpiMode: 'kpiMode',
   gettingStarted: 'gettingStarted',
   openFiles: 'openFiles',
 } as const;
