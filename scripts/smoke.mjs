@@ -1370,6 +1370,10 @@ const flows = {
     if (offered) await option.click();
     await page.waitForTimeout(500);
     const two = await dialog.locator('[role="group"][aria-label]').count();
+    // Six hundred milliseconds between the keys, not two hundred: dnd-kit
+    // measures the rows again after each move, and against a dev server under
+    // load that lands after the next key. The move itself was never broken —
+    // the same three keystrokes in a hand-driven browser always reordered.
     // The second picture's grip, moved with the keyboard, puts it first:
     // Space picks it up, an arrow towards the start moves it (right in the
     // Hebrew row; up in the phone's stack), Space drops it.
@@ -1379,9 +1383,9 @@ const flows = {
     if ((await grip.count()) > 0) {
       await grip.focus();
       await page.keyboard.press('Space');
-      await page.waitForTimeout(200);
+      await page.waitForTimeout(600);
       await page.keyboard.press((page.viewportSize()?.width ?? 1280) < 640 ? 'ArrowUp' : 'ArrowRight');
-      await page.waitForTimeout(200);
+      await page.waitForTimeout(600);
       await page.keyboard.press('Space');
     }
     await page.waitForTimeout(400);
@@ -1488,8 +1492,8 @@ const flows = {
 
 const STATIC_ROUTES = [
   '/', '/patients', '/patients/new', '/calendar', '/calendar?view=day', '/calendar?view=month',
-  '/calendar?view=range', '/tasks', '/messages', '/messages/queue', '/encounters', '/encounters/new', '/forms',
-  '/forms/new', '/reference/herbs', '/reference/formulas', '/reference/points', '/reference/compare',
+  '/calendar?view=range', '/calendar?view=list', '/tasks', '/messages', '/messages/queue', '/encounters', '/encounters?layout=calendar', '/encounters/new', '/forms',
+  '/forms/new', '/reference/herbs', '/reference/formulas', '/reference/points', '/reference/western-herbs', '/reference/compare',
   '/reference/medicine', '/reference/medicine?kind=drug', '/reference/medicine?kind=lab_test', '/reference/medicine/credits',
   '/library', '/library/sources', '/library/activity',
   '/inventory', '/inventory?tab=low', '/inventory/batches', '/inventory/batches/receive',

@@ -9,8 +9,6 @@ import {
   type HerbFilters as HerbFilterState,
 } from './herb-filter-params';
 
-const PATH = '/reference/herbs';
-
 /**
  * The four materia medica axes a herb is looked up by, plus the review flag.
  *
@@ -22,9 +20,15 @@ const PATH = '/reference/herbs';
 export async function HerbFilters({
   filters,
   keep = {},
+  path = '/reference/herbs',
+  hideCategory = false,
 }: {
   filters: HerbFilterState;
   keep?: Record<string, string>;
+  /** The list these chips filter; the Western herbs have a list of their own. */
+  path?: string;
+  /** Dropped where every row carries the same category, and the facet would be one chip. */
+  hideCategory?: boolean;
 }) {
   const tf = await getTranslations('inventory.herbs.fields');
   const tReview = await getTranslations('inventory.review');
@@ -49,12 +53,14 @@ export async function HerbFilters({
       value,
       label: label(value),
       selected: filters[facet].includes(value),
-      href: { pathname: PATH, query: { ...toggledQuery(filters, facet, value), ...keep } },
+      href: { pathname: path, query: { ...toggledQuery(filters, facet, value), ...keep } },
     })),
   });
 
   const facets: Facet[] = [
-    build('cat', tf('tcmCategory'), 'tcmCategory', TCM_CATEGORIES, (v) => tTcm(v as never)),
+    ...(hideCategory
+      ? []
+      : [build('cat', tf('tcmCategory'), 'tcmCategory', TCM_CATEGORIES, (v) => tTcm(v as never))]),
     build('temp', tf('temperature'), 'temperature', TEMPERATURES, (v) => tTemp(v as never)),
     build('taste', tf('tastes'), 'taste', TASTES, (v) => tTaste(v as never)),
     build('chan', tf('channels'), 'channel', CHANNELS, (v) => tChannel(v as never)),
@@ -68,7 +74,7 @@ export async function HerbFilters({
           label: tReview('badge'),
           selected: filters.review,
           href: {
-            pathname: PATH,
+            pathname: path,
             query: { ...herbFilterQuery({ ...filters, review: !filters.review }), ...keep },
           },
           className: 'bg-amber-100 text-amber-900 ring-1 ring-amber-300',
@@ -82,7 +88,7 @@ export async function HerbFilters({
       facets={facets}
       activeCount={activeFilterCount(filters)}
       clearHref={{
-        pathname: PATH,
+        pathname: path,
         query: {
           ...herbFilterQuery({
             q: filters.q,

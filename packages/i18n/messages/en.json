@@ -483,6 +483,7 @@
     "skipToContent": "Skip to main content",
     "reference": "Reference",
     "points": "Points",
+    "westernHerbs": "Western herbs",
     "sidebar": "Sidebar",
     "accessibility": "Accessibility statement",
     "syntheticBanner": "Development environment — every patient here is fictional. No real data is held here, and none should be entered.",
@@ -1505,6 +1506,13 @@
       "notStocked": "Not stocked",
       "single": "Herb",
       "usedInDose": "Herb’s dose in the formula"
+    },
+    "westernHerbs": {
+      "title": "Western herbs",
+      "count": "{count, plural, =0 {No Western herbs} one {1 Western herb} other {# Western herbs}}",
+      "empty": "No Western herbs yet",
+      "emptyBody": "Western herbs arrive when the shared catalogue is loaded, from Settings.",
+      "searchPlaceholder": "Search botanical or English name"
     },
     "category": {
       "raw_herb": "Raw herb",

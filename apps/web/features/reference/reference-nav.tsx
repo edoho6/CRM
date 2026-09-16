@@ -3,22 +3,24 @@
 import { useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
 import { usePathname } from '@clinic/i18n/navigation';
-import { FlaskConical, MapPin, Sprout, Stethoscope } from 'lucide-react';
+import { FlaskConical, Leaf, MapPin, Sprout, Stethoscope } from 'lucide-react';
 import { SegmentedLinks } from '@/components/segmented-links';
 
 /**
  * Sub-navigation for the reference library.
  *
- * Four catalogues, none of which knows anything about stock: what a herb is,
- * what a formula is made of, where a point sits — and, apart from the three
- * of Chinese medicine, the Western medicine reference of conditions,
- * symptoms and drugs. Each tab carries an icon, because the fourth is a
- * different discipline and should look like one before its name is read.
+ * Five catalogues, none of which knows anything about stock: what a herb is,
+ * what a formula is made of, where a point sits — then the Western herbs,
+ * which are the same kind of record outside the Chinese materia medica, and
+ * last the Western medicine reference of conditions, symptoms and drugs.
+ * Each tab carries an icon, because the last two are other disciplines and
+ * should look like it before their names are read.
  */
 const SECTIONS = [
   { href: '/reference/herbs', labelKey: 'herbs', Icon: Sprout },
   { href: '/reference/formulas', labelKey: 'formulas', Icon: FlaskConical },
   { href: '/reference/points', labelKey: 'points', Icon: MapPin },
+  { href: '/reference/western-herbs', labelKey: 'westernHerbs', Icon: Leaf },
   { href: '/reference/medicine', labelKey: 'medicine', Icon: Stethoscope },
 ] as const;
 
