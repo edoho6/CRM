@@ -3148,6 +3148,7 @@
     },
     "title": "Questionnaires",
     "subtitle": "Intake forms, follow-ups and outcome scales — each one built by you.",
+    "manage": "Manage questionnaires",
     "newForm": "New form",
     "builderHint": "Add questions, choose an answer type for each, and put them in the order they are asked.",
     "empty": "No questionnaires yet",

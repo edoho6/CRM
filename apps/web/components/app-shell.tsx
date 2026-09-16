@@ -27,7 +27,6 @@ import {
   ChartColumn,
   ChevronsRight,
   ClipboardList,
-  FileText,
   FlaskConical,
   GripVertical,
   LayoutDashboard,
@@ -74,7 +73,9 @@ type NavHref = (typeof NAV_ITEMS)[number]['href'];
 
 /** Stored order first, then anything newer that the stored order has never met. */
 function mergeNavOrder(stored: string[], known: readonly NavHref[]): NavHref[] {
-  const kept = stored.filter((href): href is NavHref => (known as readonly string[]).includes(href));
+  const kept = stored.filter((href): href is NavHref =>
+    (known as readonly string[]).includes(href),
+  );
   return [...kept, ...known.filter((href) => !kept.includes(href))];
 }
 
@@ -127,7 +128,6 @@ const NAV_ITEMS = [
     exact: false,
     stockOnly: false,
   },
-  { href: '/forms', labelKey: 'forms', icon: FileText, exact: false, stockOnly: false },
   { href: '/reference', labelKey: 'reference', icon: BookOpen, exact: false, stockOnly: false },
   { href: '/inventory', labelKey: 'inventory', icon: Boxes, exact: false, stockOnly: true },
   { href: '/prices', labelKey: 'prices', icon: Tags, exact: false, stockOnly: false },
@@ -312,7 +312,9 @@ export function AppShell({
               className={cn(
                 'flex min-h-10 items-center rounded-lg py-2 text-sm font-medium transition-colors active:bg-ink-200',
                 iconOnly ? 'justify-center px-0' : 'gap-2.5 px-3',
-                isActive ? 'bg-accent text-accent-fg active:bg-accent-strong' : 'text-ink-700 hover:bg-ink-100',
+                isActive
+                  ? 'bg-accent text-accent-fg active:bg-accent-strong'
+                  : 'text-ink-700 hover:bg-ink-100',
               )}
             >
               <item.icon className="h-4 w-4 shrink-0" aria-hidden />
@@ -322,10 +324,14 @@ export function AppShell({
                 {label}
               </span>
               {/* How many WhatsApp threads wait unread, beside the word. */}
-              {item.href === '/messages' && !iconOnly ? <MessagesBadge className="ms-auto" /> : null}
+              {item.href === '/messages' && !iconOnly ? (
+                <MessagesBadge className="ms-auto" />
+              ) : null}
               {/* A dot that appears when this link is the one being waited
                   on. Hidden in the icon rail, where there is no room. */}
-              {!iconOnly ? <LinkPending className={item.href === '/messages' ? 'ms-1' : 'ms-auto'} /> : null}
+              {!iconOnly ? (
+                <LinkPending className={item.href === '/messages' ? 'ms-1' : 'ms-auto'} />
+              ) : null}
             </Link>
           );
         })}
@@ -428,14 +434,17 @@ export function AppShell({
           {navList(collapsed, true)}
         </div>
 
-        {/* Two links and a menu, where there were six controls.
+        {/* Two links, an icon and a menu, where there were six controls.
 
-            Settings and the accessibility statement stay as visible links: the
-            first is a destination, and the second is a legal obligation that a
-            statement folded into a menu would not meet. Everything that belongs
-            to the person rather than to the practice — the personal area, the
-            theme, the language, signing out — is behind their own name, because
-            those are settings you set once and then stop looking at. */}
+            Settings and the personal area stay as named rows: they are
+            destinations. The accessibility statement is an icon beside the
+            name, not a row of its own — regulation 35(e) asks for it "in a
+            prominent place", which an always-visible control with its name in
+            the accessibility tree is; a row of the same weight as the practice
+            itself is not what the sentence buys. Everything that belongs to
+            the person rather than to the practice — the theme, the language,
+            signing out — is behind their own name, because those are settings
+            you set once and then stop looking at. */}
         <div
           className={cn('shrink-0 space-y-1 border-t border-ink-100', collapsed ? 'p-2' : 'p-3')}
         >
@@ -496,25 +505,31 @@ export function AppShell({
             </Link>
           </Button>
 
-          <Button
-            asChild
-            variant="ghost"
-            size="sm"
-            data-sidebar-row
-            className={cn('w-full', collapsed ? 'justify-center px-0' : 'justify-start')}
+          {/* The name, and beside it the accessibility statement as an icon.
+              One row instead of two, and the icon keeps its name for a screen
+              reader and its tooltip for a mouse. Stacked when the panel is
+              collapsed, where there is no room for two things side by side. */}
+          <div
+            className={cn(
+              'border-t border-ink-100 pt-1',
+              collapsed ? 'space-y-1' : 'flex items-center gap-1',
+            )}
           >
-            <Link href="/accessibility" title={collapsed ? t('accessibility') : undefined}>
-              <Accessibility className="h-4 w-4" />
-              {!collapsed ? (
-                <span data-sidebar-expanded-only>{t('accessibility')}</span>
-              ) : (
+            <div className={cn(!collapsed && 'min-w-0 flex-1')}>
+              <UserMenu userName={userName} collapsed={collapsed} onSignOut={onSignOut} />
+            </div>
+            <Button
+              asChild
+              variant="ghost"
+              size="sm"
+              data-sidebar-row
+              className={cn('shrink-0 px-0', collapsed ? 'w-full justify-center' : 'w-8')}
+            >
+              <Link href="/accessibility" title={t('accessibility')}>
+                <Accessibility className="h-4 w-4" />
                 <span className="sr-only">{t('accessibility')}</span>
-              )}
-            </Link>
-          </Button>
-
-          <div className="border-t border-ink-100 pt-1">
-            <UserMenu userName={userName} collapsed={collapsed} onSignOut={onSignOut} />
+              </Link>
+            </Button>
           </div>
         </div>
 

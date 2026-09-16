@@ -5,6 +5,7 @@ import {
   ClipboardList,
   Clock,
   CreditCard,
+  FileText,
   MapPin,
   Palette,
   ShieldCheck,
@@ -52,6 +53,7 @@ export default async function AccountPage({ params }: { params: Promise<{ locale
   const t = await getTranslations('account');
   const tTypes = await getTranslations('settings.appointmentTypes');
   const tProtocols = await getTranslations('protocols');
+  const tForms = await getTranslations('forms');
   const tPractitioner = await getTranslations('account.practitioner');
   const tSections = await getTranslations('account.sections');
   const tPlaces = await getTranslations('account.places');
@@ -133,10 +135,7 @@ export default async function AccountPage({ params }: { params: Promise<{ locale
           <TwoFactorSettings enabled={Boolean(factor)} factorId={factor?.id ?? null} />
         </Collapsible>
 
-        <Collapsible
-          title={t('appearance')}
-          icon={<Palette className="h-4 w-4" aria-hidden />}
-        >
+        <Collapsible title={t('appearance')} icon={<Palette className="h-4 w-4" aria-hidden />}>
           <AppearanceSettings homePath={profile?.home_path ?? '/'} />
         </Collapsible>
 
@@ -188,6 +187,23 @@ export default async function AccountPage({ params }: { params: Promise<{ locale
             className="inline-flex items-center gap-1.5 rounded-md text-sm font-medium text-jade-700 underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
           >
             {tProtocols('manage')}
+          </Link>
+        </Collapsible>
+
+        {/* Beside the protocols, and for the same reason: a library the
+            practitioner builds once and then uses from a patient's file or a
+            treatment. It had a place of its own in the sidebar, which put a
+            thing you touch a few times a year next to the diary. */}
+        <Collapsible
+          title={tForms('title')}
+          description={tForms('subtitle')}
+          icon={<FileText className="h-4 w-4" aria-hidden />}
+        >
+          <Link
+            href="/forms"
+            className="inline-flex items-center gap-1.5 rounded-md text-sm font-medium text-jade-700 underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+          >
+            {tForms('manage')}
           </Link>
         </Collapsible>
 

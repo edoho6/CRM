@@ -581,28 +581,48 @@ const flows = {
     const url = page.url();
     return { ok: filtered.test(url), detail: url };
   },
-  async filtersRemembered(page) {
-    // Search once, leave, come back bare: the list should reopen filtered.
+  async filtersNotRemembered(page) {
+    /*
+     * A list opens as itself, not as yesterday's search.
+     *
+     * This flow used to assert the opposite — a search was stored and put back
+     * on the next visit — and it was still asserting it months after the
+     * storing was deliberately removed (CLAUDE.md, 15.9: the filter lives in
+     * the URL and nowhere else). A check that guards a rule nobody holds any
+     * more is worse than no check: it fails on correct work.
+     *
+     * So: search, leave, come back bare, and the list must be whole again.
+     * The same question is asked of the diary, where a chosen span is the
+     * filter and "what have I got today" is what a bare visit means.
+     */
     const input = page.locator('main input[type="search"]').first();
     await input.fill('אב');
     await page.waitForURL(/[?&]q=/, { timeout: 8000 }).catch(() => {});
     if (!/[?&]q=/.test(page.url())) return { ok: false, detail: 'search never reached the URL: ' + page.url() };
-    await page.goto(new URL('/he', page.url()).href, { waitUntil: 'domcontentloaded' });
-    await page.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => {});
-    await page.goto(new URL('/he/patients', page.url()).href, { waitUntil: 'domcontentloaded' });
-    await page.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => {});
-    await page.waitForURL(/[?&]q=/, { timeout: 8000 }).catch(() => {});
-    const remembered = /[?&]q=/.test(page.url());
-    // Clearing must be remembered too, or the term springs back forever.
-    await page.locator('main input[type="search"]').first().fill('');
-    await page.waitForURL((url) => !/[?&]q=/.test(url.href), { timeout: 8000 }).catch(() => {});
+    const narrowed = await page.locator('main tbody tr').count();
+
     await page.goto(new URL('/he', page.url()).href, { waitUntil: 'domcontentloaded' });
     await page.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => {});
     await page.goto(new URL('/he/patients', page.url()).href, { waitUntil: 'domcontentloaded' });
     await page.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => {});
     await page.waitForTimeout(900);
-    const cleared = !/[?&]q=/.test(page.url());
-    return { ok: remembered && cleared, detail: `remembered ${remembered}, cleared ${cleared}, at ${page.url()}` };
+    const bare = !/[?&]q=/.test(page.url());
+    const box = await page.locator('main input[type="search"]').first().inputValue();
+    const whole = (await page.locator('main tbody tr').count()) > narrowed;
+
+    // The diary: a range chosen by hand, then a bare visit.
+    await page.goto(new URL('/he/calendar?view=range&from=2026-09-01&to=2026-09-30', page.url()).href, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => {});
+    await page.goto(new URL('/he/calendar', page.url()).href, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => {});
+    await page.waitForTimeout(600);
+    const diaryBare = !/[?&](view|from|to)=/.test(page.url());
+
+    const ok = bare && box === '' && whole && diaryBare;
+    return {
+      ok,
+      detail: `url bare ${bare}, box empty ${box === ''}, list whole ${whole} (${narrowed} filtered), diary bare ${diaryBare}, at ${page.url()}`,
+    };
   },
   async phoneDrawer(page) {
     // On a phone the dialog is a drawer: full width, pinned to the bottom
@@ -1625,7 +1645,7 @@ async function main() {
     if (phone) await visit(context, { route: '/calendar?new=1', locale: 'he', width: phone, label: 'flow drawer-swipe', after: flows.drawerSwipe });
     await visit(context, { route: '/calendar?view=week', locale: 'he', width: desktop, label: 'flow block-day-escape', after: flows.blockDayThenEscape });
     await visit(context, { route: '/patients', locale: 'he', width: desktop, label: 'flow status-tile-filter', after: flows.statusTileKeepsFilter });
-    await visit(context, { route: '/patients', locale: 'he', width: desktop, label: 'flow filters-remembered', after: flows.filtersRemembered });
+    await visit(context, { route: '/patients', locale: 'he', width: desktop, label: 'flow filters-not-remembered', after: flows.filtersNotRemembered });
     if (phone) await visit(context, { route: '/calendar?new=1', locale: 'he', width: phone, label: 'flow phone-dialog-drawer', after: flows.phoneDrawer });
     if (phone) {
       await visit(context, { route: '/', locale: 'he', width: phone, label: 'flow phone-tab-bar', after: flows.phoneTabBar });
