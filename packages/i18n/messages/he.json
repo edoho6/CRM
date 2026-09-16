@@ -1210,6 +1210,7 @@
     "sessionNav": "מעבר בין טיפולים",
     "sessionNumber": "טיפול {number} מתוך {total}",
     "single": "טיפול",
+    "bookNext": "קביעת התור הבא",
     "reopen": {
       "button": "פתיחה לעריכה",
       "title": "פתיחת טיפול חתום לעריכה",

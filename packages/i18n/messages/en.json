@@ -1210,6 +1210,7 @@
     "sessionNav": "Move between treatments",
     "sessionNumber": "Session {number} of {total}",
     "single": "Treatment",
+    "bookNext": "Book the next visit",
     "reopen": {
       "button": "Reopen for editing",
       "title": "Reopen a signed treatment for editing",

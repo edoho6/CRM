@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState, useTransition } from 'react';
 import { useFormatter, useTranslations } from 'next-intl';
-import { BookmarkPlus, Lock, MoreHorizontal } from 'lucide-react';
+import { BookmarkPlus, CalendarPlus, Lock, MoreHorizontal } from 'lucide-react';
 import { MedicineMentions } from '@/features/medicine/medicine-mentions';
 import {
   Alert,
@@ -28,7 +28,7 @@ import {
   useToast,
 } from '@clinic/ui';
 import { toPointPlacement, type BodyView, type TreatmentModality } from '@clinic/domain';
-import { useRouter } from '@clinic/i18n/navigation';
+import { Link, useRouter } from '@clinic/i18n/navigation';
 import type { TcmNote, TreatmentProtocol } from '@clinic/db/types';
 import { useAutosave } from '@/lib/use-autosave';
 import { HeaderTools } from '@/components/header-tools';
@@ -782,6 +782,23 @@ export function EncounterForm({
                             value={state.follow_up_plan}
                             onChange={(event) => set('follow_up_plan', event.target.value)}
                           />
+                          {/* The plan says "in two weeks"; this is the two
+                              weeks. It was the one action at the end of every
+                              visit that meant leaving the record, going to the
+                              diary and finding the patient again — the diary
+                              opens on the booking dialog with them already
+                              chosen. Offered on a signed record too: booking the
+                              next visit is not editing this one. */}
+                          <Link
+                            href={{
+                              pathname: '/calendar',
+                              query: { patient: patientId, new: '1' },
+                            }}
+                            className="mt-1.5 inline-flex items-center gap-1.5 rounded-md text-sm font-medium text-jade-700 underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+                          >
+                            <CalendarPlus className="h-4 w-4" aria-hidden />
+                            {t('bookNext')}
+                          </Link>
                         </Field>
                       </FieldGrid>
                     ),
@@ -908,7 +925,9 @@ export function EncounterForm({
           panels={[
             // On a phone this card is shown at the top of the record instead
             // (one instance, never both), so it drops out of the side column.
-            ...(isWide ? [{ id: 'examination', title: tPanels('examination'), node: examinationCard }] : []),
+            ...(isWide
+              ? [{ id: 'examination', title: tPanels('examination'), node: examinationCard }]
+              : []),
             // The wrappers are not decoration: `dispensePanel` and `formsPanel`
             // are elements built by the page and handed in as props, and each
             // needs a parent of its own so it is a single child rather than an
