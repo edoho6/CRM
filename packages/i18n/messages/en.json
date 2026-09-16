@@ -75,6 +75,7 @@
     },
     "pushQueued": "Reaches the phone app within minutes; nothing to send by hand.",
     "queueTitle": "Sending queue",
+    "stalled": "Nothing has been sent for {hours, plural, one {an hour} other {# hours}}, and {count, plural, one {one message is} other {# messages are}} waiting. The sending service has probably stopped — today's reminders can be sent by hand from here while the schedule is checked.",
     "nav": {
       "label": "Messages",
       "inbox": "Conversations",

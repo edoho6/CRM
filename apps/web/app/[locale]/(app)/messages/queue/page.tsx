@@ -1,16 +1,16 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { PageBody } from '@clinic/ui';
+import { Alert, PageBody } from '@clinic/ui';
 import { PageHeader } from '@/components/app-shell';
 import { Pagination, pageFrom, pageRange } from '@/components/pagination';
 import { getClinicScope } from '@/lib/session';
 import { MessageQueue, type QueueRow } from '@/features/messages/message-queue';
 import { MessagesNav } from '@/features/whatsapp/messages-nav';
+import { queueHealth } from '@/features/messages/queue-health';
 import { pageTitle } from '@/lib/page-title';
 
 export const generateMetadata = pageTitle('messages', 'queueTitle');
 
-const SELECT =
-  '*, patient:patients(id, full_name), appointment:appointments(id, start_at)';
+const SELECT = '*, patient:patients(id, full_name), appointment:appointments(id, start_at)';
 
 /**
  * What is waiting to be sent, and what went.
@@ -39,7 +39,7 @@ export default async function MessagesPage({
   const monthAgo = new Date();
   monthAgo.setDate(monthAgo.getDate() - 30);
 
-  const [queuedResult, failedResult, historyResult] = await Promise.all([
+  const [queuedResult, failedResult, historyResult, lastSendResult] = await Promise.all([
     scope.supabase
       .from('message_log')
       .select(SELECT)
@@ -65,12 +65,48 @@ export default async function MessagesPage({
       .order('created_at', { ascending: false })
       .range(...pageRange(page))
       .returns<QueueRow[]>(),
+    /*
+     * The last thing a sending service put through, which is the only
+     * evidence that there is one. `provider` is set by whatever sent it, so a
+     * message marked sent by a person at this screen does not count as a sign
+     * of life — that is precisely the case the alarm must not fire on.
+     */
+    scope.supabase
+      .from('message_log')
+      .select('sent_at')
+      .eq('status', 'sent')
+      .not('provider', 'is', null)
+      .not('sent_at', 'is', null)
+      .order('sent_at', { ascending: false })
+      .limit(1)
+      .maybeSingle<{ sent_at: string }>(),
   ]);
+
+  const health = queueHealth({
+    oldestQueuedAt: queuedResult.data?.[0]?.created_at ?? null,
+    lastAutomaticSendAt: lastSendResult.data?.sent_at ?? null,
+  });
 
   return (
     <>
-      <PageHeader title={t('queueTitle')} description={t('subtitle')} below={<MessagesNav current="queue" />} />
+      <PageHeader
+        title={t('queueTitle')}
+        description={t('subtitle')}
+        below={<MessagesNav current="queue" />}
+      />
       <PageBody width="narrow">
+        {/* The one failure this screen cannot show by itself: a sending
+            service that has stopped leaves a queue that looks ordinary and a
+            week that looks quiet. Said in hours rather than as a status, so
+            what to do next — send the day's reminders by hand — is obvious. */}
+        {health.state === 'stalled' ? (
+          <Alert tone="danger">
+            {t('stalled', {
+              hours: Math.floor((health.silentMinutes ?? 0) / 60),
+              count: queuedResult.data?.length ?? 0,
+            })}
+          </Alert>
+        ) : null}
         <MessageQueue
           queued={queuedResult.data ?? []}
           failed={failedResult.data ?? []}
