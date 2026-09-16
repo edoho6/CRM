@@ -126,10 +126,10 @@ Document downloads are recorded as `export` and are never deduplicated: taking a
 copy out of the system is the strongest form of access there is.
 
 Currently logged: opening a patient file, opening the form that edits one,
-opening a treatment record, opening an invoice, printing a prescription or a
-treatment confirmation, viewing or downloading a document — in the staff app and
-in the patient portal alike. `audit_log` is readable by clinic staff and
-writable by nobody.
+opening a treatment record, opening an invoice, printing an invoice, a
+prescription or a treatment confirmation, viewing or downloading a document —
+in the staff app and in the patient portal alike. `audit_log` is readable by
+clinic staff and writable by nobody.
 
 **What the trail will not accept.** `log_record_access` is called by the
 application, so until migration 68 it took the table name and the record id on
@@ -388,7 +388,10 @@ token is the whole of the trust model. It is weaker than a signed webhook and it
 is the strongest thing available with this provider.
 
 **Gap:** the Israeli invoicing reform's allocation number is not implemented.
-The invoice schema has room for it.
+The invoice schema has room for it. The printable invoice added in September
+2026 therefore states on its own face that it is neither a tax invoice nor a
+receipt, so that a document this system can produce is never mistaken for one
+it cannot.
 
 ## 10 · Consent
 

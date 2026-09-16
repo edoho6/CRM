@@ -1617,6 +1617,7 @@ async function main() {
     add('patients/[id]/edit', patientIds, (id) => `/patients/${id}/edit`);
     add('encounters/[id]', encounterIds, (id) => `/encounters/${id}`);
     add('billing/[id]', invoiceIds, (id) => `/billing/${id}`);
+    add('print/invoice/[id]', invoiceIds, (id) => `/print/invoice/${id}`);
     add('forms/[id]', formIds, (id) => `/forms/${id}`);
     add('reference/herbs/[id]', herbIds, (id) => `/reference/herbs/${id}`);
     add('reference/herbs/[id]/edit', herbIds, (id) => `/reference/herbs/${id}/edit`);

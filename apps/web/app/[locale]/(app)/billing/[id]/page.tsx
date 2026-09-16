@@ -2,6 +2,8 @@ import { notFound } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Link } from '@clinic/i18n/navigation';
 import type { InvoiceWithDetails } from '@clinic/db/types';
+import { Printer } from 'lucide-react';
+import { Button } from '@clinic/ui';
 import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
 import { logRecordAccess } from '@/lib/access-log';
@@ -60,6 +62,22 @@ export default async function InvoicePage({
               {invoice.patient.full_name}
             </Link>
           ) : null
+        }
+        actions={
+          /* A plain anchor and a new tab, like the prescription: the printable
+             page is outside the app shell, and coming back from it should be
+             closing a tab rather than navigating the invoice away. */
+          <Button asChild variant="secondary">
+            <a
+              href={`/print/invoice/${invoice.id}`}
+              target="_blank"
+              rel="noopener"
+              data-native-download
+            >
+              <Printer className="h-4 w-4" />
+              {t('document.printAction')}
+            </a>
+          </Button>
         }
       />
       <InvoiceEditor invoice={ordered} />
