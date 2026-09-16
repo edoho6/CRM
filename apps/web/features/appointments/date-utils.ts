@@ -156,3 +156,28 @@ export function rangeGridDays(from: Date, to: Date, limit = 120): Date[] {
   const end = addDays(startOfWeek(to), 6);
   return daysBetween(start, end, limit);
 }
+
+/*
+ * The view modes live in this plain module rather than beside the component
+ * that draws them: the calendar page is a server component and reads both of
+ * them to decide what to fetch. A value exported from a 'use client' module
+ * reaches the server as a client reference, not as a number — LIST_DAYS did,
+ * and the page asked Postgres for a window ending on an invalid date.
+ */
+/**
+ * Five ways to look at the diary.
+ *
+ * Day and week are a time grid, because the question there is "what is the shape
+ * of this day" and a grid answers it at a glance. Month, the list and a chosen
+ * range are not: a time grid over thirty days is unreadable at any width, and
+ * the question changes to "which days have something in them".
+ *
+ * The list is the plainest of the five and the one that reads on a phone
+ * without pinching: every booking of the next four weeks, one line each, in the
+ * order they happen. It was reachable before only by choosing a range first,
+ * which is two decisions to answer "what is coming".
+ */
+export type CalendarViewMode = 'day' | 'week' | 'month' | 'list' | 'range';
+
+/** How far ahead the list view reaches. Four weeks, from the day in view. */
+export const LIST_DAYS = 28;

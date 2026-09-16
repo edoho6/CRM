@@ -18,7 +18,15 @@ import { ConfirmationDot } from './confirmation-status';
 import { BlockDayDialog } from './block-day-dialog';
 import { DayAddMenu } from './day-add-menu';
 import { NowLine } from './now-line';
-import { Button, Dialog, DialogContent, PageHeader, SegmentedControl, cn, useToast } from '@clinic/ui';
+import {
+  Button,
+  Dialog,
+  DialogContent,
+  PageHeader,
+  SegmentedControl,
+  cn,
+  useToast,
+} from '@clinic/ui';
 import { describeActionError } from '@/lib/action-error';
 import { moveAppointment } from './actions';
 import { DateInput } from '@/components/date-input';
@@ -51,18 +59,10 @@ import {
   startOfMonth,
   startOfWeek,
   toDateKey,
+  LIST_DAYS,
+  type CalendarViewMode,
 } from './date-utils';
 import { formatDate } from '@clinic/i18n';
-
-/**
- * Four ways to look at the diary.
- *
- * Day and week are a time grid, because the question there is "what is the shape
- * of this day" and a grid answers it at a glance. Month and a chosen range are
- * lists: a time grid over thirty days is unreadable at any width, and the
- * question changes to "which days have something in them".
- */
-export type CalendarViewMode = 'day' | 'week' | 'month' | 'range';
 
 /**
  * Visible hours. Outside these the grid would be mostly empty scrolling.
@@ -235,6 +235,13 @@ export function CalendarView({
   const days = useMemo(() => {
     if (view === 'day') return [anchor];
     if (view === 'month') return monthGridDays(anchor);
+    /*
+     * The list runs forward from the day being looked at, not backwards around
+     * it: "what is coming" is the question this view answers, and a list that
+     * opens on last week's finished appointments answers a different one. Four
+     * weeks is what fits a scroll without becoming a year.
+     */
+    if (view === 'list') return daysBetween(anchor, addDays(anchor, LIST_DAYS - 1));
     if (view === 'range') {
       const from = rangeFrom ? fromDateKey(rangeFrom) : anchor;
       const to = rangeTo ? fromDateKey(rangeTo) : addDays(from, 13);
@@ -486,7 +493,9 @@ export function CalendarView({
         ? addDays(anchor, direction)
         : view === 'month'
           ? addMonths(anchor, direction)
-          : addDays(anchor, direction * 7);
+          : view === 'list'
+            ? addDays(anchor, direction * LIST_DAYS)
+            : addDays(anchor, direction * 7);
     router.push({ pathname, query: { date: toDateKey(next), view } });
   }
 
@@ -688,6 +697,7 @@ export function CalendarView({
                 { value: 'day', label: t('views.day') },
                 { value: 'week', label: t('views.week') },
                 { value: 'month', label: t('views.month') },
+                { value: 'list', label: t('views.list') },
                 { value: 'range', label: t('views.range') },
               ]}
             />
@@ -1038,7 +1048,9 @@ function CalendarLegend({
   // rows of colour keys pushed the day itself below the fold.
   return (
     <>
-      <div className="hidden flex-wrap items-center gap-x-4 gap-y-1 text-xs text-ink-600 sm:flex">{body}</div>
+      <div className="hidden flex-wrap items-center gap-x-4 gap-y-1 text-xs text-ink-600 sm:flex">
+        {body}
+      </div>
       <details className="text-xs text-ink-600 sm:hidden">
         <summary className="inline-flex cursor-pointer select-none rounded font-medium text-ink-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus">
           {t('title')}
@@ -1089,28 +1101,35 @@ function MonthOrRangeView({
   const format = useFormatter();
   const [rangeLayout, setRangeLayout] = useState<'list' | 'calendar'>('list');
 
-  if (view === 'range') {
+  if (view === 'range' || view === 'list') {
     const withSomething = days.filter((day) => (byDay.get(toDateKey(day))?.length ?? 0) > 0);
     const first = days[0];
     const last = days.at(-1);
     const inRange = (day: Date) =>
       Boolean(first && last && day >= startOfDay(first) && day <= startOfDay(last));
 
-    const layoutSwitch = (
-      <div className="flex justify-end">
-        <SegmentedControl
-          label={t('rangeLayout.label')}
-          value={rangeLayout}
-          onChange={setRangeLayout}
-          options={[
-            { value: 'list', label: t('rangeLayout.list') },
-            { value: 'calendar', label: t('rangeLayout.calendar') },
-          ]}
-        />
-      </div>
-    );
+    /*
+     * The grid/list switch belongs to the *range* view, where the dates were
+     * chosen and either shape is a fair answer. The list view is already the
+     * answer to "show me this as a list" — offering to turn it into a grid
+     * there would be a control that undoes the view you just picked.
+     */
+    const layoutSwitch =
+      view === 'range' ? (
+        <div className="flex justify-end">
+          <SegmentedControl
+            label={t('rangeLayout.label')}
+            value={rangeLayout}
+            onChange={setRangeLayout}
+            options={[
+              { value: 'list', label: t('rangeLayout.list') },
+              { value: 'calendar', label: t('rangeLayout.calendar') },
+            ]}
+          />
+        </div>
+      ) : null;
 
-    if (rangeLayout === 'calendar' && first && last) {
+    if (view === 'range' && rangeLayout === 'calendar' && first && last) {
       return (
         <div className="space-y-3">
           {layoutSwitch}
@@ -1134,12 +1153,15 @@ function MonthOrRangeView({
         {layoutSwitch}
         {withSomething.length === 0 ? (
           <div className="rounded-card border border-ink-200 bg-white p-8 text-center text-sm text-ink-600">
-            {t('noneInRange')}
+            {view === 'list' ? t('noneAhead', { days: LIST_DAYS }) : t('noneInRange')}
           </div>
         ) : (
           <div className="space-y-2">
             {withSomething.map((day) => (
-              <section key={day.toISOString()} className="rounded-card border border-ink-200 bg-white">
+              <section
+                key={day.toISOString()}
+                className="rounded-card border border-ink-200 bg-white"
+              >
                 <h3 className="border-b border-ink-100 px-3 py-2 text-sm font-semibold text-ink-900">
                   {format.dateTime(day, 'weekday')}
                 </h3>
@@ -1152,7 +1174,10 @@ function MonthOrRangeView({
                         className="flex w-full items-baseline gap-3 px-3 py-2 text-start text-sm hover:bg-ink-50"
                       >
                         <ConfirmationDot appointment={appointment} className="self-center" />
-                        <span dir="ltr" className="shrink-0 font-semibold tabular-nums text-ink-800">
+                        <span
+                          dir="ltr"
+                          className="shrink-0 font-semibold tabular-nums text-ink-800"
+                        >
                           {format.dateTime(new Date(appointment.start_at), 'time')}
                         </span>
                         <span className="min-w-0 flex-1 truncate font-medium text-ink-900">

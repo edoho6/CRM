@@ -1,17 +1,29 @@
 import { headers } from 'next/headers';
 import { userAgent } from 'next/server';
 import { setRequestLocale } from 'next-intl/server';
-import type { AppointmentType, AppointmentWithRelations, Location, Patient, Room } from '@clinic/db/types';
+import type {
+  AppointmentType,
+  AppointmentWithRelations,
+  Location,
+  Patient,
+  Room,
+} from '@clinic/db/types';
 import { getClinicScope } from '@/lib/session';
-import { CalendarView, type CalendarViewMode } from '@/features/appointments/calendar-view';
+import { CalendarView } from '@/features/appointments/calendar-view';
 import {
+  LIST_DAYS,
+  type CalendarViewMode,
   addDays,
   fromDateKey,
   monthGridDays,
   startOfWeek,
   toDateKey,
 } from '@/features/appointments/date-utils';
-import type { BlockedWindow, DayException, WorkingBlock } from '@/features/appointments/availability';
+import type {
+  BlockedWindow,
+  DayException,
+  WorkingBlock,
+} from '@/features/appointments/availability';
 import { pageTitle } from '@/lib/page-title';
 
 export const generateMetadata = pageTitle('nav', 'calendar');
@@ -59,7 +71,7 @@ export default async function CalendarPage({
   // A view named in the URL always wins, so the switch works on a phone too.
   const phone = userAgent({ headers: await headers() }).device.type === 'mobile';
   const view: CalendarViewMode =
-    viewParam === 'day' || viewParam === 'month' || viewParam === 'range'
+    viewParam === 'day' || viewParam === 'month' || viewParam === 'list' || viewParam === 'range'
       ? viewParam
       : viewParam === 'week' || !phone
         ? 'week'
@@ -86,6 +98,8 @@ export default async function CalendarPage({
       const grid = monthGridDays(anchor);
       return [addDays(grid[0]!, -1), addDays(grid[grid.length - 1]!, 2)];
     }
+    // The list runs forward from the day in view, so the window does too.
+    if (view === 'list') return [addDays(anchor, -1), addDays(anchor, LIST_DAYS + 1)];
     if (view === 'range') {
       const start = rangeFrom ? fromDateKey(rangeFrom) : addDays(anchor, -7);
       const end = rangeTo ? fromDateKey(rangeTo) : addDays(anchor, 7);
@@ -110,8 +124,7 @@ export default async function CalendarPage({
     roomsResult,
     blockedResult,
     locationsResult,
-  ] =
-    await Promise.all([
+  ] = await Promise.all([
     scope.supabase
       .from('appointments')
       .select(APPOINTMENT_SELECT)

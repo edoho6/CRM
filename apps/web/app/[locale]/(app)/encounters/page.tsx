@@ -20,6 +20,12 @@ import { PAGE_SIZE, Pagination, pageFrom, pageRange } from '@/components/paginat
 import { DateRangeFilter } from '@/components/date-range-filter';
 import { getClinicScope } from '@/lib/session';
 import { resolveRange, toDateKey } from '@/lib/date-range';
+import { SegmentedLinks } from '@/components/segmented-links';
+import {
+  EncountersCalendar,
+  type EncounterCalendarEntry,
+} from '@/features/encounters/encounters-calendar';
+import { endOfMonth, fromDateKey, startOfMonth } from '@/features/appointments/date-utils';
 import { PaymentAction } from '@/features/billing/payment-status';
 import { toPaymentSummary } from '@/features/billing/payment-summary';
 import { formatDate } from '@clinic/i18n';
@@ -63,7 +69,13 @@ export default async function EncountersPage({
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ range?: string; from?: string; to?: string; page?: string }>;
+  searchParams: Promise<{
+    range?: string;
+    from?: string;
+    to?: string;
+    page?: string;
+    layout?: string;
+  }>;
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
@@ -85,6 +97,35 @@ export default async function EncountersPage({
   const rangeParams = await searchParams;
   const range = resolveRange(rangeParams);
   const page = pageFrom(rangeParams.page);
+  const layout: 'list' | 'calendar' = rangeParams.layout === 'calendar' ? 'calendar' : 'list';
+
+  /*
+   * The span a calendar draws.
+   *
+   * A calendar needs two ends, and "everything" has neither — a grid over five
+   * years of practice is not a calendar. So an unbounded filter falls back to
+   * the current month, and a half-open custom range is completed to the month
+   * of the date that was given. The span is printed above the grid, so what is
+   * on screen is never a guess.
+   */
+  const [spanFrom, spanTo] = (() => {
+    const from = range.from ? fromDateKey(range.from) : null;
+    const to = range.to ? fromDateKey(range.to) : null;
+    if (from && to) return [from, to];
+    if (from) return [from, endOfMonth(from)];
+    if (to) return [startOfMonth(to), to];
+    const today = new Date();
+    return [startOfMonth(today), endOfMonth(today)];
+  })();
+
+  /**
+   * How many treatments a calendar month may draw.
+   *
+   * Paging a calendar is meaningless — half a month is not a month — so the
+   * grid takes the whole span at once. A thousand is far above a real month
+   * (a full diary is some hundreds) and still a bounded query.
+   */
+  const CALENDAR_LIMIT = 1000;
 
   let query = scope.supabase
     .from('encounters')
@@ -95,11 +136,18 @@ export default async function EncountersPage({
       { count: 'exact' },
     )
     .order('encounter_date', { ascending: false })
-    .order('started_at', { ascending: false })
-    .range(...pageRange(page));
+    .order('started_at', { ascending: false });
 
-  if (range.from) query = query.gte('encounter_date', range.from);
-  if (range.to) query = query.lte('encounter_date', range.to);
+  if (layout === 'calendar') {
+    query = query
+      .gte('encounter_date', toDateKey(spanFrom))
+      .lte('encounter_date', toDateKey(spanTo))
+      .limit(CALENDAR_LIMIT);
+  } else {
+    query = query.range(...pageRange(page));
+    if (range.from) query = query.gte('encounter_date', range.from);
+    if (range.to) query = query.lte('encounter_date', range.to);
+  }
 
   const { data, count: matching } = await query.returns<EncounterRow[]>();
 
@@ -112,16 +160,24 @@ export default async function EncountersPage({
    * the treatment itself all answer the question the same way. One query for the
    * page, keyed by encounter.
    */
-  const { data: paymentRows } = await scope.supabase
-    .from('encounter_payment_status')
-    .select('*')
-    .in(
-      'encounter_id',
-      encounters.map((encounter) => encounter.id),
-    )
-    .returns<EncounterPaymentStatus[]>();
+  // Not asked in calendar mode: the grid shows when and who, payment is one of
+  // the list's columns, and a whole month of identifiers in one `in (…)` is a
+  // query sent as a very long address for an answer nothing on screen reads.
+  const paymentRows =
+    layout === 'calendar'
+      ? []
+      : ((
+          await scope.supabase
+            .from('encounter_payment_status')
+            .select('*')
+            .in(
+              'encounter_id',
+              encounters.map((encounter) => encounter.id),
+            )
+            .returns<EncounterPaymentStatus[]>()
+        ).data ?? []);
 
-  const payments = new Map((paymentRows ?? []).map((row) => [row.encounter_id, row]));
+  const payments = new Map(paymentRows.map((row) => [row.encounter_id, row]));
 
   // No provider set up means the "raise an invoice" button would only ever
   // fail, so it is not offered.
@@ -172,6 +228,29 @@ export default async function EncountersPage({
     }
   }
 
+  const calendarEntries: EncounterCalendarEntry[] = encounters.map((encounter) => ({
+    id: encounter.id,
+    date: encounter.encounter_date,
+    time: treatmentTime(encounter, bookedTimes),
+    patientName: encounter.patient?.full_name ?? null,
+  }));
+
+  /**
+   * The other layout, with the filter kept.
+   *
+   * Switching between a list and a grid is not a new question — it is the same
+   * dates, drawn differently — so the range travels with the link. `page` does
+   * not: the first page of a list and a whole month are not the same position.
+   */
+  function layoutHref(next: 'list' | 'calendar') {
+    const query: Record<string, string> = {};
+    if (rangeParams.range) query.range = rangeParams.range;
+    if (rangeParams.from) query.from = rangeParams.from;
+    if (rangeParams.to) query.to = rangeParams.to;
+    if (next === 'calendar') query.layout = 'calendar';
+    return { pathname: '/encounters' as const, query };
+  }
+
   return (
     <>
       <PageHeader
@@ -191,9 +270,29 @@ export default async function EncountersPage({
         }
       />
 
-      <DateRangeFilter className="mb-4" />
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <DateRangeFilter />
+        <SegmentedLinks
+          label={tApp('rangeLayout.label')}
+          size="sm"
+          items={[
+            {
+              href: layoutHref('list'),
+              label: tApp('rangeLayout.list'),
+              active: layout === 'list',
+            },
+            {
+              href: layoutHref('calendar'),
+              label: tApp('rangeLayout.calendar'),
+              active: layout === 'calendar',
+            },
+          ]}
+        />
+      </div>
 
-      {encounters.length === 0 ? (
+      {layout === 'calendar' ? (
+        <EncountersCalendar from={spanFrom} to={spanTo} entries={calendarEntries} />
+      ) : encounters.length === 0 ? (
         <EmptyState
           icon={<ClipboardList className="h-8 w-8" />}
           title={range.preset === 'all' ? t('empty') : tFilters('noneInRange')}
@@ -214,8 +313,12 @@ export default async function EncountersPage({
           >
             <thead>
               <tr>
-                <SortTh sortKey="date" className="w-28 pe-1">{tc('date')}</SortTh>
-                <SortTh sortKey="time" className="w-20 px-1">{tc('time')}</SortTh>
+                <SortTh sortKey="date" className="w-28 pe-1">
+                  {tc('date')}
+                </SortTh>
+                <SortTh sortKey="time" className="w-20 px-1">
+                  {tc('time')}
+                </SortTh>
                 <SortTh sortKey="patient">{tPatients('singular')}</SortTh>
                 <SortTh sortKey="status">{tc('status')}</SortTh>
                 <SortTh sortKey="arrival">{tApp('confirmation.title')}</SortTh>
@@ -304,13 +407,16 @@ export default async function EncountersPage({
           </SortableTable>
         </TableWrapper>
       )}
-      <Pagination
-        page={page}
-        total={matching ?? null}
-        shown={encounters.length}
-        pathname="/encounters"
-        query={{ range: rangeParams.range, from: rangeParams.from, to: rangeParams.to }}
-      />
+      {/* A calendar has no pages: half a month is not a month. */}
+      {layout === 'list' ? (
+        <Pagination
+          page={page}
+          total={matching ?? null}
+          shown={encounters.length}
+          pathname="/encounters"
+          query={{ range: rangeParams.range, from: rangeParams.from, to: rangeParams.to }}
+        />
+      ) : null}
     </>
   );
 }

@@ -935,6 +935,7 @@
       "empty": "לא הוגדרו סוגי טיפול"
     },
     "noneInRange": "אין תורים בטווח הזה",
+    "noneAhead": "אין תורים ב-{days} הימים הקרובים",
     "moreInDay": "ועוד {count}",
     "countInView": "{count, plural, =0 {אין תורים} one {תור אחד} two {שני תורים} other {# תורים}}",
     "searchPatient": "חיפוש מטופל לפי שם",

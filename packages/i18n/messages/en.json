@@ -935,6 +935,7 @@
       "empty": "No appointment types defined"
     },
     "noneInRange": "No appointments in this range",
+    "noneAhead": "No appointments in the next {days} days",
     "moreInDay": "{count} more",
     "countInView": "{count, plural, =0 {No appointments} one {1 appointment} other {# appointments}}",
     "searchPatient": "Search for a patient by name",
