@@ -318,6 +318,18 @@ export interface ScheduleBlock {
 
 export type MessageChannel = 'sms' | 'whatsapp' | 'email' | 'push';
 export type MessageStatus = 'queued' | 'sent' | 'failed' | 'skipped';
+/**
+ * The values of a WhatsApp template's variables, in order.
+ *
+ * The column is `jsonb`, not `text[]`: jsonb can hold anything, and this type
+ * says what the application puts there and reads back — nothing else writes
+ * the column, and the SQL that fills it builds an array every time. Anything
+ * reading these rows from outside the application (the dispatcher does) still
+ * checks with `Array.isArray` before using them, because the type is a promise
+ * about our own code and not a constraint the database enforces.
+ */
+export type TemplateParams = string[] | null;
+
 
 /** One message to a patient or practitioner: queued by the hourly job, sent by a provider or by hand. */
 export interface MessageLogEntry {
@@ -337,8 +349,8 @@ export interface MessageLogEntry {
   provider: string | null;
   provider_message_id: string | null;
   error_code: string | null;
-  /** The values of the template's variables, in order, for a WhatsApp template send. */
-  params: string[] | null;
+  /** For a WhatsApp template send. */
+  params: TemplateParams;
   created_at: string;
   sent_at: string | null;
 }
@@ -396,7 +408,7 @@ export interface WhatsappMessage {
   media_url: string | null;
   provider_message_id: string | null;
   template_id: string | null;
-  params: string[] | null;
+  params: TemplateParams;
   status: WhatsappMessageStatus;
   error_code: string | null;
   sent_by: string | null;
