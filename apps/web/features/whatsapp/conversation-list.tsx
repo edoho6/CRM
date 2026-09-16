@@ -135,7 +135,7 @@ export function ConversationList({
                         {row.preview ?? ''}
                       </span>
                       {row.unread > 0 ? (
-                        <span className="shrink-0 rounded-full bg-accent px-1.5 py-0.5 text-[11px] font-semibold leading-none text-accent-fg">
+                        <span className="shrink-0 rounded-full bg-accent px-1.5 py-0.5 text-xs font-semibold leading-none text-accent-fg">
                           <span className="sr-only">{t('unreadCount', { count: row.unread })}</span>
                           <span aria-hidden>{row.unread}</span>
                         </span>

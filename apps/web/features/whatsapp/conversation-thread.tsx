@@ -296,7 +296,7 @@ function Bubble({
             <span className="text-ink-500">{labels.attachmentHint}</span>
           </p>
         ) : null}
-        <p className={cn('mt-1 flex items-center gap-1 text-[11px] text-ink-500', out ? 'justify-end' : 'justify-start')}>
+        <p className={cn('mt-1 flex items-center gap-1 text-xs text-ink-500', out ? 'justify-end' : 'justify-start')}>
           {message.kind === 'template' ? <span>{labels.template} ·</span> : null}
           <span dir="ltr">{formatTime(message.createdAt)}</span>
           {out ? <Ticks status={message.status} label={labels.status(message.status)} /> : null}

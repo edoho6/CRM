@@ -37,7 +37,7 @@ export function MessagesBadge({ className }: { className?: string }) {
 
   if (count === 0) return null;
   return (
-    <span className={cn('rounded-full bg-accent px-1.5 py-0.5 text-[11px] font-semibold leading-none text-accent-fg', className)}>
+    <span className={cn('rounded-full bg-accent px-1.5 py-0.5 text-xs font-semibold leading-none text-accent-fg', className)}>
       <span className="sr-only">{t('unreadThreads', { count })}</span>
       <span aria-hidden>{count}</span>
     </span>

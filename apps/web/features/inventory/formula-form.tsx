@@ -26,9 +26,10 @@ import {
   type HerbUnit,
   type Locale,
 } from '@clinic/domain';
-import { useRouter } from '@clinic/i18n/navigation';
+import { usePathname, useRouter } from '@clinic/i18n/navigation';
 import type { Herb, HerbFormulaWithItems } from '@clinic/db/types';
 import { herbPrimaryName, herbSecondaryName } from '@/lib/display';
+import { parentPath } from '@/lib/parent-path';
 import { saveFormula } from './actions';
 
 interface ItemRow {
@@ -53,6 +54,7 @@ export function FormulaForm({ formula, herbs }: { formula?: HerbFormulaWithItems
   const locale = useLocale() as Locale;
   const format = useFormatter();
   const router = useRouter();
+  const pathname = usePathname();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -344,7 +346,7 @@ export function FormulaForm({ formula, herbs }: { formula?: HerbFormulaWithItems
         <Button
           type="button"
           variant="secondary"
-          onClick={() => router.back()}
+          onClick={() => router.push(parentPath(pathname) ?? '/')}
           disabled={isPending}
         >
           {tc('cancel')}

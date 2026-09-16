@@ -30,9 +30,10 @@ import {
   type Locale,
 } from '@clinic/domain';
 import type { z } from 'zod';
-import { Link, useRouter } from '@clinic/i18n/navigation';
+import { Link, usePathname, useRouter } from '@clinic/i18n/navigation';
 import type { Herb, Supplier } from '@clinic/db/types';
 import { herbPrimaryName, herbSecondaryName } from '@/lib/display';
+import { parentPath } from '@/lib/parent-path';
 import { receiveBatch } from './actions';
 import { NewSupplierDialog } from './supplier-form';
 import { DateInput } from '@/components/date-input';
@@ -86,6 +87,7 @@ export function ReceiveForm({
   const locale = useLocale() as Locale;
   const format = useFormatter();
   const router = useRouter();
+  const pathname = usePathname();
   const [isPending, startTransition] = useTransition();
   const [status, setStatus] = useState<'idle' | 'error'>('idle');
   const { toast } = useToast();
@@ -379,7 +381,7 @@ export function ReceiveForm({
         <Button
           type="button"
           variant="secondary"
-          onClick={() => router.back()}
+          onClick={() => router.push(parentPath(pathname) ?? '/')}
           disabled={isPending}
         >
           {tc('cancel')}

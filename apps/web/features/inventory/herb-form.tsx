@@ -15,7 +15,8 @@ import {
   type HerbFormData,
   type HerbFormValues,
 } from '@clinic/domain';
-import { useRouter } from '@clinic/i18n/navigation';
+import { usePathname, useRouter } from '@clinic/i18n/navigation';
+import { parentPath } from '@/lib/parent-path';
 import {
   Alert,
   Button,
@@ -51,6 +52,7 @@ export function HerbForm({ herb }: { herb?: Herb }) {
   const tChannel = useTranslations('inventory.channel');
   const tc = useTranslations('common');
   const router = useRouter();
+  const pathname = usePathname();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -275,7 +277,7 @@ export function HerbForm({ herb }: { herb?: Herb }) {
         <Button
           type="button"
           variant="secondary"
-          onClick={() => router.back()}
+          onClick={() => router.push(parentPath(pathname) ?? '/')}
           disabled={isPending}
         >
           {tc('cancel')}

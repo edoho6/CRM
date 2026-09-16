@@ -14,7 +14,8 @@ import {
   type AcupuncturePointFormData,
   type AcupuncturePointFormValues,
 } from '@clinic/domain';
-import { useRouter } from '@clinic/i18n/navigation';
+import { usePathname, useRouter } from '@clinic/i18n/navigation';
+import { parentPath } from '@/lib/parent-path';
 import {
   Alert,
   Button,
@@ -50,6 +51,7 @@ export function PointForm({ point }: { point: AcupuncturePoint }) {
   const tRegion = useTranslations('encounters.region');
   const tc = useTranslations('common');
   const router = useRouter();
+  const pathname = usePathname();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -234,7 +236,7 @@ export function PointForm({ point }: { point: AcupuncturePoint }) {
       </Section>
 
       <FormActionBar>
-        <Button type="button" variant="secondary" onClick={() => router.back()} disabled={isPending}>
+        <Button type="button" variant="secondary" onClick={() => router.push(parentPath(pathname) ?? '/')} disabled={isPending}>
           {tc('cancel')}
         </Button>
         <Button type="submit" disabled={isPending}>

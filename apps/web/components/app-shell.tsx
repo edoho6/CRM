@@ -549,7 +549,7 @@ export function AppShell({
           aria-controls="sidebar-nav"
           aria-label={collapsed ? t('expandSidebar') : t('collapseSidebar')}
           title={collapsed ? t('expandSidebar') : t('collapseSidebar')}
-          className="absolute top-1/2 left-0 z-10 flex h-12 w-4 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-ink-200 bg-white text-ink-600 shadow-xs transition-colors hover:bg-ink-100 hover:text-ink-900"
+          className="absolute top-1/2 end-0 z-10 flex h-12 w-4 -translate-y-1/2 translate-x-1/2 rtl:-translate-x-1/2 items-center justify-center rounded-full border border-ink-200 bg-white text-ink-600 shadow-xs transition-colors hover:bg-ink-100 hover:text-ink-900"
         >
           <ChevronsRight
             className={cn(

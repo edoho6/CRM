@@ -13,8 +13,9 @@ import {
   type PatientFormValues,
 } from '@clinic/domain';
 import { LOCALE_LABELS } from '@clinic/i18n';
-import { useRouter } from '@clinic/i18n/navigation';
+import { usePathname, useRouter } from '@clinic/i18n/navigation';
 import { describeActionError } from '@/lib/action-error';
+import { parentPath } from '@/lib/parent-path';
 import {
   Alert,
   Button,
@@ -62,6 +63,7 @@ export function PatientForm({
   const tAll = useTranslations();
   const tSex = useTranslations('patients.sex');
   const router = useRouter();
+  const pathname = usePathname();
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [serverError, setServerError] = useState<string | null>(null);
@@ -280,7 +282,7 @@ export function PatientForm({
         <Button
           type="button"
           variant="secondary"
-          onClick={() => router.back()}
+          onClick={() => router.push(parentPath(pathname) ?? '/')}
           disabled={isPending}
         >
           {tc('cancel')}
