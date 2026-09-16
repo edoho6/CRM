@@ -9,6 +9,13 @@ import {
 } from '@clinic/domain';
 import { getClinicScope } from '@/lib/session';
 import { actionError, actionOk, type ActionResult } from '@/lib/errors';
+import {
+  findDuplicate,
+  nationalIdKey,
+  phoneKey,
+  type DuplicateCandidate,
+  type DuplicateMatch,
+} from './duplicate';
 
 /**
  * Patient mutations.
@@ -176,4 +183,46 @@ export async function createPatientTagInline(name: string): Promise<ActionResult
 
   if (error) return actionError(error);
   return actionOk({ id: data.id });
+}
+
+/**
+ * Whether this clinic already has a file on the same person.
+ *
+ * A read, called from the form before it saves, and not a constraint: two
+ * people do share a phone, and the practitioner is the one who knows whether
+ * this is a mother and daughter or the same patient entered twice. It reports;
+ * it never refuses.
+ *
+ * The narrowing happens in the query and the deciding in `duplicate.ts`, which
+ * is tested: a phone can be written five ways and the database cannot compare
+ * them, so the query asks for anything that ends in the same seven digits and
+ * the module says whether it is the same number.
+ */
+export async function findDuplicatePatient(input: {
+  phone?: string | null;
+  national_id?: string | null;
+  excludeId?: string | null;
+}): Promise<ActionResult<DuplicateMatch | null>> {
+  const scope = await getClinicScope();
+  if (!scope) return actionError(new Error('unauthorized'));
+
+  const phone = phoneKey(input.phone);
+  const nationalId = nationalIdKey(input.national_id);
+  if (!phone && !nationalId) return actionOk(null);
+
+  const filters: string[] = [];
+  // The last seven digits are enough to pull the candidates; the module then
+  // decides on nine. `%` and `,` would be read as PostgREST syntax.
+  if (phone) filters.push(`phone.ilike.%${phone.slice(-7)}%`);
+  if (nationalId) filters.push(`national_id.ilike.%${nationalId}%`);
+
+  const { data, error } = await scope.supabase
+    .from('patients')
+    .select('id, full_name, phone, national_id')
+    .or(filters.join(','))
+    .limit(20)
+    .returns<DuplicateCandidate[]>();
+
+  if (error) return actionError(error);
+  return actionOk(findDuplicate(data ?? [], input, input.excludeId ?? null));
 }

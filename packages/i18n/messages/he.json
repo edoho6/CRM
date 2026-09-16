@@ -829,7 +829,13 @@
       "showTile": "הצגה",
       "resetOrder": "חזרה לסדר המקורי"
     },
-    "singular": "מטופל"
+    "singular": "מטופל",
+    "duplicate": {
+      "byPhone": "כבר קיים מטופל עם הטלפון הזה: {name}",
+      "byId": "כבר קיים מטופל עם תעודת הזהות הזאת: {name}",
+      "open": "פתיחת התיק הקיים",
+      "saveAnyway": "שמירה בכל זאת"
+    }
   },
   "appointments": {
     "noHoursHint": "עדיין לא הוגדרו שעות עבודה",

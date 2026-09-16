@@ -829,7 +829,13 @@
       "showTile": "Show",
       "resetOrder": "Restore the default order"
     },
-    "singular": "Patient"
+    "singular": "Patient",
+    "duplicate": {
+      "byPhone": "A patient with this phone number already exists: {name}",
+      "byId": "A patient with this ID number already exists: {name}",
+      "open": "Open the existing file",
+      "saveAnyway": "Save anyway"
+    }
   },
   "appointments": {
     "noHoursHint": "Working hours not set yet",

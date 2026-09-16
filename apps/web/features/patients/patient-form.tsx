@@ -33,7 +33,8 @@ import {
   useToast,
 } from '@clinic/ui';
 import type { Patient } from '@clinic/db/types';
-import { createPatient, updatePatient } from './actions';
+import { createPatient, findDuplicatePatient, updatePatient } from './actions';
+import type { DuplicateMatch } from './duplicate';
 import { DateInput } from '@/components/date-input';
 
 /**
@@ -67,6 +68,24 @@ export function PatientForm({
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [serverError, setServerError] = useState<string | null>(null);
+  /*
+   * A file that already exists for the same person.
+   *
+   * Held in state rather than refused outright: two people do share a phone —
+   * a mother and a child, a couple — and only the person at the desk knows
+   * which this is. The first save reports it and stops; a second press goes
+   * ahead. Cleared whenever the identifiers change, so correcting the number
+   * does not leave a warning about a patient who is no longer implicated.
+   */
+  const [duplicate, setDuplicate] = useState<DuplicateMatch | null>(null);
+  /**
+   * The identifiers the warning was raised against.
+   *
+   * What makes the second press mean "yes, I know" without it meaning "save
+   * whatever is in the form now": change the phone after the warning and it is
+   * a different question, so it is asked again.
+   */
+  const [acknowledged, setAcknowledged] = useState<string | null>(null);
 
   const {
     register,
@@ -99,6 +118,21 @@ export function PatientForm({
   function onSubmit(values: PatientFormData) {
     setServerError(null);
     startTransition(async () => {
+      const identifiers = `${values.phone ?? ''}|${values.national_id ?? ''}`;
+      if (acknowledged !== identifiers) {
+        const found = await findDuplicatePatient({
+          phone: values.phone,
+          national_id: values.national_id,
+          excludeId: patient?.id ?? null,
+        });
+        if (found.ok && found.data) {
+          setDuplicate(found.data);
+          setAcknowledged(identifiers);
+          return;
+        }
+        setDuplicate(null);
+      }
+
       const result = patient
         ? await updatePatient(patient.id, values)
         : await createPatient(values);
@@ -148,6 +182,29 @@ export function PatientForm({
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
       {serverError ? <Alert tone="danger">{serverError}</Alert> : null}
 
+      {/* Not an error: it is a question, and the button underneath is the
+          answer. The existing file opens in a new tab so the half-typed form
+          is still here when the practitioner has looked. */}
+      {duplicate ? (
+        <Alert tone="warning">
+          <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <span>
+              {t(duplicate.on === 'national_id' ? 'duplicate.byId' : 'duplicate.byPhone', {
+                name: duplicate.name ?? '—',
+              })}
+            </span>
+            <a
+              href={`/patients/${duplicate.id}`}
+              target="_blank"
+              rel="noopener"
+              className="font-medium text-jade-800 underline underline-offset-2"
+            >
+              {t('duplicate.open')}
+            </a>
+          </span>
+        </Alert>
+      ) : null}
+
       <Card>
         <CardBody className="space-y-5">
           <Section title={t('sections.personal')}>
@@ -158,7 +215,12 @@ export function PatientForm({
                 required
                 error={fieldError('first_name')}
               >
-                <Input id="first_name" autoComplete="given-name" autoFocus {...register('first_name')} />
+                <Input
+                  id="first_name"
+                  autoComplete="given-name"
+                  autoFocus
+                  {...register('first_name')}
+                />
               </Field>
               <Field
                 label={t('fields.lastName')}
@@ -179,7 +241,10 @@ export function PatientForm({
                   value={watch('date_of_birth') ?? ''}
                   max={today}
                   onChange={(event) =>
-                    setValue('date_of_birth', event.target.value, { shouldDirty: true, shouldValidate: true })
+                    setValue('date_of_birth', event.target.value, {
+                      shouldDirty: true,
+                      shouldValidate: true,
+                    })
                   }
                 />
               </Field>
@@ -289,7 +354,7 @@ export function PatientForm({
         </Button>
         <Button type="submit" disabled={isPending}>
           {isPending ? <Spinner /> : null}
-          {isPending ? tc('saving') : tc('save')}
+          {isPending ? tc('saving') : duplicate ? t('duplicate.saveAnyway') : tc('save')}
         </Button>
       </FormActionBar>
     </form>
