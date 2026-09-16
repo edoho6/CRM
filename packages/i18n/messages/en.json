@@ -3360,6 +3360,7 @@
     "noData": "No data in this period.",
     "unavailable": "This section could not be loaded. Refresh to try again.",
     "showTable": "Show as a table",
+    "downloadCsv": "Download CSV",
     "hideTable": "Hide the table",
     "generatedOn": "Generated {date}",
     "sections": {

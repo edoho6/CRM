@@ -3360,6 +3360,7 @@
     "noData": "אין נתונים בטווח הזה.",
     "unavailable": "לא ניתן היה לטעון את המקטע הזה. רעננו כדי לנסות שוב.",
     "showTable": "הצגה כטבלה",
+    "downloadCsv": "הורדה כקובץ CSV",
     "hideTable": "הסתרת הטבלה",
     "generatedOn": "הופק ב-{date}",
     "sections": {

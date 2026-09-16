@@ -2,7 +2,9 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { Download } from 'lucide-react';
 import { Alert, Card, CardBody, Table, TableWrapper, Td, Th, Tr } from '@clinic/ui';
+import { CSV_BOM, csvFileName, toCsv } from './csv';
 
 /**
  * The frame every chart on the report sits in.
@@ -48,6 +50,24 @@ export function ReportCard({
   const t = useTranslations('reports');
   const [showTable, setShowTable] = useState(false);
 
+  /**
+   * The section as a file.
+   *
+   * Built here from the rows the page already holds rather than asked of the
+   * server: nothing new is read, so nothing new is exposed, and it works from
+   * the screen the reader is already looking at. The mark on the control is
+   * what the store shells key on — they cannot save a file, so they hide it.
+   */
+  function downloadCsv() {
+    const text = CSV_BOM + toCsv(table.columns, table.rows, table.headers);
+    const url = URL.createObjectURL(new Blob([text], { type: 'text/csv;charset=utf-8' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = csvFileName(title, new Date());
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
   const empty = failed || table.rows.length === 0;
 
   return (
@@ -74,7 +94,7 @@ export function ReportCard({
         )}
 
         {!empty ? (
-          <div className="no-print">
+          <div className="no-print flex flex-wrap items-center gap-x-4 gap-y-1">
             <button
               type="button"
               onClick={() => setShowTable((current) => !current)}
@@ -82,6 +102,15 @@ export function ReportCard({
               className="rounded-md text-xs font-medium text-jade-700 underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
             >
               {showTable ? t('hideTable') : t('showTable')}
+            </button>
+            <button
+              type="button"
+              onClick={downloadCsv}
+              data-native-download
+              className="inline-flex items-center gap-1 rounded-md text-xs font-medium text-jade-700 underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+            >
+              <Download className="h-3.5 w-3.5" aria-hidden />
+              {t('downloadCsv')}
             </button>
           </div>
         ) : null}
