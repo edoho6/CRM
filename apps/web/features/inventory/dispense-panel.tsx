@@ -56,7 +56,13 @@ import {
   useCurrentPrescriptionPublisher,
 } from '@/features/encounters/current-prescription-context';
 import { GranuleCalculator } from './granule-calculator';
-import { multiplierForTotal, round2, splitByParts } from './dosing';
+import {
+  dailyDose as doseForDay,
+  multiplierForTotal,
+  prescriptionTotal,
+  round2,
+  splitByParts,
+} from './dosing';
 import { dispenseHerbs, recordPrescription } from './actions';
 import { formatDate, formatDateTime } from '@clinic/i18n';
 import { ReferenceChip } from '@/features/reference/reference-sheet';
@@ -81,8 +87,10 @@ export type HerbOption = Pick<
 >;
 
 /** A formula as the picker and the composition preview need it. */
-export interface FormulaOption
-  extends Pick<HerbFormula, 'id' | 'name_pinyin' | 'name_chinese' | 'name_english'> {
+export interface FormulaOption extends Pick<
+  HerbFormula,
+  'id' | 'name_pinyin' | 'name_chinese' | 'name_english'
+> {
   items: {
     id: string;
     dosage: number;
@@ -111,6 +119,14 @@ export interface FormulaOption
  * practitioner otherwise does nine times on paper, and it is where the decimal
  * point goes astray. With no total, the numbers are grams exactly as typed.
  */
+/**
+ * The two numbers on the bag, from the tested module. Kept as local names
+ * because they are called a dozen times below and the row is the argument
+ * every time.
+ */
+const dailyDose = (record: DispensingRecordWithItems) => doseForDay<HerbUnit>(record, 'gram');
+const recordTotal = (record: DispensingRecordWithItems) => prescriptionTotal(record.items);
+
 export function DispensePanel({
   encounterId,
   formulas,
@@ -273,7 +289,12 @@ export function DispensePanel({
       return;
     }
     if (mode === 'formula' && formulaChoice?.label.trim()) {
-      publish({ formula: formulaChoice.label.trim(), draft: true, herbs: [], meta: draftMeta(null) });
+      publish({
+        formula: formulaChoice.label.trim(),
+        draft: true,
+        herbs: [],
+        meta: draftMeta(null),
+      });
       return;
     }
     if (mode === 'herb' && herbLines.length > 0) {
@@ -323,7 +344,17 @@ export function DispensePanel({
     publish(null);
     // `herbLines` is rebuilt every render; the publisher itself compares what it
     // is given against what it has, so the extra calls cost nothing.
-  }, [publish, mode, selectedFormula, formulaChoice, herbLines, records, herbs, locale, multiplier]);
+  }, [
+    publish,
+    mode,
+    selectedFormula,
+    formulaChoice,
+    herbLines,
+    records,
+    herbs,
+    locale,
+    multiplier,
+  ]);
 
   function reset() {
     setFormulaChoice(null);
@@ -441,7 +472,9 @@ export function DispensePanel({
        * exactly like a button that does not work.
        */
       try {
-        const result = allocatable ? await dispenseHerbs(payload) : await recordPrescription(payload);
+        const result = allocatable
+          ? await dispenseHerbs(payload)
+          : await recordPrescription(payload);
 
         if (!result.ok) {
           setError(result.error);
@@ -461,7 +494,10 @@ export function DispensePanel({
   }
 
   /** The same sentence for the inline alert and for the toast. */
-  function describeError(reason: { key: string; values?: Record<string, string | number> }): string {
+  function describeError(reason: {
+    key: string;
+    values?: Record<string, string | number>;
+  }): string {
     if (reason.key === 'inventory.dispensing.insufficientStock') {
       return t('insufficientStock', {
         herb: String(reason.values?.herb ?? ''),
@@ -584,9 +620,7 @@ export function DispensePanel({
                       {/* The computed weight, beside the part it came from, so the
                           split is visible as it is typed rather than only in a
                           summary underneath. */}
-                      <span
-                        className="w-24 shrink-0 pb-2 text-xs tabular-nums text-ink-700"
-                      >
+                      <span className="w-24 shrink-0 pb-2 text-xs tabular-nums text-ink-700">
                         {line ? `${format.number(line.quantity)} ${tUnit(unit)}` : '—'}
                       </span>
 
@@ -759,20 +793,20 @@ export function DispensePanel({
                 </div>
 
                 <div>
-                <Field label={t('doseTiming')} htmlFor="dose_timing" density="compact">
-                  <Select
-                    id="dose_timing"
-                    value={doseTiming}
-                    onChange={(event) => setDoseTiming(event.target.value as DoseTiming | '')}
-                  >
-                    <option value="">—</option>
-                    {DOSE_TIMINGS.map((option) => (
-                      <option key={option} value={option}>
-                        {t(`timing.${option}`)}
-                      </option>
-                    ))}
-                  </Select>
-                </Field>
+                  <Field label={t('doseTiming')} htmlFor="dose_timing" density="compact">
+                    <Select
+                      id="dose_timing"
+                      value={doseTiming}
+                      onChange={(event) => setDoseTiming(event.target.value as DoseTiming | '')}
+                    >
+                      <option value="">—</option>
+                      {DOSE_TIMINGS.map((option) => (
+                        <option key={option} value={option}>
+                          {t(`timing.${option}`)}
+                        </option>
+                      ))}
+                    </Select>
+                  </Field>
                 </div>
               </div>
             </div>
@@ -968,22 +1002,11 @@ export function DispensePanel({
   );
 }
 
-/** Amount per dose times doses per day. Null when either half is missing. */
-function dailyDose(record: DispensingRecordWithItems): { amount: number; unit: HerbUnit } | null {
-  if (!record.dose_amount || !record.doses_per_day) return null;
-  return {
-    amount: round2(Number(record.dose_amount) * Number(record.doses_per_day)),
-    unit: record.dose_unit ?? 'gram',
-  };
-}
-
-function recordTotal(record: DispensingRecordWithItems): number {
-  return round2(record.items.reduce((sum, item) => sum + Number(item.quantity), 0));
-}
-
 /** The same herb in two prescriptions must match: catalogue id, or the typed name. */
 function itemKey(item: DispensingRecordWithItems['items'][number]): string {
-  return item.herb ? `herb:${item.herb.id}` : `custom:${(item.custom_name ?? '').trim().toLowerCase()}`;
+  return item.herb
+    ? `herb:${item.herb.id}`
+    : `custom:${(item.custom_name ?? '').trim().toLowerCase()}`;
 }
 
 function itemLabel(item: DispensingRecordWithItems['items'][number], locale: Locale): string {
@@ -1014,10 +1037,7 @@ function DispensingDetailDialog({
   return (
     <Dialog open={record !== null} onOpenChange={(isOpen) => !isOpen && onClose()}>
       {record ? (
-        <DialogContent
-          title={recordTitle(record, locale, t('herbs'))}
-          closeLabel={tc('close')}
-        >
+        <DialogContent title={recordTitle(record, locale, t('herbs'))} closeLabel={tc('close')}>
           <div className="space-y-4">
             <p className="text-xs text-ink-500">
               <span dir="ltr">{formatDateTime(new Date(record.dispensed_at))}</span>
@@ -1069,7 +1089,13 @@ function DispensingDetailDialog({
                       <tr key={item.id}>
                         <Td dir="auto">
                           <ReferenceChip
-                            target={{ kind: 'herb', id: item.herb?.id ?? null, pinyin: item.herb?.pinyin_name ?? null, name: item.custom_name, label: itemLabel(item, locale) }}
+                            target={{
+                              kind: 'herb',
+                              id: item.herb?.id ?? null,
+                              pinyin: item.herb?.pinyin_name ?? null,
+                              name: item.custom_name,
+                              label: itemLabel(item, locale),
+                            }}
                             dir="auto"
                           >
                             {itemLabel(item, locale)}
@@ -1204,8 +1230,7 @@ function DispensingCompareDialog({
                   {rows.map((row) => {
                     const values = [...row.quantities.values()];
                     const isShared = row.quantities.size > 1;
-                    const differs =
-                      isShared && Math.max(...values) - Math.min(...values) > 0.001;
+                    const differs = isShared && Math.max(...values) - Math.min(...values) > 0.001;
                     return (
                       <tr key={row.key} className={cn(isShared && 'bg-jade-50')}>
                         <Td dir="auto">
@@ -1277,7 +1302,9 @@ function DispensingCompareDialog({
  */
 function recordTitle(record: DispensingRecordWithItems, locale: Locale, fallback: string): string {
   if (record.formula) return formulaPrimaryName(record.formula, locale);
-  const names = record.items.map((item) => itemLabel(item, locale)).filter((name) => name && name !== '—');
+  const names = record.items
+    .map((item) => itemLabel(item, locale))
+    .filter((name) => name && name !== '—');
   if (names.length === 0) return fallback;
   if (names.length <= 3) return names.join(' · ');
   return `${names.slice(0, 3).join(' · ')} +${names.length - 3}`;

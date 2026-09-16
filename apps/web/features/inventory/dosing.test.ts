@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   GRANULE_RATIO,
+  dailyDose,
+  prescriptionTotal,
   granulesToRaw,
   multiplierForTotal,
   rawToGranules,
@@ -118,5 +120,62 @@ describe('round2', () => {
   it('clears the floating-point tail', () => {
     expect(round2(0.1 + 0.2)).toBe(0.3);
     expect(round2(11.399999999)).toBe(11.4);
+  });
+});
+
+describe('dailyDose', () => {
+  it('multiplies the dose by how often it is taken', () => {
+    expect(dailyDose({ dose_amount: 3, doses_per_day: 2, dose_unit: 'gram' }, 'gram')).toEqual({
+      amount: 6,
+      unit: 'gram',
+    });
+  });
+
+  it('reads the numbers a numeric column sends as strings', () => {
+    expect(
+      dailyDose({ dose_amount: '4.5', doses_per_day: '2', dose_unit: 'gram' }, 'gram'),
+    ).toEqual({ amount: 9, unit: 'gram' });
+  });
+
+  it('rounds to two places rather than showing the floating-point tail', () => {
+    expect(dailyDose({ dose_amount: 0.1, doses_per_day: 3, dose_unit: 'gram' }, 'gram')).toEqual({
+      amount: 0.3,
+      unit: 'gram',
+    });
+  });
+
+  it('says nothing when either half is missing', () => {
+    expect(
+      dailyDose({ dose_amount: 3, doses_per_day: null, dose_unit: 'gram' }, 'gram'),
+    ).toBeNull();
+    expect(
+      dailyDose({ dose_amount: null, doses_per_day: 2, dose_unit: 'gram' }, 'gram'),
+    ).toBeNull();
+    expect(dailyDose({ dose_amount: 0, doses_per_day: 2, dose_unit: 'gram' }, 'gram')).toBeNull();
+  });
+
+  it('falls back to the unit it is given when the row carries none', () => {
+    expect(dailyDose({ dose_amount: 2, doses_per_day: 2, dose_unit: null }, 'gram')).toEqual({
+      amount: 4,
+      unit: 'gram',
+    });
+  });
+});
+
+describe('prescriptionTotal', () => {
+  it('adds the lines up', () => {
+    expect(prescriptionTotal([{ quantity: 9 }, { quantity: 6 }, { quantity: 12 }])).toBe(27);
+  });
+
+  it('adds strings from a numeric column', () => {
+    expect(prescriptionTotal([{ quantity: '9.5' }, { quantity: '6.25' }])).toBe(15.75);
+  });
+
+  it('treats a missing weight as nothing rather than as NaN', () => {
+    expect(prescriptionTotal([{ quantity: 9 }, { quantity: null }])).toBe(9);
+  });
+
+  it('is zero for an empty prescription', () => {
+    expect(prescriptionTotal([])).toBe(0);
   });
 });

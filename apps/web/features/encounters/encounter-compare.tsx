@@ -5,11 +5,23 @@ import { useFormatter, useTranslations } from 'next-intl';
 import { ArrowLeftRight, History, Minus, Plus } from 'lucide-react';
 import { Badge, Button, Card, CardBody, CardHeader, CardTitle, Select } from '@clinic/ui';
 import { cn } from '@clinic/ui/cn';
-import { toPointPlacement } from '@clinic/domain';
 import type { RecordedPoint } from '@clinic/db/types';
 import { formatDate } from '@clinic/i18n';
 import { ReferenceChip } from '@/features/reference/reference-sheet';
-import type { CurrentPrescription, PrescriptionLine, PrescriptionMeta } from './current-prescription-context';
+import type {
+  CurrentPrescription,
+  PrescriptionLine,
+  PrescriptionMeta,
+} from './current-prescription-context';
+import {
+  compareHerbs,
+  comparePoints,
+  type CurrentPoint,
+  type HerbCell,
+  type Placement,
+  type PointCell,
+  type Status,
+} from './encounter-diff';
 
 /**
  * Earlier treatments beside this one — head to head, and live.
@@ -53,48 +65,6 @@ export interface PreviousEncounter {
   meta?: PrescriptionMeta | null;
 }
 
-export interface CurrentPoint {
-  point: string;
-  region: string;
-}
-
-type Placement = 'right' | 'left' | 'center' | 'ear';
-
-/** Older notes carry a `side` and no region; the same rule the form applies. */
-function placementOf(point: RecordedPoint): Placement {
-  if (point.region) return toPointPlacement(point.region);
-  if (point.side === 'left') return 'left';
-  if (point.side === 'midline') return 'center';
-  return 'right';
-}
-
-function pointKey(code: string, placement: string): string {
-  return `${code.trim().toLowerCase()}|${placement}`;
-}
-
-type Status = 'kept' | 'dropped' | 'added' | 'changed';
-
-interface PointCell {
-  key: string;
-  code: string;
-  placement: Placement;
-  status: Status;
-  /** The pair's colour, when the same point is on both sides. */
-  pair?: number;
-}
-
-interface HerbCell {
-  key: string;
-  name: string;
-  quantity: number | null;
-  herbId?: string | null;
-  status: Status;
-  /** The earlier dose, for a changed line. */
-  was?: number | null;
-  /** The pair's colour, when the same herb is on both sides. */
-  pair?: number;
-}
-
 /**
  * One tint per matched pair, on both sides, so the eye finds the same point
  * or herb across the two columns without reading every label. Mixed from the
@@ -103,7 +73,16 @@ interface HerbCell {
  */
 // Plain values, not theme variables: the default palette's variables are
 // only emitted when a utility uses them, and none does here.
-const PAIR_HUES = ['#0ea5e9', '#8b5cf6', '#f59e0b', '#14b8a6', '#f43f5e', '#84cc16', '#d946ef', '#f97316'];
+const PAIR_HUES = [
+  '#0ea5e9',
+  '#8b5cf6',
+  '#f59e0b',
+  '#14b8a6',
+  '#f43f5e',
+  '#84cc16',
+  '#d946ef',
+  '#f97316',
+];
 
 function pairStyle(pair: number | undefined): React.CSSProperties | undefined {
   if (pair === undefined) return undefined;
@@ -135,66 +114,18 @@ export function EncounterCompare({
 
   const selected = previous.find((entry) => entry.id === selectedId) ?? previous[0] ?? null;
 
-  const points = useMemo(() => {
-    if (!selected) return null;
+  // The comparison itself is in `encounter-diff.ts`, with tests: which point
+  // and which herb counts as the same one across two visits is a clinical
+  // decision, not a rendering detail.
+  const points = useMemo(
+    () => (selected ? comparePoints(selected.points, currentPoints) : null),
+    [selected, currentPoints],
+  );
 
-    const before = new Map<string, PointCell>();
-    for (const point of selected.points) {
-      const placement = placementOf(point);
-      const key = pointKey(point.point, placement);
-      before.set(key, { key, code: point.point, placement, status: 'dropped' });
-    }
-    const now = new Map<string, PointCell>();
-    for (const point of currentPoints) {
-      const placement = toPointPlacement(point.region);
-      const key = pointKey(point.point, placement);
-      if (!now.has(key)) now.set(key, { key, code: point.point, placement, status: 'added' });
-    }
-    let pair = 0;
-    for (const [key, cell] of before) {
-      if (now.has(key)) {
-        cell.status = 'kept';
-        cell.pair = pair;
-        now.get(key)!.status = 'kept';
-        now.get(key)!.pair = pair;
-        pair += 1;
-      }
-    }
-    return { before: [...before.values()], now: [...now.values()] };
-  }, [selected, currentPoints]);
-
-  const herbs = useMemo(() => {
-    if (!selected) return null;
-
-    const before = new Map<string, HerbCell>();
-    for (const line of selected.herbs) {
-      before.set(line.key, { ...line, status: 'dropped' });
-    }
-    const now = new Map<string, HerbCell>();
-    for (const line of currentPrescription?.herbs ?? []) {
-      if (!now.has(line.key)) now.set(line.key, { ...line, status: 'added' });
-    }
-    let pair = 0;
-    for (const [key, cell] of before) {
-      const current = now.get(key);
-      if (!current) continue;
-      cell.status = 'kept';
-      cell.pair = pair;
-      current.pair = pair;
-      pair += 1;
-      if (
-        cell.quantity !== null &&
-        current.quantity !== null &&
-        Math.abs(cell.quantity - current.quantity) > 0.001
-      ) {
-        current.status = 'changed';
-        current.was = cell.quantity;
-      } else {
-        current.status = 'kept';
-      }
-    }
-    return { before: [...before.values()], now: [...now.values()] };
-  }, [selected, currentPrescription]);
+  const herbs = useMemo(
+    () => (selected ? compareHerbs(selected.herbs, currentPrescription?.herbs ?? []) : null),
+    [selected, currentPrescription],
+  );
 
   if (previous.length === 0) {
     // A first visit is a fact worth a line, not a panel that silently is not there.
@@ -207,8 +138,7 @@ export function EncounterCompare({
     );
   }
 
-  const formulaChanged =
-    (selected?.formula ?? null) !== (currentPrescription?.formula ?? null);
+  const formulaChanged = (selected?.formula ?? null) !== (currentPrescription?.formula ?? null);
 
   return (
     <Card>
@@ -272,9 +202,7 @@ export function EncounterCompare({
             <ColumnHead label={t('previous')} detail={formatDate(selected.date)} />
             <ColumnHead
               label={t('current')}
-              detail={
-                currentPrescription?.draft ? <Badge tone="muted">{t('draft')}</Badge> : null
-              }
+              detail={currentPrescription?.draft ? <Badge tone="muted">{t('draft')}</Badge> : null}
             />
 
             <RowLabel>{t('points')}</RowLabel>
@@ -378,7 +306,12 @@ function ChangeList({
           {previousFormula ? (
             <ChangeRow sign="removed">
               <ReferenceChip
-                target={{ kind: 'formula', id: previousFormulaId, name: previousFormula, label: previousFormula }}
+                target={{
+                  kind: 'formula',
+                  id: previousFormulaId,
+                  name: previousFormula,
+                  label: previousFormula,
+                }}
                 dir="auto"
               >
                 {previousFormula}
@@ -388,7 +321,12 @@ function ChangeList({
           {currentFormula ? (
             <ChangeRow sign="added">
               <ReferenceChip
-                target={{ kind: 'formula', id: currentFormulaId, name: currentFormula, label: currentFormula }}
+                target={{
+                  kind: 'formula',
+                  id: currentFormulaId,
+                  name: currentFormula,
+                  label: currentFormula,
+                }}
                 dir="auto"
               >
                 {currentFormula}
@@ -415,7 +353,13 @@ function ChangeList({
           {addedHerbs.map((cell) => (
             <ChangeRow key={`h:${cell.key}`} sign="added" amount={cell.quantity} format={format}>
               <ReferenceChip
-                target={{ kind: 'herb', id: cell.herbId ?? null, pinyin: cell.key, name: cell.name, label: cell.name }}
+                target={{
+                  kind: 'herb',
+                  id: cell.herbId ?? null,
+                  pinyin: cell.key,
+                  name: cell.name,
+                  label: cell.name,
+                }}
                 dir="auto"
                 className="min-w-0 truncate"
               >
@@ -443,7 +387,13 @@ function ChangeList({
           {removedHerbs.map((cell) => (
             <ChangeRow key={`h:${cell.key}`} sign="removed" amount={cell.quantity} format={format}>
               <ReferenceChip
-                target={{ kind: 'herb', id: cell.herbId ?? null, pinyin: cell.key, name: cell.name, label: cell.name }}
+                target={{
+                  kind: 'herb',
+                  id: cell.herbId ?? null,
+                  pinyin: cell.key,
+                  name: cell.name,
+                  label: cell.name,
+                }}
                 dir="auto"
                 className="min-w-0 truncate"
               >
@@ -459,7 +409,13 @@ function ChangeList({
           {changedHerbs.map((cell) => (
             <ChangeRow key={`h:${cell.key}`} sign="changed">
               <ReferenceChip
-                target={{ kind: 'herb', id: cell.herbId ?? null, pinyin: cell.key, name: cell.name, label: cell.name }}
+                target={{
+                  kind: 'herb',
+                  id: cell.herbId ?? null,
+                  pinyin: cell.key,
+                  name: cell.name,
+                  label: cell.name,
+                }}
                 dir="auto"
                 className="min-w-0 truncate"
               >
@@ -505,7 +461,9 @@ function ChangeGroup({
   const Icon = CHANGE_ICONS[sign];
   return (
     <section>
-      <h3 className={cn('mb-1 flex items-center gap-1 text-xs font-semibold', CHANGE_CLASSES[sign])}>
+      <h3
+        className={cn('mb-1 flex items-center gap-1 text-xs font-semibold', CHANGE_CLASSES[sign])}
+      >
         <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden />
         {label}
       </h3>
@@ -588,7 +546,11 @@ function PointList({
             cell.pair === undefined ? STATUS_CLASSES[cell.status] : 'text-ink-900',
           )}
         >
-          <ReferenceChip target={{ kind: 'point', code: cell.code, label: cell.code }} dir="ltr" className="tabular-nums">
+          <ReferenceChip
+            target={{ kind: 'point', code: cell.code, label: cell.code }}
+            dir="ltr"
+            className="tabular-nums"
+          >
             {cell.code}
           </ReferenceChip>
           <span className="text-xs text-ink-600">{regionLabel(cell.placement)}</span>
@@ -651,13 +613,17 @@ function MetaLines({ meta }: { meta: PrescriptionMeta | null }) {
   if (!meta) return null;
   const unit = meta.unit ?? meta.doseUnit ?? 'gram';
   const daily =
-    meta.doseAmount && meta.dosesPerDay ? Math.round(meta.doseAmount * meta.dosesPerDay * 100) / 100 : null;
+    meta.doseAmount && meta.dosesPerDay
+      ? Math.round(meta.doseAmount * meta.dosesPerDay * 100) / 100
+      : null;
   const hasAnything = meta.preparation || meta.total || daily || meta.doseAmount;
   if (!hasAnything) return null;
   return (
     <div className="space-y-0.5 px-1 text-xs text-ink-700">
       <p className="flex flex-wrap items-baseline gap-x-2">
-        {meta.preparation ? <span className="font-medium text-ink-900">{tPrep(meta.preparation as never)}</span> : null}
+        {meta.preparation ? (
+          <span className="font-medium text-ink-900">{tPrep(meta.preparation as never)}</span>
+        ) : null}
         {meta.total ? (
           <span className="text-sm font-semibold text-ink-900">
             {t('totalShort')}{' '}
@@ -722,7 +688,13 @@ function HerbList({ cells }: { cells: HerbCell[] }) {
           )}
         >
           <ReferenceChip
-            target={{ kind: 'herb', id: cell.herbId ?? null, pinyin: cell.key, name: cell.name, label: cell.name }}
+            target={{
+              kind: 'herb',
+              id: cell.herbId ?? null,
+              pinyin: cell.key,
+              name: cell.name,
+              label: cell.name,
+            }}
             dir="auto"
             className="min-w-0 truncate"
           >

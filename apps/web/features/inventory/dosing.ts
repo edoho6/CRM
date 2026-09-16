@@ -78,3 +78,47 @@ export function multiplierForTotal(bookDose: number, requestedTotal: number | nu
   if (!Number.isFinite(bookDose) || bookDose <= 0) return 1;
   return requestedTotal / bookDose;
 }
+
+/**
+ * What a patient takes in a day, and what the whole prescription weighs.
+ *
+ * Both were helpers inside the dispensing panel, which is the one place they
+ * are shown and exactly the place the rule in CLAUDE.md is about: these are
+ * the two numbers written on the bag a patient carries out, and neither had a
+ * test. They are typed on the shape they need rather than on the database row,
+ * so this module still knows nothing about tables.
+ */
+
+export interface DoseSchedule<U extends string> {
+  /** How much per dose, as the row stores it — numeric columns arrive as strings. */
+  dose_amount: number | string | null;
+  doses_per_day: number | string | null;
+  dose_unit: U | null;
+}
+
+/**
+ * Amount per dose times doses per day.
+ *
+ * Null when either half is missing, and null is the honest answer: "three
+ * grams" with no schedule is not a daily dose, and showing one would be an
+ * instruction the practitioner never wrote.
+ */
+export function dailyDose<U extends string>(
+  record: DoseSchedule<U>,
+  fallbackUnit: U,
+): { amount: number; unit: U } | null {
+  const amount = Number(record.dose_amount);
+  const perDay = Number(record.doses_per_day);
+  if (!amount || !perDay || !Number.isFinite(amount) || !Number.isFinite(perDay)) return null;
+  return { amount: round2(amount * perDay), unit: record.dose_unit ?? fallbackUnit };
+}
+
+/** What the whole prescription weighs: every line added up. */
+export function prescriptionTotal(items: { quantity: number | string | null }[]): number {
+  return round2(
+    items.reduce((sum, item) => {
+      const quantity = Number(item.quantity);
+      return sum + (Number.isFinite(quantity) ? quantity : 0);
+    }, 0),
+  );
+}
