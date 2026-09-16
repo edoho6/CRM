@@ -40,6 +40,11 @@ const baseUrl = (process.argv[2] || process.env.A11Y_BASE_URL || 'http://localho
 
 /* The pages that render without a session. Everything else needs a database. */
 const ROUTES = [
+  // The two a regulator opens first, and the two this list was missing.
+  '/he/about',
+  '/en/about',
+  '/he/accessibility',
+  '/en/accessibility',
   '/he/privacy',
   '/he/terms',
   '/he/delete-account',

@@ -16,7 +16,7 @@ import {
 import { Link } from '@clinic/i18n/navigation';
 import { formatDate, formatTime, formatWeekday } from '@clinic/i18n';
 import { TREATMENT_STATUSES, type TreatmentStatus } from '@clinic/domain';
-import type { PatientTag, PatientWithDiary } from '@clinic/db/types';
+import type { PatientWithDiary } from '@clinic/db/types';
 import { PageHeader } from '@/components/app-shell';
 import { SegmentedLinks } from '@/components/segmented-links';
 import { PAGE_SIZE, Pagination, pageFrom, pageRange } from '@/components/pagination';

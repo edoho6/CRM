@@ -8,7 +8,7 @@ import { BarChart } from '@/features/reports/bar-chart';
 import { RankedBars } from '@/features/reports/ranked-bars';
 import { ReportCard } from '@/features/reports/report-card';
 import { PeriodFilter } from '@/features/reports/period-filter';
-import { DEFAULT_PERIOD, parsePeriod } from '@/features/reports/period';
+import { parsePeriod } from '@/features/reports/period';
 import { formatDate } from '@clinic/i18n';
 import { pageTitle } from '@/lib/page-title';
 
@@ -61,7 +61,6 @@ export default async function ReportsPage({
   const tStatus = await getTranslations('patients.status');
   const tAppointmentStatus = await getTranslations('appointments.status');
   const tWeekday = await getTranslations('schedule.weekday');
-  const format = await getFormatter();
 
   const scope = await getClinicScope();
   if (!scope) return null;

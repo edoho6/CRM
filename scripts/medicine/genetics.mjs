@@ -11,7 +11,6 @@
 // The site lists its conditions on one page per letter; each condition has
 // a JSON file under /download/genetics/condition/<slug>.json.
 // Output: .cache/medicine/genetics/conditions.json
-import fs from 'node:fs';
 import path from 'node:path';
 import { cacheDir, ensureDir, fetchPolite, htmlToText, log, readJson, sleep, writeJson } from './lib.mjs';
 

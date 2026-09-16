@@ -96,7 +96,6 @@ export function GlobalSearch() {
     }
     document.addEventListener('pointerdown', onPointerDown);
     return () => document.removeEventListener('pointerdown', onPointerDown);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   function reveal() {
@@ -121,7 +120,6 @@ export function GlobalSearch() {
     }
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   const runSearch = useCallback(

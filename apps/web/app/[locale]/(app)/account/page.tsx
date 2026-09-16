@@ -13,14 +13,7 @@ import {
 } from 'lucide-react';
 import { Collapsible, PageBody } from '@clinic/ui';
 import { Link } from '@clinic/i18n/navigation';
-import type {
-  AppointmentType,
-  Location,
-  Room,
-  PractitionerSchedule,
-  Profile,
-  ScheduleException,
-} from '@clinic/db/types';
+import type { AppointmentType, Location, Profile, Room } from '@clinic/db/types';
 import { PageHeader } from '@/components/app-shell';
 import { SettingsNav } from '@/features/settings/settings-nav';
 import { getClinicScope } from '@/lib/session';
@@ -65,19 +58,9 @@ export default async function AccountPage({ params }: { params: Promise<{ locale
 
   const scope = await getClinicScope();
   if (!scope) return null;
-
-  const today = new Date().toISOString().slice(0, 10);
   const factor = await verifiedTotpFactor(scope.supabase);
 
-  const [
-    { data: types },
-    { data: profile },
-    schedulesResult,
-    exceptionsResult,
-    locationsResult,
-    roomsResult,
-  ] =
-    await Promise.all([
+  const [{ data: types }, { data: profile }, locationsResult, roomsResult] = await Promise.all([
     scope.supabase
       .from('appointment_types')
       .select('*')
@@ -90,23 +73,6 @@ export default async function AccountPage({ params }: { params: Promise<{ locale
       .select('*')
       .eq('id', scope.context.membership.user_id)
       .maybeSingle<Profile>(),
-    scope.supabase
-      .from('practitioner_schedules')
-      .select('*')
-      .eq('practitioner_id', scope.context.membership.user_id)
-      .order('weekday', { ascending: true })
-      .order('start_time', { ascending: true })
-      .returns<PractitionerSchedule[]>(),
-    // Future closures only. A holiday from last March is history, and a list
-    // that accumulates them buries next week's.
-    scope.supabase
-      .from('schedule_exceptions')
-      .select('*')
-      .eq('practitioner_id', scope.context.membership.user_id)
-      .gte('date', today)
-      .order('date', { ascending: true })
-      .limit(400)
-      .returns<ScheduleException[]>(),
     scope.supabase
       .from('locations')
       .select('*')

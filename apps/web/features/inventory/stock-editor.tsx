@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useFormatter, useTranslations } from 'next-intl';
 import { Check, Pencil } from 'lucide-react';
-import { Button, Field, Input, LtrInput, Popover, Select, Spinner } from '@clinic/ui';
+import { Button, Field, LtrInput, Popover, Select, Spinner } from '@clinic/ui';
 import { HERB_PREPARATIONS, preparationUnit, type HerbPreparation } from '@clinic/domain';
 import { Link, useRouter } from '@clinic/i18n/navigation';
 import { receiveBatch, setHerbThreshold } from './actions';

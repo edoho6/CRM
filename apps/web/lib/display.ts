@@ -26,8 +26,6 @@ interface HerbNames {
   botanical_name?: string | null;
 }
 
-/* eslint-disable @typescript-eslint/no-unused-vars */
-
 /**
  * The headline name: pinyin.
  *
@@ -103,7 +101,6 @@ export function formulaSecondaryName(formula: FormulaNames | null | undefined, _
     .filter((value): value is string => Boolean(value) && value !== primary);
   return parts.join(' · ');
 }
-/* eslint-enable @typescript-eslint/no-unused-vars */
 
 export function appointmentTypeName(
   type: { name_he?: string | null; name_en?: string | null } | null | undefined,

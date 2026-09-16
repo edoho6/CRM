@@ -6,7 +6,7 @@ import { cn } from './cn';
 import { focusRing } from './focus';
 import { Popover } from './popover';
 import { SegmentedControl } from './segmented-control';
-import { HIGHLIGHTER_FACTOR, SKETCH_SIZES, strokeHit, strokeWidth, type SketchPoint, type SketchSize, type SketchStroke, type SketchTool } from './sketch-geometry';
+import { HIGHLIGHTER_FACTOR, SKETCH_SIZES, strokeHit, strokeWidth, type SketchSize, type SketchStroke, type SketchTool } from './sketch-geometry';
 
 /**
  * A page to write on with a pen.

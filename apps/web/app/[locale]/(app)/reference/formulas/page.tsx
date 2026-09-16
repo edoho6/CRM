@@ -66,7 +66,6 @@ export default async function FormulasPage({
   const t = await getTranslations('inventory.formulas');
   const tFormulaTcm = await getTranslations('inventory.formulaTcmCategory');
   const tKind = await getTranslations('inventory.formulas.category');
-  const tReview = await getTranslations('inventory.review');
   const tc = await getTranslations('common');
   const tCompare = await getTranslations('reference.compare');
   const format = await getFormatter();

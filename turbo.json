@@ -22,9 +22,6 @@
       "cache": false,
       "persistent": true
     },
-    "lint": {
-      "outputs": []
-    },
     "typecheck": {
       "outputs": []
     },

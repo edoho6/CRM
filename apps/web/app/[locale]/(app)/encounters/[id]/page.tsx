@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { Badge, Card, CardBody, CardHeader, CardTitle } from '@clinic/ui';
+import { Badge } from '@clinic/ui';
 import { Link } from '@clinic/i18n/navigation';
 import type { Locale } from '@clinic/domain';
 import type {
@@ -483,7 +483,6 @@ export default async function EncounterPage({
             summary={toPaymentSummary(paymentResult.data)}
             encounterId={encounter.id}
             canBill={canBill}
-            size="sm"
           />
         }
         actions={

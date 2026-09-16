@@ -34,10 +34,17 @@ jobs:
 
       - uses: actions/setup-node@v7
         with:
-          node-version: 24
+          node-version-file: .nvmrc
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
+
+      # `next lint` went away in Next 16 and took the only linting with it, so
+      # this ran against nothing at all for a while. The warning ceiling is a
+      # ratchet: the React Compiler diagnostics are real and are being worked
+      # through, and the number is there so the list can shrink and cannot grow.
+      - name: Lint
+        run: pnpm lint
 
       - name: Types
         run: pnpm typecheck
@@ -85,6 +92,62 @@ jobs:
       - name: Accessibility (axe, WCAG 2.1 AA)
         run: pnpm check:a11y
 
+  # The promise the whole product rests on — that one clinic cannot reach
+  # another's patients — was proved only when someone remembered to paste
+  # supabase/tests/*.sql into the SQL editor by hand. Here it is proved on every
+  # push, against a database built from the migrations in this commit.
+  #
+  # The files are self-contained: each opens a transaction, builds its own
+  # fixtures, asserts, and rolls back. `ON_ERROR_STOP` is what turns their
+  # `raise exception` into a red build.
+  database:
+    name: Database (migrations and SQL tests)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      # Postgres alone, with every migration applied in order. Not the whole
+      # stack: no API, no studio, no storage — nothing here speaks HTTP.
+      - name: Start Postgres with every migration applied
+        run: supabase db start
+
+      # If the migrations silently did not run, every test below would pass by
+      # finding nothing to fail on. This is the newest migration's own function.
+      - name: The migrations really ran
+        run: |
+          found=$(psql "$DATABASE_URL" -tAc \
+            "select count(*) from pg_proc where proname = 'enqueue_now_for_my_clinic'")
+          if [ "$found" != "1" ]; then
+            echo "The newest migration's function is not there: the migrations did not apply."
+            exit 1
+          fi
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+
+      - name: SQL tests
+        run: |
+          failed=0
+          for file in supabase/tests/*.sql; do
+            echo "── $file"
+            if psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -q -f "$file"; then
+              echo "   passed"
+            else
+              echo "   FAILED"
+              failed=1
+            fi
+          done
+          exit $failed
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+          # The tests report through `raise notice`, which psql prints to stderr.
+          PGOPTIONS: -c client_min_messages=notice
+
   dependencies:
     name: Dependency scan
     runs-on: ubuntu-latest
@@ -99,7 +162,7 @@ jobs:
 
       - uses: actions/setup-node@v7
         with:
-          node-version: 24
+          node-version-file: .nvmrc
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile

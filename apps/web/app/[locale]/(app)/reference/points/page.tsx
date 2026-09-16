@@ -9,7 +9,6 @@ import { CATALOGUE_PAGE, Pagination, pageFrom, pageRange } from '@/components/pa
 import { SortLinkTh } from '@/components/sort-link-th';
 import { parseSort, sortQuery, type SortState } from '@/lib/sort-params';
 import { getClinicScope } from '@/lib/session';
-import { ReferenceNav } from '@/features/reference/reference-nav';
 import { CompareToggle, CompareTray } from '@/features/reference/compare-controls';
 import { PointSearch } from '@/features/reference/point-search';
 import { pageTitle } from '@/lib/page-title';

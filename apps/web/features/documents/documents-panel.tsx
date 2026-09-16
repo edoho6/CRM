@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, useTransition } from 'react';
+import { useRef, useState, useTransition } from 'react';
 import { useFormatter, useLocale, useTranslations } from 'next-intl';
 import { Download, FileText, Trash2, Upload } from 'lucide-react';
 import {
@@ -130,7 +130,6 @@ export function DocumentsPanel({
   const t = useTranslations('documents');
   const tc = useTranslations('common');
   const locale = useLocale() as Locale;
-  const format = useFormatter();
   const formatSize = useFormatSize();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();

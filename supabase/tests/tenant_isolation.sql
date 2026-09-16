@@ -83,6 +83,9 @@ begin
     if to_regprocedure('public.enqueue_now_for_my_clinic(text)') is null then
       v_missing := v_missing || v_sep || '60_payments_and_queues_locked_down_to_run.sql'; v_sep := ', ';
     end if;
+    if to_regclass('public.schema_migrations') is null then
+      v_missing := v_missing || v_sep || '61_migration_ledger_to_run.sql'; v_sep := ', ';
+    end if;
     if v_missing <> '' then
       raise exception 'This database has not run: %. Run it in the SQL editor, then run this file again.', v_missing;
     end if;
@@ -943,6 +946,32 @@ begin
     raise exception 'FAIL: % audit row(s) were deleted', v_count;
   end if;
   raise notice 'ok   audit_log is append-only in practice, not just by intent';
+
+  -- The migration ledger (migration 69) is written from the SQL editor and from
+  -- nowhere else. A member is not a platform admin, so it is invisible to them;
+  -- and it has no write policy at all, so nobody signed in can add a line
+  -- claiming a file was run, or remove the line saying it was.
+  select count(*) into v_count from public.schema_migrations;
+  if v_count <> 0 then
+    raise exception 'FAIL: a clinic member read % row(s) of the migration ledger', v_count;
+  end if;
+  begin
+    insert into public.schema_migrations (name) values ('99_invented_to_run.sql');
+    raise exception 'FAIL: a clinic member wrote to the migration ledger';
+  exception
+    when insufficient_privilege then null;
+  end;
+  update public.schema_migrations set note = 'rewritten';
+  get diagnostics v_count = row_count;
+  if v_count <> 0 then
+    raise exception 'FAIL: % ledger row(s) were rewritten', v_count;
+  end if;
+  delete from public.schema_migrations;
+  get diagnostics v_count = row_count;
+  if v_count <> 0 then
+    raise exception 'FAIL: % ledger row(s) were deleted', v_count;
+  end if;
+  raise notice 'ok   the migration ledger is readable by the service and writable by nobody signed in';
 
   -- ==========================================================================
   -- Identity 2 · clinic B's owner — the mirror image

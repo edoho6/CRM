@@ -51,7 +51,11 @@ export function DeleteAccountPanel({ clinicName }: { clinicName: string }) {
         setBlocker(result.data.blocker);
         return;
       }
-      // A full load: the session is gone, and the shell around this page with it.
+      // A full load, and deliberately not a router navigation: the session is
+      // gone, and so is every cached server component the shell around this
+      // page was built from. Next's own advice here assumes a session that
+      // survives the navigation.
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination
       window.location.assign(`/${locale}/login?deleted=1`);
     });
   }

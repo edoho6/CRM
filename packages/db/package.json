@@ -12,7 +12,8 @@
     "./middleware": "./src/client-middleware.ts",
     "./types": "./src/types.ts",
     "./rate-limit": "./src/rate-limit.ts",
-    "./access-log": "./src/access-log.ts"
+    "./access-log": "./src/access-log.ts",
+    "./test-double": "./src/test-double.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

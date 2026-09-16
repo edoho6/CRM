@@ -31,15 +31,17 @@ pnpm 9 + Turborepo, Node 20.9+. ההתקנה והחיבור ל-Supabase ב-`READ
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | פיתוח                  | `pnpm dev` (שתי האפליקציות), `pnpm dev:web`, `pnpm dev:portal`                                                                                                                                    |
 | טיפוסים, בדיקות, בנייה | `pnpm typecheck`, `pnpm test`, `pnpm build`                                                                                                                                                       |
-| בדיקה אחת              | `pnpm --filter @clinic/web test -- lib/theme.test.ts` — vitest רץ רק ב-`apps/web`, גם לחבילות; `test:watch` לצפייה                                                                                |
+| בדיקה אחת              | `pnpm --filter @clinic/web test -- lib/theme.test.ts` — vitest ב-`apps/web` (גם לחבילות) וב-`apps/portal`; `test:watch` לצפייה                                                                    |
+| ליטנר                  | `pnpm lint` (eslint flat config בשורש, ראה `eslint.config.mjs`)                                                                                                                                   |
 | שערי איכות (CI)        | `pnpm check:contrast` (אחרי build), `pnpm check:tokens`, `pnpm check:i18n`, `pnpm check:a11y` (שרת רץ)                                                                                            |
 | דפדפן אמיתי            | `pnpm smoke` (`--only=/path`, `--write`, `--dark`, `--zoom`, `--shell`, `--he-only`, `--desktop-only`), `pnpm a11y:walk` — מול `SMOKE_BASE_URL` (ברירת מחדל 3000), רק מול קליניקה עם באנר הבדיקות |
-| עיצוב                  | `pnpm format`                                                                                                                                                                                     |
+| עיצוב                  | `npx prettier --write <הקבצים שנגעת בהם>` — **לא `pnpm format`**, שמעצב מחדש 400+ קבצים ומטמין את השינוי                                                                                          |
 
 - **מיגרציה = שני קבצים:** `supabase/migrations/<חותמת>_<שם>.sql` (מקור האמת) ועותק בשורש
   `NN_<שם>_to_run.sql` עם המספר הרץ הבא (gitignored) — המשתמש מדביק אותו בעורך ה-SQL של Supabase, ו"SQL 54"
   בשיחה הוא המספר הזה. טבלה או policy חדשה = גם תוספת ב-`supabase/tests/tenant_isolation.sql`, ועמודה
-  חדשה = עדכון ידני של `packages/db/src/types.ts`
+  חדשה = עדכון ידני של `packages/db/src/types.ts`. **כל `_to_run.sql` מסתיים ב-insert ל-`public.schema_migrations`**
+  (migration 69) עם שם הקובץ — זה הרישום היחיד של מה כבר הודבק; אין רישום לשום דבר לפני 60
 - **`apps/web/CLAUDE.md`** מצרף את `AGENTS.md` ש-`next dev` מייצר מחדש: Next 16 שונה ממה שמוכר מהאימון,
   התיעוד ב-`node_modules/next/dist/docs/`. לא מוחקים את הבלוק הזה
 - **מסמכים:** `SECURITY.md` (באנגלית, לעו"ד), `DEPLOY.md` (העלאה וחיבור ספקים), `GO-LIVE.md` (מה חוסם
@@ -138,15 +140,19 @@ messages, prices, inventory, encounters, appointments, settings, dashboard, form
 
 ## 7 · תשתית בדיקות
 
-- CI (`.github/workflows/ci.yml`): טיפוסים, בדיקות, בנייה, ניגודיות,
-  axe מול העמודים הציבוריים, ו-`pnpm audit` שנכשל על high/critical
+- CI (`.github/workflows/ci.yml`) בשלוש עבודות: **verify** (ליטנר, טיפוסים, בדיקות, בנייה, ניגודיות,
+  טוקנים, i18n, axe מול העמודים הציבוריים), **database** (Postgres מקומי עם כל המיגרציות + כל
+  `supabase/tests/*.sql`), ו-**dependencies** (`pnpm audit` שנכשל על high/critical)
 - **בדיקות ייעודיות לבידוד tenant** — שמשתמש לא מגיע לנתוני קליניקה אחרת
+- `prettier --check` **אינו** ב-CI: 404 קבצים לא תואמים ל-`.prettierrc.json`, והוספתו דורשת קודם
+  commit שמעצב מחדש את כל העץ. מעצבים רק את מה שנוגעים בו
 - `SECURITY.md` מעודכן שאפשר להראות לעו"ד לפני עלייה לאוויר
 
 ### בדיקות SQL
 
-`supabase/tests/` — נדבקות ל-SQL editor, בונות נתוני בדיקה בתוך טרנזקציה
-ועושות `rollback` בסוף. בטוח להריץ מול הפרויקט האמיתי; לא נשאר מהן זכר.
+`supabase/tests/` — בונות נתוני בדיקה בתוך טרנזקציה ועושות `rollback` בסוף. בטוח להריץ מול
+הפרויקט האמיתי; לא נשאר מהן זכר. **רצות ב-CI** על מסד שנבנה מהמיגרציות שבאותו commit
+(`supabase db start` + psql עם `ON_ERROR_STOP`), וגם נדבקות ל-SQL editor ביד אחרי כל SQL חדש.
 
 - `tenant_isolation.sql` — ארבע זהויות (שתי קליניקות, מטופל בפורטל, אנונימי),
   ומה כל אחת **לא** מגיעה אליו. להריץ אחרי כל migration שמוסיף טבלה או policy
@@ -405,8 +411,13 @@ messages, prices, inventory, encounters, appointments, settings, dashboard, form
 ## לפני commit
 
 ```
-pnpm typecheck && pnpm test && pnpm build && pnpm check:contrast && pnpm check:tokens && pnpm check:i18n
+pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm check:contrast && pnpm check:tokens && pnpm check:i18n
 ```
+
+`pnpm lint` נכשל על שגיאה אחת ועל אזהרה מעבר לתקרה שב-`--max-warnings`. התקרה היא מחסום חד-כיווני:
+84 האזהרות הן אבחנות ה-React Compiler (`set-state-in-effect`, `refs`, `purity`) ו-`<img>` בלי `next/image`,
+שתיהן עבודה של סבב מאוחר יותר. **מורידים את המספר כשמתקנים, לא מעלים אותו כשמוסיפים.** שמונה מ-`purity`
+הן אותם מקומות שקוראים לשעון בזמן ציור שמתועדים ב"השעון של הדף" למטה — הליטנר מצא אותם בעצמו.
 
 **סריקת התלויות ב-CI** (`pnpm audit --audit-level high`) נכשלת גם על אזהרה שפורסמה היום לחבילה שלא נגענו בה —
 כך כל ה-CI היה אדום מ-12.9 בגלל `tar` ו-`sharp` שמגיעים דרך `@capacitor/assets` (כלי האייקונים, dev בלבד). התיקון

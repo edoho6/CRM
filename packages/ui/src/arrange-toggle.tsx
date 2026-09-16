@@ -3,7 +3,6 @@
 import * as React from 'react';
 import { Check, GripVertical } from 'lucide-react';
 import { Button } from './button';
-import { cn } from './cn';
 
 /**
  * The switch that lets a list be rearranged by dragging.

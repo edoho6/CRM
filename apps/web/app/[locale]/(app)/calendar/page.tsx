@@ -1,6 +1,6 @@
 import { headers } from 'next/headers';
 import { userAgent } from 'next/server';
-import { getTranslations, setRequestLocale } from 'next-intl/server';
+import { setRequestLocale } from 'next-intl/server';
 import type { AppointmentType, AppointmentWithRelations, Location, Patient, Room } from '@clinic/db/types';
 import { getClinicScope } from '@/lib/session';
 import { CalendarView, type CalendarViewMode } from '@/features/appointments/calendar-view';

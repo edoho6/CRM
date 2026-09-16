@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { useTranslations } from 'next-intl';
-import { ArrowLeft, ArrowRight, Check, Send } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Send } from 'lucide-react';
 import {
   Alert,
   Button,

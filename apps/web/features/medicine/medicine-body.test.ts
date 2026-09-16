@@ -38,6 +38,10 @@ function asRow(entry: (typeof dataset.entries)[number], index: number): MedEntry
 
 function render(entry: MedEntry, links: MedLinkedEntry[] = [], headingLevel: 'h2' | 'h3' = 'h2') {
   return renderToString(
+    // `children` as a prop and not as the third argument, which the lint rule
+    // would prefer: NextIntlClientProvider declares `children` as a required
+    // prop, so the three-argument form does not typecheck.
+    // eslint-disable-next-line react/no-children-prop
     createElement(NextIntlClientProvider, {
       locale: 'he',
       messages,

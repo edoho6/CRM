@@ -71,14 +71,12 @@ export function PaymentAction({
   summary,
   encounterId,
   canBill,
-  size = 'sm',
 }: {
   summary: PaymentSummary;
   /** Present when there is a treatment to bill for. */
   encounterId?: string | null;
   /** False when no provider is configured — the button would only ever fail. */
   canBill: boolean;
-  size?: 'sm' | 'md';
 }) {
   const t = useTranslations('billing.payment');
   const tc = useTranslations('common');

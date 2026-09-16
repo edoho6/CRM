@@ -99,7 +99,6 @@ function sectionByCode(xml, code) {
     const start = xml.lastIndexOf('<section', at);
     if (start >= 0) {
       let depth = 0;
-      let i = start;
       const re = /<section\b|<\/section>/g;
       re.lastIndex = start;
       let match;
@@ -110,7 +109,6 @@ function sectionByCode(xml, code) {
           end = match.index + match[0].length;
           break;
         }
-        i = match.index;
       }
       if (end > start && (!best || start < best.start)) best = { start, end };
     }

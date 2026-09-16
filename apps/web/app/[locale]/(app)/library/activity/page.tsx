@@ -4,7 +4,7 @@ import { Badge, EmptyState, PageBody, TableWrapper, Td, Th, Tr } from '@clinic/u
 import { formatDateTime } from '@clinic/i18n';
 import type { StatusTone } from '@clinic/domain';
 import { PageHeader } from '@/components/app-shell';
-import { PAGE_SIZE, Pagination, pageFrom, pageRange } from '@/components/pagination';
+import { Pagination, pageFrom, pageRange } from '@/components/pagination';
 import { getClinicScope } from '@/lib/session';
 import { LibraryNav } from '@/features/library/library-nav';
 import { pageTitle } from '@/lib/page-title';

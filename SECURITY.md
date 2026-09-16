@@ -464,6 +464,16 @@ anything, and a flagged clinic carries an amber banner on every screen. So
 seeding production fails, and no one works in a sandbox for ten minutes without
 noticing.
 
+Schema changes reach the production database by hand: a file is opened in the
+SQL editor and run. Until migration 69 nothing recorded that it had happened, so
+answering "has this one been applied?" meant thinking of something the file
+created and going to look for it. `public.schema_migrations` now holds one row
+per file. It is readable only by whoever runs the service and has no write policy
+at all — it is written from the SQL editor, which is not subject to policies, and
+a record of what was done to a database that the application itself can edit is
+not a record. Nothing before migration 60 is in it: those dates were never
+written down, and inventing them would make the ledger worse than empty.
+
 ## 13 · Accessibility
 
 Israeli standard 5568 (WCAG 2.1 AA). Colour contrast is measured, not estimated:
@@ -487,24 +497,45 @@ Full status, including what has not been done, is on `/accessibility` — which 
 also the statement the standard requires. Its contact details are unfilled and
 visibly marked as such.
 
-**Gap:** the axe run covers four public pages. Everything behind the login is
-uncovered, and that is most of the application — it needs a staging database to
-render against, which is §12 again.
+**Gap:** the axe run covers the fifteen public routes, `/about` and
+`/accessibility` among them — the two a regulator opens first, and the two the
+list had been missing. Everything behind the login is uncovered, and that is most
+of the application: it needs a staging database to render against, which is §12
+again.
 
 ## 14 · Continuous integration
 
-`.github/workflows/ci.yml` runs on every push and pull request: types, tests,
-build, contrast, then axe against the started application. A second job runs
-`pnpm audit`, failing on high and critical advisories and reporting moderate ones
-without blocking — a build that cries wolf gets ignored, and then the critical one
-is ignored with it. `.github/dependabot.yml` opens weekly grouped upgrades, with
-Next, React and Tailwind held back for deliberate handling.
+`.github/workflows/ci.yml` runs on every push and pull request, in three jobs.
 
-**Gap:** the repository has no remote, so none of this has executed yet. It runs
-on the first push.
+**verify** — lint, types, tests, build, contrast, shared-class compilation,
+message keys, then axe against the started application.
 
-The tenant isolation and consent tests are not in CI either, for the same reason
-as everything else here: they need a database CI can reach.
+**database** — a Postgres instance built from the migrations in that commit, and
+then every file in `supabase/tests/` run against it with `ON_ERROR_STOP`. The
+tests announce their own failures with `raise exception`, so a leak between
+clinics turns the build red rather than printing a notice somebody has to read.
+Until this job existed, the isolation proof ran only when a person remembered to
+paste the file into the SQL editor by hand — which meant that the single claim
+the whole product rests on was verified by habit. A step before the tests asserts
+that the migrations really applied, so an empty database cannot pass by having
+nothing to fail on.
+
+**dependencies** — `pnpm audit`, failing on high and critical advisories and
+reporting moderate ones without blocking: a build that cries wolf gets ignored,
+and then the critical one is ignored with it. `.github/dependabot.yml` opens
+weekly grouped upgrades, with Next, React and Tailwind held back for deliberate
+handling.
+
+Linting had been absent altogether: Next 16 removed `next lint`, the command it
+was wired to, and nothing failed loudly enough for anyone to notice — twenty
+suppression comments sat in the code silencing rules that had not run in months.
+The linter is back as a flat ESLint config at the repository root, and three of
+those suppressions turned out to suppress nothing.
+
+**Gap:** formatting is not checked. 404 files disagree with the project's own
+Prettier configuration, so enforcing it would first take a commit that reformats
+the whole tree — which would bury every real change made near it. Files are
+formatted as they are touched.
 
 ---
 
@@ -526,6 +557,13 @@ as everything else here: they need a database CI can reach.
 Closed since the first version of this document: consent records with document
 version and timestamp (§10), patient file export (§11), tenant isolation tests
 (§1), and the synthetic seed script (§12).
+
+Closed in the round that followed migration 68: the isolation tests now run on
+every push against a database built from the migrations, rather than when someone
+remembers to paste them (§14); linting exists again after Next 16 silently
+removed it (§14); the first tests of any kind cover billing, consent and the
+patient portal's sign-in; and a ledger records which SQL files have been applied
+(§12).
 
 Closed in migration 68, and each was a real exposure rather than a hardening:
 payment settlement and a clinic's payment-page credentials were callable by

@@ -16,7 +16,7 @@ import {
 } from '@clinic/ui';
 import { Link } from '@clinic/i18n/navigation';
 import { PageHeader } from '@/components/app-shell';
-import { PAGE_SIZE, Pagination, pageFrom, pageRange } from '@/components/pagination';
+import { Pagination, pageFrom, pageRange } from '@/components/pagination';
 import { getClinicScope } from '@/lib/session';
 import { SettingsNav } from '@/features/settings/settings-nav';
 import { formatDateTime } from '@clinic/i18n';
