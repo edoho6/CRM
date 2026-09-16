@@ -41,7 +41,8 @@ pnpm 9 + Turborepo, Node 20.9+. ההתקנה והחיבור ל-Supabase ב-`READ
   `NN_<שם>_to_run.sql` עם המספר הרץ הבא (gitignored) — המשתמש מדביק אותו בעורך ה-SQL של Supabase, ו"SQL 54"
   בשיחה הוא המספר הזה. טבלה או policy חדשה = גם תוספת ב-`supabase/tests/tenant_isolation.sql`, ועמודה
   חדשה = עדכון ידני של `packages/db/src/types.ts`. **כל `_to_run.sql` מסתיים ב-insert ל-`public.schema_migrations`**
-  (migration 69) עם שם הקובץ — זה הרישום היחיד של מה כבר הודבק; אין רישום לשום דבר לפני 60
+  (migration 69) עם שם הקובץ — זה הרישום היחיד של מה כבר הודבק; אין רישום לשום דבר לפני 60. **עורך ה-SQL לא שומר
+  טבלה זמנית בין פקודות** (SQL 63 נפל על "relation does not exist"): רשימה שכמה פקודות צריכות נכתבת בתוך `do $$` אחד
 - **`apps/web/CLAUDE.md`** מצרף את `AGENTS.md` ש-`next dev` מייצר מחדש: Next 16 שונה ממה שמוכר מהאימון,
   התיעוד ב-`node_modules/next/dist/docs/`. לא מוחקים את הבלוק הזה
 - **מסמכים:** `SECURITY.md` (באנגלית, לעו"ד), `DEPLOY.md` (העלאה וחיבור ספקים), `GO-LIVE.md` (מה חוסם

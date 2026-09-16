@@ -37,7 +37,9 @@
   **מה נקרא:** PDF (pdfjs), docx (mammoth), doc (word-extractor, ונופל ל-**Word עצמו** דרך PowerShell/COM
   ב-`lib/word.mjs` כשהוא נכשל — רוב ה-.doc העבריים מפילים אותו; `Documents.Open` עם ארגומנט אחד בלבד, PowerShell
   לא מעביר את הבוליאנים), rtf (`rtfToText` ב-`lib/extract.mjs`, cp1255 ו-\\u עם דילוג על ה-fallback), pptx/xlsx/epub
-  (jszip), txt/md, וקובצי גוגל (Docs/Slides/Sheets מיוצאים). **סריקה ותמונה = Google Cloud Vision** (`lib/vision.mjs`,
+  (jszip), txt/md, וקובצי גוגל (Docs/Slides/Sheets מיוצאים). **‎.msg של Outlook לא נקרא:** Drive מתייק אותו כ-Word (אותו
+  מכל OLE), ו-Word הפך 214 כאלה לקטעים בינאריים מלאים בכתובות אימייל — SQL 63 הסיר אותם, ו-`listFolder` מדלג לפי השם
+  (16.9). **סריקה ותמונה = Google Cloud Vision** (`lib/vision.mjs`,
   `files:annotate` בחלקים של 5 עמודים דרך `lib/pdf.mjs`, מספרי עמודים אמיתיים, `languageHints: he,en`) באותו חשבון
   שירות (scope `cloud-vision`); כשה-API כבוי או בלי חיוב, הטעינה אומרת זאת פעם אחת, סופרת ורושמת ב-`needs-ocr.json`
   וממשיכה. **OCR של Drive לא אפשרי**: לחשבון שירות אין מכסת אחסון, גם בתיקייה משותפת כ-Editor (הקובץ בבעלות היוצר).

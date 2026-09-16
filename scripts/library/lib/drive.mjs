@@ -163,6 +163,10 @@ export async function listFolder(token, folderId, prefix = '', skipped = {}) {
       if (file.mimeType === FOLDER) files.push(...(await listFolder(token, file.id, filePath, skipped)));
       // Word keeps a lock file (~$name.docx) beside an open document; it is not a document.
       else if (file.name.startsWith('~$')) continue;
+      // Nor is an Outlook message. Drive files a .msg as Word (both are OLE containers), and
+      // Word turned 214 of them into binary passages full of e-mail addresses — SQL 63 took
+      // them out. Counted as skipped, never read.
+      else if (/\.msg$/i.test(file.name)) skipped['outlook message (.msg)'] = (skipped['outlook message (.msg)'] ?? 0) + 1;
       else if (READABLE[file.mimeType]) files.push({ ...file, path: filePath, ext: READABLE[file.mimeType].ext, exportAs: READABLE[file.mimeType].exportAs ?? null });
       else skipped[file.mimeType] = (skipped[file.mimeType] ?? 0) + 1;
     }
