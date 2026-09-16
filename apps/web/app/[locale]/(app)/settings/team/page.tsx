@@ -3,6 +3,7 @@ import { PageBody } from '@clinic/ui';
 import type { ClinicInvitation, Membership, Profile } from '@clinic/db/types';
 import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
+import { serverNow } from '@/lib/server-now';
 import { SettingsNav } from '@/features/settings/settings-nav';
 import { TeamPanel, type TeamMember } from '@/features/settings/team-panel';
 import { pageTitle } from '@/lib/page-title';
@@ -68,6 +69,7 @@ export default async function TeamPage({ params }: { params: Promise<{ locale: s
           invitations={invitationsResult.data ?? []}
           isOwner={isOwner}
           selfUserId={scope.context.membership.user_id}
+          renderedAt={serverNow()}
         />
       </PageBody>
     </>

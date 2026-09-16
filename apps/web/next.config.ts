@@ -1,77 +1,56 @@
 import createNextIntlPlugin from 'next-intl/plugin';
 import type { NextConfig } from 'next';
+import { securityHeaders } from '@clinic/config/next-headers';
 
 const withNextIntl = createNextIntlPlugin('./i18n/request.ts');
 
-/**
- * Content Security Policy.
- *
- * Written out rather than assembled, so what is permitted is readable in one
- * place. Two entries are concessions rather than choices and are marked as
- * such; the rest are the minimum this app actually needs.
- *
- * `frame-ancestors 'none'` is the one that matters most here: it is what stops
- * the app being framed by another site, which is how a clinical record gets
- * read over a practitioner's shoulder by a page they did not open.
- */
-const supabaseHost = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
-const supabaseOrigin = supabaseHost ? new URL(supabaseHost).origin : '';
-const supabaseSocket = supabaseOrigin.replace(/^https/, 'wss');
-
-const csp = [
-  "default-src 'self'",
-  // Next injects inline bootstrap scripts and, in development, uses eval for
-  // fast refresh. Removing 'unsafe-inline' here needs per-request nonces
-  // threaded through the app — worth doing, not done yet.
-  process.env.NODE_ENV === 'development'
-    ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
-    : "script-src 'self' 'unsafe-inline'",
-  // Tailwind ships a stylesheet, but Radix and the chart set inline styles.
-  "style-src 'self' 'unsafe-inline'",
-  // Herb photographs come from the public Supabase bucket; data: covers inline
-  // SVG and the placeholder images.
-  `img-src 'self' data: blob: ${supabaseOrigin}`.trim(),
-  "font-src 'self' data:",
-  `connect-src 'self' ${supabaseOrigin} ${supabaseSocket}`.trim(),
-  "form-action 'self'",
-  "base-uri 'self'",
-  "object-src 'none'",
-  "frame-ancestors 'none'",
-  'upgrade-insecure-requests',
-]
-  .filter(Boolean)
-  .join('; ');
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
 
 /**
- * Headers applied to every response.
- *
- * HSTS is deliberately not set in development: it would pin localhost to HTTPS
- * in the browser's memory and make the dev server unreachable until the pin was
- * cleared by hand.
+ * The headers — Content Security Policy included — live in
+ * `@clinic/config/next-headers`, shared with the patient portal, because they
+ * are the one part of these two configs that must never drift apart. What stays
+ * here is what is genuinely particular to the staff app.
  */
-const securityHeaders = [
-  { key: 'Content-Security-Policy', value: csp },
-  { key: 'X-Frame-Options', value: 'DENY' },
-  { key: 'X-Content-Type-Options', value: 'nosniff' },
-  { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
-  // No feature here needs a camera, a microphone or a location, so none is granted.
-  { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()' },
-  { key: 'X-DNS-Prefetch-Control', value: 'off' },
-  ...(process.env.NODE_ENV === 'production'
-    ? [{ key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' }]
-    : []),
-];
+const headers = securityHeaders({
+  supabaseUrl,
+  isDevelopment: process.env.NODE_ENV === 'development',
+});
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  /*
+   * Pictures, resized to what is actually on screen.
+   *
+   * The reference photographs are 640 px on the longest side — small for a card
+   * and twenty times too big for the 48 px square a list row draws them in. Four
+   * hundred herbs at that ratio is megabytes of catalogue page spent on squares
+   * the size of a fingernail. `next/image` asks for the width the layout needs
+   * and serves AVIF or WebP where the browser takes it.
+   *
+   * `remotePatterns` covers a clinic's own upload, which lives in the Supabase
+   * bucket rather than in `public/` — the same origin the CSP already allows
+   * pictures from, derived from the same variable so the two cannot drift.
+   */
+  images: {
+    remotePatterns: supabaseUrl
+      ? [{ protocol: 'https', hostname: new URL(supabaseUrl).hostname }]
+      : [],
+  },
   // Workspace packages ship TypeScript source rather than a build artefact, so Next
   // compiles them itself. That keeps `pnpm dev` a single step with no watch-build.
-  transpilePackages: ['@clinic/ui', '@clinic/i18n', '@clinic/db', '@clinic/domain', '@clinic/native'],
+  transpilePackages: [
+    '@clinic/ui',
+    '@clinic/i18n',
+    '@clinic/db',
+    '@clinic/domain',
+    '@clinic/native',
+  ],
   // Server headers are not part of the page, so they cannot leak the framework
   // version to anyone probing.
   poweredByHeader: false,
   async headers() {
-    return [{ source: '/:path*', headers: securityHeaders }];
+    return [{ source: '/:path*', headers }];
   },
   experimental: {
     optimizePackageImports: ['lucide-react'],

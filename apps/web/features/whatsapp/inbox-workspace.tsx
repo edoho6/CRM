@@ -127,6 +127,9 @@ export function InboxWorkspace({
   async function send(text: string) {
     if (!activeId) return;
     const temp: ThreadMessage = {
+      // Inside the send handler, not during a render: this id is minted when a
+      // person presses the button, which is exactly when a clock may be read.
+      // eslint-disable-next-line react-hooks/purity
       id: `temp-${Date.now()}`,
       direction: 'out',
       kind: 'text',

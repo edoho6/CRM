@@ -28,6 +28,17 @@ export function TaskBell() {
   const { toast } = useToast();
   const router = useRouter();
   const [due, setDue] = useState<DueTask[]>([]);
+  /*
+   * The clock, as of the last poll.
+   *
+   * Reading `Date.now()` while rendering would make this component's output
+   * depend on something that is not its props or its state: the server would
+   * render one count and the browser another, and React would throw the markup
+   * away. Taking the time from the poll — the same moment the list came from —
+   * keeps the two in step, and a minute is the resolution a task's time has
+   * anyway.
+   */
+  const [polledAt, setPolledAt] = useState<number | null>(null);
   const [isPending, startTransition] = useTransition();
   const announced = useRef(new Set<string>());
 
@@ -37,6 +48,7 @@ export function TaskBell() {
     setDue(result.data);
 
     const now = Date.now();
+    setPolledAt(now);
     for (const task of result.data) {
       if (new Date(task.due_at).getTime() - (task.remind_offset_minutes ?? 0) * 60_000 > now) continue;
       if (task.reminded_at || announced.current.has(task.id)) continue;
@@ -68,8 +80,10 @@ export function TaskBell() {
     };
   }, [poll]);
 
-  const now = Date.now();
-  const ringing = due.filter((task) => new Date(task.due_at).getTime() <= now).length;
+  const ringing =
+    polledAt === null
+      ? 0
+      : due.filter((task) => new Date(task.due_at).getTime() <= polledAt).length;
 
   function finish(task: DueTask) {
     setDue((current) => current.filter((entry) => entry.id !== task.id));
@@ -108,7 +122,7 @@ export function TaskBell() {
           ) : (
             <ul className="max-h-80 divide-y divide-ink-100 overflow-y-auto">
               {due.map((task) => {
-                const late = new Date(task.due_at).getTime() <= now;
+                const late = polledAt !== null && new Date(task.due_at).getTime() <= polledAt;
                 return (
                   <li key={task.id} className="flex items-start gap-2 px-2 py-2">
                     <button

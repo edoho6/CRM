@@ -3,6 +3,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import type { ShopFetchRun, ShopStore } from '@clinic/db/types';
 import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
+import { serverNow } from '@/lib/server-now';
 import { StoreAdminPanel, type StoreStats } from '@/features/prices/store-admin-panel';
 import { pageTitle } from '@/lib/page-title';
 
@@ -43,6 +44,7 @@ export default async function PriceStoresPage({ params }: { params: Promise<{ lo
         stats={(Array.isArray(statsResult.data) ? statsResult.data : []) as StoreStats[]}
         runs={runsResult.data ?? []}
         canKnock={Boolean(process.env.SHOP_PRICES_SECRET && process.env.NEXT_PUBLIC_SUPABASE_URL)}
+        renderedAt={serverNow()}
       />
     </>
   );

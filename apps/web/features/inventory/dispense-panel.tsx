@@ -46,7 +46,7 @@ import { useRouter } from '@clinic/i18n/navigation';
 import type {
   DispensingRecordWithItems,
   Herb,
-  HerbFormulaWithItems,
+  HerbFormula,
   TreatmentProtocol,
 } from '@clinic/db/types';
 import { formulaPrimaryName, herbPrimaryName, herbSecondaryName } from '@/lib/display';
@@ -67,6 +67,27 @@ interface HerbRow {
   choice: ComboboxValue | null;
   /** A relative part when a total is given, otherwise grams as written. */
   dose: string;
+}
+
+/**
+ * What this panel needs of a herb, which is a name to show and names to search
+ * by. Declared here rather than taking `Herb` whole, because the page fetches
+ * exactly what the type asks for and `Herb` asks for thirty-five columns of
+ * clinical prose to fill a combobox.
+ */
+export type HerbOption = Pick<
+  Herb,
+  'id' | 'pinyin_name' | 'chinese_name' | 'english_name' | 'botanical_name'
+>;
+
+/** A formula as the picker and the composition preview need it. */
+export interface FormulaOption
+  extends Pick<HerbFormula, 'id' | 'name_pinyin' | 'name_chinese' | 'name_english'> {
+  items: {
+    id: string;
+    dosage: number;
+    herb: Pick<Herb, 'id' | 'pinyin_name' | 'chinese_name' | 'english_name'> | null;
+  }[];
 }
 
 /**
@@ -100,8 +121,8 @@ export function DispensePanel({
   disabled,
 }: {
   encounterId: string;
-  formulas: HerbFormulaWithItems[];
-  herbs: Herb[];
+  formulas: FormulaOption[];
+  herbs: HerbOption[];
   records: DispensingRecordWithItems[];
   /** Saved protocols, for filling the prescription in from one. */
   protocols: TreatmentProtocol[];

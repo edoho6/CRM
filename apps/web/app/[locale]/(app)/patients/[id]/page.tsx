@@ -40,6 +40,7 @@ import type {
 import {
   APPOINTMENT_STATUS_TONES,
   ENCOUNTER_STATUS_TONES,
+  dateKeyIn,
   statusTone,
   type Locale,
 } from '@clinic/domain';
@@ -534,6 +535,7 @@ export default async function PatientDetailPage({
               patientId={patient.id}
               balances={packagesResult.data ?? []}
               redemptions={redemptionsResult.data ?? []}
+              today={dateKeyIn(new Date(), scope.context.clinic.timezone)}
             />
             {appointmentsPanel}
           </div>

@@ -70,10 +70,13 @@ export function ReceiveForm({
   herbs,
   suppliers: initialSuppliers,
   defaultHerbId,
+  today,
 }: {
   herbs: Herb[];
   suppliers: Supplier[];
   defaultHerbId?: string;
+  /** The clinic's date, worked out on the server — see where it is used. */
+  today: string;
 }) {
   const t = useTranslations('inventory.batches');
   const tUnit = useTranslations('inventory.unit');
@@ -92,7 +95,6 @@ export function ReceiveForm({
   const [total, setTotal] = useState('');
   const [sample, setSample] = useState('');
 
-  const today = new Date().toISOString().slice(0, 10);
   const empty: ReceiveInput = {
     herb_id: defaultHerbId ?? '',
     supplier_id: '',

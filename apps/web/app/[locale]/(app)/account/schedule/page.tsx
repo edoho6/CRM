@@ -1,5 +1,6 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import type { PractitionerSchedule, ScheduleException } from '@clinic/db/types';
+import { dateKeyIn } from '@clinic/domain';
 import { PageBody } from '@clinic/ui';
 import { PageHeader } from '@/components/app-shell';
 import { SettingsNav } from '@/features/settings/settings-nav';
@@ -71,6 +72,7 @@ export default async function SchedulePage({
         <ScheduleForm
           schedules={schedulesResult.data ?? []}
           exceptions={exceptionsResult.data ?? []}
+          today={dateKeyIn(new Date(), scope.context.clinic.timezone)}
         />
         <CalendarFeedCard
           token={feedResult.data?.token ?? null}

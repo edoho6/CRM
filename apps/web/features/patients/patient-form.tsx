@@ -41,7 +41,22 @@ import { DateInput } from '@/components/date-input';
  * Validation runs against the same schema the Server Action uses, so what the form
  * accepts and what the database accepts cannot drift apart.
  */
-export function PatientForm({ patient }: { patient?: Patient }) {
+export function PatientForm({
+  patient,
+  today,
+}: {
+  patient?: Patient;
+  /**
+   * The clinic's date, worked out on the server — the latest a date of birth
+   * may be.
+   *
+   * Not `new Date()` here: this renders on the server and again in the browser,
+   * and the two must agree or React discards the markup. It was also
+   * `toISOString().slice(0, 10)`, which is the UTC day — so until three in the
+   * morning Israel time a baby born today could not be entered.
+   */
+  today: string;
+}) {
   const t = useTranslations('patients');
   const tc = useTranslations('common');
   const tAll = useTranslations();
@@ -160,7 +175,7 @@ export function PatientForm({ patient }: { patient?: Patient }) {
                 <DateInput
                   id="date_of_birth"
                   value={watch('date_of_birth') ?? ''}
-                  max={new Date().toISOString().slice(0, 10)}
+                  max={today}
                   onChange={(event) =>
                     setValue('date_of_birth', event.target.value, { shouldDirty: true, shouldValidate: true })
                   }

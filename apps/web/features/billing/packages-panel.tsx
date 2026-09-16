@@ -47,9 +47,12 @@ export function PackagesPanel({
   patientId,
   balances,
   redemptions,
+  today,
 }: {
   patientId: string;
   balances: PackageBalance[];
+  /** The clinic's date, worked out on the server — see where it is used. */
+  today: string;
   /** All redemptions across this patient's cards, newest first. */
   redemptions: PackageRedemption[];
 }) {
@@ -64,7 +67,6 @@ export function PackagesPanel({
   const [errorKey, setErrorKey] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
 
-  const today = new Date().toISOString().slice(0, 10);
   const [name, setName] = useState('');
   const [sessions, setSessions] = useState('10');
   const [price, setPrice] = useState('');

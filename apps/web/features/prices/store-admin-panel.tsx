@@ -48,12 +48,20 @@ export function StoreAdminPanel({
   stats,
   runs,
   canKnock,
+  renderedAt,
 }: {
   stores: ShopStore[];
   stats: StoreStats[];
   runs: ShopFetchRun[];
   /** Whether "read now" can start the reader at once, or only records a request. */
   canKnock: boolean;
+  /**
+   * When the server drew this page, as epoch milliseconds. "Is this reader
+   * still running" is a three-minute window, and taking it from the browser's
+   * clock would have the server and the browser answer differently for a run
+   * that crosses the boundary between the two renders.
+   */
+  renderedAt: number;
 }) {
   const t = useTranslations('prices.stores');
   const tc = useTranslations('common');
@@ -141,7 +149,7 @@ export function StoreAdminPanel({
               const running =
                 store.last_started_at !== null &&
                 (store.last_completed_at === null || Date.parse(store.last_completed_at) < Date.parse(store.last_started_at)) &&
-                Date.now() - Date.parse(store.last_started_at) < 3 * 60_000;
+                renderedAt - Date.parse(store.last_started_at) < 3 * 60_000;
               const busy = isPending && busyId === store.id;
               return (
                 <Tr key={store.id}>

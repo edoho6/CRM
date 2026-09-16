@@ -246,6 +246,11 @@ messages, prices, inventory, encounters, appointments, settings, dashboard, form
   המסד בלבד. חבר קליניקה מגיע אליהן רק דרך פונקציה שמצמידה `current_clinic_id()` (`enqueue_now_for_my_clinic`).
   פרמטר שהקורא שולט בו והופך לתוכן שנשלח למטופל — כמו `p_base_url` בקישור התזכורת — הוא חלק מהחשיפה, לא נוחות
 - **דפים ציבוריים ומנועי חיפוש:** מותר לאינדוקס רק קבוצת `(site)` ודף הזימון (`robots.ts` + `sitemap.ts` בשתי האפליקציות); דף ציבורי חדש = להחליט אם ברשימת ה-allow ואחרת `noindex`, ולהוסיף לפוטר ב-`site-frame.tsx`, ל-`PUBLIC_ROUTES` ב-smoke ול-`ROUTES` ב-`check-a11y.mjs`. הטקסט המשפטי רק ב-`legal.*` במסרים, ופרטי המפעיל בסוגריים מרובעים עד אישור העו"ד. הפרטים וצילומי דף הבית — `apps/web/app/[locale]/(site)/CLAUDE.md`
+- **אינדקס חדש מתחיל בעמודה שהקוד מסנן לפיה, לא ב-`clinic_id`:** הבידוד מגיע מה-policy
+  (`is_clinic_member(clinic_id)`) ולא מהשאילתה, ולכן השאילתה היא `where patient_id = $1` בלבד —
+  ואינדקס `(clinic_id, patient_id, …)` לא משרת אותה, כי העמודה המובילה אינה בתנאי. 99 עמודות FK
+  היו בלי אינדקס; 27 מהן מסוננות בקוד (migration 70, סיומת `_only_idx`). **`create index if not exists`
+  משווה שם ולא הגדרה** — שמונה מהאינדקסים החדשים היו נופלים בשקט על שם שכבר תפוס בקומפוזיט
 - **פונקציה ב-policy נעטפת ב-`(select …)`:** `using ((select public.current_clinic_id()) is not null)` ולא
   `using (public.current_clinic_id() is not null)`. בלי העטיפה Postgres מריץ את הפונקציה על כל שורה — ספירה של 86 אלף
   פסקאות בספרייה עשתה 86 אלף בדיקות חברות ונפלה על 8 השניות של PostgREST, בעוד אותה ספירה כבעלים לקחה 0.3 שנייה
@@ -415,7 +420,7 @@ pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm check:contrast &&
 ```
 
 `pnpm lint` נכשל על שגיאה אחת ועל אזהרה מעבר לתקרה שב-`--max-warnings`. התקרה היא מחסום חד-כיווני:
-84 האזהרות הן אבחנות ה-React Compiler (`set-state-in-effect`, `refs`, `purity`) ו-`<img>` בלי `next/image`,
+77 האזהרות הן אבחנות ה-React Compiler (`set-state-in-effect`, `refs`, `purity`) ו-`<img>` בלי `next/image`,
 שתיהן עבודה של סבב מאוחר יותר. **מורידים את המספר כשמתקנים, לא מעלים אותו כשמוסיפים.** שמונה מ-`purity`
 הן אותם מקומות שקוראים לשעון בזמן ציור שמתועדים ב"השעון של הדף" למטה — הליטנר מצא אותם בעצמו.
 

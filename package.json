@@ -12,7 +12,7 @@
     "dev:portal": "turbo run dev --filter=@clinic/portal",
     "build": "turbo run build",
     "start": "turbo run start",
-    "lint": "eslint . --max-warnings 84",
+    "lint": "eslint . --max-warnings 77",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "clean": "turbo run clean && rimraf node_modules",

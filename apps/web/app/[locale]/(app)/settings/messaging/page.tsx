@@ -4,6 +4,7 @@ import type { ClinicAutomation, MessageLogEntry } from '@clinic/db/types';
 import { AUTOMATION_KINDS } from '@clinic/domain';
 import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
+import { serverNow } from '@/lib/server-now';
 import { SettingsNav } from '@/features/settings/settings-nav';
 import { ReminderTemplateForm } from '@/features/settings/reminder-template-form';
 import { AutomationCard } from '@/features/settings/automation-card';
@@ -65,6 +66,7 @@ export default async function MessagingSettingsPage({ params }: { params: Promis
           phone={scope.context.profile?.phone ?? null}
           email={auth?.user?.email ?? null}
           latest={latestTest ?? null}
+          renderedAt={serverNow()}
         />
         <WhatsappLineCard
           number={clinic.whatsapp_number ?? null}

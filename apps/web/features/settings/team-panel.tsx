@@ -53,11 +53,21 @@ export function TeamPanel({
   invitations,
   isOwner,
   selfUserId,
+  renderedAt,
 }: {
   members: TeamMember[];
   invitations: ClinicInvitation[];
   isOwner: boolean;
   selfUserId: string;
+  /**
+   * When the server drew this page, as epoch milliseconds.
+   *
+   * Reading the clock while rendering would decide "has this invitation
+   * expired" twice — once on the server and once in the browser — and an
+   * invitation whose hour falls between the two would make the two disagree.
+   * Both use the server's moment instead; the list refreshes on the next visit.
+   */
+  renderedAt: number;
 }) {
   const t = useTranslations('settings.team');
   const tc = useTranslations('common');
@@ -147,7 +157,9 @@ export function TeamPanel({
     });
   }
 
-  const open = invitations.filter((i) => !i.accepted_at && !i.revoked_at && Date.parse(i.expires_at) > Date.now());
+  const open = invitations.filter(
+    (i) => !i.accepted_at && !i.revoked_at && Date.parse(i.expires_at) > renderedAt,
+  );
 
   return (
     <div className="space-y-5">

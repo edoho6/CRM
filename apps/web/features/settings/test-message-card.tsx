@@ -30,11 +30,19 @@ export function TestMessageCard({
   phone,
   email,
   latest,
+  renderedAt,
 }: {
   channel: MessageChannel;
   phone: string | null;
   email: string | null;
   latest: MessageLogEntry | null;
+  /**
+   * When the server drew this page, as epoch milliseconds. Deciding "has this
+   * been sitting in the queue too long" from the browser's own clock would
+   * answer differently on the server and in the browser, and a message whose
+   * minute falls between the two would make the two disagree.
+   */
+  renderedAt: number;
 }) {
   const t = useTranslations('settings.messaging.test');
   const tMessages = useTranslations('messages');
@@ -58,7 +66,8 @@ export function TestMessageCard({
   }
 
   const stale =
-    latest?.status === 'queued' && Date.now() - new Date(latest.created_at).getTime() > STALE_MINUTES * 60_000;
+    latest?.status === 'queued' &&
+    renderedAt - new Date(latest.created_at).getTime() > STALE_MINUTES * 60_000;
 
   return (
     <Card>

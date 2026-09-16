@@ -10,7 +10,6 @@ import type {
   Encounter,
   Herb,
   HerbFormula,
-  HerbFormulaWithItems,
   FormSubmission,
   FormTemplate,
   Patient,
@@ -29,7 +28,11 @@ import type { BodyPointRow } from '@/features/encounters/body3d/points';
 import type { Sketch } from '@/features/encounters/sketches';
 import { prescriptionKey } from '@/features/encounters/prescription-key';
 import { formulaPrimaryName, herbPrimaryName } from '@/lib/display';
-import { DispensePanel } from '@/features/inventory/dispense-panel';
+import {
+  DispensePanel,
+  type FormulaOption,
+  type HerbOption,
+} from '@/features/inventory/dispense-panel';
 import { EncounterFormsPanel } from '@/features/forms/encounter-forms-panel';
 import type { PreviousEncounter } from '@/features/encounters/encounter-compare';
 import { EncounterNav, type EncounterStep } from '@/features/encounters/encounter-nav';
@@ -42,8 +45,26 @@ import { pageTitle } from '@/lib/page-title';
 
 export const generateMetadata = pageTitle('encounters', 'single');
 
+/*
+ * The catalogue, as the prescription panel needs it and no wider.
+ *
+ * Both of these were `select('*')` — over as many as two thousand herbs and a
+ * thousand formulas, on every single open of a treatment. `*` on these two
+ * tables is mostly prose: functions, indications, cautions, contraindications,
+ * modifications, dosage notes, the English of all of them again in `text_en`,
+ * and a JSON list of sources. None of it was displayed. The panel shows one
+ * name and searches by the others.
+ *
+ * The whole catalogue still travels, deliberately, for the same reason the
+ * point catalogue does: autocomplete with no round trip per keystroke is what
+ * makes typing a herb name mid-treatment feel like nothing at all. What changed
+ * is that it now travels as names.
+ */
+const HERB_SELECT = 'id, pinyin_name, chinese_name, english_name, botanical_name';
+
 const FORMULA_SELECT =
-  '*, items:herb_formula_items(*, herb:herbs(id, pinyin_name, chinese_name, english_name, default_unit))';
+  'id, name_pinyin, name_chinese, name_english,' +
+  ' items:herb_formula_items(id, dosage, herb:herbs(id, pinyin_name, chinese_name, english_name))';
 
 const DISPENSING_SELECT =
   '*, items:dispensing_items(*, herb:herbs(id, pinyin_name, chinese_name, english_name)), ' +
@@ -177,14 +198,14 @@ export default async function EncounterPage({
         .eq('is_active', true)
         .order('name_pinyin', { ascending: true })
         .limit(1000)
-        .returns<HerbFormulaWithItems[]>(),
+        .returns<FormulaOption[]>(),
       scope.supabase
         .from('herbs')
-        .select('*')
+        .select(HERB_SELECT)
         .eq('is_active', true)
         .order('pinyin_name', { ascending: true })
         .limit(2000)
-        .returns<Herb[]>(),
+        .returns<HerbOption[]>(),
       // The whole point catalogue travels to the client once. It is about 40 kB
       // and buys autocomplete with no round trip per keystroke, which is what
       // makes typing "LU7" mid-treatment feel like nothing at all.

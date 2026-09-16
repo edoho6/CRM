@@ -1,5 +1,6 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import type { Herb, Supplier } from '@clinic/db/types';
+import { dateKeyIn } from '@clinic/domain';
 import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
 import { InventoryNav } from '@/features/inventory/inventory-nav';
@@ -42,7 +43,12 @@ export default async function ReceiveStockPage({
   return (
     <>
       <PageHeader title={t('receive')} below={<InventoryNav />} />
-      <ReceiveForm herbs={herbs ?? []} suppliers={suppliers ?? []} defaultHerbId={herb} />
+      <ReceiveForm
+        herbs={herbs ?? []}
+        suppliers={suppliers ?? []}
+        defaultHerbId={herb}
+        today={dateKeyIn(new Date(), scope.context.clinic.timezone)}
+      />
     </>
   );
 }

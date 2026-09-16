@@ -62,9 +62,19 @@ function toBlocks(rows: PractitionerSchedule[]): Block[] {
 export function ScheduleForm({
   schedules,
   exceptions,
+  today,
 }: {
   schedules: PractitionerSchedule[];
   exceptions: ScheduleException[];
+  /**
+   * The clinic's date, worked out on the server.
+   *
+   * Not `new Date()` here: this renders on the server and again in the browser,
+   * and the two must agree or React discards the markup. It was also
+   * `toISOString().slice(0, 10)`, which is the UTC day — so until three in the
+   * morning Israel time this said yesterday.
+   */
+  today: string;
 }) {
   const t = useTranslations('schedule');
   const tc = useTranslations('common');
@@ -76,7 +86,6 @@ export function ScheduleForm({
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
 
-  const today = new Date().toISOString().slice(0, 10);
   const [from, setFrom] = useState(today);
   const [to, setTo] = useState(today);
   const [reason, setReason] = useState('');

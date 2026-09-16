@@ -1,8 +1,10 @@
+import Image from 'next/image';
 import { getFormatter, getTranslations } from 'next-intl/server';
 import { Tags } from 'lucide-react';
 import { Badge, Dash, Table, TableWrapper, Td, Th, Tr } from '@clinic/ui';
 import type { ShopOffer, ShopProductPrice } from '@clinic/db/types';
 import { SortLinkTh } from '@/components/sort-link-th';
+import { serverNow } from '@/lib/server-now';
 import type { SortState } from '@/lib/sort-params';
 import { PriceChip } from './price-chip';
 import { PRICE_DEFAULT_SORT, type PriceSortKey } from './price-filter-params';
@@ -34,7 +36,7 @@ export async function PriceTable({
   const t = await getTranslations('prices');
   const tc = await getTranslations('common');
   const format = await getFormatter();
-  const now = Date.now();
+  const now = serverNow();
 
   const money = (value: number) =>
     format.number(value, { style: 'currency', currency: 'ILS', maximumFractionDigits: Number.isInteger(value) ? 0 : 2 });
@@ -75,11 +77,12 @@ export async function PriceTable({
                     {image ? (
                       // Decorative beside the name; the credit rides on the
                       // picture as its title and in full on /prices/credits.
-                      <img
+                      // 96 for a 48 px box, so it stays sharp on a phone.
+                      <Image
                         src={image.src}
                         alt=""
-                        width={48}
-                        height={48}
+                        width={96}
+                        height={96}
                         loading="lazy"
                         title={image.creditRequired ? `${image.author} · ${image.licence}` : undefined}
                         className="h-12 w-12 shrink-0 rounded-lg border border-ink-200 object-cover"

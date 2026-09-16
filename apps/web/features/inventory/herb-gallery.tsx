@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useCallback, useContext, useId, useMemo, useState, type CSSProperties } from 'react';
+import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import {
   DndContext,
@@ -132,11 +133,17 @@ export function HerbThumb({
 }) {
   const t = useTranslations('inventory.image');
   const gallery = useGallery();
+  /*
+   * 96 px for a 48 px square: twice the box, so it stays sharp on a phone, and
+   * a twentieth of the 640 px original the file actually is. A page of a hundred
+   * herbs was fetching a few megabytes to fill squares the size of a fingernail.
+   */
   const image = (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
+    <Image
       src={src}
       alt={gallery ? '' : alt}
+      width={96}
+      height={96}
       loading="lazy"
       className={cn('h-12 w-12 shrink-0 rounded-lg border border-ink-100 object-cover', className)}
     />

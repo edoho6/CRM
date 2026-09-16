@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import type { Patient } from '@clinic/db/types';
+import { dateKeyIn } from '@clinic/domain';
 import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
 import { logRecordAccess } from '@/lib/access-log';
@@ -37,7 +38,7 @@ export default async function EditPatientPage({
   return (
     <>
       <PageHeader title={t('edit')} description={patient.full_name} />
-      <PatientForm patient={patient} />
+      <PatientForm patient={patient} today={dateKeyIn(new Date(), scope.context.clinic.timezone)} />
     </>
   );
 }
