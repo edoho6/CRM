@@ -3,6 +3,7 @@ import {
   CanonNameIndex,
   TCM_GLOSSARY,
   answerFromCanon,
+  canonAnswerSystem,
   applyPinyinNames,
   applySafetyFixes,
   canonKey,
@@ -282,5 +283,21 @@ describe('answerFromCanon', () => {
     expect(calls.map((c) => c.label)).toEqual(['plan', 'what is missing', 'answer (complex)', 'names']);
     expect(searched).toHaveLength(2);
     expect(calls.find((c) => c.label === 'answer (complex)')!.effort).toBe('medium');
+  });
+});
+
+describe('the answer instructions', () => {
+  // The practitioner's corrections on a Bai Hu Tang answer (17.9): a composition is
+  // name, amount, unit and nothing else; the words are Bara's.
+  const system = canonAnswerSystem(TCM_GLOSSARY);
+
+  it('does not label a decoction dose', () => {
+    expect(system).not.toContain('always say which kind of amount');
+    expect(system).toContain('- Shi Gao — 30-90 גרם');
+  });
+
+  it('names the stages and levels the way Israeli practitioners do', () => {
+    for (const term of ['שכבת ה-Yang Ming', "רמת הצ'י", 'קיסר', 'משרת', 'מנקז אש']) expect(system).toContain(term);
+    expect(system).not.toContain('סטגנציה');
   });
 });

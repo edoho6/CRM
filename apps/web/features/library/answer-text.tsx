@@ -34,8 +34,11 @@ export function AnswerText({ text, reveal }: { text: string; reveal: boolean }) 
   }, [reveal, blocks.length]);
 
   const revealing = shown < blocks.length;
+  // Not dir="auto": that takes the first letter, and a Hebrew answer that opens with a
+  // pinyin name ("Shi Gao הוא…") would be laid out left to right from top to bottom.
+  const dir = /\p{Script=Hebrew}/u.test(text) ? 'rtl' : 'auto';
   return (
-    <div className="text-sm leading-6 text-ink-900" dir="auto">
+    <div className="text-sm leading-6 text-ink-900" dir={dir}>
       {revealing ? <span className="sr-only">{displayAnswer(text)}</span> : null}
       <div aria-hidden={revealing || undefined} className="space-y-2">
         {blocks.slice(0, shown).map((block, index) => (
