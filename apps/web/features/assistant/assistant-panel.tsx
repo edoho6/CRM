@@ -65,6 +65,7 @@ export function AssistantPanel({ examples }: { examples: string[] }) {
     if (errorKey.endsWith('assistant_not_configured')) return t('notConfigured');
     if (errorKey.endsWith('assistant_unavailable')) return t('unavailable');
     if (errorKey.endsWith('assistant_gave_up')) return t('gaveUp');
+    if (errorKey.endsWith('assistant_quota')) return t('quota');
     if (errorKey.endsWith('question_too_long')) return t('tooLong');
     return tc('errorGeneric');
   }
@@ -81,7 +82,10 @@ export function AssistantPanel({ examples }: { examples: string[] }) {
             className="flex items-end gap-2"
           >
             <div className="min-w-0 flex-1">
-              <label htmlFor="assistant_question" className="mb-1 block text-sm font-medium text-ink-800">
+              <label
+                htmlFor="assistant_question"
+                className="mb-1 block text-sm font-medium text-ink-800"
+              >
                 {t('questionLabel')}
               </label>
               <Input
@@ -171,7 +175,9 @@ export function AssistantPanel({ examples }: { examples: string[] }) {
                               return (
                                 <Td
                                   key={column}
-                                  data-card-title={column === table.result.columns[0] ? '' : undefined}
+                                  data-card-title={
+                                    column === table.result.columns[0] ? '' : undefined
+                                  }
                                   dir={isNumber ? 'ltr' : 'auto'}
                                   className={isNumber ? 'tabular-nums' : undefined}
                                 >

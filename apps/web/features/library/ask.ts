@@ -24,9 +24,24 @@ import {
   type LibraryStage,
   type LibraryStatus,
 } from '@clinic/domain';
-import { LIBRARY_EFFORT, LIBRARY_MODEL, LibraryUnavailableError, callClaude, parseJsonReply } from './claude';
+import {
+  LIBRARY_EFFORT,
+  LIBRARY_MODEL,
+  LibraryUnavailableError,
+  callClaude,
+  parseJsonReply,
+} from './claude';
 import { planSearch } from './plan';
-import { ANSWER_SYSTEM, GENERAL_SYSTEM, REVIEW_SYSTEM, answerPrompt, generalPrompt, repairPrompt, reviewPrompt, type PromptPassage } from './prompts';
+import {
+  ANSWER_SYSTEM,
+  GENERAL_SYSTEM,
+  REVIEW_SYSTEM,
+  answerPrompt,
+  generalPrompt,
+  repairPrompt,
+  reviewPrompt,
+  type PromptPassage,
+} from './prompts';
 import { embedQueries, libraryKey } from './voyage';
 import { askCanon, canonReady } from './canon';
 
@@ -99,7 +114,12 @@ interface Issue {
   why: string;
 }
 
-const reply = (status: LibraryStatus, answer: string, citations: LibraryCitation[] = [], retrieved: RetrievedSource[] = []): AskResult => ({
+const reply = (
+  status: LibraryStatus,
+  answer: string,
+  citations: LibraryCitation[] = [],
+  retrieved: RetrievedSource[] = [],
+): AskResult => ({
   status,
   answer,
   citations,
@@ -129,11 +149,17 @@ const MIN_ANSWER_CHARS = 120;
 const ROUTE_BUDGET_MS = 52_000;
 const REWRITE_MS = 25_000;
 
-export async function askLibrary(db: SupabaseClient, input: AskInput, onStage?: StageListener): Promise<AskResult> {
+export async function askLibrary(
+  db: SupabaseClient,
+  input: AskInput,
+  onStage?: StageListener,
+): Promise<AskResult> {
   const started = Date.now();
   const question = input.question.trim();
   const history = input.history.slice(-LIBRARY_LIMITS.historyTurns * 2);
-  const usage = { input: 0, output: 0 };
+  // Four counts, not two: a cache write and a cache read cost very different
+  // amounts, and summed together the log cannot price a single question.
+  const usage = { input: 0, cacheWrite: 0, cacheRead: 0, output: 0 };
   const timeForRewrite = () => Date.now() - started + REWRITE_MS < ROUTE_BUDGET_MS;
   /** Sentences the checks removed from the reply. */
   let trimmed = 0;
@@ -147,6 +173,8 @@ export async function askLibrary(db: SupabaseClient, input: AskInput, onStage?: 
         p_sources: sources,
         p_model: spent ? LIBRARY_MODEL : null,
         p_input_tokens: spent ? usage.input : null,
+        p_cache_write_tokens: spent ? usage.cacheWrite : null,
+        p_cache_read_tokens: spent ? usage.cacheRead : null,
         p_output_tokens: spent ? usage.output : null,
         p_latency_ms: Date.now() - started,
       });
@@ -174,6 +202,8 @@ export async function askLibrary(db: SupabaseClient, input: AskInput, onStage?: 
   if (await canonReady(db)) {
     const canon = await askCanon(db, question, history, onStage, { course: input.course === true });
     usage.input += canon.usage.input;
+    usage.cacheWrite += canon.usage.cacheWrite;
+    usage.cacheRead += canon.usage.cacheRead;
     usage.output += canon.usage.output;
     if (!canon.answer.trim()) {
       await log('no_sources', [], true);
@@ -192,11 +222,21 @@ export async function askLibrary(db: SupabaseClient, input: AskInput, onStage?: 
 
   // Retrieval: the question as asked and its English twin, each by meaning;
   // the English search words once, by words. Up to three rankings, folded.
-  const twin = plan.english.trim() && plan.english.trim() !== plan.standalone.trim() ? plan.english.trim() : null;
+  const twin =
+    plan.english.trim() && plan.english.trim() !== plan.standalone.trim()
+      ? plan.english.trim()
+      : null;
   const embeddings = await embedQueries(twin ? [plan.standalone, twin] : [plan.standalone]);
-  const words = plan.keywords.length ? plan.keywords.join(' ') : twin ?? question;
+  const words = plan.keywords.length ? plan.keywords.join(' ') : (twin ?? question);
   const searches = await Promise.all(
-    embeddings.map((embedding, index) => db.rpc('library_search', { p_embedding: embedding, p_query: index === 0 ? words : '', p_limit: 20, p_key: libraryKey() })),
+    embeddings.map((embedding, index) =>
+      db.rpc('library_search', {
+        p_embedding: embedding,
+        p_query: index === 0 ? words : '',
+        p_limit: 20,
+        p_key: libraryKey(),
+      }),
+    ),
   );
   if (searches.some((search) => search.error)) throw new LibraryUnavailableError('search_failed');
   const byId = new Map<string, SearchRow>();
@@ -228,7 +268,12 @@ export async function askLibrary(db: SupabaseClient, input: AskInput, onStage?: 
   // ranking twice in the fold below.
   const narrowed = textHits.size === 0 ? narrowedQuery(plan.keywords) : null;
   if (narrowed) {
-    const retry = await db.rpc('library_search', { p_embedding: embeddings[0], p_query: narrowed, p_limit: LIBRARY_LIMITS.narrowPassages, p_key: libraryKey() });
+    const retry = await db.rpc('library_search', {
+      p_embedding: embeddings[0],
+      p_query: narrowed,
+      p_limit: LIBRARY_LIMITS.narrowPassages,
+      p_key: libraryKey(),
+    });
     const byFewerWords: string[] = [];
     for (const row of (retry.data ?? []) as SearchRow[]) {
       if (row.via !== 'text') continue;
@@ -258,14 +303,30 @@ export async function askLibrary(db: SupabaseClient, input: AskInput, onStage?: 
       }),
   ).slice(0, budget);
 
-  const retrieved: RetrievedSource[] = evidence.map((row) => ({ sourceId: row.source_id, title: row.title, url: row.url, page: row.page }));
+  const retrieved: RetrievedSource[] = evidence.map((row) => ({
+    sourceId: row.source_id,
+    title: row.title,
+    url: row.url,
+    page: row.page,
+  }));
   const logSources = (cited: Set<number>): LogSource[] =>
-    evidence.map((row, index) => ({ source_id: row.source_id, title: row.title, url: row.url, page: row.page, cited: cited.has(index + 1) }));
+    evidence.map((row, index) => ({
+      source_id: row.source_id,
+      title: row.title,
+      url: row.url,
+      page: row.page,
+      cited: cited.has(index + 1),
+    }));
 
   /** The model's own knowledge, asked for on its own when the library holds nothing. */
   const generalOnly = async (): Promise<string> => {
     onStage?.('writing');
-    const spoken = await callClaude({ system: GENERAL_SYSTEM, messages: [{ role: 'user', content: generalPrompt(question, history) }], maxTokens: 6000, effort: LIBRARY_EFFORT });
+    const spoken = await callClaude({
+      system: GENERAL_SYSTEM,
+      messages: [{ role: 'user', content: generalPrompt(question, history) }],
+      maxTokens: 6000,
+      effort: LIBRARY_EFFORT,
+    });
     usage.input += spoken.inputTokens;
     usage.output += spoken.outputTokens;
     const parsed = parseJsonReply<{ general?: string }>(spoken.text);
@@ -278,19 +339,28 @@ export async function askLibrary(db: SupabaseClient, input: AskInput, onStage?: 
    * and without any dose, which only a source may state.
    */
   const cleanGeneral = (draft: string): string => {
-    const withoutStruck = struckClaims.length ? removeSentences(draft, struckClaims) : { text: draft, removed: 0 };
+    const withoutStruck = struckClaims.length
+      ? removeSentences(draft, struckClaims)
+      : { text: draft, removed: 0 };
     const withoutDoses = removeDoses(withoutStruck.text);
     trimmed += withoutStruck.removed + withoutDoses.removed;
     return withoutDoses.text.trim();
   };
-  const generalReply = async (draft: string, citations: LibraryCitation[] = []): Promise<AskResult> => {
+  const generalReply = async (
+    draft: string,
+    citations: LibraryCitation[] = [],
+  ): Promise<AskResult> => {
     const general = cleanGeneral(draft);
     if (!general) {
       await log('no_sources', logSources(new Set()), usage.input > 0);
       return reply('no_sources', LIBRARY_NO_SOURCES_HE, citations, retrieved);
     }
     await log('general', logSources(new Set()), true);
-    return { ...reply('general', '', citations, retrieved), general, ...(trimmed ? { trimmed } : {}) };
+    return {
+      ...reply('general', '', citations, retrieved),
+      general,
+      ...(trimmed ? { trimmed } : {}),
+    };
   };
 
   if (evidence.length === 0) return generalReply(await generalOnly());
@@ -303,7 +373,12 @@ export async function askLibrary(db: SupabaseClient, input: AskInput, onStage?: 
     url: row.url,
     content: row.heading ? `${row.heading}\n${row.content}` : row.content,
   }));
-  const groundingPassages: GroundingPassage[] = passages.map((p) => ({ n: p.n, content: p.content, title: p.title, page: p.page }));
+  const groundingPassages: GroundingPassage[] = passages.map((p) => ({
+    n: p.n,
+    content: p.content,
+    title: p.title,
+    page: p.page,
+  }));
   const asCitation = (n: number): LibraryCitation => {
     const row = evidence[n - 1]!;
     return {
@@ -312,7 +387,10 @@ export async function askLibrary(db: SupabaseClient, input: AskInput, onStage?: 
       title: row.title,
       url: row.url,
       page: row.page,
-      quote: row.content.length > LIBRARY_LIMITS.quoteChars ? `${row.content.slice(0, LIBRARY_LIMITS.quoteChars).trimEnd()}…` : row.content,
+      quote:
+        row.content.length > LIBRARY_LIMITS.quoteChars
+          ? `${row.content.slice(0, LIBRARY_LIMITS.quoteChars).trimEnd()}…`
+          : row.content,
     };
   };
   const allCitations = passages.map((p) => asCitation(p.n));
@@ -322,13 +400,20 @@ export async function askLibrary(db: SupabaseClient, input: AskInput, onStage?: 
   // same ceiling: a low one cut an answer mid-JSON and a verdict to nothing.
   const write = async (content: string): Promise<ModelAnswer | null> => {
     onStage?.('writing');
-    const spoken = await callClaude({ system: ANSWER_SYSTEM, messages: [{ role: 'user', content }], maxTokens: 8000, effort: LIBRARY_EFFORT });
+    const spoken = await callClaude({
+      system: ANSWER_SYSTEM,
+      messages: [{ role: 'user', content }],
+      maxTokens: 8000,
+      effort: LIBRARY_EFFORT,
+    });
     usage.input += spoken.inputTokens;
     usage.output += spoken.outputTokens;
     return parseJsonReply<ModelAnswer>(spoken.text);
   };
   const usable = (draft: ModelAnswer | null): draft is ModelAnswer & { answer: string } =>
-    Boolean(draft && draft.answered === true && typeof draft.answer === 'string' && draft.answer.trim());
+    Boolean(
+      draft && draft.answered === true && typeof draft.answer === 'string' && draft.answer.trim(),
+    );
 
   const first = await write(answerPrompt(question, history, passages));
   const draftGeneral = typeof first?.general === 'string' ? first.general.trim() : '';
@@ -337,7 +422,12 @@ export async function askLibrary(db: SupabaseClient, input: AskInput, onStage?: 
   // The second reading: which sentences do the passages not support?
   const judge = async (text: string): Promise<{ faithful: boolean; issues: Issue[] }> => {
     onStage?.('checking');
-    const spoken = await callClaude({ system: REVIEW_SYSTEM, messages: [{ role: 'user', content: reviewPrompt(text, passages) }], maxTokens: 4000, effort: LIBRARY_EFFORT });
+    const spoken = await callClaude({
+      system: REVIEW_SYSTEM,
+      messages: [{ role: 'user', content: reviewPrompt(text, passages) }],
+      maxTokens: 4000,
+      effort: LIBRARY_EFFORT,
+    });
     usage.input += spoken.inputTokens;
     usage.output += spoken.outputTokens;
     const verdict = parseJsonReply<{ faithful?: boolean; issues?: unknown }>(spoken.text);
@@ -347,7 +437,10 @@ export async function askLibrary(db: SupabaseClient, input: AskInput, onStage?: 
             if (typeof issue === 'string') return { quote: issue, why: '' };
             if (issue && typeof issue === 'object') {
               const { quote, why } = issue as { quote?: unknown; why?: unknown };
-              return { quote: typeof quote === 'string' ? quote : '', why: typeof why === 'string' ? why : '' };
+              return {
+                quote: typeof quote === 'string' ? quote : '',
+                why: typeof why === 'string' ? why : '',
+              };
             }
             return null;
           })
@@ -356,7 +449,13 @@ export async function askLibrary(db: SupabaseClient, input: AskInput, onStage?: 
       : [];
     // A verdict that could not be read names nothing; the grounding checks
     // above it still hold, and nothing is struck on a reading that did not happen.
-    return { faithful: verdict?.faithful === true || (verdict?.faithful !== false && issues.length === 0) || (verdict === null && issues.length === 0), issues };
+    return {
+      faithful:
+        verdict?.faithful === true ||
+        (verdict?.faithful !== false && issues.length === 0) ||
+        (verdict === null && issues.length === 0),
+      issues,
+    };
   };
 
   let answer = first.answer;
@@ -373,8 +472,12 @@ export async function askLibrary(db: SupabaseClient, input: AskInput, onStage?: 
    * and so does a sentence stating a number the passages it cites do not hold.
    */
   const strikeUngrounded = (text: string, problems: readonly GroundingProblem[]): string => {
-    const unknown = problems.filter((p) => p.kind === 'unknown_citation').map((p) => Number(p.detail.replace(/[[\]]/g, '')));
-    const dead = unknown.length ? dropUnknownCitations(text, unknown) : { text, removed: 0, struck: [] };
+    const unknown = problems
+      .filter((p) => p.kind === 'unknown_citation')
+      .map((p) => Number(p.detail.replace(/[[\]]/g, '')));
+    const dead = unknown.length
+      ? dropUnknownCitations(text, unknown)
+      : { text, removed: 0, struck: [] };
     const numbers = removeUnsupportedNumbers(dead.text, groundingPassages);
     trimmed += dead.removed + numbers.removed;
     struckClaims.push(...dead.struck, ...numbers.struck);
@@ -386,13 +489,18 @@ export async function askLibrary(db: SupabaseClient, input: AskInput, onStage?: 
   onStage?.('checking');
   let grounding = checkGrounding(answer, groundingPassages);
   if (!grounding.ok) {
-    const again = timeForRewrite() ? await write(repairPrompt(question, history, passages, answer, grounding.problems.map(objection))) : null;
+    const again = timeForRewrite()
+      ? await write(
+          repairPrompt(question, history, passages, answer, grounding.problems.map(objection)),
+        )
+      : null;
     if (usable(again)) answer = again.answer;
     onStage?.('checking');
     grounding = checkGrounding(answer, groundingPassages);
     if (!grounding.ok) answer = strikeUngrounded(answer, grounding.problems);
   }
-  if (citationNumbers(answer).length === 0 || answer.trim().length < MIN_ANSWER_CHARS) return generalReply(draftGeneral, allCitations);
+  if (citationNumbers(answer).length === 0 || answer.trim().length < MIN_ANSWER_CHARS)
+    return generalReply(draftGeneral, allCitations);
 
   // The second reading. Sentences it names are struck; when a quote cannot
   // be found in the answer, the draft is written once more with the
@@ -409,7 +517,17 @@ export async function askLibrary(db: SupabaseClient, input: AskInput, onStage?: 
       answer = struck.text;
       trimmed += struck.removed;
     } else {
-      const again = timeForRewrite() ? await write(repairPrompt(question, history, passages, answer, verdict.issues.map((i) => (i.why ? `${i.why}: "${i.quote}"` : i.quote)))) : null;
+      const again = timeForRewrite()
+        ? await write(
+            repairPrompt(
+              question,
+              history,
+              passages,
+              answer,
+              verdict.issues.map((i) => (i.why ? `${i.why}: "${i.quote}"` : i.quote)),
+            ),
+          )
+        : null;
       if (usable(again)) {
         answer = again.answer;
         grounding = checkGrounding(answer, groundingPassages);
@@ -428,7 +546,8 @@ export async function askLibrary(db: SupabaseClient, input: AskInput, onStage?: 
       }
     }
   }
-  if (citationNumbers(answer).length === 0 || answer.trim().length < MIN_ANSWER_CHARS) return generalReply(draftGeneral, allCitations);
+  if (citationNumbers(answer).length === 0 || answer.trim().length < MIN_ANSWER_CHARS)
+    return generalReply(draftGeneral, allCitations);
 
   const cited = new Set(citationNumbers(answer));
   const general = cleanGeneral(draftGeneral);

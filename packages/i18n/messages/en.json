@@ -3411,6 +3411,7 @@
     "notConfiguredBody": "It is switched on during installation, by whoever set the system up — the instructions are in the setup guide in the project folder. Everything else works as usual meanwhile.",
     "unavailable": "Could not reach the service. Try again in a moment.",
     "gaveUp": "I could not answer that from the data I can reach. Try putting it another way.",
+    "quota": "You have reached today's number of questions. You can carry on tomorrow.",
     "tooLong": "That question is too long. One sentence is enough.",
     "examples": {
       "busy": "When am I busiest?",

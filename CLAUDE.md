@@ -48,7 +48,7 @@ pnpm 9 + Turborepo, Node 20.9+. ההתקנה והחיבור ל-Supabase ב-`READ
 - **מסמכים:** `SECURITY.md` (באנגלית, לעו"ד), `DEPLOY.md` (העלאה וחיבור ספקים), `GO-LIVE.md` (מה חוסם
   מטופלים אמיתיים), `MOBILE.md` (החנויות), `supabase/functions/README.md` (ה-secrets),
   `scripts/{library,medicine,pull}/README.md` (הצנרות)
-- **לקחים לפי מודול — קובצי `CLAUDE.md` מקוננים** (נטענים לבד כשנוגעים בתיקייה): `features/{library, medicine,
+- **לקחים לפי מודול — קובצי `CLAUDE.md` מקוננים** (נטענים לבד כשנוגעים בתיקייה): `features/{library, assistant, medicine,
 messages, prices, inventory, encounters, appointments, settings, dashboard, forms, reference, patients}`,
   `app/[locale]/(site)`, `apps/portal`, `packages/native`. תיקייה שנייה של אותו מודול (סקריפט, Edge Function,
   מעטפת) מחזיקה קובץ של שורה אחת שמייבא אותו ב-`@path`. לקח חדש נכתב שם, לא כאן; שינוי במודול מעדכן את הפסקה שלו

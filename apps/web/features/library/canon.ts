@@ -65,8 +65,24 @@ async function entries(db: SupabaseClient, ids: readonly string[]): Promise<Cano
   if (!ids.length) return [];
   const { data, error } = await db.rpc('canon_entries_get', { p_ids: ids, p_key: libraryKey() });
   if (error) throw new LibraryUnavailableError('canon_entries_failed');
-  const rows = (data ?? []) as { id: string; book: string; kind: CanonKind; page: number | null; associated_with: string | null; names: CanonEntry['names']; sections: Record<string, string> }[];
-  return rows.map((row) => ({ id: row.id, book: row.book, kind: row.kind, page: row.page, associatedWith: row.associated_with, names: row.names ?? {}, sections: row.sections ?? {} }));
+  const rows = (data ?? []) as {
+    id: string;
+    book: string;
+    kind: CanonKind;
+    page: number | null;
+    associated_with: string | null;
+    names: CanonEntry['names'];
+    sections: Record<string, string>;
+  }[];
+  return rows.map((row) => ({
+    id: row.id,
+    book: row.book,
+    kind: row.kind,
+    page: row.page,
+    associatedWith: row.associated_with,
+    names: row.names ?? {},
+    sections: row.sections ?? {},
+  }));
 }
 
 interface SearchRow {
@@ -83,14 +99,29 @@ interface SearchRow {
  * short phrases, every word required, on the first call), fused by rank, then
  * put in order by the reranker, which reads each passage against the question.
  */
-async function search(db: SupabaseClient, input: { queries: string[]; rerankQuery: string; exclude: ReadonlySet<string>; want: number; course?: boolean }): Promise<CanonPassage[]> {
+async function search(
+  db: SupabaseClient,
+  input: {
+    queries: string[];
+    rerankQuery: string;
+    exclude: ReadonlySet<string>;
+    want: number;
+    course?: boolean;
+  },
+): Promise<CanonPassage[]> {
   const course = input.course === true;
   const vectors = await embedQueries(input.queries);
   const phrases = input.queries.slice(1, 7).filter((q) => q.length <= 80);
   const results = await Promise.all(
     vectors.map((embedding, index) =>
       // The course layer is searched by meaning alone: its Hebrew does not meet the planner's English phrases.
-      db.rpc('canon_search', { p_embedding: embedding, p_phrases: index === 0 && !course ? phrases : [], p_limit: 40, p_key: libraryKey(), p_course: course }),
+      db.rpc('canon_search', {
+        p_embedding: embedding,
+        p_phrases: index === 0 && !course ? phrases : [],
+        p_limit: 40,
+        p_key: libraryKey(),
+        p_course: course,
+      }),
     ),
   );
   if (results.some((r) => r.error)) throw new LibraryUnavailableError('canon_search_failed');
@@ -98,7 +129,10 @@ async function search(db: SupabaseClient, input: { queries: string[]; rerankQuer
   const fused = new Map<number, number>();
   for (const result of results) {
     const found = (result.data ?? []) as SearchRow[];
-    const lists: SearchRow[][] = [found.filter((r) => r.via === 'vector'), found.filter((r) => r.via === 'text')];
+    const lists: SearchRow[][] = [
+      found.filter((r) => r.via === 'vector'),
+      found.filter((r) => r.via === 'text'),
+    ];
     for (const list of lists) {
       list.forEach((row, rank) => {
         byId.set(row.passage_id, row);
@@ -109,7 +143,12 @@ async function search(db: SupabaseClient, input: { queries: string[]; rerankQuer
   const candidates = [...fused.entries()]
     .sort((a, b) => b[1] - a[1])
     .map(([id]) => byId.get(id)!)
-    .filter((row) => !input.exclude.has(course ? `#course:${row.passage_id}` : (row.entry_id ?? `#${row.passage_id}`)))
+    .filter(
+      (row) =>
+        !input.exclude.has(
+          course ? `#course:${row.passage_id}` : (row.entry_id ?? `#${row.passage_id}`),
+        ),
+    )
     .slice(0, 60);
   if (!candidates.length) return [];
   const order = await rerankDocuments(
@@ -119,7 +158,14 @@ async function search(db: SupabaseClient, input: { queries: string[]; rerankQuer
   );
   return order.map((i) => {
     const row = candidates[i]!;
-    return { id: String(row.passage_id), entry: row.entry_id, section: row.section, heading: row.heading, text: row.content, course };
+    return {
+      id: String(row.passage_id),
+      entry: row.entry_id,
+      section: row.section,
+      heading: row.heading,
+      text: row.content,
+      course,
+    };
   });
 }
 
@@ -130,8 +176,17 @@ async function pregnancyNote(db: SupabaseClient): Promise<string> {
   return pregnancy.text;
 }
 
+/**
+ * The four counts kept apart, because they are billed apart: plain input, a
+ * cache write (dearer than input), a cache read (a tenth of it), and output.
+ * They used to be summed into one number, and a question that read its notes
+ * from the cache then looked exactly as expensive as one that wrote them —
+ * which made the log useless for the only question anyone asks of it.
+ */
 export interface CanonUsage {
   input: number;
+  cacheWrite: number;
+  cacheRead: number;
   output: number;
 }
 
@@ -141,7 +196,11 @@ export interface CanonUsage {
  * (Haiku 4.5 answers 400 to it). An error carries a status, never a body — the
  * body could echo the practitioner's question.
  */
-async function callModel(usage: CanonUsage, call: CanonModelCall, signal?: AbortSignal): Promise<string> {
+async function callModel(
+  usage: CanonUsage,
+  call: CanonModelCall,
+  signal?: AbortSignal,
+): Promise<string> {
   const key = process.env.ANTHROPIC_API_KEY?.trim();
   if (!key) throw new LibraryUnavailableError('not_configured');
   const model = call.model === 'answer' ? LIBRARY_MODEL : LIBRARY_PLAN_MODEL;
@@ -155,7 +214,11 @@ async function callModel(usage: CanonUsage, call: CanonModelCall, signal?: Abort
   for (let attempt = 1; ; attempt += 1) {
     const response = await fetch(ENDPOINT, {
       method: 'POST',
-      headers: { 'content-type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
+      headers: {
+        'content-type': 'application/json',
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+      },
       body: JSON.stringify(body),
       signal,
     });
@@ -166,10 +229,17 @@ async function callModel(usage: CanonUsage, call: CanonModelCall, signal?: Abort
     if (!response.ok) throw new LibraryUnavailableError(`http_${response.status}`);
     const payload = (await response.json()) as {
       content?: { type: string; text?: string }[];
-      usage?: { input_tokens?: number; output_tokens?: number; cache_creation_input_tokens?: number; cache_read_input_tokens?: number };
+      usage?: {
+        input_tokens?: number;
+        output_tokens?: number;
+        cache_creation_input_tokens?: number;
+        cache_read_input_tokens?: number;
+      };
     };
     const u = payload.usage ?? {};
-    usage.input += (u.input_tokens ?? 0) + (u.cache_creation_input_tokens ?? 0) + (u.cache_read_input_tokens ?? 0);
+    usage.input += u.input_tokens ?? 0;
+    usage.cacheWrite += u.cache_creation_input_tokens ?? 0;
+    usage.cacheRead += u.cache_read_input_tokens ?? 0;
     usage.output += u.output_tokens ?? 0;
     const text = (payload.content ?? [])
       .filter((block) => block.type === 'text' && typeof block.text === 'string')
@@ -189,7 +259,7 @@ export async function askCanon(
   onStage?: (stage: CanonStage) => void,
   options: { course?: boolean } = {},
 ): Promise<{ answer: string; usage: CanonUsage }> {
-  const usage: CanonUsage = { input: 0, output: 0 };
+  const usage: CanonUsage = { input: 0, cacheWrite: 0, cacheRead: 0, output: 0 };
   const index = await nameIndex(db);
   const result = await answerFromCanon(question, history, {
     model: (call) => callModel(usage, call),

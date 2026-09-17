@@ -3,11 +3,13 @@
 import { getClinicScope } from '@/lib/session';
 import { actionError, actionOk, type ActionResult } from '@/lib/errors';
 import {
+  ASSISTANT_MODEL,
   AssistantUnavailableError,
   callModel,
   isAssistantConfigured,
   type ContentBlock,
   type Message,
+  type ModelUsage,
   type ToolSpec,
 } from './anthropic';
 import { QueryFailedError, QUERIES, QUERY_BY_NAME, type QueryResult } from './queries';
@@ -25,6 +27,16 @@ import { QueryFailedError, QUERIES, QUERY_BY_NAME, type QueryResult } from './qu
  */
 
 const MAX_STEPS = 3;
+
+/**
+ * Questions one person may ask in a clinic's day.
+ *
+ * Every question is two calls to a paid API, and until now nothing counted
+ * them. The number is far above ordinary use — this is a question asked a few
+ * times a week, not a few times an hour — so it is felt only by a loop or a
+ * script, which is what it is here to stop. The library's own ceiling is sixty.
+ */
+const DAILY_QUOTA = 60;
 
 /** One query the assistant ran, returned so the screen can show the real table. */
 export interface AssistantTable {
@@ -77,10 +89,40 @@ export async function askAssistant(question: string): Promise<ActionResult<Assis
 
   const messages: Message[] = [{ role: 'user', content: trimmed }];
   const tables: AssistantTable[] = [];
+  const started = Date.now();
+  const spent: ModelUsage = { input: 0, cacheWrite: 0, cacheRead: 0, output: 0 };
+
+  /** What it cost, never what was asked. A log that falls over must not take the answer with it. */
+  const log = async (status: 'answered' | 'refused_quota' | 'error') => {
+    try {
+      await scope.supabase.rpc('assistant_log_query', {
+        p_status: status,
+        p_model: status === 'refused_quota' ? null : ASSISTANT_MODEL,
+        p_input_tokens: spent.input,
+        p_cache_write_tokens: spent.cacheWrite,
+        p_cache_read_tokens: spent.cacheRead,
+        p_output_tokens: spent.output,
+        p_latency_ms: Date.now() - started,
+      });
+    } catch {
+      // Older database, or a log that refused. Neither is the practitioner's problem.
+    }
+  };
+
+  // The ceiling, before anything costs.
+  const { data: askedToday } = await scope.supabase.rpc('assistant_questions_today');
+  if (Number(askedToday ?? 0) >= DAILY_QUOTA) {
+    await log('refused_quota');
+    return actionError(new Error('assistant_quota'));
+  }
 
   try {
     for (let step = 0; step < MAX_STEPS; step += 1) {
       const reply = await callModel({ system: SYSTEM, messages, tools: toolSpecs() });
+      spent.input += reply.usage.input;
+      spent.cacheWrite += reply.usage.cacheWrite;
+      spent.cacheRead += reply.usage.cacheRead;
+      spent.output += reply.usage.output;
 
       const toolUses = reply.content.filter(
         (block): block is Extract<ContentBlock, { type: 'tool_use' }> => block.type === 'tool_use',
@@ -88,11 +130,14 @@ export async function askAssistant(question: string): Promise<ActionResult<Assis
 
       if (toolUses.length === 0) {
         const text = reply.content
-          .filter((block): block is Extract<ContentBlock, { type: 'text' }> => block.type === 'text')
+          .filter(
+            (block): block is Extract<ContentBlock, { type: 'text' }> => block.type === 'text',
+          )
           .map((block) => block.text)
           .join('\n')
           .trim();
 
+        await log('answered');
         return actionOk({ text: text || '', tables });
       }
 
@@ -143,8 +188,12 @@ export async function askAssistant(question: string): Promise<ActionResult<Assis
 
     // Out of steps with no answer. Better to say so than to return the last
     // half-formed thing the model said on its way to a fourth query.
+    await log('error');
     return actionError(new Error('assistant_gave_up'));
   } catch (error) {
+    // The tokens were spent whether or not an answer came back, so they are
+    // recorded either way — a bill that only counts successes is not a bill.
+    await log('error');
     if (error instanceof AssistantUnavailableError) {
       return actionError(new Error('assistant_unavailable'));
     }

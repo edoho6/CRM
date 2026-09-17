@@ -42,9 +42,23 @@ export interface Message {
   content: string | ContentBlock[];
 }
 
+/**
+ * The four token counts, kept apart because they are billed apart: plain input,
+ * a cache write (dearer than input), a cache read (a tenth of it), and output.
+ * Added together they cannot be priced, which is exactly the mistake the
+ * library's own log made.
+ */
+export interface ModelUsage {
+  input: number;
+  cacheWrite: number;
+  cacheRead: number;
+  output: number;
+}
+
 export interface ModelReply {
   stopReason: string | null;
   content: ContentBlock[];
+  usage: ModelUsage;
 }
 
 export class AssistantUnavailableError extends Error {
@@ -80,7 +94,16 @@ export async function callModel({
       // Enough for a short answer over a small table. The assistant explains a
       // result; it does not write reports.
       max_tokens: 1024,
-      system,
+      // The instructions and all twenty-one query definitions are the same on
+      // every call, for every clinic, and they are most of the request. Marking
+      // the end of the system block caches everything above it — the tools too,
+      // since they are sent before it — so the second call of a question (the
+      // one that reads the table back) pays a tenth for the part that did not
+      // change. Five minutes rather than an hour: the pair of calls in one
+      // question is seconds apart and always hits, while questions themselves
+      // are days apart in a single clinic, and an hour-long entry costs more to
+      // write than it would save there.
+      system: [{ type: 'text', text: system, cache_control: { type: 'ephemeral' } }],
       tools,
       messages,
     }),
@@ -96,7 +119,26 @@ export async function callModel({
   const payload = (await response.json()) as {
     stop_reason?: string | null;
     content?: ContentBlock[];
+    usage?: {
+      input_tokens?: number;
+      output_tokens?: number;
+      cache_creation_input_tokens?: number;
+      cache_read_input_tokens?: number;
+    };
   };
 
-  return { stopReason: payload.stop_reason ?? null, content: payload.content ?? [] };
+  const u = payload.usage ?? {};
+  return {
+    stopReason: payload.stop_reason ?? null,
+    content: payload.content ?? [],
+    usage: {
+      input: u.input_tokens ?? 0,
+      cacheWrite: u.cache_creation_input_tokens ?? 0,
+      cacheRead: u.cache_read_input_tokens ?? 0,
+      output: u.output_tokens ?? 0,
+    },
+  };
 }
+
+/** The model this call uses, for the log. */
+export const ASSISTANT_MODEL = MODEL;
