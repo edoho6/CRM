@@ -87,6 +87,8 @@ export default async function AppLayout({
       clinics={context.clinics}
       clinicId={context.clinic.id}
       onSwitchClinic={context.clinics.length > 1 ? switchClinic : undefined}
+      // What this person may reach here. The policies decide; the menu agrees.
+      role={context.membership.role}
       userName={context.profile?.full_name ?? ''}
       // A clinic that holds no stock never sees the stock room at all — the
       // setting is read once here rather than checked on every screen.

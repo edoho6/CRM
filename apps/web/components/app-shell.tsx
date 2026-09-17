@@ -44,6 +44,7 @@ import {
   Users,
 } from 'lucide-react';
 import { Link, usePathname } from '@clinic/i18n/navigation';
+import { abilitiesFor, type Abilities } from '@clinic/domain';
 import { ArrangeToggle, Button, Sheet, SheetContent, cn } from '@clinic/ui';
 import { LanguageSwitcher } from './language-switcher';
 import { ThemeToggle } from './theme-toggle';
@@ -116,27 +117,125 @@ function SortableNavItem({
   );
 }
 
+/**
+ * `needs` is the capability a destination asks for (migration 78). A role
+ * without it never sees the row: a menu that leads to a page saying "not for
+ * you" is worse than a menu that never offered it. `null` is for the few
+ * everyone reaches — the dashboard, the tasks board and the catalogue.
+ */
 const NAV_ITEMS = [
-  { href: '/', labelKey: 'dashboard', icon: LayoutDashboard, exact: true, stockOnly: false },
-  { href: '/patients', labelKey: 'patients', icon: Users, exact: false, stockOnly: false },
-  { href: '/calendar', labelKey: 'calendar', icon: CalendarDays, exact: false, stockOnly: false },
-  { href: '/tasks', labelKey: 'tasks', icon: ListTodo, exact: false, stockOnly: false },
-  { href: '/messages', labelKey: 'messages', icon: MessageSquare, exact: false, stockOnly: false },
+  {
+    href: '/',
+    labelKey: 'dashboard',
+    icon: LayoutDashboard,
+    exact: true,
+    stockOnly: false,
+    needs: null,
+  },
+  {
+    href: '/patients',
+    labelKey: 'patients',
+    icon: Users,
+    exact: false,
+    stockOnly: false,
+    needs: 'patients',
+  },
+  {
+    href: '/calendar',
+    labelKey: 'calendar',
+    icon: CalendarDays,
+    exact: false,
+    stockOnly: false,
+    needs: 'calendar',
+  },
+  {
+    href: '/tasks',
+    labelKey: 'tasks',
+    icon: ListTodo,
+    exact: false,
+    stockOnly: false,
+    needs: null,
+  },
+  {
+    href: '/messages',
+    labelKey: 'messages',
+    icon: MessageSquare,
+    exact: false,
+    stockOnly: false,
+    needs: 'messages',
+  },
   {
     href: '/encounters',
     labelKey: 'encounters',
     icon: ClipboardList,
     exact: false,
     stockOnly: false,
+    needs: 'clinicalRecords',
   },
-  { href: '/reference', labelKey: 'reference', icon: BookOpen, exact: false, stockOnly: false },
-  { href: '/inventory', labelKey: 'inventory', icon: Boxes, exact: false, stockOnly: true },
-  { href: '/prices', labelKey: 'prices', icon: Tags, exact: false, stockOnly: false },
-  { href: '/billing', labelKey: 'billing', icon: Receipt, exact: false, stockOnly: false },
-  { href: '/reports', labelKey: 'reports', icon: ChartColumn, exact: false, stockOnly: false },
-  { href: '/assistant', labelKey: 'assistant', icon: Sparkles, exact: false, stockOnly: false },
-  { href: '/library', labelKey: 'library', icon: LibraryBig, exact: false, stockOnly: false },
-] as const;
+  {
+    href: '/reference',
+    labelKey: 'reference',
+    icon: BookOpen,
+    exact: false,
+    stockOnly: false,
+    needs: null,
+  },
+  {
+    href: '/inventory',
+    labelKey: 'inventory',
+    icon: Boxes,
+    exact: false,
+    stockOnly: true,
+    needs: 'inventory',
+  },
+  {
+    href: '/prices',
+    labelKey: 'prices',
+    icon: Tags,
+    exact: false,
+    stockOnly: false,
+    needs: 'inventory',
+  },
+  {
+    href: '/billing',
+    labelKey: 'billing',
+    icon: Receipt,
+    exact: false,
+    stockOnly: false,
+    needs: 'money',
+  },
+  {
+    href: '/reports',
+    labelKey: 'reports',
+    icon: ChartColumn,
+    exact: false,
+    stockOnly: false,
+    needs: 'reports',
+  },
+  {
+    href: '/assistant',
+    labelKey: 'assistant',
+    icon: Sparkles,
+    exact: false,
+    stockOnly: false,
+    needs: 'reports',
+  },
+  {
+    href: '/library',
+    labelKey: 'library',
+    icon: LibraryBig,
+    exact: false,
+    stockOnly: false,
+    needs: 'library',
+  },
+] as const satisfies readonly {
+  href: string;
+  labelKey: string;
+  icon: typeof LayoutDashboard;
+  exact: boolean;
+  stockOnly: boolean;
+  needs: keyof Abilities | null;
+}[];
 
 export function AppShell({
   children,
@@ -149,6 +248,7 @@ export function AppShell({
   clinics = [],
   clinicId,
   onSwitchClinic,
+  role,
   onSignOut,
 }: {
   children: React.ReactNode;
@@ -157,6 +257,8 @@ export function AppShell({
   clinics?: { id: string; name: string }[];
   clinicId?: string;
   onSwitchClinic?: (clinicId: string) => Promise<void>;
+  /** This person's role here; it decides which destinations appear at all (migration 78). */
+  role?: string;
   userName: string;
   tracksInventory: boolean;
   /** Where the clinic name at the top of the menu leads — the person's own choice. */
@@ -171,6 +273,8 @@ export function AppShell({
   const tc = useTranslations('common');
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  // The database refuses what this hides; hiding it keeps the menu honest.
+  const abilities = useMemo(() => abilitiesFor(role), [role]);
 
   // Whether the sidebar is collapsed belongs to this browser, not to the
   // account: the same practitioner wants it open on a laptop and folded away on
@@ -239,8 +343,9 @@ export function AppShell({
       navOrder
         .map((href) => NAV_ITEMS.find((item) => item.href === href))
         .filter((item): item is (typeof NAV_ITEMS)[number] => Boolean(item))
-        .filter((item) => tracksInventory || !item.stockOnly),
-    [navOrder, tracksInventory],
+        .filter((item) => tracksInventory || !item.stockOnly)
+        .filter((item) => item.needs === null || abilities[item.needs]),
+    [navOrder, tracksInventory, abilities],
   );
 
   // dnd-kit numbers its contexts with a module-level counter — the server's

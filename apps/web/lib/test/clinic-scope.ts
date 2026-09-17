@@ -39,6 +39,7 @@ const CLINIC: Clinic = {
   booking_verify_sms: false,
   patient_changes_enabled: false,
   patient_changes_notice_hours: 24,
+  patient_visibility: 'own',
   google_review_url: null,
   whatsapp_number: null,
   created_at: '2026-01-01T00:00:00Z',
