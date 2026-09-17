@@ -70,7 +70,7 @@ for (const [i, item] of QUESTIONS.entries()) {
     const r = await ask(item.q);
     results.push({ n: i + 1, kind: item.kind, ...r });
     console.log(
-      `#${i + 1} ${r.complex ? 'complex' : 'simple '} ${r.seconds}s $${r.usage.dollars.toFixed(4)} doses removed ${r.checks.dosesRemoved.length}, safety added ${r.checks.safetyAdded.length}, books ${r.checks.bookNamesRemoved.length} | ${r.evidence.entries.length} entries, ${r.evidence.passages} passages`,
+      `#${i + 1} ${r.complex ? 'complex' : 'simple '} ${r.seconds}s $${r.usage.dollars.toFixed(4)} doses removed ${r.checks.dosesRemoved.length}, safety fixes ${r.checks.safetyFixes.length}, names ${r.checks.namesFixed.length}, books ${r.checks.bookNamesRemoved.length} | ${r.evidence.entries.length} entries, ${r.evidence.passages} passages`,
     );
   } catch (error) {
     results.push({
