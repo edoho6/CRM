@@ -332,6 +332,11 @@ describe('answerFromCanon', () => {
     expect(calls.map((c) => c.label)).toEqual(['plan', 'what is missing', 'answer (complex)', 'names']);
     expect(searched).toHaveLength(2);
     expect(calls.find((c) => c.label === 'answer (complex)')!.effort).toBe('medium');
+    // The instructions are kept an hour, for the questions of a conversation; the notes five minutes.
+    expect((calls.find((c) => c.label === 'answer (complex)')!.system as { cache_control?: { ttl?: string } }[])[0]!.cache_control).toEqual({ type: 'ephemeral', ttl: '1h' });
+    expect(JSON.stringify(calls.find((c) => c.label === 'answer (complex)')!.content)).toContain('"cache_control":{"type":"ephemeral"}');
+    // The same effort in both calls, or the notes cached by the first are written again by the second.
+    expect(calls.find((c) => c.label === 'what is missing')!.effort).toBe('medium');
   });
 
   it('reads the course layer only on the switch: its own search, at most four marked notes, and never a dose from it', async () => {

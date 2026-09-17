@@ -105,7 +105,9 @@ async function claude(usage, { model, system, content, maxTokens, effort, label 
     const payload = await response.json();
     const u = payload.usage ?? {};
     const p = PRICE[model];
-    const dollars = ((u.input_tokens ?? 0) * p.in + (u.output_tokens ?? 0) * p.out + (u.cache_creation_input_tokens ?? 0) * p.write + (u.cache_read_input_tokens ?? 0) * p.read) / 1e6;
+    // An hour's cache write costs 2× the input price, a five-minute one 1.25×.
+    const hourWrite = u.cache_creation?.ephemeral_1h_input_tokens ?? 0;
+    const dollars = ((u.input_tokens ?? 0) * p.in + (u.output_tokens ?? 0) * p.out + ((u.cache_creation_input_tokens ?? 0) - hourWrite) * p.write + hourWrite * p.in * 2 + (u.cache_read_input_tokens ?? 0) * p.read) / 1e6;
     usage.calls.push({ label, model, input: u.input_tokens ?? 0, output: u.output_tokens ?? 0, cacheWrite: u.cache_creation_input_tokens ?? 0, cacheRead: u.cache_read_input_tokens ?? 0, dollars, ms: Date.now() - started, stop: payload.stop_reason });
     usage.dollars += dollars;
     const text = (payload.content ?? []).filter((b) => b.type === 'text').map((b) => b.text).join('\n');

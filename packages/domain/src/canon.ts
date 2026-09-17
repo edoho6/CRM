@@ -584,7 +584,10 @@ export const CANON_LENGTH: Record<CanonQuestionType, number> = {
   fact: 180, comparison: 350, role: 350, modification: 350, treatment: 500, pattern: 400, case: 550, safety: 350, other: 350,
 };
 
-export const CANON_MISSING_TASK = `Before answering, read the notes and decide what is missing to answer this question — only what it asks (a formula or point you would recommend whose monograph is not in the notes, a pattern you need to differentiate; a caution only if safety is in scope). Reply with JSON only:
+/** The effort of a complex question's two calls, which must match for the notes to be read from the cache. */
+const COMPLEX_EFFORT = 'medium';
+
+export const CANON_MISSING_TASK =`Before answering, read the notes and decide what is missing to answer this question — only what it asks (a formula or point you would recommend whose monograph is not in the notes, a pattern you need to differentiate; a caution only if safety is in scope). Reply with JSON only:
 {"entities": [{"kind": "herb" | "formula" | "point", "name": "<pinyin or code>", "aspects": []}], "searches": ["<English search phrase>"]}
 At most 6 entities and 4 searches; empty lists if nothing important is missing.`;
 
@@ -829,7 +832,7 @@ export function finishCanonAnswer(answer: string): { text: string; removed: stri
 // ---------------------------------------------------------------------------
 // The engine
 
-export type CanonBlock = { type: 'text'; text: string; cache_control?: { type: 'ephemeral' } };
+export type CanonBlock = { type: 'text'; text: string; cache_control?: { type: 'ephemeral'; ttl?: '1h' } };
 
 export interface CanonModelCall {
   model: 'answer' | 'small';
@@ -978,7 +981,12 @@ export async function answerFromCanon(question: string, history: readonly CanonT
   const passages = [...first.passages];
   deps.onStage?.('reading');
 
-  const system: CanonBlock[] = [{ type: 'text', text: canonAnswerSystem(deps.glossary), cache_control: { type: 'ephemeral' } }];
+  // The instructions are the same for every question and every practitioner, and a conversation runs
+  // to five or six questions minutes apart: kept an hour, the write costs 2× once and each question
+  // after it reads for 0.1×, where the five-minute entry was written again (1.25×) after every pause.
+  // The notes below stay at five minutes — their two calls are seconds apart — and an hour's entry
+  // must come before a five-minute one, which the system block does.
+  const system: CanonBlock[] = [{ type: 'text', text: canonAnswerSystem(deps.glossary), cache_control: { type: 'ephemeral', ttl: '1h' } }];
   const scope = `\n\nSafety in scope: ${safety ? `yes${plan.situation.length ? ` (situation: ${plan.situation.join(', ')})` : ''}` : 'no — say nothing about cautions, contraindications, toxicity or side effects'}.`;
   const asked = `${earlier}Question:\n${question}${scope}`;
   let evidence = notes;
@@ -988,8 +996,11 @@ export async function answerFromCanon(question: string, history: readonly CanonT
     draft = await deps.model({ model: 'answer', system, effort: 'low', maxTokens: 6000, label: 'answer', content: [noteBlock(notes), { type: 'text', text: asked }] });
   } else {
     const cached: CanonBlock = { ...noteBlock(notes), cache_control: { type: 'ephemeral' } };
+    // Both calls at the same effort: a change of effort drops the cached messages, and the answer
+    // was writing the same 10–13 thousand tokens of notes to the cache a second time (17.9 trial:
+    // a quarter of a complex question's cost). The larger ceiling leaves room for the thinking.
     const missing = parseJsonObject(
-      await deps.model({ model: 'answer', system, effort: 'low', maxTokens: 1500, label: 'what is missing', content: [cached, { type: 'text', text: `${asked}\n\n${CANON_MISSING_TASK}` }] }),
+      await deps.model({ model: 'answer', system, effort: COMPLEX_EFFORT, maxTokens: 4000, label: 'what is missing', content: [cached, { type: 'text', text: `${asked}\n\n${CANON_MISSING_TASK}` }] }),
     );
     const more = await gather({
       entities: canonPlanFrom({ entities: missing?.entities }, question).entities.slice(0, 6),
@@ -1006,7 +1017,7 @@ export async function answerFromCanon(question: string, history: readonly CanonT
     draft = await deps.model({
       model: 'answer',
       system,
-      effort: 'medium',
+      effort: COMPLEX_EFFORT,
       maxTokens: 12000,
       label: 'answer (complex)',
       content: [
