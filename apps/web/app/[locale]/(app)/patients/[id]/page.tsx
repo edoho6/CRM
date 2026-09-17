@@ -48,7 +48,7 @@ import { PageHeader } from '@/components/app-shell';
 import { PhoneActions } from '@/components/phone-actions';
 import { PaymentAction } from '@/features/billing/payment-status';
 import { toPaymentSummary } from '@/features/billing/payment-summary';
-import { getClinicScope } from '@/lib/session';
+import { getAbilities, getClinicScope } from '@/lib/session';
 import { logRecordAccess } from '@/lib/access-log';
 import { ageFromDateOfBirth, appointmentTypeName, patientStatusTone } from '@/lib/display';
 import { RegisterOpenFile } from '@/features/workspace/register-open-file';
@@ -74,10 +74,7 @@ type AppointmentRow = Appointment & {
 };
 
 /** Only what the questionnaire picker needs — not every template column. */
-type FormTemplateOption = Pick<
-  FormTemplate,
-  'id' | 'title' | 'description' | 'fields' | 'version'
->;
+type FormTemplateOption = Pick<FormTemplate, 'id' | 'title' | 'description' | 'fields' | 'version'>;
 
 export default async function PatientDetailPage({
   params,
@@ -95,6 +92,9 @@ export default async function PatientDetailPage({
 
   const scope = await getClinicScope();
   if (!scope) return null;
+  // What this person may read of the file (migration 78). The database refuses
+  // the rest either way; this is so the page does not offer it.
+  const abilities = await getAbilities();
 
   const { data: patient } = await scope.supabase
     .from('patients')
@@ -229,7 +229,7 @@ export default async function PatientDetailPage({
       .order('due_on', { ascending: true, nullsFirst: false })
       .order('is_urgent', { ascending: false })
       .limit(50)
-      .returns<ClinicTaskWithPatient[]>()
+      .returns<ClinicTaskWithPatient[]>(),
   ]);
 
   // Only this patient's cards. The table has no patient column, and a
@@ -279,68 +279,70 @@ export default async function PatientDetailPage({
 
   const overview = (
     <div className="space-y-5">
-    <Card>
-      <CardBody>
-        <dl className="grid grid-cols-1 gap-x-6 sm:grid-cols-2 lg:grid-cols-3">
-          <DetailRow label={t('fields.fullName')}>{patient.full_name}</DetailRow>
-          <DetailRow label={t('fields.phone')}>
-            {patient.phone ? <PhoneActions phone={patient.phone} /> : <Dash />}
-          </DetailRow>
-          <DetailRow label={t('fields.email')}>
-            {patient.email ? (
-              <a href={`mailto:${patient.email}`} dir="ltr" className="break-all text-jade-800">
-                {patient.email}
-              </a>
-            ) : (
-              <Dash />
-            )}
-          </DetailRow>
-          <DetailRow label={t('fields.dateOfBirth')}>
-            {patient.date_of_birth ? (
-              <span dir="ltr">
-                {formatDate(new Date(patient.date_of_birth))}
-                {age !== null ? ` · ${t('years', { count: age })}` : ''}
-              </span>
-            ) : (
-              <Dash />
-            )}
-          </DetailRow>
-          <DetailRow label={t('fields.nationalId')}>
-            {patient.national_id ? (
-              <span dir="ltr" className="tabular-nums">
-                {patient.national_id}
-              </span>
-            ) : (
-              <Dash />
-            )}
-          </DetailRow>
-          <DetailRow label={t('fields.city')}>{patient.city ?? <Dash />}</DetailRow>
-          <DetailRow label={t('fields.address')}>{patient.address ?? <Dash />}</DetailRow>
-          <DetailRow label={t('fields.occupation')}>{patient.occupation ?? <Dash />}</DetailRow>
-          <DetailRow label={t('fields.referralSource')}>{patient.referral_source ?? <Dash />}</DetailRow>
-          <DetailRow label={t('fields.emergencyContactName')}>
-            {patient.emergency_contact_name ?? <Dash />}
-          </DetailRow>
-          <DetailRow label={t('fields.emergencyContactPhone')}>
-            {patient.emergency_contact_phone ? (
-              <PhoneActions phone={patient.emergency_contact_phone} />
-            ) : (
-              <Dash />
-            )}
-          </DetailRow>
-        </dl>
-        {patient.notes ? (
-          <div className="mt-4 rounded-lg bg-ink-50 p-3">
-            <p className="text-xs text-ink-500">{t('fields.notes')}</p>
-            <p className="mt-1 text-sm whitespace-pre-wrap text-ink-800">{patient.notes}</p>
-          </div>
-        ) : null}
-      </CardBody>
-    </Card>
-    <PatientTasksPanel
-      patient={{ id: patient.id, full_name: patient.full_name }}
-      tasks={tasksResult.data ?? []}
-    />
+      <Card>
+        <CardBody>
+          <dl className="grid grid-cols-1 gap-x-6 sm:grid-cols-2 lg:grid-cols-3">
+            <DetailRow label={t('fields.fullName')}>{patient.full_name}</DetailRow>
+            <DetailRow label={t('fields.phone')}>
+              {patient.phone ? <PhoneActions phone={patient.phone} /> : <Dash />}
+            </DetailRow>
+            <DetailRow label={t('fields.email')}>
+              {patient.email ? (
+                <a href={`mailto:${patient.email}`} dir="ltr" className="break-all text-jade-800">
+                  {patient.email}
+                </a>
+              ) : (
+                <Dash />
+              )}
+            </DetailRow>
+            <DetailRow label={t('fields.dateOfBirth')}>
+              {patient.date_of_birth ? (
+                <span dir="ltr">
+                  {formatDate(new Date(patient.date_of_birth))}
+                  {age !== null ? ` · ${t('years', { count: age })}` : ''}
+                </span>
+              ) : (
+                <Dash />
+              )}
+            </DetailRow>
+            <DetailRow label={t('fields.nationalId')}>
+              {patient.national_id ? (
+                <span dir="ltr" className="tabular-nums">
+                  {patient.national_id}
+                </span>
+              ) : (
+                <Dash />
+              )}
+            </DetailRow>
+            <DetailRow label={t('fields.city')}>{patient.city ?? <Dash />}</DetailRow>
+            <DetailRow label={t('fields.address')}>{patient.address ?? <Dash />}</DetailRow>
+            <DetailRow label={t('fields.occupation')}>{patient.occupation ?? <Dash />}</DetailRow>
+            <DetailRow label={t('fields.referralSource')}>
+              {patient.referral_source ?? <Dash />}
+            </DetailRow>
+            <DetailRow label={t('fields.emergencyContactName')}>
+              {patient.emergency_contact_name ?? <Dash />}
+            </DetailRow>
+            <DetailRow label={t('fields.emergencyContactPhone')}>
+              {patient.emergency_contact_phone ? (
+                <PhoneActions phone={patient.emergency_contact_phone} />
+              ) : (
+                <Dash />
+              )}
+            </DetailRow>
+          </dl>
+          {patient.notes ? (
+            <div className="mt-4 rounded-lg bg-ink-50 p-3">
+              <p className="text-xs text-ink-500">{t('fields.notes')}</p>
+              <p className="mt-1 text-sm whitespace-pre-wrap text-ink-800">{patient.notes}</p>
+            </div>
+          ) : null}
+        </CardBody>
+      </Card>
+      <PatientTasksPanel
+        patient={{ id: patient.id, full_name: patient.full_name }}
+        tasks={tasksResult.data ?? []}
+      />
     </div>
   );
 
@@ -433,9 +435,7 @@ export default async function PatientDetailPage({
                 }}
               >
                 <Td>
-                  <span dir="ltr">
-                    {formatDateTime(new Date(appointment.start_at))}
-                  </span>
+                  <span dir="ltr">{formatDateTime(new Date(appointment.start_at))}</span>
                 </Td>
                 <Td>
                   {appointmentTypeName(appointment.appointment_type, locale as Locale) || <Dash />}
@@ -478,7 +478,7 @@ export default async function PatientDetailPage({
         }
         actions={
           <>
-            <StartEncounterButton patientId={patient.id} />
+            {abilities.clinicalRecords ? <StartEncounterButton patientId={patient.id} /> : null}
             <Button asChild variant="secondary">
               <Link href={{ pathname: '/calendar', query: { patient: patient.id, new: '1' } }}>
                 <CalendarPlus className="h-4 w-4" />
@@ -515,7 +515,6 @@ export default async function PatientDetailPage({
         }
       />
 
-
       {/* Puts this file on the tab strip in the shell, which knows the URL
           but not whose name is on it. */}
       <RegisterOpenFile
@@ -526,6 +525,7 @@ export default async function PatientDetailPage({
       />
 
       <PatientTabs
+        clinical={abilities.clinicalRecords}
         overview={overview}
         encounters={encountersPanel}
         encounterCount={encounters.length}

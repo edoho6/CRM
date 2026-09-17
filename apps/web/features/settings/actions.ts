@@ -13,6 +13,7 @@ import {
   locationSchema,
   bookingSettingsSchema,
   patientChangesSchema,
+  patientVisibilitySchema,
   scheduleBlocksSchema,
   closurePeriodSchema,
   practitionerProfileSchema,
@@ -388,7 +389,10 @@ export async function saveHomePath(path: unknown): Promise<ActionResult> {
  * Rooms
  * ------------------------------------------------------------------------ */
 
-export async function saveRoom(id: string | null, input: unknown): Promise<ActionResult<{ id: string }>> {
+export async function saveRoom(
+  id: string | null,
+  input: unknown,
+): Promise<ActionResult<{ id: string }>> {
   const scope = await getClinicScope();
   if (!scope) return actionError(new Error('unauthorized'));
 
@@ -507,16 +511,14 @@ export async function saveReminderSettings(input: unknown): Promise<ActionResult
 
   // The reminder's WhatsApp template lives with the other automations' —
   // one table the sender reads for every kind — under the reminder's own key.
-  const { error: templateError } = await scope.supabase
-    .from('clinic_automations')
-    .upsert(
-      {
-        clinic_id: scope.context.clinic.id,
-        kind: 'appointment_reminder',
-        whatsapp_template_id: parsed.data.whatsapp_template_id,
-      },
-      { onConflict: 'clinic_id,kind' },
-    );
+  const { error: templateError } = await scope.supabase.from('clinic_automations').upsert(
+    {
+      clinic_id: scope.context.clinic.id,
+      kind: 'appointment_reminder',
+      whatsapp_template_id: parsed.data.whatsapp_template_id,
+    },
+    { onConflict: 'clinic_id,kind' },
+  );
   if (templateError) return actionError(templateError);
   return actionOk();
 }
@@ -534,13 +536,17 @@ export async function saveAutomation(kind: string, input: unknown): Promise<Acti
   const scope = await getClinicScope();
   if (!scope) return actionError(new Error('unauthorized'));
 
-  if (!(AUTOMATION_KINDS as readonly string[]).includes(kind)) return actionError(new Error('validation'));
+  if (!(AUTOMATION_KINDS as readonly string[]).includes(kind))
+    return actionError(new Error('validation'));
   const parsed = automationSettingsSchema.safeParse(input);
   if (!parsed.success) return actionError(new Error('validation'));
 
   const { error } = await scope.supabase
     .from('clinic_automations')
-    .upsert({ clinic_id: scope.context.clinic.id, kind, ...parsed.data }, { onConflict: 'clinic_id,kind' });
+    .upsert(
+      { clinic_id: scope.context.clinic.id, kind, ...parsed.data },
+      { onConflict: 'clinic_id,kind' },
+    );
   if (error) return actionError(error);
   return actionOk();
 }
@@ -566,7 +572,11 @@ export async function saveWhatsappLine(input: unknown): Promise<ActionResult> {
   const { error: openerError } = await scope.supabase
     .from('clinic_automations')
     .upsert(
-      { clinic_id: scope.context.clinic.id, kind: 'conversation_opener', whatsapp_template_id: parsed.data.opener_template_id },
+      {
+        clinic_id: scope.context.clinic.id,
+        kind: 'conversation_opener',
+        whatsapp_template_id: parsed.data.opener_template_id,
+      },
       { onConflict: 'clinic_id,kind' },
     );
   if (openerError) return actionError(openerError);
@@ -600,7 +610,8 @@ const TEST_CHANNELS = ['sms', 'whatsapp', 'email'] as const;
 export async function sendTestMessage(channel: unknown): Promise<ActionResult> {
   const scope = await getClinicScope();
   if (!scope) return actionError(new Error('unauthorized'));
-  if (!(TEST_CHANNELS as readonly unknown[]).includes(channel)) return actionError(new Error('validation'));
+  if (!(TEST_CHANNELS as readonly unknown[]).includes(channel))
+    return actionError(new Error('validation'));
   const via = channel as (typeof TEST_CHANNELS)[number];
 
   let recipient: string | null = null;
@@ -727,7 +738,10 @@ export async function deleteScheduleBlock(id: string): Promise<ActionResult> {
  * Locations
  * ------------------------------------------------------------------------ */
 
-export async function saveLocation(id: string | null, input: unknown): Promise<ActionResult<{ id: string }>> {
+export async function saveLocation(
+  id: string | null,
+  input: unknown,
+): Promise<ActionResult<{ id: string }>> {
   const scope = await getClinicScope();
   if (!scope) return actionError(new Error('unauthorized'));
 
@@ -743,7 +757,12 @@ export async function saveLocation(id: string | null, input: unknown): Promise<A
   };
 
   const query = id
-    ? scope.supabase.from('locations').update(row).eq('id', id).select('id').single<{ id: string }>()
+    ? scope.supabase
+        .from('locations')
+        .update(row)
+        .eq('id', id)
+        .select('id')
+        .single<{ id: string }>()
     : scope.supabase.from('locations').insert(row).select('id').single<{ id: string }>();
 
   const { data, error } = await query;
@@ -812,6 +831,26 @@ export async function saveBookingSettings(input: unknown): Promise<ActionResult>
 }
 
 /** Moving and cancelling from the reminder link: a card of its own, since a clinic without the booking page may want cancelling alone. */
+/**
+ * How the clinic shares its patients (migration 78). The owner alone reaches
+ * this — the policy on `clinics` has said so since the first migration — and
+ * the schema keeps the column to the two values the database will accept.
+ */
+export async function savePatientVisibility(input: unknown): Promise<ActionResult> {
+  const scope = await getClinicScope();
+  if (!scope) return actionError(new Error('unauthorized'));
+
+  const parsed = patientVisibilitySchema.safeParse(input);
+  if (!parsed.success) return actionError(new Error('validation'));
+
+  const { error } = await scope.supabase
+    .from('clinics')
+    .update({ patient_visibility: parsed.data.patient_visibility })
+    .eq('id', scope.context.clinic.id);
+  if (error) return actionError(error);
+  return actionOk();
+}
+
 export async function savePatientChangesSettings(input: unknown): Promise<ActionResult> {
   const scope = await getClinicScope();
   if (!scope) return actionError(new Error('unauthorized'));

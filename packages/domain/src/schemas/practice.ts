@@ -276,9 +276,12 @@ export type WhatsappLineValues = z.input<typeof whatsappLineSchema>;
 
 /** The clinic's Google page, where the review request points. Only a secure address, or nothing. */
 export const googleReviewUrlSchema = z.object({
-  google_review_url: optionalText(500).refine((value) => value === null || /^https:\/\/\S+$/.test(value), {
-    error: 'invalid_url',
-  }),
+  google_review_url: optionalText(500).refine(
+    (value) => value === null || /^https:\/\/\S+$/.test(value),
+    {
+      error: 'invalid_url',
+    },
+  ),
 });
 
 export const bookingSettingsSchema = z.object({
@@ -297,6 +300,11 @@ export const bookingSettingsSchema = z.object({
 export type BookingSettingsValues = z.input<typeof bookingSettingsSchema>;
 
 /** Whether the reminder link may move or cancel an appointment, and up to how many hours before it (migration 75). */
+/** How the clinic shares its patients between practitioners (migration 78). */
+export const patientVisibilitySchema = z.object({
+  patient_visibility: z.enum(['own', 'clinic']),
+});
+
 export const patientChangesSchema = z.object({
   patient_changes_enabled: z.boolean().default(false),
   patient_changes_notice_hours: z.coerce.number().int().min(0).max(168).default(24),

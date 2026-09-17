@@ -2663,7 +2663,33 @@
       "revokeOf": "Cancel {name}'s invitation",
       "revoked": "Invitation cancelled",
       "saved": "Saved",
-      "onlyOwners": "Only the clinic's owners invite team members and change roles."
+      "onlyOwners": "Only the clinic's owners invite team members and change roles.",
+      "abilities": {
+        "title": "What each role sees",
+        "intro": "This table is read from the system itself — it is not a description, it is what happens.",
+        "ability": "What",
+        "yes": "yes",
+        "no": "no",
+        "note": "A practitioner sees only their own patients, unless the settings say the whole professional team sees everyone. Deleting a patient file is the owner's alone.",
+        "patients": "Patient files",
+        "clinicalRecords": "Treatment records, prescriptions and questionnaires",
+        "calendar": "Diary and appointments",
+        "money": "Invoices and payments",
+        "messages": "Messages and reminders",
+        "inventory": "Stock and price comparison",
+        "library": "Professional library",
+        "reports": "Reports and questions about the data",
+        "settings": "Settings, team and access log",
+        "deletePatient": "Deleting a patient file"
+      }
+    },
+    "visibility": {
+      "title": "Who sees which patients",
+      "own": "Each practitioner, their own",
+      "clinic": "Every practitioner, all of them",
+      "ownHint": "A practitioner sees a patient they have an appointment with, have treated, or whose file they opened. For a clinic where each patient is looked after by one practitioner.",
+      "clinicHint": "Every practitioner sees every patient. For a clinic where a patient is seen by whoever is free.",
+      "ownerNote": "This does not affect the owner, who always sees everything, nor the front desk, who sees every file and no treatment record."
     }
   },
   "reference": {

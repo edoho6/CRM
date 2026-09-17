@@ -6,6 +6,7 @@ import { getClinicScope } from '@/lib/session';
 import { serverNow } from '@/lib/server-now';
 import { SettingsNav } from '@/features/settings/settings-nav';
 import { TeamPanel, type TeamMember } from '@/features/settings/team-panel';
+import { RoleAbilitiesTable } from '@/features/settings/role-abilities-table';
 import { pageTitle } from '@/lib/page-title';
 
 export const generateMetadata = pageTitle('settings.team', 'title');
@@ -37,7 +38,10 @@ export default async function TeamPage({ params }: { params: Promise<{ locale: s
     scope.supabase
       .from('profiles')
       .select('id, full_name')
-      .in('id', rows.map((row) => row.user_id))
+      .in(
+        'id',
+        rows.map((row) => row.user_id),
+      )
       .returns<Pick<Profile, 'id' | 'full_name'>[]>(),
     isOwner
       ? scope.supabase
@@ -49,7 +53,9 @@ export default async function TeamPage({ params }: { params: Promise<{ locale: s
           .returns<ClinicInvitation[]>()
       : Promise.resolve({ data: [] as ClinicInvitation[] }),
   ]);
-  const nameOf = new Map((profiles ?? []).map((profile) => [profile.id, profile.full_name?.trim() || '']));
+  const nameOf = new Map(
+    (profiles ?? []).map((profile) => [profile.id, profile.full_name?.trim() || '']),
+  );
 
   const members: TeamMember[] = rows.map((row) => ({
     membershipId: row.id,
@@ -71,6 +77,12 @@ export default async function TeamPage({ params }: { params: Promise<{ locale: s
           selfUserId={scope.context.membership.user_id}
           renderedAt={serverNow()}
         />
+        {/* Under the list, because it answers the question the list raises:
+            the role was just chosen from four words, and this says what they
+            mean. Read from the same map the policies follow. */}
+        <div className="mt-6">
+          <RoleAbilitiesTable />
+        </div>
       </PageBody>
     </>
   );

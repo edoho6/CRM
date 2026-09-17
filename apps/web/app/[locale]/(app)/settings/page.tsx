@@ -5,7 +5,11 @@ import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
 import { SettingsNav } from '@/features/settings/settings-nav';
 import { ClinicSettingsForm } from '@/features/settings/clinic-settings-form';
-import { ReferenceCatalogueCard, type CatalogueCounts } from '@/features/settings/reference-catalogue-card';
+import { PatientVisibilityForm } from '@/features/settings/patient-visibility-form';
+import {
+  ReferenceCatalogueCard,
+  type CatalogueCounts,
+} from '@/features/settings/reference-catalogue-card';
 import { pageTitle } from '@/lib/page-title';
 
 export const generateMetadata = pageTitle('settings', 'title');
@@ -55,6 +59,11 @@ export default async function SettingsPage({ params }: { params: Promise<{ local
   if (!scope) return null;
 
   const counts = await loadCatalogueCounts(scope.supabase);
+  const { count: memberCount } = await scope.supabase
+    .from('memberships')
+    .select('id', { count: 'exact', head: true })
+    .eq('clinic_id', scope.context.clinic.id)
+    .eq('is_active', true);
 
   return (
     <>
@@ -66,6 +75,14 @@ export default async function SettingsPage({ params }: { params: Promise<{ local
           name={scope.context.clinic.name}
           tracksInventory={scope.context.clinic.tracks_inventory !== false}
         />
+        {/* How the clinic shares its patients. The owner alone decides it, and
+            in a clinic of one there is nothing to share — so it appears only
+            once someone else has been invited. */}
+        {scope.context.membership.role === 'owner' && (memberCount ?? 0) > 1 ? (
+          <div className="mt-6">
+            <PatientVisibilityForm visibility={scope.context.clinic.patient_visibility ?? 'own'} />
+          </div>
+        ) : null}
         <div className="mt-6">
           <ReferenceCatalogueCard counts={counts} />
         </div>

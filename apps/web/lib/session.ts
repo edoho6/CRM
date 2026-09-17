@@ -4,6 +4,7 @@ import { cache } from 'react';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createServerSupabase, getCurrentUser, tryCreateServerSupabase } from '@clinic/db/server';
 import type { Clinic, Membership, MembershipContext, Profile } from '@clinic/db/types';
+import { abilitiesFor, type Abilities } from '@clinic/domain';
 
 /**
  * Resolves who is signed in and which clinic they work for.
@@ -97,6 +98,18 @@ export const getClinicScope = cache(async (): Promise<ClinicScope | null> => {
   if (!context) return null;
   const supabase = await createServerSupabase();
   return { supabase, context };
+});
+
+/**
+ * What the signed-in person may do here (migration 78).
+ *
+ * The database refuses whatever this would wrongly allow, so a page is free to
+ * read it and simply not draw what it says no to. Nobody signed in gets
+ * nothing, which is the direction this has to fail in.
+ */
+export const getAbilities = cache(async (): Promise<Abilities> => {
+  const context = await getMembershipContext();
+  return abilitiesFor(context?.membership.role);
 });
 
 /** Display name for the signed-in user, falling back to the email local part. */
