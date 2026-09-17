@@ -136,9 +136,24 @@ async function voyage(usage, endpoint, body, label) {
   }
 }
 
-/** Passages by meaning (every query's vector) and by words (BM25), fused, then reranked. */
-async function searchPassages(usage, { queries, rerankQuery, exclude, want }) {
-  const { passages, vectors, postings, lengths, avgLength } = loadIndex();
+let COURSE_INDEX = null;
+/** The Hebrew course layer (course-build.mjs), when it has been built. */
+export function loadCourse() {
+  if (COURSE_INDEX) return COURSE_INDEX;
+  const dir = path.join(CANON_CACHE, 'course', 'index');
+  if (!fs.existsSync(path.join(dir, 'vectors.f32'))) throw new Error('the course layer is not built — run course-build.mjs');
+  const passages = JSON.parse(fs.readFileSync(path.join(dir, 'passages.json'), 'utf8'));
+  const buffer = fs.readFileSync(path.join(dir, 'vectors.f32'));
+  const vectors = new Float32Array(buffer.buffer, buffer.byteOffset, buffer.byteLength / 4);
+  if (vectors.length !== passages.length * DIM) throw new Error('course vectors and passages differ in count — rebuild');
+  COURSE_INDEX = { passages, vectors };
+  return COURSE_INDEX;
+}
+
+/** Passages by meaning (every query's vector) and by words (BM25), fused, then reranked. The course layer is searched by meaning alone, as the database does. */
+async function searchPassages(usage, { queries, rerankQuery, exclude, want, course = false }) {
+  const { passages, vectors, postings, lengths, avgLength } = course ? { ...loadCourse(), postings: new Map(), lengths: [], avgLength: 1 } : loadIndex();
+  const excludedKey = (i) => (course ? `#course:${i}` : (passages[i].entry ?? `#${i}`));
   const embedded = await voyage(usage, 'embeddings', { input: queries, model: 'voyage-3-large', input_type: 'query', output_dimension: DIM }, 'embed query');
   const lists = [];
   for (const row of embedded.data ?? []) {
@@ -170,7 +185,7 @@ async function searchPassages(usage, { queries, rerankQuery, exclude, want }) {
   const candidates = [...fused.entries()]
     .sort((a, b) => b[1] - a[1])
     .map(([i]) => i)
-    .filter((i) => !exclude.has(passages[i].entry ?? `#${i}`))
+    .filter((i) => !exclude.has(excludedKey(i)))
     .slice(0, 60);
   if (!candidates.length) return [];
   const reranked = await voyage(
@@ -193,7 +208,7 @@ export function findEntry(kind, name) {
 }
 export { entryTitle };
 
-export async function ask(question, history = []) {
+export async function ask(question, history = [], { course = false } = {}) {
   const index = loadIndex();
   const usage = { calls: [], dollars: 0 };
   const started = Date.now();
@@ -204,13 +219,14 @@ export async function ask(question, history = []) {
     entries: async (ids) => ids.map((id) => index.byId.get(id)).filter(Boolean),
     pregnancyNote: async () => index.pregnancyNote,
     glossary: TCM_GLOSSARY,
+    course,
   });
   return {
     question,
     plan: result.plan,
     complex: result.complex,
     answer: result.answer,
-    checks: { safety: result.safety, dosesRemoved: result.checks.dosesRemoved, bookNamesRemoved: result.checks.removed, safetyFixes: result.checks.safetyFixes, namesFixed: result.checks.namesFixed },
+    checks: { safety: result.safety, dosesRemoved: result.checks.dosesRemoved, pregnancyPointsRemoved: result.checks.pregnancyPointsRemoved, bookNamesRemoved: result.checks.removed, safetyFixes: result.checks.safetyFixes, namesFixed: result.checks.namesFixed },
     evidence: result.evidence,
     seconds: Math.round((Date.now() - started) / 100) / 10,
     usage,

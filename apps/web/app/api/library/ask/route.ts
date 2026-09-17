@@ -41,6 +41,8 @@ const Body = z.object({
     .default([]),
   /** The conversation to continue. None for a new one: it is opened with the first answer. */
   chatId: z.string().uuid().optional(),
+  /** The course layer trial; the platform admin's switch, ignored for anyone else. */
+  course: z.boolean().optional(),
 });
 
 const NO_STORE = { 'cache-control': 'no-store' };
@@ -113,7 +115,8 @@ export async function POST(request: Request) {
 
   const ids = { userId: scope.context.membership.user_id, clinicId: scope.context.clinic.id };
   const run = async (onStage?: StageListener): Promise<KeptResult> => {
-    const result = await askLibrary(scope.supabase, parsed.data, onStage);
+    const input = { ...parsed.data, course: parsed.data.course === true && scope.context.isPlatformAdmin };
+    const result = await askLibrary(scope.supabase, input, onStage);
     return { ...result, chatId: await keep(scope.supabase, ids, chatId, parsed.data.question, result) };
   };
 

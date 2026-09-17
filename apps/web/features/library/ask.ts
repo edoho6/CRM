@@ -57,6 +57,8 @@ export interface AskTurn {
 export interface AskInput {
   question: string;
   history: AskTurn[];
+  /** The Hebrew course layer (migration 73) — honoured by the route for the platform admin only. */
+  course?: boolean;
 }
 
 export interface RetrievedSource {
@@ -170,7 +172,7 @@ export async function askLibrary(db: SupabaseClient, input: AskInput, onStage?: 
   // answer with no sources and no "general" part. The same quota and identifier
   // checks came first; the log gets the outcome and the tokens, never the words.
   if (await canonReady(db)) {
-    const canon = await askCanon(db, question, history, onStage);
+    const canon = await askCanon(db, question, history, onStage, { course: input.course === true });
     usage.input += canon.usage.input;
     usage.output += canon.usage.output;
     if (!canon.answer.trim()) {

@@ -28,6 +28,7 @@
     "a11y:walk": "node scripts/a11y-walk.mjs"
   },
   "devDependencies": {
+    "@napi-rs/canvas": "0.1.100",
     "axe-core": "^4.13.0",
     "eslint": "^9.39.5",
     "eslint-config-next": "^16.3.4",
@@ -39,6 +40,7 @@
     "playwright-core": "1.56.1",
     "prettier": "^3.4.2",
     "rimraf": "^6.0.1",
+    "sharp": "0.35.4",
     "supabase": "^2.116.0",
     "turbo": "2.10.12",
     "typescript": "5.9.3",

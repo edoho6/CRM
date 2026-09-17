@@ -83,12 +83,14 @@ interface SearchRow {
  * short phrases, every word required, on the first call), fused by rank, then
  * put in order by the reranker, which reads each passage against the question.
  */
-async function search(db: SupabaseClient, input: { queries: string[]; rerankQuery: string; exclude: ReadonlySet<string>; want: number }): Promise<CanonPassage[]> {
+async function search(db: SupabaseClient, input: { queries: string[]; rerankQuery: string; exclude: ReadonlySet<string>; want: number; course?: boolean }): Promise<CanonPassage[]> {
+  const course = input.course === true;
   const vectors = await embedQueries(input.queries);
   const phrases = input.queries.slice(1, 7).filter((q) => q.length <= 80);
   const results = await Promise.all(
     vectors.map((embedding, index) =>
-      db.rpc('canon_search', { p_embedding: embedding, p_phrases: index === 0 ? phrases : [], p_limit: 40, p_key: libraryKey() }),
+      // The course layer is searched by meaning alone: its Hebrew does not meet the planner's English phrases.
+      db.rpc('canon_search', { p_embedding: embedding, p_phrases: index === 0 && !course ? phrases : [], p_limit: 40, p_key: libraryKey(), p_course: course }),
     ),
   );
   if (results.some((r) => r.error)) throw new LibraryUnavailableError('canon_search_failed');
@@ -107,7 +109,7 @@ async function search(db: SupabaseClient, input: { queries: string[]; rerankQuer
   const candidates = [...fused.entries()]
     .sort((a, b) => b[1] - a[1])
     .map(([id]) => byId.get(id)!)
-    .filter((row) => !input.exclude.has(row.entry_id ?? `#${row.passage_id}`))
+    .filter((row) => !input.exclude.has(course ? `#course:${row.passage_id}` : (row.entry_id ?? `#${row.passage_id}`)))
     .slice(0, 60);
   if (!candidates.length) return [];
   const order = await rerankDocuments(
@@ -117,7 +119,7 @@ async function search(db: SupabaseClient, input: { queries: string[]; rerankQuer
   );
   return order.map((i) => {
     const row = candidates[i]!;
-    return { id: String(row.passage_id), entry: row.entry_id, section: row.section, heading: row.heading, text: row.content };
+    return { id: String(row.passage_id), entry: row.entry_id, section: row.section, heading: row.heading, text: row.content, course };
   });
 }
 
@@ -185,6 +187,7 @@ export async function askCanon(
   question: string,
   history: readonly CanonTurn[],
   onStage?: (stage: CanonStage) => void,
+  options: { course?: boolean } = {},
 ): Promise<{ answer: string; usage: CanonUsage }> {
   const usage: CanonUsage = { input: 0, output: 0 };
   const index = await nameIndex(db);
@@ -195,6 +198,7 @@ export async function askCanon(
     entries: (ids) => entries(db, ids),
     pregnancyNote: () => pregnancyNote(db),
     glossary: TCM_GLOSSARY,
+    course: options.course === true,
     onStage,
   });
   return { answer: result.answer, usage };

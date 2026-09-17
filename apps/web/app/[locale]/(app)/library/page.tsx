@@ -46,6 +46,7 @@ export default async function LibraryPage({
           initialChatId={initialChatId}
           initialMessages={messages?.ok ? messages.data : []}
           examples={[t('examples.a'), t('examples.b'), t('examples.c')]}
+          admin={scope.context.isPlatformAdmin}
         />
       </PageBody>
     </>

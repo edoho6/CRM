@@ -2,7 +2,7 @@
 // cost and how long it took, written to test-results/canon-trial/ (git-ignored).
 // Every question is fictitious; no patient's details.
 //
-//   node scripts/library/canon/try.mjs [--only=3,7]
+//   node scripts/library/canon/try.mjs [--only=3,7] [--course]   (--course: with the Hebrew course layer)
 import fs from 'node:fs';
 import path from 'node:path';
 import { root } from '../../medicine/lib.mjs';
@@ -57,6 +57,7 @@ const started = Date.now();
 loadIndex();
 console.log(`index loaded in ${Date.now() - started} ms`);
 
+const course = process.argv.includes('--course');
 const budget = Number(process.argv.find((a) => a.startsWith('--budget='))?.slice(9) ?? 2);
 const results = [];
 for (const [i, item] of QUESTIONS.entries()) {
@@ -67,7 +68,7 @@ for (const [i, item] of QUESTIONS.entries()) {
     break;
   }
   try {
-    const r = await ask(item.q);
+    const r = await ask(item.q, [], { course });
     results.push({ n: i + 1, kind: item.kind, ...r });
     console.log(
       `#${i + 1} ${r.complex ? 'complex' : 'simple '} ${r.seconds}s $${r.usage.dollars.toFixed(4)} doses removed ${r.checks.dosesRemoved.length}, safety fixes ${r.checks.safetyFixes.length}, names ${r.checks.namesFixed.length}, books ${r.checks.bookNamesRemoved.length} | ${r.evidence.entries.length} entries, ${r.evidence.passages} passages`,
@@ -82,7 +83,7 @@ for (const [i, item] of QUESTIONS.entries()) {
     console.log(`#${i + 1} ERROR ${error?.message ?? error}`);
   }
   fs.writeFileSync(
-    path.join(OUT, only ? `results-${only.join('-')}.json` : 'results.json'),
+    path.join(OUT, `${only ? `results-${only.join('-')}` : 'results'}${course ? '-course' : ''}.json`),
     JSON.stringify(results, null, 2),
   );
 }

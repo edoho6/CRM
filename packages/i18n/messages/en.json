@@ -3762,6 +3762,7 @@
     }
   },
   "library": {
+    "courseLayer": "Include the Hebrew course material (trial, admin only)",
     "title": "Professional library",
     "subtitle": "Professional questions in Chinese medicine: herbs, formulas, points, patterns and cases.",
     "nav": {

@@ -3,7 +3,7 @@
 import { useCallback, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { BookMarked, MessagesSquare } from 'lucide-react';
-import { Button, EmptyState, Sheet, SheetContent, useToast } from '@clinic/ui';
+import { Button, Checkbox, EmptyState, Sheet, SheetContent, cn, useToast } from '@clinic/ui';
 import { LIBRARY_LIMITS, chatTitleFrom, historyTurns, type LibraryAnswer, type LibraryStreamEvent } from '@clinic/domain';
 import { ChatList } from './chat-list';
 import { ChatThread, type Progress, type ThreadMessage } from './chat-thread';
@@ -37,8 +37,11 @@ export function LibraryWorkspace({
   initialChatId,
   initialMessages,
   examples,
+  admin = false,
 }: {
   configured: boolean;
+  /** The platform admin sees the course layer switch (migration 73); the route ignores it for anyone else. */
+  admin?: boolean;
   chats: ChatSummary[];
   initialChatId: string | null;
   initialMessages: ChatMessage[];
@@ -56,6 +59,7 @@ export function LibraryWorkspace({
   const [progress, setProgress] = useState<Progress | null>(null);
   const [revealId, setRevealId] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [course, setCourse] = useState(false);
   // What each conversation held when it was last seen, so switching back is instant.
   const cache = useRef(new Map<string, ThreadMessage[]>(initialChatId ? [[initialChatId, initialMessages.map(toThread)]] : []));
 
@@ -118,7 +122,7 @@ export function LibraryWorkspace({
         method: 'POST',
         credentials: 'same-origin',
         headers: { 'content-type': 'application/json', accept: 'application/x-ndjson, application/json' },
-        body: JSON.stringify({ question: value, history, chatId: activeId ?? undefined }),
+        body: JSON.stringify({ question: value, history, chatId: activeId ?? undefined, course: admin && course ? true : undefined }),
       });
       if (!response.ok) throw new Error(`http_${response.status}`);
       const reply = await readReply(response, setProgress);
@@ -204,7 +208,7 @@ export function LibraryWorkspace({
         </div>
       </aside>
       <div className="min-w-0 flex-1">
-        <div className="mb-3 flex items-center justify-between gap-2 lg:hidden">
+        <div className={cn('mb-3 flex items-center justify-between gap-2', !admin && 'lg:hidden')}>
           <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
             <Button type="button" variant="secondary" size="sm" onClick={() => setDrawerOpen(true)} data-chat-drawer>
               <MessagesSquare className="h-4 w-4" aria-hidden />
@@ -215,6 +219,12 @@ export function LibraryWorkspace({
               {list}
             </SheetContent>
           </Sheet>
+          {admin ? (
+            <label className="ms-auto flex items-center gap-2 text-sm text-ink-700">
+              <Checkbox checked={course} onChange={(event) => setCourse(event.target.checked)} disabled={pending} />
+              {t('courseLayer')}
+            </label>
+          ) : null}
         </div>
         <ChatThread messages={messages} pending={pending} progress={progress} failed={failed} loading={loading} revealId={revealId} examples={examples} onSend={(text) => void send(text)} />
       </div>

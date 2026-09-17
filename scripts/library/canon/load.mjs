@@ -5,9 +5,10 @@
 //
 //   node --max-old-space-size=8192 scripts/library/canon/build.mjs   (once, if the index is not built)
 //   node --max-old-space-size=8192 scripts/library/canon/load.mjs
+//   node --max-old-space-size=8192 scripts/library/canon/load.mjs --course   (the Hebrew course layer only, after SQL 67)
 import { log, sleep } from '../../medicine/lib.mjs';
 import { connectAsAdmin } from '../lib/upload.mjs';
-import { canonForLoading } from './engine.mjs';
+import { canonForLoading, loadCourse } from './engine.mjs';
 
 const DIM = 1024;
 const STATEMENT_TIMEOUT = /statement timeout|canceling statement/i;
@@ -57,6 +58,28 @@ const clean = (text) => String(text ?? '').replace(CONTROL, '');
 
 /** `--from=29701` continues a load that stopped: the entries and names are in, the passages before that number too. */
 const from = Number(process.argv.find((a) => a.startsWith('--from='))?.slice(7) ?? 0);
+
+/**
+ * `--course` loads the Hebrew course layer alone (course-build.mjs, migration 73): the course's
+ * passages are replaced and the books are left as they are — and a load of the books no longer
+ * clears the course.
+ */
+if (process.argv.includes('--course')) {
+  const { passages, vectors } = loadCourse();
+  log(`course on disk: ${passages.length} passages`);
+  const supabase = await connectAsAdmin();
+  try {
+    if (!from) log(`course: ${await rpc(supabase, 'canon_clear_book', { p_book: 'course' }, 'clear course')} passages removed`);
+    const rows = passages
+      .map((p, i) => ({ book: 'course', entry: null, section: null, heading: clean(p.heading), page: p.page ?? null, text: clean(p.text), embedding: Array.from(vectors.subarray(i * DIM, (i + 1) * DIM), (v) => Math.round(v * 1e5) / 1e5) }))
+      .slice(from ? from - 1 : 0);
+    await inBatches(supabase, 'canon_add_passages', rows, 100, 'course passages');
+    log('course loaded');
+  } finally {
+    await supabase.auth.signOut({ scope: 'local' });
+  }
+  process.exit(0);
+}
 
 const canon = canonForLoading();
 log(`canon on disk: ${canon.entries.length} entries, ${canon.rows.length} names, ${canon.passages.length} passages`);

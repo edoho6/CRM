@@ -329,6 +329,9 @@ begin
   insert into public.canon_names (kind, key, entry_id) values ('herb', 'isoherb', 'iso:herb');
   insert into public.canon_passages (book, entry_id, section, heading, content, embedding)
   values ('herbs', 'iso:herb', 'dosage', 'Iso', 'An isolation passage about the word zzzcanonword.', v_probe_vec::extensions.halfvec(1024));
+  -- The teaching layer (migration 73): a course passage, found only when the course is asked for.
+  insert into public.canon_passages (book, entry_id, section, heading, content, embedding)
+  values ('course', null, null, 'Iso course', 'A course passage about the word zzzcourseword.', v_probe_vec::extensions.halfvec(1024));
   insert into public.canon_notes (name, content) values ('iso-note', 'isolation note');
   -- The search opens only with the service's key. Use the real one when it is
   -- set; otherwise make one for this run (rolled back with everything else).
@@ -847,6 +850,21 @@ begin
   select count(*) into v_count from public.canon_search(v_probe_vec, '{}', 5, v_lib_key) where via = 'vector';
   if v_count < 1 then raise exception 'FAIL: the canon''s vector search found nothing with the key'; end if;
   if public.canon_note('iso-note', v_lib_key) is distinct from 'isolation note' then raise exception 'FAIL: a canon note did not answer with the key'; end if;
+  -- The course (migration 73) stays out of the books' search, answers its own only with the key, and a member cannot clear it.
+  select count(*) into v_count from public.canon_search(v_probe_vec, array['zzzcourseword'], 5, v_lib_key) where content like '%zzzcourseword%';
+  if v_count <> 0 then raise exception 'FAIL: the books'' search returned the course passage'; end if;
+  select count(*) into v_count from public.canon_search(v_probe_vec, array['zzzcourseword'], 5, v_lib_key, true) where via = 'text' and content like '%zzzcourseword%';
+  if v_count <> 1 then raise exception 'FAIL: the course search found % course passage(s) with the key, expected 1', v_count; end if;
+  select count(*) into v_count from public.canon_search(v_probe_vec, array['zzzcanonword'], 5, v_lib_key, true) where content like '%zzzcanonword%';
+  if v_count <> 0 then raise exception 'FAIL: the course search returned a book passage'; end if;
+  select count(*) into v_count from public.canon_search(v_probe_vec, array['zzzcourseword'], 5, 'not-the-key', true);
+  if v_count <> 0 then raise exception 'FAIL: a member searched the course with a wrong key'; end if;
+  begin
+    perform public.canon_clear_book('course');
+    raise exception 'FAIL: a clinic member cleared the course';
+  exception
+    when insufficient_privilege then null;
+  end;
   -- Loading is the platform admin's only.
   begin
     perform public.canon_clear();
@@ -1278,6 +1296,12 @@ begin
   begin
     perform public.canon_clear();
     raise exception 'FAIL: an anonymous caller cleared the canon';
+  exception
+    when insufficient_privilege then null;
+  end;
+  begin
+    perform public.canon_clear_book('course');
+    raise exception 'FAIL: an anonymous caller cleared the course';
   exception
     when insufficient_privilege then null;
   end;

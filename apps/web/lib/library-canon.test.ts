@@ -13,6 +13,8 @@ import {
   checkCanonDoses,
   finishCanonAnswer,
   pregnancyPointsNote,
+  pregnancyStage,
+  strikePregnancyPoints,
   safetyInScope,
   withBaraDoses,
   type CanonDeps,
@@ -172,9 +174,50 @@ describe('checkCanonDoses', () => {
     expect(text).toBe('- Bai Shao — 30g (9g)');
   });
 
+  it('never takes a dose from a sentence about an exception, even in the herb’s own dosage section', () => {
+    const acute: CanonEntry = { ...fuZi, sections: { dosage: '3-15g. In cases of acute collapse up to 150g has been used.' } };
+    const { text, removed } = checkCanonDoses('- Fu Zi: 3-15 גרם.\n- במקרים חריפים ניתן להעלות עד 150 גרם.\nבפועל נותנים 150 גרם.', [acute], [], [acute], mentioned);
+    expect(text).toBe('- Fu Zi: 3-15 גרם.');
+    expect(removed.map((r) => r.doses[0])).toEqual(['150 גרם', '150 גרם']);
+  });
+
+  it('keeps a decimal dose whole while it looks for exception sentences', () => {
+    const decimal: CanonEntry = { ...chaiHu, sections: { dosage: '1.5-4.5g. Up to 30g in severe cases.' } };
+    const { removed } = checkCanonDoses('המינון היומי של Chai Hu הוא 1.5-4.5 גרם.', [decimal], [], [decimal], (t) => mentioned(t).map((e) => (e.id === decimal.id ? decimal : e)));
+    expect(removed).toEqual([]);
+  });
+
   it('accepts a dose written on the same line as the herb in a passage that was read', () => {
     const { removed } = checkCanonDoses('- Chai Hu — 12 גרם', [chaiHu], ['• Chai Hu Radix Bupleuri 12 g\n• Dang Gui 9 g'], [], mentioned);
     expect(removed).toEqual([]);
+  });
+});
+
+describe('pregnancy and the abdominal points', () => {
+  it('reads the stage from a week, a month or a trimester', () => {
+    expect(pregnancyStage('מטופלת בשבוע 20 להיריון')).toBe('later');
+    expect(pregnancyStage('שבוע 8 להריון')).toBe('first');
+    expect(pregnancyStage('בחודש השני? חודש 2')).toBe('first');
+    expect(pregnancyStage('בשליש השלישי')).toBe('later');
+    expect(pregnancyStage('מטופלת בהיריון')).toBe('unknown');
+  });
+
+  it('takes an upper abdominal point out of a week-20 recommendation, and keeps the warning about another', () => {
+    const answer = 'נקודות (בשיטת פיזור, למעט הנקודה שיש להימנע ממנה): LIV-2 Xingjian (מנקז אש הכבד), REN-15 Jiuwei (מרגיע נפש), ST-40 Fenglong. יש להימנע מ-REN-12 Zhongwan בשלב זה.\n- REN-4 Guanyuan מחזק את הכליות.';
+    const { text, removed } = strikePregnancyPoints(answer, 'later');
+    expect(removed).toEqual(['REN-15', 'REN-4']);
+    expect(text).toBe('נקודות (בשיטת פיזור, למעט הנקודה שיש להימנע ממנה): LIV-2 Xingjian (מנקז אש הכבד), ST-40 Fenglong. יש להימנע מ-REN-12 Zhongwan בשלב זה.');
+  });
+
+  it('reads the codes however they are written, and keeps a list the line forbids', () => {
+    const { text, removed } = strikePregnancyPoints('בנוסף אסורות LI-4 Hegu, SP-6 Sanyinjiao, ומוקסה על REN-8 Shenque.\n- נקודות: HE-7 Shenmen, Ren-15 Jiuwei (מרגיע נפש).', 'unknown');
+    expect(removed).toEqual(['REN-15']);
+    expect(text).toBe('בנוסף אסורות LI-4 Hegu, SP-6 Sanyinjiao, ומוקסה על REN-8 Shenque.\n- נקודות: HE-7 Shenmen.');
+  });
+
+  it('leaves the upper abdomen to a first-trimester question, never the lower', () => {
+    const { removed } = strikePregnancyPoints('- REN-12 Zhongwan ו-REN-4 Guanyuan, PC-6 Neiguan', 'first');
+    expect(removed).toEqual(['REN-4']);
   });
 });
 
@@ -192,8 +235,14 @@ describe('finishCanonAnswer', () => {
     expect(removed.length).toBeGreaterThan(0);
   });
 
+  it("writes Reidman's words: פורמולה, plain Hebrew, pulse qualities joined with ו", () => {
+    const { text } = finishCanonAnswer('הנוסחה מתאימה לאג\'יטציה וכאב בהיפוגסטריום. דופק: עמוק-חלש, או מתגלגל-מהיר-מיתרי. אי-שקט. רוח-קור נשארת.');
+    expect(text).toBe('הפורמולה מתאימה לאי שקט וכאב בבטן התחתונה. דופק: עמוק וחלש, או מתגלגל, מהיר ומיתרי. אי שקט. רוח-קור נשארת.');
+  });
+
   it('writes point codes one way and pinyin without tone marks', () => {
     expect(finishCanonAnswer('L.I.-11 Quchi ו-Xiāo Yáo Sǎn').text).toBe('LI-11 Quchi ו-Xiao Yao San');
+    expect(finishCanonAnswer('Ren-14, KI-14, TB-6 ו-Du Zhong').text).toBe('REN-14, KID-14, SJ-6 ו-Du Zhong');
   });
 });
 
@@ -283,6 +332,31 @@ describe('answerFromCanon', () => {
     expect(calls.map((c) => c.label)).toEqual(['plan', 'what is missing', 'answer (complex)', 'names']);
     expect(searched).toHaveLength(2);
     expect(calls.find((c) => c.label === 'answer (complex)')!.effort).toBe('medium');
+  });
+
+  it('reads the course layer only on the switch: its own search, at most four marked notes, and never a dose from it', async () => {
+    const course = Array.from({ length: 6 }, (_, i) => ({ id: String(i), entry: null, section: null, heading: 'דיאגנוזה', text: `קטע קורס ${i}: Chai Hu במינון 20 גרם.` }));
+    const run = async (on: boolean) => {
+      const calls: CanonModelCall[] = [];
+      const searches: { course?: boolean; queries: string[] }[] = [];
+      const result = await answerFromCanon('איך מטפלים בתקיעות צ\'י הכבד?', [], {
+        ...deps({ plan: JSON.stringify({ english: 'Treating Liver-Qi stagnation', type: 'treatment' }), answer: 'Chai Hu מניע צ\'י. Chai Hu במינון 20 גרם.', names: '{"names": []}' }, calls, []),
+        search: async (input) => {
+          searches.push({ course: input.course, queries: input.queries });
+          return input.course ? course : [];
+        },
+        course: on,
+      });
+      return { calls, searches, result };
+    };
+    const off = await run(false);
+    expect(off.searches.every((s) => !s.course)).toBe(true);
+    const on = await run(true);
+    const courseSearch = on.searches.find((s) => s.course);
+    expect(courseSearch!.queries[0]).toBe('איך מטפלים בתקיעות צ\'י הכבד?');
+    const notes = JSON.stringify(on.calls.find((c) => c.label === 'answer')!.content);
+    expect(notes.match(/about=\\"course: /g)).toHaveLength(4);
+    expect(on.result.answer).toBe('Chai Hu מניע צ\'י.');
   });
 });
 
