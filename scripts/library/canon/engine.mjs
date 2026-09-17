@@ -113,6 +113,29 @@ export function loadIndex() {
     }
   });
   const avgLength = lengths.reduce((a, b) => a + b, 0) / passages.length;
+  // The second dose reference for herbs: Bara's fact sheets (scripts/catalogue/facts.mjs), by
+  // pinyin. The practitioner named the two doses an answer may give (17.9): the herb book's
+  // and Bara's. Only Bara's own dose is taken; its other numbers are not doses.
+  const baraDoses = new Map();
+  const factsFile = path.join(root, '.cache', 'catalogue', 'facts', 'herbs.json');
+  if (fs.existsSync(factsFile)) {
+    for (const sheet of JSON.parse(fs.readFileSync(factsFile, 'utf8'))) {
+      const d = sheet.dose;
+      if (
+        d?.source === 'bara' &&
+        d.unit === 'g' &&
+        Number.isFinite(d.min) &&
+        Number.isFinite(d.max)
+      )
+        baraDoses.set(nameKey(sheet.pinyin), d.min === d.max ? `${d.min}g` : `${d.min}-${d.max}g`);
+    }
+  }
+  for (const e of entries) {
+    if (e.kind !== 'herb') continue;
+    const keys = [...names.herb.entries()].filter(([, list]) => list.includes(e)).map(([k]) => k);
+    const dose = keys.map((k) => baraDoses.get(k)).find(Boolean);
+    if (dose) e.sections.dosage_second = dose;
+  }
   INDEX_CACHE = { entries, passages, vectors, byId, names, postings, lengths, avgLength };
   return INDEX_CACHE;
 }
@@ -340,6 +363,7 @@ const SECTION_NAMES = {
   channels: 'channels',
   key: 'key characteristics',
   dosage: 'dosage',
+  dosage_second: 'dosage (second standard reference)',
   cautions: 'cautions and contraindications',
   toxicity: 'toxicity',
   actions: 'actions and indications',
@@ -367,7 +391,13 @@ function entrySections(entry, aspects, depth, safety) {
   const long = depth === 'full';
   const plan = [];
   if (entry.kind === 'herb') {
-    plan.push(['properties', 200], ['channels', 200], ['key', 300], ['dosage', 300]);
+    plan.push(
+      ['properties', 200],
+      ['channels', 200],
+      ['key', 300],
+      ['dosage', 300],
+      ['dosage_second', 60],
+    );
     if (safety)
       plan.push(['cautions', 700], ['toxicity', 900], ['traditional_contraindications', 500]);
     plan.push(['actions', want.has('actions') || want.has('indications') || long ? 2600 : 1200]);
@@ -512,6 +542,7 @@ async function gather(
     startAt = 1,
     depth = 'brief',
     safety = false,
+    search = true,
   },
 ) {
   const index = loadIndex();
@@ -549,7 +580,7 @@ async function gather(
     ),
   ].slice(0, 10);
   const want = Math.max(4, Math.floor((budget - size) / 1300));
-  if (budget - size > 1500) {
+  if (search && budget - size > 1500) {
     const found = await searchPassages(usage, queries, english, { exclude, want });
     for (const { index: i } of found) {
       const p = index.passages[i];
@@ -589,13 +620,15 @@ How to answer
 - A described patient, when the question asks for diagnosis and treatment: the differential (patterns with the findings that support and argue against each), what to ask or examine to decide, the treatment principle, and points and a formula for the leading pattern. Only what the question asks for; a referral line only when a finding in the question is a medical red flag. Do not repeat identifying details.
 
 Never name a source
-- Never mention a book, author, textbook, edition, "the notes", "the material", "the sources", "the text", "the reference", "according to…", "as described in similar cases", "in the literature", "another source gives", "some sources", "classical/traditional sources warn", "the information available to me", or an author's personal practice ("personally I…"). Write the knowledge directly, as settled professional knowledge. When something is not covered, say "אין מידע מבוסס על כך" — not where you looked. No citation marks or brackets with numbers.
+- Never mention a book, author, textbook, edition, "the notes", "the material", "the sources", "the text", "the reference", "according to…", "as described in similar cases", "in the literature", "another source gives", "some sources", "classical/traditional sources warn", "the information available to me", "לפי החומרים שנמצאו", "מהמקורות שנמצאו", "הרשימה אינה בהכרח שלמה", any hint that you searched, found or read anything, or an author's personal practice ("personally I…"). Write the knowledge directly, as settled professional knowledge. When something is not covered, say "אין מידע מבוסס על כך" — not where you looked. No citation marks or brackets with numbers.
 - No claims about laws, regulation or availability in any country.
 - Classical texts that are part of the content itself (e.g. the Shang Han Lun as the origin of a formula) may be named.
 
 Language and names
 - Herbs, formulas and points: pinyin in Latin letters only, capitalised, without tone marks (Fu Zi, Xiao Yao San; points as code + pinyin, e.g. SP-6 Sanyinjiao). Never write their names in Hebrew letters — not a transliteration ("סי ני טאנג"), not a translation. Do not add English or Latin translations of a name either (no "Rambling Powder", no "Bupleuri Radix") unless the question asks for them.
 - Do not translate into Hebrew what practitioners use as is: pinyin names, point names, the Chinese names of concepts that have no term below.
+- The words Israeli practitioners use: "מרתח" (never "דיקוקט", "דקוקציה", "תשלב", "חליטה" for a decoction); "צמח" / "צמחים" (never "עשב" / "עשבים"); "מינון יומי".
+- A dose question gets the dose and nothing else: the daily dose range for a decoction, from the dosage notes. When two dosage notes differ, give one range from the lower minimum to the higher maximum. No granules, concentrated powders, tinctures, preparation, processing or cautions unless asked.
 - Patterns, organs and concepts: in Hebrew, with the English in parentheses the first time, e.g. "סטגנציה של צ'י הכבד (Liver-Qi Stagnation)". Use these Hebrew terms where they fit:
 ${glossary.map((t) => `${t.he} = ${t.en}`).join('; ')}
 
@@ -705,6 +738,7 @@ const BOOK_NAMES =
 const DOSE_SECTIONS = [
   'dosage',
   'toxicity',
+  'dosage_second',
   'composition',
   'preparation',
   'modifications',
@@ -931,6 +965,27 @@ function stripBookNames(answer) {
 }
 
 /** One way to write names: point codes as LI-11 (not the scan's "L.I.-11"), pinyin without tone marks. */
+/**
+ * The practitioner's words (17.9): a decoction is "מרתח", a herb is "צמח". The
+ * prompt asks for them; this makes sure, keeping any one-letter prefix (ה, ב, ל…).
+ */
+const TERMS = [
+  [/(?<!\p{L})([והבלמשכ]{0,2})(?:דיקוקט|דקוקט|דיקוקציה|דקוקציה)(?:ים|ות)?(?!\p{L})/gu, '$1מרתח'],
+  [/(?<!\p{L})([והבלמשכ]{0,2})עשבים(?!\p{L})/gu, '$1צמחים'],
+  [/(?<!\p{L})([והבלמשכ]{0,2})עשב(?!\p{L})/gu, '$1צמח'],
+];
+const HINTS = [
+  /(?:^|\s)(?:לפי|על פי|בהתאם ל)\s*(?:ה)?(?:חומרים|מידע|קטעים)(?:\s+ש(?:נמצאו|נאספו|הובאו|בידי))?[,:]?\s*/gu,
+  /\s*(?:ה)?רשימה\s+(?:נאספה|מבוססת)[^.\n]*\.?/gu,
+  /\s*[^.\n]*אינה\s+בהכרח\s+שלמה[^.\n]*\.?/gu,
+];
+function hebrewTerms(text) {
+  let out = text;
+  for (const [pattern, replacement] of TERMS) out = out.replace(pattern, replacement);
+  for (const pattern of HINTS) out = out.replace(pattern, (m) => (/^\s/.test(m) ? ' ' : ''));
+  return out.replace(/[ ]{2,}/g, ' ').replace(/^ +/gm, '');
+}
+
 function tidyNames(text) {
   return text
     .replace(/\bL\.\s?I\.?\s?-\s?(\d{1,2})\b/g, 'LI-$1')
@@ -959,6 +1014,13 @@ export async function ask(question) {
     budget,
     exclude,
     depth: complex ? 'full' : 'brief',
+    // A fact about named entries (a dose, a location, a composition) is answered from those
+    // entries alone: searching the books around them brought granule doses and cautions nobody asked for.
+    search: !(
+      p.type === 'fact' &&
+      p.entities.length > 0 &&
+      p.entities.every((e) => findEntry(e.kind, e.name))
+    ),
     safety,
   });
   if (PREGNANCY.test(question) || PREGNANCY.test(p.english))
@@ -1102,7 +1164,7 @@ export async function ask(question) {
     used.passages.map((passage) => passage.text),
     askedHerbs,
   );
-  const books = stripBookNames(tidyNames(doses.text));
+  const books = stripBookNames(hebrewTerms(tidyNames(doses.text)));
   const answer = books.text.trim();
 
   return {
