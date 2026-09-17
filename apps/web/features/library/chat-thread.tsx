@@ -75,7 +75,7 @@ export function ChatThread({
       case 'searching':
         return t('stages.searching');
       case 'reading':
-        return t('stages.reading', { count: current.passages ?? 0 });
+        return t('stages.reading');
       case 'writing':
         return t('stages.writing');
       case 'checking':

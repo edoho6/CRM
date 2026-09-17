@@ -16,7 +16,13 @@ interface QueryRow {
   user_id: string;
   asked_at: string;
   status: 'answered' | 'general' | 'no_sources' | 'refused_pii' | 'refused_quota' | 'error';
-  sources: { source_id: string; title: string; url: string | null; page: number | null; cited: boolean }[];
+  sources?: {
+    source_id: string;
+    title: string;
+    url: string | null;
+    page: number | null;
+    cited: boolean;
+  }[];
 }
 
 const STATUS_TONES: Record<QueryRow['status'], StatusTone> = {
@@ -46,11 +52,15 @@ export default async function LibraryActivityPage({
   if (!scope) return null;
   const t = await getTranslations('library.activity');
 
+  const admin = scope.context.isPlatformAdmin;
   const page = pageFrom((await searchParams).page);
   const [from, to] = pageRange(page);
   const { data, count } = await scope.supabase
     .from('library_queries')
-    .select('id, user_id, asked_at, status, sources', { count: 'exact' })
+    // Which sources a question drew on is the operator's to see, not the clinic's (migration 71).
+    .select(admin ? 'id, user_id, asked_at, status, sources' : 'id, user_id, asked_at, status', {
+      count: 'exact',
+    })
     .order('asked_at', { ascending: false })
     .range(from, to)
     .returns<QueryRow[]>();
@@ -60,13 +70,20 @@ export default async function LibraryActivityPage({
   const names = new Map<string, string>();
   const ids = [...new Set(rows.map((row) => row.user_id))];
   if (ids.length > 0) {
-    const { data: profiles } = await scope.supabase.from('profiles').select('id, full_name').in('id', ids);
+    const { data: profiles } = await scope.supabase
+      .from('profiles')
+      .select('id, full_name')
+      .in('id', ids);
     for (const profile of profiles ?? []) names.set(profile.id, profile.full_name ?? '');
   }
 
   return (
     <>
-      <PageHeader title={t('title')} description={t('subtitle')} below={<LibraryNav current="activity" />} />
+      <PageHeader
+        title={t('title')}
+        description={t('subtitle')}
+        below={<LibraryNav current="activity" admin={admin} />}
+      />
       <PageBody width="wide">
         {rows.length === 0 ? (
           <EmptyState icon={<ScrollText className="h-8 w-8" />} title={t('empty')} />
@@ -79,7 +96,7 @@ export default async function LibraryActivityPage({
                     <Th>{t('when')}</Th>
                     <Th>{t('who')}</Th>
                     <Th>{t('status')}</Th>
-                    <Th>{t('sources')}</Th>
+                    {admin ? <Th>{t('sources')}</Th> : null}
                   </tr>
                 </thead>
                 <tbody>
@@ -92,27 +109,49 @@ export default async function LibraryActivityPage({
                       <Td>
                         <Badge tone={STATUS_TONES[row.status]}>{t(`statuses.${row.status}`)}</Badge>
                       </Td>
-                      <Td>
-                        {row.sources.length === 0 ? (
-                          <span className="text-ink-500">{t('none')}</span>
-                        ) : (
-                          <ul className="space-y-0.5">
-                            {row.sources.map((source, index) => (
-                              <li key={`${source.source_id}-${index}`} className="text-xs" dir="auto">
-                                <span className={source.cited ? 'font-medium text-ink-900' : 'text-ink-600'}>{source.title}</span>
-                                {source.page ? <span className="text-ink-500"> · {source.page}</span> : null}
-                                {source.cited ? <span className="ms-1 text-sky-800">({t('cited')})</span> : null}
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                      </Td>
+                      {admin ? (
+                        <Td>
+                          {(row.sources ?? []).length === 0 ? (
+                            <span className="text-ink-500">{t('none')}</span>
+                          ) : (
+                            <ul className="space-y-0.5">
+                              {(row.sources ?? []).map((source, index) => (
+                                <li
+                                  key={`${source.source_id}-${index}`}
+                                  className="text-xs"
+                                  dir="auto"
+                                >
+                                  <span
+                                    className={
+                                      source.cited ? 'font-medium text-ink-900' : 'text-ink-600'
+                                    }
+                                  >
+                                    {source.title}
+                                  </span>
+                                  {source.page ? (
+                                    <span className="text-ink-500"> · {source.page}</span>
+                                  ) : null}
+                                  {source.cited ? (
+                                    <span className="ms-1 text-sky-800">({t('cited')})</span>
+                                  ) : null}
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </Td>
+                      ) : null}
                     </Tr>
                   ))}
                 </tbody>
               </table>
             </TableWrapper>
-            <Pagination page={page} total={count ?? rows.length} shown={rows.length} pathname="/library/activity" query={{}} />
+            <Pagination
+              page={page}
+              total={count ?? rows.length}
+              shown={rows.length}
+              pathname="/library/activity"
+              query={{}}
+            />
           </>
         )}
       </PageBody>

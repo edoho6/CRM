@@ -38,7 +38,7 @@ export default async function LibraryPage({
 
   return (
     <>
-      <PageHeader title={t('title')} description={t('subtitle')} below={<LibraryNav current="chat" />} />
+      <PageHeader title={t('title')} description={t('subtitle')} below={<LibraryNav current="chat" admin={scope.context.isPlatformAdmin} />} />
       <PageBody width="wide">
         <LibraryWorkspace
           configured={configured}

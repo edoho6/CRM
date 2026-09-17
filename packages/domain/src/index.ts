@@ -11,3 +11,5 @@ export * from './formula-composition';
 export * from './library';
 export * from './library-answer';
 export * from './messaging-templates';
+export * from './canon';
+export * from './tcm-glossary';

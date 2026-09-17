@@ -10,13 +10,15 @@ import {
   checkGrounding,
   citationNumbers,
   distinctByContent,
-  dropCitations,
+  dropUnknownCitations,
   findPii,
   narrowedQuery,
+  removeDoses,
   removeSentences,
-  removeSentencesWithNumbers,
+  removeUnsupportedNumbers,
   rrfMerge,
   type GroundingPassage,
+  type GroundingProblem,
   type LibraryAnswer,
   type LibraryCitation,
   type LibraryStage,
@@ -25,7 +27,8 @@ import {
 import { LIBRARY_EFFORT, LIBRARY_MODEL, LibraryUnavailableError, callClaude, parseJsonReply } from './claude';
 import { planSearch } from './plan';
 import { ANSWER_SYSTEM, GENERAL_SYSTEM, REVIEW_SYSTEM, answerPrompt, generalPrompt, repairPrompt, reviewPrompt, type PromptPassage } from './prompts';
-import { embedQueries } from './voyage';
+import { embedQueries, libraryKey } from './voyage';
+import { askCanon, canonReady } from './canon';
 
 /**
  * One question, answered from the library — and, where the library has
@@ -41,8 +44,9 @@ import { embedQueries } from './voyage';
  * cited passages, and a second reading names the sentences the passages do
  * not support. What fails is written once more and then struck sentence by
  * sentence; what stands is shown. The "general" part is never checked and
- * is always shown as not from the library. The log gets the outcome and
- * the sources — never the words.
+ * is always shown as not from the library — and so it states no dose, and
+ * loses whatever the checks struck from the answer the same draft wrote. The
+ * log gets the outcome and the sources — never the words.
  */
 
 export interface AskTurn {
@@ -129,6 +133,10 @@ export async function askLibrary(db: SupabaseClient, input: AskInput, onStage?: 
   const history = input.history.slice(-LIBRARY_LIMITS.historyTurns * 2);
   const usage = { input: 0, output: 0 };
   const timeForRewrite = () => Date.now() - started + REWRITE_MS < ROUTE_BUDGET_MS;
+  /** Sentences the checks removed from the reply. */
+  let trimmed = 0;
+  /** The claims the checks rejected, so the unchecked part cannot say them again. */
+  const struckClaims: string[] = [];
 
   const log = async (status: LibraryStatus, sources: LogSource[], spent?: boolean) => {
     try {
@@ -158,6 +166,21 @@ export async function askLibrary(db: SupabaseClient, input: AskInput, onStage?: 
     return reply('refused_pii', LIBRARY_REFUSED_PII_HE);
   }
 
+  // The canon engine (17.9), once the canon is loaded: the core books only, one
+  // answer with no sources and no "general" part. The same quota and identifier
+  // checks came first; the log gets the outcome and the tokens, never the words.
+  if (await canonReady(db)) {
+    const canon = await askCanon(db, question, history, onStage);
+    usage.input += canon.usage.input;
+    usage.output += canon.usage.output;
+    if (!canon.answer.trim()) {
+      await log('no_sources', [], true);
+      return reply('no_sources', LIBRARY_NO_SOURCES_HE);
+    }
+    await log('answered', [], true);
+    return reply('answered', canon.answer);
+  }
+
   // The question, prepared: on its own, in English, and as search words.
   onStage?.('searching');
   const planned = await planSearch(question, history);
@@ -171,7 +194,7 @@ export async function askLibrary(db: SupabaseClient, input: AskInput, onStage?: 
   const embeddings = await embedQueries(twin ? [plan.standalone, twin] : [plan.standalone]);
   const words = plan.keywords.length ? plan.keywords.join(' ') : twin ?? question;
   const searches = await Promise.all(
-    embeddings.map((embedding, index) => db.rpc('library_search', { p_embedding: embedding, p_query: index === 0 ? words : '', p_limit: 20 })),
+    embeddings.map((embedding, index) => db.rpc('library_search', { p_embedding: embedding, p_query: index === 0 ? words : '', p_limit: 20, p_key: libraryKey() })),
   );
   if (searches.some((search) => search.error)) throw new LibraryUnavailableError('search_failed');
   const byId = new Map<string, SearchRow>();
@@ -203,7 +226,7 @@ export async function askLibrary(db: SupabaseClient, input: AskInput, onStage?: 
   // ranking twice in the fold below.
   const narrowed = textHits.size === 0 ? narrowedQuery(plan.keywords) : null;
   if (narrowed) {
-    const retry = await db.rpc('library_search', { p_embedding: embeddings[0], p_query: narrowed, p_limit: LIBRARY_LIMITS.narrowPassages });
+    const retry = await db.rpc('library_search', { p_embedding: embeddings[0], p_query: narrowed, p_limit: LIBRARY_LIMITS.narrowPassages, p_key: libraryKey() });
     const byFewerWords: string[] = [];
     for (const row of (retry.data ?? []) as SearchRow[]) {
       if (row.via !== 'text') continue;
@@ -246,13 +269,26 @@ export async function askLibrary(db: SupabaseClient, input: AskInput, onStage?: 
     const parsed = parseJsonReply<{ general?: string }>(spoken.text);
     return typeof parsed?.general === 'string' ? parsed.general.trim() : '';
   };
-  const generalReply = async (general: string, citations: LibraryCitation[] = []): Promise<AskResult> => {
+  /**
+   * The unchecked part, as it may be shown: without the claims the checks
+   * struck from the answer — the same draft wrote both, and an answer emptied
+   * by the checks used to come back as this part, struck claims included —
+   * and without any dose, which only a source may state.
+   */
+  const cleanGeneral = (draft: string): string => {
+    const withoutStruck = struckClaims.length ? removeSentences(draft, struckClaims) : { text: draft, removed: 0 };
+    const withoutDoses = removeDoses(withoutStruck.text);
+    trimmed += withoutStruck.removed + withoutDoses.removed;
+    return withoutDoses.text.trim();
+  };
+  const generalReply = async (draft: string, citations: LibraryCitation[] = []): Promise<AskResult> => {
+    const general = cleanGeneral(draft);
     if (!general) {
       await log('no_sources', logSources(new Set()), usage.input > 0);
       return reply('no_sources', LIBRARY_NO_SOURCES_HE, citations, retrieved);
     }
     await log('general', logSources(new Set()), true);
-    return { ...reply('general', '', citations, retrieved), general };
+    return { ...reply('general', '', citations, retrieved), general, ...(trimmed ? { trimmed } : {}) };
   };
 
   if (evidence.length === 0) return generalReply(await generalOnly());
@@ -293,8 +329,8 @@ export async function askLibrary(db: SupabaseClient, input: AskInput, onStage?: 
     Boolean(draft && draft.answered === true && typeof draft.answer === 'string' && draft.answer.trim());
 
   const first = await write(answerPrompt(question, history, passages));
-  const general = typeof first?.general === 'string' ? first.general.trim() : '';
-  if (!usable(first)) return generalReply(general, allCitations);
+  const draftGeneral = typeof first?.general === 'string' ? first.general.trim() : '';
+  if (!usable(first)) return generalReply(draftGeneral, allCitations);
 
   // The second reading: which sentences do the passages not support?
   const judge = async (text: string): Promise<{ faithful: boolean; issues: Issue[] }> => {
@@ -322,29 +358,39 @@ export async function askLibrary(db: SupabaseClient, input: AskInput, onStage?: 
   };
 
   let answer = first.answer;
-  let trimmed = 0;
+
+  const objection = (p: GroundingProblem): string =>
+    p.kind === 'number_not_in_sources'
+      ? `the number ${p.detail} in "${p.sentence ?? ''}" is not in the passages that sentence cites`
+      : p.kind === 'unknown_citation'
+        ? `the marker ${p.detail} names no passage`
+        : p.detail;
+  /**
+   * What the grounding checks still name is struck: a sentence cited only by
+   * markers pointing nowhere goes whole (a dead marker elsewhere just goes),
+   * and so does a sentence stating a number the passages it cites do not hold.
+   */
+  const strikeUngrounded = (text: string, problems: readonly GroundingProblem[]): string => {
+    const unknown = problems.filter((p) => p.kind === 'unknown_citation').map((p) => Number(p.detail.replace(/[[\]]/g, '')));
+    const dead = unknown.length ? dropUnknownCitations(text, unknown) : { text, removed: 0, struck: [] };
+    const numbers = removeUnsupportedNumbers(dead.text, groundingPassages);
+    trimmed += dead.removed + numbers.removed;
+    struckClaims.push(...dead.struck, ...numbers.struck);
+    return numbers.text;
+  };
 
   // Grounding — the checks that cannot be argued with. One rewrite with the
-  // objections; what still fails is struck: a marker pointing nowhere goes,
-  // a sentence stating a number the passages do not hold goes.
+  // objections; what still fails is struck.
   onStage?.('checking');
   let grounding = checkGrounding(answer, groundingPassages);
   if (!grounding.ok) {
-    const objections = grounding.problems.map((p) => (p.kind === 'number_not_in_sources' ? `the number ${p.detail} is not in the cited passages` : p.kind === 'unknown_citation' ? `the marker ${p.detail} names no passage` : p.detail));
-    const again = timeForRewrite() ? await write(repairPrompt(question, history, passages, answer, objections)) : null;
+    const again = timeForRewrite() ? await write(repairPrompt(question, history, passages, answer, grounding.problems.map(objection))) : null;
     if (usable(again)) answer = again.answer;
     onStage?.('checking');
     grounding = checkGrounding(answer, groundingPassages);
-    if (!grounding.ok) {
-      const unknown = grounding.problems.filter((p) => p.kind === 'unknown_citation').map((p) => Number(p.detail.replace(/[[\]]/g, '')));
-      if (unknown.length) answer = dropCitations(answer, unknown);
-      const numbers = grounding.problems.filter((p) => p.kind === 'number_not_in_sources').map((p) => p.detail);
-      const struck = removeSentencesWithNumbers(answer, numbers);
-      answer = struck.text;
-      trimmed += struck.removed;
-    }
+    if (!grounding.ok) answer = strikeUngrounded(answer, grounding.problems);
   }
-  if (citationNumbers(answer).length === 0 || answer.trim().length < MIN_ANSWER_CHARS) return generalReply(general, allCitations);
+  if (citationNumbers(answer).length === 0 || answer.trim().length < MIN_ANSWER_CHARS) return generalReply(draftGeneral, allCitations);
 
   // The second reading. Sentences it names are struck; when a quote cannot
   // be found in the answer, the draft is written once more with the
@@ -352,7 +398,11 @@ export async function askLibrary(db: SupabaseClient, input: AskInput, onStage?: 
   // struck. Two readings at most, one rewrite at most, and nothing unread leaves.
   let verdict = await judge(answer);
   if (!verdict.faithful && verdict.issues.length > 0) {
-    const struck = removeSentences(answer, verdict.issues.map((i) => i.quote));
+    const quotes = verdict.issues.map((i) => i.quote);
+    // Rejected whether struck here or written away below: either way the
+    // unchecked part must not say it instead.
+    struckClaims.push(...quotes);
+    const struck = removeSentences(answer, quotes);
     if (struck.removed === verdict.issues.length) {
       answer = struck.text;
       trimmed += struck.removed;
@@ -361,17 +411,12 @@ export async function askLibrary(db: SupabaseClient, input: AskInput, onStage?: 
       if (usable(again)) {
         answer = again.answer;
         grounding = checkGrounding(answer, groundingPassages);
-        if (!grounding.ok) {
-          const numbers = grounding.problems.filter((p) => p.kind === 'number_not_in_sources').map((p) => p.detail);
-          const unknown = grounding.problems.filter((p) => p.kind === 'unknown_citation').map((p) => Number(p.detail.replace(/[[\]]/g, '')));
-          if (unknown.length) answer = dropCitations(answer, unknown);
-          const cleaned = removeSentencesWithNumbers(answer, numbers);
-          answer = cleaned.text;
-          trimmed += cleaned.removed;
-        }
+        if (!grounding.ok) answer = strikeUngrounded(answer, grounding.problems);
         verdict = await judge(answer);
         if (!verdict.faithful && verdict.issues.length > 0) {
-          const second = removeSentences(answer, verdict.issues.map((i) => i.quote));
+          const secondQuotes = verdict.issues.map((i) => i.quote);
+          struckClaims.push(...secondQuotes);
+          const second = removeSentences(answer, secondQuotes);
           answer = second.text;
           trimmed += second.removed;
         }
@@ -381,9 +426,10 @@ export async function askLibrary(db: SupabaseClient, input: AskInput, onStage?: 
       }
     }
   }
-  if (citationNumbers(answer).length === 0 || answer.trim().length < MIN_ANSWER_CHARS) return generalReply(general, allCitations);
+  if (citationNumbers(answer).length === 0 || answer.trim().length < MIN_ANSWER_CHARS) return generalReply(draftGeneral, allCitations);
 
   const cited = new Set(citationNumbers(answer));
+  const general = cleanGeneral(draftGeneral);
   await log('answered', logSources(cited), true);
   return {
     ...reply('answered', answer.trim(), [...cited].map(asCitation), retrieved),

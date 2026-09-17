@@ -55,10 +55,18 @@ function cleanHeading(line: string): string {
  */
 const NOT_TEXT = new RegExp(`[${String.fromCharCode(0)}-${String.fromCharCode(8)}${String.fromCharCode(11)}${String.fromCharCode(12)}${String.fromCharCode(14)}-${String.fromCharCode(31)}${String.fromCharCode(127)}${String.fromCharCode(8203)}${String.fromCharCode(65279)}]`, 'g');
 
+/**
+ * The licence stamp a publisher prints into an e-book it sells: the buyer's
+ * name, e-mail, home address, phone and order number, on the copyright page.
+ * It names a person and says nothing about medicine, so it never becomes a
+ * passage — three Paradigm e-books in the library carried one (SQL 64).
+ */
+const LICENCE_STAMP = /Licensed (?:digital )?edition prepared exclusively for[\s\S]*?(?:may not be redistributed\.?|$)/gi;
+
 /** Paragraphs of a page's text, blank-line separated; a very long paragraph is cut at sentence ends. */
 function paragraphsOf(text: string, maxChars: number): string[] {
   const out: string[] = [];
-  for (const raw of String(text ?? '').replace(NOT_TEXT, '').replace(/\r\n?/g, '\n').split(/\n\s*\n+/)) {
+  for (const raw of String(text ?? '').replace(NOT_TEXT, '').replace(LICENCE_STAMP, '').replace(/\r\n?/g, '\n').split(/\n\s*\n+/)) {
     const paragraph = raw.replace(/[ \t]+\n/g, '\n').trim();
     if (!paragraph) continue;
     if (paragraph.length <= maxChars) {

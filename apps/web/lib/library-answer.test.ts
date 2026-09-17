@@ -1,5 +1,19 @@
 import { describe, expect, it } from 'vitest';
-import { answerBlocks, chatTitleFrom, displayAnswer, inlineRuns } from '@clinic/domain';
+import { answerBlocks, chatTitleFrom, displayAnswer, historyTurns, inlineRuns } from '@clinic/domain';
+
+describe('historyTurns', () => {
+  it('leaves out a question refused for an identifier, with its refusal, and keeps the rest of the conversation', () => {
+    const messages = [
+      { role: 'user' as const, status: null, content: 'מה ההרכב של Si Wu Tang?' },
+      { role: 'assistant' as const, status: 'answered', content: 'Shu Di Huang, Dang Gui…' },
+      { role: 'user' as const, status: null, content: 'והמטופלת עם ת.ז 000000018?' },
+      { role: 'assistant' as const, status: 'refused_pii', content: 'השאלה כוללת פרט מזהה…' },
+      { role: 'user' as const, status: null, content: 'ומה עם Ba Zhen Tang?' },
+      { role: 'assistant' as const, status: 'answered', content: 'Si Wu Tang ועוד Si Jun Zi Tang…' },
+    ];
+    expect(historyTurns(messages).map((m) => m.content)).toEqual(['מה ההרכב של Si Wu Tang?', 'Shu Di Huang, Dang Gui…', 'ומה עם Ba Zhen Tang?', 'Si Wu Tang ועוד Si Jun Zi Tang…']);
+  });
+});
 
 describe('displayAnswer', () => {
   it('drops the citation markers and the spaces they leave', () => {

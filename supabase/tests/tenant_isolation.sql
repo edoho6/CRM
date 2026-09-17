@@ -49,6 +49,7 @@ declare
   v_shop_fp    text := 'iso|' || gen_random_uuid();  -- the product's fingerprint, shared with its offer
   v_med        uuid;                                   -- one entry of the Western medicine reference
   v_lib        uuid;                                   -- one source of the professional library
+  v_lib_key    text;                                   -- the service's key to the library search (migration 71)
   v_chat_a     uuid;                                   -- clinic A's owner's conversation with the library
   -- A unit vector to search the library with; what it finds is beside the point,
   -- who is allowed to search at all is the point.
@@ -322,6 +323,20 @@ begin
   returning id into v_lib;
   insert into public.library_chunks (source_id, ordinal, page, content, tokens, embedding)
   values (v_lib, 0, 1, 'An isolation passage about the word zzzisolationword.', 8, v_probe_vec);
+  -- The canon (migration 72): one entry, its name, one passage and a note, closed the same way.
+  insert into public.canon_entries (id, book, kind, names, sections)
+  values ('iso:herb', 'herbs', 'herb', '{"pinyin": "Iso Herb"}', '{"dosage": "3-9g"}');
+  insert into public.canon_names (kind, key, entry_id) values ('herb', 'isoherb', 'iso:herb');
+  insert into public.canon_passages (book, entry_id, section, heading, content, embedding)
+  values ('herbs', 'iso:herb', 'dosage', 'Iso', 'An isolation passage about the word zzzcanonword.', v_probe_vec::extensions.halfvec(1024));
+  insert into public.canon_notes (name, content) values ('iso-note', 'isolation note');
+  -- The search opens only with the service's key. Use the real one when it is
+  -- set; otherwise make one for this run (rolled back with everything else).
+  select decrypted_secret into v_lib_key from vault.decrypted_secrets where name = 'library_search_key';
+  if v_lib_key is null then
+    v_lib_key := 'iso-library-key-' || gen_random_uuid();
+    perform vault.create_secret(v_lib_key, 'library_search_key');
+  end if;
 
   -- An open invitation in each clinic. The link is the whole secret.
   insert into public.clinic_invitations (clinic_id, role, invitee_name, invited_by)
@@ -776,19 +791,81 @@ begin
   end;
   raise notice 'ok   the medicine reference is readable by every member and writable by none';
 
-  -- The professional library is shared the same way, and its log takes the
-  -- caller's own clinic from the session — never as an argument.
+  -- The professional library is not readable by its users (migration 71): a
+  -- member receives answers, never the passages or the list of sources.
   select count(*) into v_count from public.library_sources where id = v_lib;
-  if v_count <> 1 then raise exception 'FAIL: a clinic member cannot read the professional library'; end if;
-  -- The search runs as the tables' owner (under row security its text index
-  -- could not serve), so the membership rule lives inside it: a member finds
-  -- the passage by text and by vector alike…
+  if v_count <> 0 then raise exception 'FAIL: a clinic member read the professional library''s sources'; end if;
+  select count(*) into v_count from public.library_chunks where source_id = v_lib;
+  if v_count <> 0 then raise exception 'FAIL: a clinic member read % library passage(s)', v_count; end if;
+  select count(*) into v_count from public.library_stats();
+  if v_count <> 0 then raise exception 'FAIL: a clinic member read the library''s statistics'; end if;
+  -- The search runs as the tables' owner, so both rules live inside it. Called
+  -- by hand — no key, or a wrong one — it finds nothing…
+  select count(*) into v_count from public.library_search(v_probe_vec, 'zzzisolationword', 5);
+  if v_count <> 0 then raise exception 'FAIL: a member searched the library without the service key (% row(s))', v_count; end if;
+  select count(*) into v_count from public.library_search(v_probe_vec, 'zzzisolationword', 5, 'not-the-key');
+  if v_count <> 0 then raise exception 'FAIL: a member searched the library with a wrong key (% row(s))', v_count; end if;
+  begin
+    perform public.library_key_ok(v_lib_key);
+    raise exception 'FAIL: a clinic member called the library key check directly';
+  exception
+    when insufficient_privilege then null;
+  end;
+  -- …and asked by the server with the key on a member's behalf, it finds the
+  -- passage by text and by vector alike.
   select count(*) into v_count
-    from public.library_search(v_probe_vec, 'zzzisolationword', 5) where via = 'text' and chunk_id is not null;
+    from public.library_search(v_probe_vec, 'zzzisolationword', 5, v_lib_key) where via = 'text' and chunk_id is not null;
   if v_count <> 1 then raise exception 'FAIL: a member''s text search of the library found % passage(s), expected 1', v_count; end if;
   select count(*) into v_count
-    from public.library_search(v_probe_vec, '', 5) where via = 'vector' and chunk_id is not null;
+    from public.library_search(v_probe_vec, '', 5, v_lib_key) where via = 'vector' and chunk_id is not null;
   if v_count < 1 then raise exception 'FAIL: a member''s vector search of the library found nothing'; end if;
+
+  -- The canon (migration 72): the same rules. No table is readable by a member…
+  select count(*) into v_count from public.canon_entries where id = 'iso:herb';
+  if v_count <> 0 then raise exception 'FAIL: a clinic member read a canon entry'; end if;
+  select count(*) into v_count from public.canon_passages where entry_id = 'iso:herb';
+  if v_count <> 0 then raise exception 'FAIL: a clinic member read a canon passage'; end if;
+  select count(*) into v_count from public.canon_names where entry_id = 'iso:herb';
+  if v_count <> 0 then raise exception 'FAIL: a clinic member read the canon''s names'; end if;
+  select count(*) into v_count from public.canon_notes where name = 'iso-note';
+  if v_count <> 0 then raise exception 'FAIL: a clinic member read a canon note'; end if;
+  -- …the reading functions answer nothing without the key…
+  select count(*) into v_count from public.canon_name_rows() where entry_id = 'iso:herb';
+  if v_count <> 0 then raise exception 'FAIL: a member listed the canon''s names without the key'; end if;
+  select count(*) into v_count from public.canon_entries_get(array['iso:herb'], 'not-the-key');
+  if v_count <> 0 then raise exception 'FAIL: a member read a canon entry with a wrong key'; end if;
+  select count(*) into v_count from public.canon_search(v_probe_vec, array['zzzcanonword'], 5);
+  if v_count <> 0 then raise exception 'FAIL: a member searched the canon without the key (% row(s))', v_count; end if;
+  if public.canon_note('iso-note') is not null then raise exception 'FAIL: a member read a canon note without the key'; end if;
+  -- …and with it, asked by the server on a member's behalf, they answer.
+  select count(*) into v_count from public.canon_name_rows(v_lib_key) where entry_id = 'iso:herb';
+  if v_count <> 1 then raise exception 'FAIL: the canon''s names did not answer with the key'; end if;
+  select count(*) into v_count from public.canon_entries_get(array['iso:herb'], v_lib_key);
+  if v_count <> 1 then raise exception 'FAIL: a canon entry did not answer with the key'; end if;
+  select count(*) into v_count from public.canon_search(v_probe_vec, array['zzzcanonword'], 5, v_lib_key) where via = 'text' and entry_id = 'iso:herb';
+  if v_count <> 1 then raise exception 'FAIL: the canon''s word search found % passage(s) with the key, expected 1', v_count; end if;
+  select count(*) into v_count from public.canon_search(v_probe_vec, '{}', 5, v_lib_key) where via = 'vector';
+  if v_count < 1 then raise exception 'FAIL: the canon''s vector search found nothing with the key'; end if;
+  if public.canon_note('iso-note', v_lib_key) is distinct from 'isolation note' then raise exception 'FAIL: a canon note did not answer with the key'; end if;
+  -- Loading is the platform admin's only.
+  begin
+    perform public.canon_clear();
+    raise exception 'FAIL: a clinic member cleared the canon';
+  exception
+    when insufficient_privilege then null;
+  end;
+  begin
+    perform public.canon_add_entries('[]'::jsonb);
+    raise exception 'FAIL: a clinic member loaded canon entries';
+  exception
+    when insufficient_privilege then null;
+  end;
+  begin
+    perform public.canon_add_passages('[]'::jsonb);
+    raise exception 'FAIL: a clinic member loaded canon passages';
+  exception
+    when insufficient_privilege then null;
+  end;
   begin
     insert into public.library_sources (kind, locator, title) values ('file', 'iso-injected-source', 'Injected');
     raise exception 'FAIL: a clinic member inserted a library source';
@@ -1061,8 +1138,10 @@ begin
   if v_count <> 0 then raise exception 'FAIL: the portal patient read % 3D coordinate(s)', v_count; end if;
   -- …and the library search, which runs as the owner, answers a signed-in
   -- account without a clinic with nothing — by text and by vector alike.
-  select count(*) into v_count from public.library_search(v_probe_vec, 'zzzisolationword', 5);
+  select count(*) into v_count from public.library_search(v_probe_vec, 'zzzisolationword', 5, v_lib_key);
   if v_count <> 0 then raise exception 'FAIL: the portal patient searched the professional library (% row(s))', v_count; end if;
+  select count(*) into v_count from public.canon_search(v_probe_vec, array['zzzcanonword'], 5, v_lib_key);
+  if v_count <> 0 then raise exception 'FAIL: the portal patient searched the canon (% row(s))', v_count; end if;
   select count(*) into v_count from public.library_chats;
   if v_count <> 0 then raise exception 'FAIL: the portal patient saw % library conversation(s)', v_count; end if;
   begin
@@ -1161,8 +1240,44 @@ begin
   select count(*) into v_count from public.invitation_by_token(v_invite_a) where clinic_name = 'Isolation Test A' and status = 'open';
   if v_count <> 1 then raise exception 'FAIL: the real invitation token did not answer with its clinic'; end if;
   begin
-    perform public.library_search(v_probe_vec, 'zzzisolationword', 5);
+    perform public.library_search(v_probe_vec, 'zzzisolationword', 5, v_lib_key);
     raise exception 'FAIL: an anonymous caller ran the library search';
+  exception
+    when insufficient_privilege then null;
+  end;
+  begin
+    perform public.library_key_ok(v_lib_key);
+    raise exception 'FAIL: an anonymous caller called the library key check';
+  exception
+    when insufficient_privilege then null;
+  end;
+  begin
+    perform public.canon_search(v_probe_vec, array['zzzcanonword'], 5, v_lib_key);
+    raise exception 'FAIL: an anonymous caller searched the canon';
+  exception
+    when insufficient_privilege then null;
+  end;
+  begin
+    perform public.canon_entries_get(array['iso:herb'], v_lib_key);
+    raise exception 'FAIL: an anonymous caller read a canon entry';
+  exception
+    when insufficient_privilege then null;
+  end;
+  begin
+    perform public.canon_name_rows(v_lib_key);
+    raise exception 'FAIL: an anonymous caller listed the canon''s names';
+  exception
+    when insufficient_privilege then null;
+  end;
+  begin
+    perform public.canon_note('iso-note', v_lib_key);
+    raise exception 'FAIL: an anonymous caller read a canon note';
+  exception
+    when insufficient_privilege then null;
+  end;
+  begin
+    perform public.canon_clear();
+    raise exception 'FAIL: an anonymous caller cleared the canon';
   exception
     when insufficient_privilege then null;
   end;

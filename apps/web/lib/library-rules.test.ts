@@ -5,14 +5,16 @@ import {
   citationNumbers,
   distinctByContent,
   dropCitations,
+  dropUnknownCitations,
   findPii,
   isIsraeliId,
   narrowedQuery,
   numbersIn,
   parsePlan,
   planFallback,
+  removeDoses,
   removeSentences,
-  removeSentencesWithNumbers,
+  removeUnsupportedNumbers,
   rrfMerge,
 } from '@clinic/domain';
 
@@ -47,8 +49,11 @@ describe('grounding', () => {
     expect(citationNumbers('no markers here')).toEqual([]);
   });
 
-  it('lists the numbers an answer states, without single digits or the markers', () => {
-    expect(numbersIn('9 גרם [1] ליום, 12.5 מ״ג [2], 1,000 שנה')).toEqual(['12.5', '1000']);
+  it('lists the numbers an answer states, a single digit only inside an amount with its unit, never the markers', () => {
+    expect(numbersIn('9 גרם [1] ליום, 12.5 מ״ג [2], 1,000 שנה')).toEqual(['9', '12.5', '1000']);
+    expect(numbersIn('Chai Hu 3–9g; Bai Zhu 6 גר׳; 0.5 עד 1 צון; 3 ל-6 מ״ל')).toEqual(['3', '9', '6', '0.5', '1']);
+    // A count, a translation of "twice daily", or a digit before a word that only starts like a unit.
+    expect(numbersIn('2 פעמים ביום, 3 צמחים, פי 2, 5 מגנונים')).toEqual([]);
   });
 
   it('passes an answer whose citations exist and whose numbers are in them', () => {
@@ -63,7 +68,13 @@ describe('grounding', () => {
     const passages = [{ n: 1, content: 'Bai Shao 9g.' }];
     expect(checkGrounding('באי שאו 9 גרם', passages).problems.map((p) => p.kind)).toEqual(['no_citation']);
     expect(checkGrounding('באי שאו 9 גרם [7]', passages).problems.map((p) => p.kind)).toEqual(['unknown_citation']);
-    expect(checkGrounding('באי שאו 15 גרם [1]', passages).problems).toEqual([{ kind: 'number_not_in_sources', detail: '15' }]);
+    expect(checkGrounding('באי שאו 15 גרם [1]', passages).problems).toEqual([{ kind: 'number_not_in_sources', detail: '15', sentence: 'באי שאו 15 גרם [1]' }]);
+  });
+
+  it('checks a single-digit dose, which used to pass unread', () => {
+    const passages = [{ n: 1, content: 'Chai Hu: 3-9g.' }];
+    expect(checkGrounding('צ׳אי הו במינון 3–9 גרם [1]', passages).ok).toBe(true);
+    expect(checkGrounding('צ׳אי הו במינון 6 גרם [1]', passages).problems).toEqual([{ kind: 'number_not_in_sources', detail: '6', sentence: 'צ׳אי הו במינון 6 גרם [1]' }]);
   });
 
   it('does not credit a number to a passage the answer did not cite', () => {
@@ -74,10 +85,26 @@ describe('grounding', () => {
     expect(checkGrounding('חואנג צ׳י 30 גרם [1]', passages).ok).toBe(false);
   });
 
+  it('holds each sentence to the passages it cites itself, not to every passage the answer cites', () => {
+    const passages = [
+      { n: 1, content: 'Bai Shao 9g.' },
+      { n: 2, content: 'Huang Qi 30g.' },
+    ];
+    // Both passages are cited, and 30 is in one of them — but not in the one beside Bai Shao.
+    const { problems } = checkGrounding('Bai Shao 30 גרם [1]. Huang Qi 30 גרם [2].', passages);
+    expect(problems).toEqual([{ kind: 'number_not_in_sources', detail: '30', sentence: 'Bai Shao 30 גרם [1].' }]);
+    // A sentence without a marker of its own takes the marker that closes its paragraph.
+    expect(checkGrounding('ל-Huang Qi מינון של 30 גרם במצבים קשים. הוא מחזק צ׳י [2].', passages).ok).toBe(true);
+  });
+
+  it('finds a number only whole in the passage: 12 is not in 120', () => {
+    expect(checkGrounding('מבשלים ב-12 מ״ל מים [1]', [{ n: 1, content: 'Decoct in 120 ml of water.' }]).ok).toBe(false);
+  });
+
   it('counts a number from the cited passage’s title or page as evidence', () => {
     const passages = [{ n: 1, content: 'Tao Ren: not recommended in pregnancy.', title: 'טבלת אינטראקציה 2014', page: 31 }];
     expect(checkGrounding('לפי טבלת האינטראקציות 2014, עמוד 31: Tao Ren לא מומלץ בהיריון [1]', passages)).toEqual({ ok: true, problems: [] });
-    expect(checkGrounding('לפי טבלת 2019 [1]', passages).problems).toEqual([{ kind: 'number_not_in_sources', detail: '2019' }]);
+    expect(checkGrounding('לפי טבלת 2019 [1]', passages).problems).toEqual([{ kind: 'number_not_in_sources', detail: '2019', sentence: 'לפי טבלת 2019 [1]' }]);
   });
 });
 
@@ -122,10 +149,29 @@ describe('removeSentences', () => {
     expect(dropCitations('Bai Shao 9 גרם [1, 12]. Gan Cao [12] מתוק [2][12].', [12])).toBe('Bai Shao 9 גרם [1]. Gan Cao מתוק [2].');
   });
 
-  it('strikes the sentences that state a number the passages do not hold', () => {
-    const { text, removed } = removeSentencesWithNumbers('Bai Shao 9 גרם [1]. Huang Qi 30 גרם [1]. Gan Cao 6 גרם [1].', ['30']);
-    expect(removed).toBe(1);
-    expect(text).toBe('Bai Shao 9 גרם [1]. Gan Cao 6 גרם [1].');
+  it('strikes a sentence whose only markers point at no passage, and keeps one that still has a real marker', () => {
+    const result = dropUnknownCitations('Huang Qi 30 גרם [12]. Bai Shao 9 גרם [1, 12]. Gan Cao מתוק [2].', [12]);
+    expect(result.text).toBe('Bai Shao 9 גרם [1]. Gan Cao מתוק [2].');
+    expect(result.removed).toBe(1);
+    expect(result.struck).toEqual(['Huang Qi 30 גרם [12].']);
+  });
+
+  it('strikes the sentences that state a number their own passages do not hold, and only those', () => {
+    const passages = [
+      { n: 1, content: 'Bai Shao 9g. Gan Cao 6g.' },
+      { n: 2, content: 'Huang Qi 30g.' },
+    ];
+    const result = removeUnsupportedNumbers('Bai Shao 9 גרם [1]. Huang Qi 9 גרם [2]. Gan Cao 6 גרם [1].', passages);
+    expect(result.text).toBe('Bai Shao 9 גרם [1]. Gan Cao 6 גרם [1].');
+    expect(result.struck).toEqual(['Huang Qi 9 גרם [2].']);
+  });
+
+  it('takes every dose out of text no source checked, and leaves the rest', () => {
+    const result = removeDoses(['**ידע כללי:**', '- Fu Zi רעיל ודורש בישול ממושך.', '- המינון המקובל 3–9 גרם.', '- נהוג לשלב אותו עם Gan Cao.'].join('\n'));
+    expect(result.removed).toBe(1);
+    expect(result.text).not.toContain('3–9');
+    expect(result.text).toContain('Fu Zi רעיל');
+    expect(result.text).toContain('Gan Cao');
   });
 });
 

@@ -4,7 +4,7 @@ import { useCallback, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { BookMarked, MessagesSquare } from 'lucide-react';
 import { Button, EmptyState, Sheet, SheetContent, useToast } from '@clinic/ui';
-import { LIBRARY_LIMITS, chatTitleFrom, type LibraryAnswer, type LibraryStreamEvent } from '@clinic/domain';
+import { LIBRARY_LIMITS, chatTitleFrom, historyTurns, type LibraryAnswer, type LibraryStreamEvent } from '@clinic/domain';
 import { ChatList } from './chat-list';
 import { ChatThread, type Progress, type ThreadMessage } from './chat-thread';
 import { deleteChat, loadChatMessages, renameChat, setChatPinned } from './chats';
@@ -111,7 +111,7 @@ export function LibraryWorkspace({
     showMessages(activeId, withQuestion);
     setPending(true);
     try {
-      const history = before
+      const history = historyTurns(before)
         .slice(-LIBRARY_LIMITS.historyTurns * 2)
         .map((message) => ({ role: message.role, content: message.content.slice(0, LIBRARY_LIMITS.historyChars) }));
       const response = await fetch('/api/library/ask', {

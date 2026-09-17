@@ -3763,7 +3763,7 @@
   },
   "library": {
     "title": "Professional library",
-    "subtitle": "Professional questions answered only from the sources loaded into the library. No answer without a source.",
+    "subtitle": "Professional questions in Chinese medicine: herbs, formulas, points, patterns and cases.",
     "nav": {
       "label": "Library screens",
       "chat": "Questions",
@@ -3788,38 +3788,38 @@
       "renameLabel": "Name",
       "loading": "Loading the conversation…",
       "welcomeTitle": "What you can ask",
-      "welcomeBody": "Professional questions the library's sources can answer: herbs, formulas, points, patterns. A question is sent to an outside answering service, so no names or identifying details of patients."
+      "welcomeBody": "Professional questions in Chinese medicine: herbs, formulas, points, patterns. A question is sent to an outside answering service, so no names or identifying details of patients."
     },
     "privacyTitle": "Before you ask",
-    "privacyBody": "The library answers only from its own sources and never sees a patient file. A question is sent to Voyage AI and Anthropic to be answered, so do not type names, identity numbers, phone numbers or medical details of a particular patient. The log records who asked, when, and which sources were retrieved; the question itself is not stored.",
+    "privacyBody": "The library never sees a patient file. A question is sent to Voyage AI and Anthropic to be answered, so do not type names, identity numbers, phone numbers or medical details of a particular patient. The log records who asked and when; the question itself is not stored.",
     "notConfigured": "The library is not connected yet",
-    "notConfiguredBody": "Whoever runs the service has not connected the search and answering services yet. Until then there is nothing to answer from.",
+    "notConfiguredBody": "Whoever runs the service has not connected the answering services yet. Until then there are no answers.",
     "empty": "No question yet. Start from one of the examples.",
-    "placeholder": "A professional question, for example: what are the indications of Gui Zhi Tang according to the sources?",
+    "placeholder": "A professional question, for example: what are the indications of Gui Zhi Tang?",
     "send": "Send",
-    "thinking": "Searching the sources and writing an answer…",
+    "thinking": "Thinking and writing an answer…",
     "clear": "Clear the conversation",
     "enterHint": "Enter to send, Shift+Enter for a new line",
     "chars": "{count}/{max}",
     "you": "Me",
     "assistant": "The library",
     "examples": {
-      "a": "Which herbs are in Gui Zhi Tang and what is the dose of each, according to the sources?",
+      "a": "What is the composition of Gui Zhi Tang?",
       "b": "What are the contraindications of Ma Huang?",
       "c": "Which pattern is Xiao Yao San used for?"
     },
     "status": {
-      "no_sources": "Not found in the sources",
+      "no_sources": "No grounded answer",
       "refused_pii": "The question contains an identifying detail",
       "refused_quota": "Daily quota reached",
       "error": "Could not answer right now. Try again in a moment.",
-      "general": "Not found in the library's sources; this answer is from the model's general knowledge"
+      "general": "An answer from the model's general knowledge"
     },
     "general": {
-      "title": "The model's general knowledge, not from the library",
-      "body": "This part was not checked against any source. A dose, formula or indication given here needs checking in a source before it is relied on."
+      "title": "The model's general knowledge",
+      "body": "This part was not checked. A dose, formula or indication given here needs checking before it is relied on."
     },
-    "trimmed": "{count, plural, one {One sentence the sources did not support was left out of the answer} other {# sentences the sources did not support were left out of the answer}}",
+    "trimmed": "{count, plural, one {One sentence without support was left out of the answer} other {# sentences without support were left out of the answer}}",
     "citations": "Sources of the answer",
     "retrieved": "The closest sources retrieved",
     "page": "Page {page}",
@@ -3840,7 +3840,7 @@
     },
     "activity": {
       "title": "Library activity",
-      "subtitle": "Who asked, when, and which sources were retrieved. Questions and answers are not stored.",
+      "subtitle": "Who asked and when. Questions and answers are not stored.",
       "empty": "No questions yet.",
       "when": "When",
       "who": "Who",
@@ -3850,18 +3850,18 @@
       "none": "No sources retrieved",
       "statuses": {
         "answered": "Answered",
-        "no_sources": "Not found in the sources",
+        "no_sources": "No grounded answer",
         "refused_pii": "Refused: identifying detail",
         "refused_quota": "Refused: daily quota",
         "error": "Error",
-        "general": "General knowledge, not from the library"
+        "general": "General knowledge"
       }
     },
     "stages": {
-      "searching": "Searching the library…",
-      "reading": "Reading {count, plural, one {one passage} other {# passages}} from the sources…",
-      "writing": "Writing an answer from the passages…",
-      "checking": "Checking every sentence and number against the sources…"
+      "searching": "Starting…",
+      "reading": "Thinking…",
+      "writing": "Writing an answer…",
+      "checking": "Checking the answer…"
     }
   }
 }

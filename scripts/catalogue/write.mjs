@@ -20,8 +20,8 @@
 // not written again. Needs ANTHROPIC_API_KEY in apps/web/.env.local.
 import crypto from 'node:crypto';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { args, ensureDir, env, factsDir, log, readJson, textDir, writeJson } from './lib.mjs';
+import { TCM_GLOSSARY } from '../../packages/domain/src/tcm-glossary.ts';
 import {
   factNumbers,
   removeUnits,
@@ -74,8 +74,7 @@ const FIELDS = {
   points: ['location', 'actions', 'indications', 'needling', 'cautions'],
 };
 
-const glossary = readJson(path.join(path.dirname(fileURLToPath(import.meta.url)), 'glossary.json'));
-const glossaryLines = (glossary?.terms ?? []).map((term) => `${term.he} = ${term.en}`).join('\n');
+const glossaryLines = TCM_GLOSSARY.map((term) => `${term.he} = ${term.en}`).join('\n');
 
 const WRITER_SYSTEM = `You write the reference entries of a clinic app used by Chinese-medicine practitioners in Israel: herbs, classical formulas and acupuncture points. For each entry you receive a FACT SHEET — facts gathered from two reference sources, some in Hebrew, some in English. You write the entry twice, in Hebrew and in English, from the sheet alone.
 

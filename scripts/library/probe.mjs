@@ -174,7 +174,7 @@ async function probe(supabase, question) {
   const embeddings = await timed('embed', () => embed(twin ? [p.standalone, twin] : [p.standalone]));
   const searches = [];
   for (const [index, embedding] of embeddings.entries()) {
-    const { data, error } = await timed(`search ${index + 1}`, () => supabase.rpc('library_search', { p_embedding: embedding, p_query: index === 0 ? words : '', p_limit: LIMIT }));
+    const { data, error } = await timed(`search ${index + 1}`, () => supabase.rpc('library_search', { p_embedding: embedding, p_query: index === 0 ? words : '', p_limit: LIMIT, p_key: env('LIBRARY_SEARCH_KEY') }));
     if (error) throw new Error(`library_search: ${error.message}`);
     searches.push({ label: index === 0 ? `as asked + words "${words}"` : 'english twin', rows: data ?? [] });
   }
@@ -216,7 +216,7 @@ async function probe(supabase, question) {
   // first three terms are asked for again, all of them still required.
   const narrowed = textHits.size === 0 ? narrowedQuery(p.keywords) : null;
   if (narrowed) {
-    const retry = await timed('narrowed', () => supabase.rpc('library_search', { p_embedding: embeddings[0], p_query: narrowed, p_limit: LIBRARY_LIMITS.narrowPassages }));
+    const retry = await timed('narrowed', () => supabase.rpc('library_search', { p_embedding: embeddings[0], p_query: narrowed, p_limit: LIBRARY_LIMITS.narrowPassages, p_key: env('LIBRARY_SEARCH_KEY') }));
     if (retry.error) log(`narrowed search: ${retry.error.message}`);
     const byFewerWords = [];
     for (const row of (retry.data ?? []).filter((r) => r.via === 'text')) {
@@ -236,7 +236,7 @@ async function probe(supabase, question) {
   // What an OR'd word search would have found, when asked for: the same
   // terms, any one of them enough. It shows what the AND query passed over.
   if (has('text-or') && p.keywords.length > 1) {
-    const { data, error } = await supabase.rpc('library_search', { p_embedding: embeddings[0], p_query: p.keywords.join(' or '), p_limit: LIMIT });
+    const { data, error } = await supabase.rpc('library_search', { p_embedding: embeddings[0], p_query: p.keywords.join(' or '), p_limit: LIMIT, p_key: env('LIBRARY_SEARCH_KEY') });
     if (error) log(`text-or: ${error.message}`);
     else {
       const texts = (data ?? []).filter((r) => r.via === 'text');

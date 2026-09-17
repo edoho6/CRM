@@ -62,8 +62,8 @@ export type LibraryStreamEvent =
  * judgement), and who answers for a decision (the practitioner).
  */
 export const LIBRARY_DISCLAIMER_HE =
-  'המידע כאן הוא כלי עזר בלבד, שנכתב אוטומטית מתוך מקורות שהוזנו לספרייה המקצועית, ' +
-  'ואינו ייעוץ רפואי ואינו תחליף לשיקול דעת מקצועי, לבדיקה במקור עצמו או לעלון התכשיר. ' +
+  'המידע כאן הוא כלי עזר בלבד שנכתב אוטומטית, ' +
+  'ואינו ייעוץ רפואי ואינו תחליף לשיקול דעת מקצועי או לעלון התכשיר. ' +
   'האחריות המקצועית והמשפטית לכל החלטה טיפולית היא של המטפל או המטפלת בלבד. ' +
   'אין להזין כאן פרטים מזהים או מידע רפואי של מטופלים.';
 
@@ -178,24 +178,47 @@ export function stripCitations(answer: string): string {
   return String(answer ?? '').replace(/\[[\d\s,]+\]/g, '');
 }
 
+const NUMBER = /\d[\d,]*(?:\.\d+)?/g;
+
+/**
+ * An amount with its unit: "9 גרם", "3–9g", "0.5 עד 1.5 צון", "12.5 מ״ג". A
+ * dose is where a wrong single digit does harm, and where the digit is what
+ * the source wrote — unlike "2 פעמים ביום", a translation of "twice daily".
+ */
+const DOSE_SOURCE = String.raw`\d[\d,]*(?:\.\d+)?(?:\s*(?:-|–|—|־|to|עד|ל-?)\s*\d[\d,]*(?:\.\d+)?)?\s*(?:g|gr|grams?|mg|mcg|µg|kg|ml|cc|cun|fen|qian|liang|IU|%|גרם|גר['׳]|מ["״]ג|מג|מק["״]ג|ק["״]ג|מ["״]ל|צ['׳]?ון)(?![\p{L}\p{N}])`;
+const DOSE = new RegExp(DOSE_SOURCE, 'giu');
+const HAS_DOSE = new RegExp(DOSE_SOURCE, 'iu');
+
 /**
  * The numbers a text states, normalised: thousands separators dropped, a
- * decimal kept. Single digits are left out — "2 פעמים ביום" against
- * "twice daily" is a translation, not an invention — and so are the
- * citation markers.
+ * decimal kept. A single digit counts only inside an amount with its unit
+ * ("3 גרם", "6-9g") — "2 פעמים ביום" against "twice daily" is a translation,
+ * not an invention. The citation markers are not numbers the text states.
  */
 export function numbersIn(text: string): string[] {
+  const plain = stripCitations(text);
+  const inDose = new Set<number>();
+  for (const dose of plain.matchAll(DOSE)) {
+    for (const part of dose[0].matchAll(NUMBER)) inDose.add(dose.index! + part.index!);
+  }
   const out = new Set<string>();
-  for (const match of stripCitations(text).matchAll(/\d[\d,]*(?:\.\d+)?/g)) {
+  for (const match of plain.matchAll(NUMBER)) {
     const value = match[0].replace(/,/g, '');
-    if (value.length >= 2 || value.includes('.')) out.add(value);
+    if (value.length >= 2 || value.includes('.') || inDose.has(match.index!)) out.add(value);
   }
   return [...out];
+}
+
+/** Every number a text holds, whole: "12" is not found inside "120" or "2012". */
+function numberTokens(text: string): Set<string> {
+  return new Set([...String(text ?? '').matchAll(NUMBER)].map((match) => match[0].replace(/,/g, '')));
 }
 
 export interface GroundingProblem {
   kind: 'no_citation' | 'unknown_citation' | 'number_not_in_sources';
   detail: string;
+  /** For a number: the sentence or bullet that states it, as the answer has it. */
+  sentence?: string;
 }
 
 export interface GroundingPassage {
@@ -208,27 +231,22 @@ export interface GroundingPassage {
 
 /**
  * Is the answer held up by the passages it cites? Every marker must name a
- * retrieved passage, an answer must cite something, and every number it
- * states must appear in the passages it cites — in their text, their title
- * or their page number, all of which the model was shown. This runs before
- * the second model reading, and it is the part that cannot be talked out
- * of a verdict.
+ * retrieved passage, an answer must cite something, and every number a
+ * sentence states must appear in the passages **that sentence** cites — in
+ * their text, their title or their page number, all of which the model was
+ * shown. Checked against every cited passage at once, a dose from [3] beside
+ * a herb that cites [1] passed. This runs before the second model reading,
+ * and it is the part that cannot be talked out of a verdict.
  */
 export function checkGrounding(answer: string, passages: readonly GroundingPassage[]): { ok: boolean; problems: GroundingProblem[] } {
   const problems: GroundingProblem[] = [];
   const cited = citationNumbers(answer);
-  const known = new Map(passages.map((p) => [p.n, p]));
-  if (cited.length === 0) problems.push({ kind: 'no_citation', detail: 'the answer cites no passage' });
+  const known = new Set(passages.map((p) => p.n));
+  if (cited.length === 0) return { ok: false, problems: [{ kind: 'no_citation', detail: 'the answer cites no passage' }] };
   for (const n of cited) if (!known.has(n)) problems.push({ kind: 'unknown_citation', detail: `[${n}]` });
-  const evidence = cited
-    .filter((n) => known.has(n))
-    .map((n) => {
-      const p = known.get(n)!;
-      return [p.content, p.title ?? '', p.page === null || p.page === undefined ? '' : String(p.page)].join('\n').replace(/,/g, '');
-    })
-    .join('\n');
-  for (const number of numbersIn(answer)) {
-    if (!evidence.includes(number)) problems.push({ kind: 'number_not_in_sources', detail: number });
+  for (const { unit, numbers } of unsupportedNumbers(answer, passages)) {
+    const sentence = answer.slice(unit.start, unit.end).trim();
+    for (const number of numbers) problems.push({ kind: 'number_not_in_sources', detail: number, sentence });
   }
   return { ok: problems.length === 0, problems };
 }
@@ -352,7 +370,7 @@ export function removeSentences(text: string, quotes: readonly string[]): { text
   return { text: doomed.size ? strike(text, [...doomed]) : text, removed: doomed.size };
 }
 
-/** Drops the given [n] markers from an answer — the ones that point at no retrieved passage — and leaves the words. */
+/** Drops the given [n] markers from an answer and leaves the words (see `dropUnknownCitations` for the claims behind them). */
 export function dropCitations(answer: string, numbers: readonly number[]): string {
   const gone = new Set(numbers);
   return String(answer ?? '')
@@ -367,14 +385,112 @@ export function dropCitations(answer: string, numbers: readonly number[]): strin
     .replace(/[ \t]{2,}/g, ' ');
 }
 
-/** Removes every sentence or bullet that states one of the given numbers — the ones the passages do not hold. */
-export function removeSentencesWithNumbers(text: string, numbers: readonly string[]): { text: string; removed: number } {
-  if (numbers.length === 0) return { text, removed: 0 };
-  const doomed = units(text).filter((unit) => {
-    const stated = numbersIn(text.slice(unit.start, unit.end));
-    return stated.some((n) => numbers.includes(n));
+/** What a removal took out, so the same claims can be taken out of the rest of the reply too. */
+export interface Struck {
+  text: string;
+  removed: number;
+  /** The sentences and bullets removed, as they stood. */
+  struck: string[];
+}
+
+function struckResult(text: string, doomed: readonly Unit[]): Struck {
+  if (doomed.length === 0) return { text, removed: 0, struck: [] };
+  return { text: strike(text, doomed), removed: doomed.length, struck: doomed.map((unit) => text.slice(unit.start, unit.end).trim()) };
+}
+
+/**
+ * The citations that stand behind a unit: its own markers; when it has none,
+ * those of its line (a sentence whose marker closes the paragraph); when the
+ * line has none either, those of its block — the lines up to a blank one.
+ */
+function scopedUnits(text: string): { unit: Unit; cites: number[] }[] {
+  const lines: { start: number; end: number; block: number }[] = [];
+  let offset = 0;
+  let block = 0;
+  let open = false;
+  for (const line of text.split('\n')) {
+    if (line.trim() === '') {
+      if (open) block += 1;
+      open = false;
+    } else {
+      open = true;
+    }
+    lines.push({ start: offset, end: offset + line.length, block });
+    offset += line.length + 1;
+  }
+  const cites = (from: number, to: number) => citationNumbers(text.slice(from, to));
+  const blockCites = new Map<number, number[]>();
+  return units(text).map((unit) => {
+    const own = cites(unit.start, unit.end);
+    if (own.length) return { unit, cites: own };
+    const line = lines.find((l) => unit.start >= l.start && unit.start <= l.end)!;
+    const inLine = cites(line.start, line.end);
+    if (inLine.length) return { unit, cites: inLine };
+    if (!blockCites.has(line.block)) {
+      const members = lines.filter((l) => l.block === line.block);
+      blockCites.set(line.block, cites(members[0]!.start, members[members.length - 1]!.end));
+    }
+    return { unit, cites: blockCites.get(line.block)! };
   });
-  return { text: doomed.length ? strike(text, doomed) : text, removed: doomed.length };
+}
+
+/**
+ * The units that state a number the passages behind them do not hold. A unit
+ * whose markers all name passages that were not retrieved is the marker
+ * check's business (`dropUnknownCitations`), not this one's.
+ */
+function unsupportedNumbers(text: string, passages: readonly GroundingPassage[]): { unit: Unit; numbers: string[] }[] {
+  const tokens = new Map(passages.map((p) => [p.n, numberTokens([p.content, p.title ?? '', p.page ?? ''].join('\n'))]));
+  const out: { unit: Unit; numbers: string[] }[] = [];
+  for (const { unit, cites } of scopedUnits(text)) {
+    const stated = numbersIn(text.slice(unit.start, unit.end));
+    if (stated.length === 0) continue;
+    const behind = cites.filter((n) => tokens.has(n));
+    if (cites.length > 0 && behind.length === 0) continue;
+    const missing = stated.filter((number) => !behind.some((n) => tokens.get(n)!.has(number)));
+    if (missing.length) out.push({ unit, numbers: missing });
+  }
+  return out;
+}
+
+/**
+ * Strikes the sentences and bullets that state a number the passages they
+ * cite do not hold — each such unit and only it, so "Bai Shao 9 גרם [1]"
+ * stays when "Huang Qi 9 גרם [2]" goes.
+ */
+export function removeUnsupportedNumbers(text: string, passages: readonly GroundingPassage[]): Struck {
+  return struckResult(
+    text,
+    unsupportedNumbers(text, passages).map((entry) => entry.unit),
+  );
+}
+
+/**
+ * What a marker pointing at no retrieved passage leaves behind. A sentence or
+ * bullet whose only markers are such markers goes whole: its words were the
+ * claim, and nothing stands behind them. Elsewhere the dead marker goes and
+ * the words stay, held up by the markers beside it.
+ */
+export function dropUnknownCitations(text: string, unknown: readonly number[]): Struck {
+  const gone = new Set(unknown);
+  const doomed = units(text).filter((unit) => {
+    const own = citationNumbers(text.slice(unit.start, unit.end));
+    return own.length > 0 && own.every((n) => gone.has(n));
+  });
+  const result = struckResult(text, doomed);
+  return { ...result, text: dropCitations(result.text, unknown) };
+}
+
+/**
+ * The model's own knowledge never states an amount: every sentence or bullet
+ * of it that carries a dose goes. Nothing checked that part against a source,
+ * and a dose is the claim that does harm when it is wrong.
+ */
+export function removeDoses(text: string): Struck {
+  return struckResult(
+    text,
+    units(text).filter((unit) => HAS_DOSE.test(stripCitations(text.slice(unit.start, unit.end)))),
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -475,7 +591,7 @@ export function distinctByContent<T extends { content: string }>(rows: readonly 
 }
 
 /** The answer given when the library holds nothing on the question, in the practitioner's words. */
-export const LIBRARY_NO_SOURCES_HE = 'לא מצאתי במקורות הספרייה תשובה מבוססת לשאלה הזאת, ולכן אני לא עונה עליה.';
+export const LIBRARY_NO_SOURCES_HE = 'אין לי תשובה מבוססת לשאלה הזאת.';
 export const LIBRARY_REFUSED_PII_HE =
   'השאלה כוללת פרט מזהה (מספר זהות, טלפון, אימייל או מספר ארוך). הספרייה עונה על שאלות מקצועיות בלבד, בלי פרטים של מטופלים. אפשר לנסח מחדש בלי הפרט הזה.';
 export const LIBRARY_REFUSED_QUOTA_HE = 'הגעת למכסת השאלות היומית. אפשר להמשיך מחר.';

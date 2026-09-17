@@ -1,3 +1,4 @@
+import { notFound } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { BookMarked } from 'lucide-react';
 import { Badge, Dash, EmptyState, PageBody, TableWrapper, Td, Th, Tr } from '@clinic/ui';
@@ -26,10 +27,10 @@ interface SourceRow {
 type Kind = 'all' | 'file' | 'website';
 
 /**
- * What the library holds, for anyone who asks it questions: every file and
+ * What the library holds, for the platform admin who runs it: every file and
  * every page, when it was last read, how many passages it became. A page
  * at a time — the websites alone run to thousands of pages — and by kind,
- * because a practitioner looking for a book does not want to scroll past
+ * because someone looking for one book does not want to scroll past
  * every article of every site. The loading itself happens from a terminal,
  * by whoever runs the service.
  */
@@ -44,6 +45,8 @@ export default async function LibrarySourcesPage({
   setRequestLocale(locale);
   const scope = await getClinicScope();
   if (!scope) return null;
+  // The list of what the library holds is the operator's, not the practitioners' (migration 71): the tables are readable by the platform admin only.
+  if (!scope.context.isPlatformAdmin) notFound();
   const t = await getTranslations('library.sources');
   const tc = await getTranslations('common');
 
@@ -74,7 +77,7 @@ export default async function LibrarySourcesPage({
 
   return (
     <>
-      <PageHeader title={t('title')} description={t('subtitle')} below={<LibraryNav current="sources" />} />
+      <PageHeader title={t('title')} description={t('subtitle')} below={<LibraryNav current="sources" admin />} />
       <PageBody width="wide">
         <SegmentedLinks
           label={t('kindHeading')}

@@ -43,6 +43,7 @@ Next.js (הטכנולוגיה שהמערכת בנויה עליה) רץ בצור�
    | `NEXT_PUBLIC_SITE_URL` | בינתיים `https://placeholder` — מעדכנים בשלב 6 |
    | `ANTHROPIC_API_KEY` | למסך "שאלות על הנתונים" ולספרייה המקצועית. אפשר לדלג בהתחלה |
    | `VOYAGE_API_KEY` | לספרייה המקצועית (החיפוש במקורות). ראה סעיף "ספרייה מקצועית" |
+   | `LIBRARY_SEARCH_KEY` | המפתח שפותח את החיפוש בספרייה (SQL 65). נוצר ב-Supabase ומועתק לכאן, ראה סעיף "ספרייה מקצועית" |
 
 5. **Deploy**. שתיים-שלוש דקות. בסוף מופיע מסך "Congratulations" עם הכתובת — משהו כמו `https://crm-project-xxxx.vercel.app`. להעתיק אותה.
 6. **Settings ← Environment Variables**: לערוך את `NEXT_PUBLIC_SITE_URL` ולשים בה את הכתובת האמיתית (בלי `/` בסוף). ואז **Deployments ← ⋯ על העליון ← Redeploy** כדי שהשינוי ייכנס.

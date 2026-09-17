@@ -30,7 +30,8 @@ import { isLibraryConfigured } from '@/features/library/voyage';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-export const maxDuration = 60;
+// The canon engine's complex questions (a case, several conditions) take a second round and run past a minute.
+export const maxDuration = 300;
 
 const Body = z.object({
   question: z.string().trim().min(1).max(LIBRARY_LIMITS.questionChars),

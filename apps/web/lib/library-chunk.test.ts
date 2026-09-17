@@ -45,6 +45,22 @@ describe('chunkPages', () => {
   });
 });
 
+describe('chunkPages and a licence stamp', () => {
+  it('leaves out the buyer details an e-book prints on its copyright page, and keeps the rest of the page', () => {
+    const page = [
+      'Copyright © 2024 Paradigm Publications',
+      'Licensed digital edition prepared exclusively for: Dana Example dana@example.test Dana Example 1 Example St. 0000000000',
+      'Order Number: WEB #1 Fulfillment Date: 2026-01-01 This copy is licensed for personal use by the named customer and may not be redistributed.',
+      '',
+      'How to Use e-Books',
+    ].join('\n');
+    const text = chunkPages([{ page: 3, text: page }]).map((c) => c.content).join('\n');
+    expect(text).toContain('Copyright © 2024 Paradigm Publications');
+    expect(text).toContain('How to Use e-Books');
+    expect(text).not.toMatch(/exclusively for|dana@example|Order Number|named customer/);
+  });
+});
+
 describe('looksLikeHeading', () => {
   it('recognises numbered, hashed and title-case lines, not sentences', () => {
     expect(looksLikeHeading('## Dosage and administration')).toBe(true);

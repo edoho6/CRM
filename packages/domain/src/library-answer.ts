@@ -114,3 +114,21 @@ export function chatTitleFrom(question: string, max = 60): string {
   const atWord = cut.lastIndexOf(' ');
   return `${(atWord > max * 0.6 ? cut.slice(0, atWord) : cut).trimEnd()}…`;
 }
+
+/**
+ * The turns a follow-up carries back to the server. A question refused for a
+ * patient's identifier stays on the screen with its refusal, but it is not
+ * sent again: the server checks the history too, so every question after it
+ * in the same conversation was refused as well.
+ */
+export function historyTurns<T extends { role: 'user' | 'assistant'; status?: string | null }>(messages: readonly T[]): T[] {
+  const kept: T[] = [];
+  for (const message of messages) {
+    if (message.role === 'assistant' && message.status === 'refused_pii') {
+      if (kept[kept.length - 1]?.role === 'user') kept.pop();
+      continue;
+    }
+    kept.push(message);
+  }
+  return kept;
+}
