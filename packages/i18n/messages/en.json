@@ -257,7 +257,25 @@
     "questions": "Questions? Call:",
     "changeLater": "You can come back to this link and change your answer.",
     "addToCalendar": "Add to calendar",
-    "directions": "Directions"
+    "directions": "Directions",
+    "change": {
+      "title": "Change the appointment",
+      "open": "Need another time, or to cancel?",
+      "move": "Another time",
+      "cancel": "Cancel the appointment",
+      "day": "Day",
+      "loading": "Checking free times…",
+      "noSlots": "No free times on this day. Try another day.",
+      "moveTo": "Move the appointment to {time}",
+      "moved": "The appointment was moved. The details above are updated.",
+      "cancelled": "The appointment was cancelled. Thank you for letting us know.",
+      "slotTaken": "That time was just taken. Please choose another.",
+      "notAllowed": "This appointment can no longer be changed here. Please call the clinic.",
+      "error": "Something went wrong. Please try again in a moment.",
+      "cancelConfirmTitle": "Cancel the appointment?",
+      "cancelConfirmBody": "The time will be freed for other patients.",
+      "tooLate": "Less than {hours} hours before the appointment, changes are by phone only."
+    }
   },
   "unsubscribe": {
     "greeting": "Hello {name},",
@@ -836,6 +854,44 @@
       "byId": "A patient with this ID number already exists: {name}",
       "open": "Open the existing file",
       "saveAnyway": "Save anyway"
+    },
+    "import": {
+      "button": "Import",
+      "title": "Import patients",
+      "subtitle": "From a CSV file exported from the previous system or from Excel.",
+      "fileTitle": "The file",
+      "fileIntro": "In Excel, save the sheet as \"CSV UTF-8\". The first row holds the column names. Up to {max} patients per import.",
+      "fileHint": "With the column names in the first row.",
+      "rowsRead": "{name}: {count} rows",
+      "empty": "The file has no rows beyond the headers.",
+      "tooMany": "More than {max} rows. Split the file into several imports.",
+      "columnsTitle": "Which column is which",
+      "columnsIntro": "Chosen from the column names. Change any, and mark a column you do not need \"Do not import\".",
+      "unnamedColumn": "Column {n}",
+      "skipColumn": "Do not import",
+      "noNameColumn": "A first name or full name column is needed.",
+      "check": "Check",
+      "planTitle": "What will be imported",
+      "line": "Row",
+      "name": "Name",
+      "result": "What happens",
+      "planNote": "Only \"New\" rows are added. A patient already on file (by phone or ID) is not added again. The table shows only rows that will not go in as they are.",
+      "import": "Import {count} patients",
+      "done": "{count} patients added.",
+      "toPatients": "To the patient list",
+      "status": {
+        "new": "New",
+        "on_file": "Already on file",
+        "twice_in_file": "Repeated in the file",
+        "no_name": "No name"
+      },
+      "problem": {
+        "bad_email": "invalid email (not imported)",
+        "bad_date": "invalid date of birth (not imported)",
+        "short_phone": "phone too short"
+      },
+      "choose": "Choose a CSV file",
+      "chooseAnother": "Choose another file"
     }
   },
   "appointments": {
@@ -2299,7 +2355,16 @@
       "horizonDaysHint": "How far ahead a booking may be made.",
       "verifySms": "Verify with an SMS code",
       "verifySmsHint": "Needs an SMS sending service. Until one is connected, leave this off — otherwise nobody can book.",
-      "noTypes": "No treatment is open for booking. In My area → Treatment types, tick \"open for online booking\" beside the ones you want."
+      "noTypes": "No treatment is open for booking. In My area → Treatment types, tick \"open for online booking\" beside the ones you want.",
+      "changes": {
+        "title": "Changes from the reminder",
+        "intro": "From the reminder link, the patient can pick another free time or cancel. Every change is added to the tasks.",
+        "enabled": "Allow moving and cancelling",
+        "noticeHours": "Up to how many hours before",
+        "noticeHoursHint": "Inside this time, by phone only. 0 means up to the start.",
+        "cancelOnly": "The booking page is off, so the reminder link can only cancel. Turn the booking page on to allow another time too.",
+        "invalid": "Something is not valid. Hours must be between 0 and 168."
+      }
     },
     "locations": {
       "intro": "The addresses you see patients at. With more than one, every booking names one, and rooms are sorted under them.",

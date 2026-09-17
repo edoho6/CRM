@@ -37,6 +37,8 @@ const CLINIC: Clinic = {
   booking_lead_hours: 12,
   booking_horizon_days: 60,
   booking_verify_sms: false,
+  patient_changes_enabled: false,
+  patient_changes_notice_hours: 24,
   google_review_url: null,
   whatsapp_number: null,
   created_at: '2026-01-01T00:00:00Z',

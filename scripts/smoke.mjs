@@ -562,6 +562,17 @@ const flows = {
     const clickable = await page.evaluate(() => getComputedStyle(document.body).pointerEvents !== 'none');
     return { ok: clickable, detail: `body clickable ${clickable}` };
   },
+  async importCheck(page) {
+    // The import's check, never its write: a CSV made here (UTF-8 with its mark, as Excel saves it) with
+    // one row repeated inside the file and one without a name. The plan must count both, and nothing is added.
+    const csv = '﻿שם,טלפון,תאריך לידה\nבדיקת ייבוא,050-9990001,05/03/1980\nבדיקת ייבוא שוב,0509990001,\n,054-9990002,\n';
+    await page.locator('#import_file').setInputFiles({ name: 'smoke-import.csv', mimeType: 'text/csv', buffer: Buffer.from(csv, 'utf8') });
+    await page.locator('main button', { hasText: /^בדיקה$/ }).first().click();
+    const plan = page.locator('main', { hasText: 'מה ייבוא' });
+    const ok = await plan.locator('text=כפול בקובץ: 1').first().waitFor({ timeout: 15_000 }).then(() => true).catch(() => false);
+    const noName = ok && (await page.locator('main', { hasText: 'בלי שם: 1' }).count()) > 0;
+    return { ok: ok && noName, detail: ok ? `plan counted the repeat${noName ? ' and the row without a name' : ', not the row without a name'}` : 'no plan after pressing the check' };
+  },
   async statusTileKeepsFilter(page) {
     // The "no upcoming appointment" tile by its label: the display-mode
     // switch also carries aria-pressed, and picking by position hit that.
@@ -1511,7 +1522,7 @@ const flows = {
 /* ---- main ---------------------------------------------------------------- */
 
 const STATIC_ROUTES = [
-  '/', '/patients', '/patients/new', '/calendar', '/calendar?view=day', '/calendar?view=month',
+  '/', '/patients', '/patients/new', '/patients/import', '/calendar', '/calendar?view=day', '/calendar?view=month',
   '/calendar?view=range', '/calendar?view=list', '/tasks', '/messages', '/messages/queue', '/encounters', '/encounters?layout=calendar', '/encounters/new', '/forms',
   '/forms/new', '/reference/herbs', '/reference/formulas', '/reference/points', '/reference/western-herbs', '/reference/compare',
   '/reference/medicine', '/reference/medicine?kind=drug', '/reference/medicine?kind=lab_test', '/reference/medicine/credits',
@@ -1647,6 +1658,7 @@ async function main() {
     await visit(context, { route: '/calendar?view=week', locale: 'he', width: desktop, label: 'flow block-day-escape', after: flows.blockDayThenEscape });
     await visit(context, { route: '/patients', locale: 'he', width: desktop, label: 'flow status-tile-filter', after: flows.statusTileKeepsFilter });
     await visit(context, { route: '/patients', locale: 'he', width: desktop, label: 'flow filters-not-remembered', after: flows.filtersNotRemembered });
+    await visit(context, { route: '/patients/import', locale: 'he', width: desktop, label: 'flow import-check', after: flows.importCheck });
     if (phone) await visit(context, { route: '/calendar?new=1', locale: 'he', width: phone, label: 'flow phone-dialog-drawer', after: flows.phoneDrawer });
     if (phone) {
       await visit(context, { route: '/', locale: 'he', width: phone, label: 'flow phone-tab-bar', after: flows.phoneTabBar });

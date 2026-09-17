@@ -1,5 +1,5 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { CalendarX2, Plus, Users, X } from 'lucide-react';
+import { CalendarX2, FileUp, Plus, Users, X } from 'lucide-react';
 import {
   Button,
   EmptyState,
@@ -229,12 +229,20 @@ export default async function PatientsPage({
             : t('count', { count: patients.length })
         }
         actions={
-          <Button asChild>
-            <Link href="/patients/new">
-              <Plus className="h-4 w-4" />
-              {t('new')}
-            </Link>
-          </Button>
+          <>
+            <Button asChild variant="secondary">
+              <Link href="/patients/import">
+                <FileUp className="h-4 w-4" aria-hidden />
+                {t('import.button')}
+              </Link>
+            </Button>
+            <Button asChild>
+              <Link href="/patients/new">
+                <Plus className="h-4 w-4" />
+                {t('new')}
+              </Link>
+            </Button>
+          </>
         }
       />
 

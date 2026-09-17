@@ -91,6 +91,9 @@ export interface Clinic {
   booking_lead_hours: number;
   booking_horizon_days: number;
   booking_verify_sms: boolean;
+  /** Whether the reminder link lets the patient move or cancel, and up to how many hours before (migration 75). */
+  patient_changes_enabled: boolean;
+  patient_changes_notice_hours: number;
   /** The clinic's Google page, where the review request points. Null switches that message off. */
   google_review_url: string | null;
   /** The clinic's WhatsApp line as verified with the sending service (972…); pushes are matched to it, sends go from it. */

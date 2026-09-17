@@ -16,6 +16,7 @@ import {
   type DuplicateCandidate,
   type DuplicateMatch,
 } from './duplicate';
+import { IMPORT_FIELDS, IMPORT_MAX_ROWS, planImport, type ImportProblem, type ImportRowStatus } from './csv-import';
 
 /**
  * Patient mutations.
@@ -211,18 +212,93 @@ export async function findDuplicatePatient(input: {
   if (!phone && !nationalId) return actionOk(null);
 
   const filters: string[] = [];
-  // The last seven digits are enough to pull the candidates; the module then
-  // decides on nine. `%` and `,` would be read as PostgREST syntax.
-  if (phone) filters.push(`phone.ilike.%${phone.slice(-7)}%`);
+  // The last four digits pull the candidates — seven in a row missed a number
+  // stored as 050-123-4567 — and the module then decides on nine. `%` and `,` would be read as PostgREST syntax.
+  if (phone) filters.push(`phone.ilike.%${phone.slice(-4)}%`);
   if (nationalId) filters.push(`national_id.ilike.%${nationalId}%`);
 
   const { data, error } = await scope.supabase
     .from('patients')
     .select('id, full_name, phone, national_id')
     .or(filters.join(','))
-    .limit(20)
+    .limit(200)
     .returns<DuplicateCandidate[]>();
 
   if (error) return actionError(error);
   return actionOk(findDuplicate(data ?? [], input, input.excludeId ?? null));
+}
+
+/* ---------------------------------------------------------------------------
+ * Import from another system's CSV export
+ * ------------------------------------------------------------------------ */
+
+const importInputSchema = z.object({
+  mapping: z.array(z.enum(IMPORT_FIELDS).nullable()).max(60),
+  rows: z
+    .array(z.object({ line: z.number().int().min(1), cells: z.array(z.string().max(5000)).max(60) }))
+    .min(1)
+    .max(IMPORT_MAX_ROWS),
+  /** True to see what would happen; false to write the new files. */
+  dryRun: z.boolean(),
+});
+
+export interface ImportOutcome {
+  plan: { line: number; name: string; status: ImportRowStatus; problems: ImportProblem[]; matchName: string | null }[];
+  created: number;
+}
+
+/**
+ * The plan is made here, against the patients the clinic has now, whatever
+ * the browser showed: the preview is for the person, this is the one that
+ * counts. Only rows with a name and no match on file (or earlier in the file)
+ * are written, two hundred at a time; each insert passes the audit trigger
+ * like any file opened at the desk.
+ */
+export async function importPatients(input: unknown): Promise<ActionResult<ImportOutcome>> {
+  const scope = await getClinicScope();
+  if (!scope) return actionError(new Error('unauthorized'));
+  const parsed = importInputSchema.safeParse(input);
+  if (!parsed.success) return actionError(new Error('validation'));
+
+  const existing: DuplicateCandidate[] = [];
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await scope.supabase
+      .from('patients')
+      .select('id, full_name, phone, national_id')
+      .order('created_at', { ascending: true })
+      .range(from, from + 999)
+      .returns<DuplicateCandidate[]>();
+    if (error) return actionError(error);
+    existing.push(...(data ?? []));
+    if (!data || data.length < 1000) break;
+  }
+
+  const plan = planImport(parsed.data.rows, parsed.data.mapping, existing);
+  let created = 0;
+  if (!parsed.data.dryRun) {
+    const fresh = plan.filter((row) => row.status === 'new');
+    for (let i = 0; i < fresh.length; i += 200) {
+      const batch = fresh.slice(i, i + 200).map(({ patient }) => ({
+        ...patient,
+        last_name: patient.last_name ?? '',
+        preferred_locale: scope.context.clinic.default_locale,
+        clinic_id: scope.context.clinic.id,
+        created_by: scope.context.membership.user_id,
+      }));
+      const { error } = await scope.supabase.from('patients').insert(batch);
+      if (error) return actionError(error);
+      created += batch.length;
+    }
+  }
+
+  return actionOk({
+    plan: plan.map((row) => ({
+      line: row.line,
+      name: [row.patient.first_name, row.patient.last_name].filter(Boolean).join(' '),
+      status: row.status,
+      problems: row.problems,
+      matchName: row.match?.name ?? null,
+    })),
+    created,
+  });
 }

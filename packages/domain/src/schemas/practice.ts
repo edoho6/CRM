@@ -296,6 +296,12 @@ export const bookingSettingsSchema = z.object({
 
 export type BookingSettingsValues = z.input<typeof bookingSettingsSchema>;
 
+/** Whether the reminder link may move or cancel an appointment, and up to how many hours before it (migration 75). */
+export const patientChangesSchema = z.object({
+  patient_changes_enabled: z.boolean().default(false),
+  patient_changes_notice_hours: z.coerce.number().int().min(0).max(168).default(24),
+});
+
 /**
  * Hours away on one day. The date and two clock times, as the dialog
  * speaks them; the action turns them into instants in the browser's zone,

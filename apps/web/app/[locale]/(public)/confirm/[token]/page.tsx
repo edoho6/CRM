@@ -6,6 +6,15 @@ import type { Locale } from '@clinic/domain';
 import { formatDate, formatTime } from '@clinic/i18n';
 import { appointmentTypeName } from '@/lib/display';
 import { RespondForm } from './respond-form';
+import { ChangeForm } from './change-form';
+
+interface ChangeOptions {
+  can_cancel: boolean;
+  can_move: boolean;
+  reason: 'disabled' | 'closed' | 'too_late' | null;
+  notice_hours: number;
+  horizon_days: number;
+}
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -52,6 +61,9 @@ export default async function ConfirmPage({
     ? await supabase.rpc('appointment_by_token', { p_token: token })
     : { data: null };
   const row = (Array.isArray(data) ? data[0] : null) as TokenRow | undefined;
+  // What the link may change (migration 75). Nothing when the clinic has not allowed it, or before SQL 69.
+  const { data: optionsData } = supabase && row ? await supabase.rpc('appointment_change_options', { p_token: token }) : { data: null };
+  const options = (optionsData ?? null) as ChangeOptions | null;
 
   const brand = (
     <div className="flex flex-col items-center gap-2 text-center">
@@ -136,6 +148,12 @@ export default async function ConfirmPage({
           ) : (
             <RespondForm token={token} current={row.confirmation_response} />
           )}
+
+          {!cancelled && options?.can_cancel ? (
+            <ChangeForm token={token} canMove={options.can_move} horizonDays={options.horizon_days} />
+          ) : !cancelled && options?.reason === 'too_late' ? (
+            <p className="text-center text-xs text-ink-600">{t('change.tooLate', { hours: options.notice_hours })}</p>
+          ) : null}
 
           {row.clinic_phone ? (
             <p className="text-center text-xs text-ink-600">

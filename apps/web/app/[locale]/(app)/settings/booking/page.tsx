@@ -4,6 +4,7 @@ import { PageHeader } from '@/components/app-shell';
 import { getClinicScope } from '@/lib/session';
 import { SettingsNav } from '@/features/settings/settings-nav';
 import { BookingSettingsForm } from '@/features/settings/booking-settings-form';
+import { PatientChangesForm } from '@/features/settings/patient-changes-form';
 import { pageTitle } from '@/lib/page-title';
 
 export const generateMetadata = pageTitle('settings', 'booking.title');
@@ -40,6 +41,11 @@ export default async function BookingSettingsPage({
           horizonDays={clinic.booking_horizon_days ?? 60}
           verifySms={clinic.booking_verify_sms === true}
           bookableTypes={count ?? 0}
+        />
+        <PatientChangesForm
+          enabled={clinic.patient_changes_enabled === true}
+          noticeHours={clinic.patient_changes_notice_hours ?? 24}
+          bookingEnabled={clinic.booking_enabled === true}
         />
       </PageBody>
     </>

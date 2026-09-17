@@ -865,6 +865,13 @@ begin
   exception
     when insufficient_privilege then null;
   end;
+  -- The booking page's matcher (migration 74) looks across a clinic's patients by phone: only booking_request calls it.
+  begin
+    perform public.booking_match_patient(v_clinic_b, '0501234567', 'Iso');
+    raise exception 'FAIL: a clinic member called the booking matcher';
+  exception
+    when insufficient_privilege then null;
+  end;
   -- Loading is the platform admin's only.
   begin
     perform public.canon_clear();
@@ -1302,6 +1309,12 @@ begin
   begin
     perform public.canon_clear_book('course');
     raise exception 'FAIL: an anonymous caller cleared the course';
+  exception
+    when insufficient_privilege then null;
+  end;
+  begin
+    perform public.booking_match_patient(gen_random_uuid(), '0501234567', 'Iso');
+    raise exception 'FAIL: an anonymous caller called the booking matcher';
   exception
     when insufficient_privilege then null;
   end;

@@ -1,11 +1,16 @@
 /**
  * Is this the same person the clinic already has a file on?
  *
- * Three doors create patients — the desk, the online booking page and the
- * portal — and none of them looked. So the same person books online with
- * 050-123-4567, rings up and is typed in as +972-50-1234567, and ends up with
- * two files: half the history in each, two sets of consents, and a reminder
- * that goes out twice.
+ * Two doors create patients — the desk and the online booking page (the
+ * portal only attaches a sign-in to a file the clinic invited) — and neither
+ * looked: the same person books online with 050-123-4567, rings up and is
+ * typed in as +972-50-1234567, and ends up with two files — half the history
+ * in each, two sets of consents, and a reminder that goes out twice.
+ *
+ * The desk asks this module and shows a warning. The booking page asks the
+ * same question in SQL (migration 74, booking_match_patient); with nobody
+ * there to read a warning, it also wants the first name to agree, and leaves
+ * the desk a task when only the phone does.
  *
  * Matching is on the two things that identify a person rather than describe
  * them. A name is not one of them: two people really are called the same

@@ -12,6 +12,7 @@ import {
   roomSchema,
   locationSchema,
   bookingSettingsSchema,
+  patientChangesSchema,
   scheduleBlocksSchema,
   closurePeriodSchema,
   practitionerProfileSchema,
@@ -806,6 +807,25 @@ export async function saveBookingSettings(input: unknown): Promise<ActionResult>
   // The handle is a URL shared by the whole service; a taken one is the one
   // thing this form can be wrong about.
   if (error?.code === '23505') return actionError(new Error('slug_taken'));
+  if (error) return actionError(error);
+  return actionOk();
+}
+
+/** Moving and cancelling from the reminder link: a card of its own, since a clinic without the booking page may want cancelling alone. */
+export async function savePatientChangesSettings(input: unknown): Promise<ActionResult> {
+  const scope = await getClinicScope();
+  if (!scope) return actionError(new Error('unauthorized'));
+
+  const parsed = patientChangesSchema.safeParse(input);
+  if (!parsed.success) return actionError(new Error('validation'));
+
+  const { error } = await scope.supabase
+    .from('clinics')
+    .update({
+      patient_changes_enabled: parsed.data.patient_changes_enabled,
+      patient_changes_notice_hours: parsed.data.patient_changes_notice_hours,
+    })
+    .eq('id', scope.context.clinic.id);
   if (error) return actionError(error);
   return actionOk();
 }

@@ -119,3 +119,11 @@ export function statusTone(map: Record<string, StatusTone>, status: string | nul
 export function switchTone(on: boolean): StatusTone {
   return on ? 'success' : 'muted';
 }
+
+/** A row of a patient import: a new file, one already on file, a repeat inside the file, or no name to open one with. */
+export const IMPORT_ROW_TONES: Record<'new' | 'on_file' | 'twice_in_file' | 'no_name', StatusTone> = {
+  new: 'success',
+  on_file: 'muted',
+  twice_in_file: 'warning',
+  no_name: 'danger',
+};
