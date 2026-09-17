@@ -1,3 +1,4 @@
+import { revalidatePath } from 'next/cache';
 import { redirect } from '@clinic/i18n/navigation';
 import { PREF_KEYS } from '@/lib/prefs';
 import { InstallHint } from '@clinic/ui';
@@ -8,7 +9,7 @@ import { isSupabaseConfigured } from '@clinic/db';
 import type { Locale } from '@clinic/domain';
 import { AppShell } from '@/components/app-shell';
 import { ReferenceSheetProvider } from '@/features/reference/reference-sheet';
-import { getMembershipContext } from '@/lib/session';
+import { getClinicScope, getMembershipContext } from '@/lib/session';
 import { needsSecondFactor } from '@/lib/second-factor';
 import { tryCreateServerSupabase } from '@clinic/db/server';
 import { getCurrentUser } from '@clinic/db/server';
@@ -69,9 +70,23 @@ export default async function AppLayout({
     await signOutAction(locale as Locale);
   }
 
+  /** The clinic this person works in next (migration 76). The function refuses a clinic they are not a member of. */
+  async function switchClinic(clinicId: string) {
+    'use server';
+    const scope = await getClinicScope();
+    if (!scope) return;
+    const { data, error } = await scope.supabase.rpc('set_active_clinic', { p_clinic_id: clinicId });
+    if (error || data !== true) return;
+    // Every page's data belongs to the old clinic; none of it survives the switch.
+    revalidatePath('/', 'layout');
+  }
+
   return (
     <AppShell
       clinicName={context.clinic.name}
+      clinics={context.clinics}
+      clinicId={context.clinic.id}
+      onSwitchClinic={context.clinics.length > 1 ? switchClinic : undefined}
       userName={context.profile?.full_name ?? ''}
       // A clinic that holds no stock never sees the stock room at all — the
       // setting is read once here rather than checked on every screen.

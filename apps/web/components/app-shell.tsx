@@ -56,6 +56,7 @@ import { QuickCreateMenu } from '@/features/quick-bar/quick-create-menu';
 import { BackButton } from './back-button';
 import { BottomTabBar } from './bottom-tab-bar';
 import { CollapsingTitle } from './collapsing-title';
+import { ClinicSwitcher } from './clinic-switcher';
 import { PREF_KEYS } from '@/lib/prefs';
 import { OpenFilesBar } from '@/features/workspace/open-files-bar';
 import { clearOpenFiles } from '@/features/workspace/open-files';
@@ -145,10 +146,17 @@ export function AppShell({
   isSynthetic = false,
   isPlatformAdmin = false,
   homePath = '/',
+  clinics = [],
+  clinicId,
+  onSwitchClinic,
   onSignOut,
 }: {
   children: React.ReactNode;
   clinicName: string;
+  /** Every clinic this person may work in; a switcher appears only past one (migration 76). */
+  clinics?: { id: string; name: string }[];
+  clinicId?: string;
+  onSwitchClinic?: (clinicId: string) => Promise<void>;
   userName: string;
   tracksInventory: boolean;
   /** Where the clinic name at the top of the menu leads — the person's own choice. */
@@ -411,6 +419,14 @@ export function AppShell({
               <span className="sr-only">{clinicName}</span>
             )}
           </Link>
+          {onSwitchClinic && clinicId ? (
+            <ClinicSwitcher
+              clinics={clinics}
+              currentId={clinicId}
+              onSwitch={onSwitchClinic}
+              collapsed={collapsed}
+            />
+          ) : null}
           {!collapsed ? (
             <>
               {/* Beside the menu it arranges. A switch, not a mode buried in
@@ -631,9 +647,25 @@ export function AppShell({
             focus to the button that opened it. */}
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
           <SheetContent title={t('mainMenu')} closeLabel={tc('close')} className="lg:hidden">
-            <p className="mb-2 truncate px-3 text-xs text-ink-500" dir="auto">
-              {userName}
-            </p>
+            <div className="mb-2 flex items-center gap-2 px-3">
+              <p className="min-w-0 flex-1 truncate text-xs text-ink-500" dir="auto">
+                {onSwitchClinic && clinicId ? `${clinicName} · ${userName}` : userName}
+              </p>
+              {/* On a phone the sidebar header does not exist, so the switcher
+                  lives here — otherwise someone working in two clinics could
+                  only change clinic from a desktop. The drawer closes with it:
+                  the page behind it is about to be another clinic's. */}
+              {onSwitchClinic && clinicId ? (
+                <ClinicSwitcher
+                  clinics={clinics}
+                  currentId={clinicId}
+                  onSwitch={async (id) => {
+                    await onSwitchClinic(id);
+                    setMobileOpen(false);
+                  }}
+                />
+              ) : null}
+            </div>
             {nav}
             <nav
               aria-label={t('account')}

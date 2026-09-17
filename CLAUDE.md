@@ -283,7 +283,8 @@ messages, prices, inventory, encounters, appointments, settings, dashboard, form
   הראשי, נסגר לתמיד ב-localStorage; שכבה קבועה מעל הסרגל התחתון, כדי ששום דבר לא יקפוץ. ה-smoke מסמן אותו
   כסגור בסקריפט הפתיחה ובודק אותו רק בביקור `?install-hint=1`
 - **שם הקליניקה בראש התפריט** הוא קישור ל-`profiles.home_path` (migration 38, `HOME_PATHS` ב-domain),
-  שנבחר ב"איזור אישי ← מראה"
+  שנבחר ב"איזור אישי ← מראה". לידו מתג קליניקות שמוצג רק למי שחבר ביותר מאחת — הבחירה נשמרת באדם
+  (`active_clinic`, migration 76) וכל policy קורא אותה דרך `current_clinic_id()`. הפרטים — `apps/web/features/settings/CLAUDE.md`
 - **מאגר המידע:** צמח, פורמולה ונקודה בדף הטיפול הם `ReferenceChip` שפותח מונוגרף בחלון מעל הדף, לא ניווט; בדפי רשומה `<ReferenceNav compact />` בחריץ `actions`. הקטלוג המשותף (`catalogue_*`, בלי `clinic_id`) נטען לקליניקה רק ב-`clinic_load_catalogue()` — ממלא חסרים, לעולם לא דורס תיקון; `needs_review` יורד בעריכה קלינית או ב"אישור" שרושם מי ומתי. הטקסט הקליני של הקטלוג נכתב מעובדות של ברא
   ו-American Dragon בניסוח שלנו, בעברית ובאנגלית (`scripts/catalogue/`, migration 57) — לא מועתק ולא מהידע של
   המודל. הפרטים — `apps/web/features/reference/CLAUDE.md`

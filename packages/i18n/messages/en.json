@@ -514,7 +514,8 @@
     "reports": "Reports",
     "userMenu": "User menu — {name}",
     "medicine": "Western medicine",
-    "library": "Professional library"
+    "library": "Professional library",
+    "switchClinic": "Switch clinic"
   },
   "auth": {
     "signup": {

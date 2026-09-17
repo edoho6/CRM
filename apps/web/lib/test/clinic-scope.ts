@@ -84,6 +84,7 @@ export function testMembershipContext(
     membership: { ...MEMBERSHIP, clinic_id: clinic.id, ...overrides.membership },
     profile: overrides.profile === null ? null : { ...PROFILE, ...overrides.profile },
     isPlatformAdmin: overrides.isPlatformAdmin ?? false,
+    clinics: [{ id: clinic.id, name: clinic.name }],
   };
 }
 

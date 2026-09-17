@@ -30,3 +30,9 @@
   ב-`/platform` (`platform_deletion_requests`, `platform_resolve_deletion_request`). UI: `features/settings/delete-account.tsx`
   (איזור אישי, הכרטיס האחרון, אישור בהקלדת שם הקליניקה), בפורטל `/account` מהפוטר; הדף הציבורי `/delete-account`.
   בדיקה: `supabase/tests/account_deletion.sql` — להריץ אחרי כל שינוי במחיקה או ב-FK ל-`profiles`
+- **קליניקה פעילה (migration 76, SQL 70):** `current_clinic_id()` קרא את החברות הוותיקה ביותר, ולכן מי שחבר
+  בשתי קליניקות ראה תמיד רק את הראשונה. עכשיו הבחירה נשמרת בטבלה `active_clinic` (שורה לאדם), והעוזר קורא
+  אותה עם נפילה חזרה לחברות הוותיקה. הכתיבה רק ב-`set_active_clinic`, שמסרבת לקליניקה שאין בה חברות פעילה;
+  לטבלה עצמה יש policy של קריאה בלבד. הבחירה נשמרת לאדם ולא לדפדפן — אותו תיק פתוח בשני מכשירים לא יראה שתי
+  קליניקות. `current_membership_context` מחזיר גם `clinics` (כל הקליניקות של האדם), ולכן `ClinicSwitcher`
+  בראש התפריט מוצג בלי קריאה נוספת ורק למי שיש לו יותר מאחת

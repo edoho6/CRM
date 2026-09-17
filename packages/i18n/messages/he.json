@@ -514,7 +514,8 @@
     "reports": "דוחות",
     "userMenu": "תפריט המשתמש — {name}",
     "medicine": "רפואה מערבית",
-    "library": "ספרייה מקצועית"
+    "library": "ספרייה מקצועית",
+    "switchClinic": "מעבר בין קליניקות"
   },
   "auth": {
     "signup": {

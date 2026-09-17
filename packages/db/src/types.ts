@@ -161,6 +161,8 @@ export interface MembershipContext {
   profile: Profile | null;
   /** On the short list that runs the service; sees the overview of every clinic. */
   isPlatformAdmin: boolean;
+  /** Every clinic this person may work in (migration 76). One for almost everyone; more than one shows the switcher. */
+  clinics: { id: string; name: string }[];
 }
 
 export interface Patient {

@@ -31,6 +31,7 @@ export const getMembershipContext = cache(async (): Promise<MembershipContext | 
       clinic: Clinic;
       profile: Profile | null;
       is_platform_admin: boolean;
+      clinics?: { id: string; name: string }[];
     } | null;
     if (!row?.membership || !row.clinic) return null;
     return {
@@ -38,6 +39,8 @@ export const getMembershipContext = cache(async (): Promise<MembershipContext | 
       clinic: row.clinic,
       profile: row.profile ?? null,
       isPlatformAdmin: row.is_platform_admin === true,
+      // Before migration 76 the function answers without the list: one clinic, no switcher.
+      clinics: row.clinics ?? [{ id: row.clinic.id, name: row.clinic.name }],
     };
   }
   // The function is not installed yet (a database that has not run the
@@ -72,6 +75,7 @@ export const getMembershipContext = cache(async (): Promise<MembershipContext | 
     clinic,
     profile: profile ?? null,
     isPlatformAdmin: platformAdmin === true,
+    clinics: [{ id: clinic.id, name: clinic.name }],
   };
 });
 
