@@ -298,6 +298,9 @@ describe('the answer instructions', () => {
 
   it('names the stages and levels the way Israeli practitioners do', () => {
     for (const term of ['שכבת ה-Yang Ming', "רמת הצ'י", 'קיסר', 'משרת', 'מנקז אש']) expect(system).toContain(term);
+    // Checked against Reidman's course material (17.9), and the practitioner's choices where it and Bara differ.
+    for (const term of ['לחות חמה', 'מעטפת הלב', 'שלושת המחממים', 'מזין דם', 'דפוס', 'מכבה רוח פנימית', 'Wei Qi']) expect(system).toContain(term);
+    for (const term of ['לחות-חום', 'קרום הלב', "סאן ג'יאו", 'מחזק דם']) expect(system).not.toContain(term);
     expect(system).not.toContain('סטגנציה');
   });
 });
