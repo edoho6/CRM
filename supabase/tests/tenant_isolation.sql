@@ -1273,22 +1273,25 @@ begin
   perform set_config('role', 'anon', true);
 
   raise notice '--- as an anonymous caller ---';
+  -- Signed out, a table behind sees_patient() is refused outright rather than
+  -- read as empty (the visibility functions are not granted to anon). Either is
+  -- a closed door; what must never happen is a row coming back.
 
-  select count(*) into v_count from public.patients;
+  begin select count(*) into v_count from public.patients; exception when insufficient_privilege then v_count := 0; end;
   if v_count <> 0 then raise exception 'FAIL: anonymous read returned % patient row(s)', v_count; end if;
 
-  select count(*) into v_count from public.tcm_notes;
+  begin select count(*) into v_count from public.tcm_notes; exception when insufficient_privilege then v_count := 0; end;
   if v_count <> 0 then raise exception 'FAIL: anonymous read returned % clinical note(s)', v_count; end if;
 
-  select count(*) into v_count from public.clinics;
+  begin select count(*) into v_count from public.clinics; exception when insufficient_privilege then v_count := 0; end;
   if v_count <> 0 then raise exception 'FAIL: anonymous read returned % clinic row(s)', v_count; end if;
-  select count(*) into v_count from public.shop_offers;
+  begin select count(*) into v_count from public.shop_offers; exception when insufficient_privilege then v_count := 0; end;
   if v_count <> 0 then raise exception 'FAIL: anonymous read returned % shop price(s)', v_count; end if;
-  select count(*) into v_count from public.med_entries;
+  begin select count(*) into v_count from public.med_entries; exception when insufficient_privilege then v_count := 0; end;
   if v_count <> 0 then raise exception 'FAIL: anonymous read returned % medicine entr(ies)', v_count; end if;
-  select count(*) into v_count from public.catalogue_points;
+  begin select count(*) into v_count from public.catalogue_points; exception when insufficient_privilege then v_count := 0; end;
   if v_count <> 0 then raise exception 'FAIL: anonymous read returned % catalogue point(s)', v_count; end if;
-  select count(*) into v_count from public.body_points;
+  begin select count(*) into v_count from public.body_points; exception when insufficient_privilege then v_count := 0; end;
   if v_count <> 0 then raise exception 'FAIL: anonymous read returned % 3D coordinate(s)', v_count; end if;
   begin
     perform public.clinic_load_catalogue();
@@ -1296,9 +1299,9 @@ begin
   exception
     when insufficient_privilege then null;
   end;
-  select count(*) into v_count from public.clinic_invitations;
+  begin select count(*) into v_count from public.clinic_invitations; exception when insufficient_privilege then v_count := 0; end;
   if v_count <> 0 then raise exception 'FAIL: anonymous read returned % invitation(s)', v_count; end if;
-  select count(*) into v_count from public.encounter_signatures;
+  begin select count(*) into v_count from public.encounter_signatures; exception when insufficient_privilege then v_count := 0; end;
   if v_count <> 0 then raise exception 'FAIL: anonymous read returned % signature record(s)', v_count; end if;
   select count(*) into v_count from public.invitation_by_token(gen_random_uuid());
   if v_count <> 0 then raise exception 'FAIL: a random invitation token answered'; end if;
@@ -1358,13 +1361,13 @@ begin
   exception
     when insufficient_privilege then null;
   end;
-  select count(*) into v_count from public.library_chats;
+  begin select count(*) into v_count from public.library_chats; exception when insufficient_privilege then v_count := 0; end;
   if v_count <> 0 then raise exception 'FAIL: anonymous read returned % library conversation(s)', v_count; end if;
   select count(*) into v_count from public.unsubscribe_info(gen_random_uuid());
   if v_count <> 0 then raise exception 'FAIL: a guessed removal token showed a page to an anonymous caller'; end if;
-  select count(*) into v_count from public.clinic_automations;
+  begin select count(*) into v_count from public.clinic_automations; exception when insufficient_privilege then v_count := 0; end;
   if v_count <> 0 then raise exception 'FAIL: anonymous read returned % automation setting(s)', v_count; end if;
-  select count(*) into v_count from public.whatsapp_messages;
+  begin select count(*) into v_count from public.whatsapp_messages; exception when insufficient_privilege then v_count := 0; end;
   if v_count <> 0 then raise exception 'FAIL: anonymous read returned % WhatsApp message(s)', v_count; end if;
 
   -- The one that mattered most: with nothing but the public key and a process
@@ -1450,7 +1453,7 @@ begin
   if public.booking_clinic('no-such-clinic') is not null then
     raise exception 'FAIL: an unknown handle returned a clinic';
   end if;
-  select count(*) into v_count from public.patients;
+  begin select count(*) into v_count from public.patients; exception when insufficient_privilege then v_count := 0; end;
   if v_count <> 0 then raise exception 'FAIL: anonymous read returned patients after booking calls'; end if;
   raise notice 'ok   the booking page shows one clinic and nothing else';
 
