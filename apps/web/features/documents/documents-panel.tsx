@@ -239,6 +239,12 @@ export function DocumentsPanel({
                           <span className="block text-xs text-ink-500">
                             {formatSize(document.size_bytes)}
                           </span>
+                          {document.upload_pending ? (
+                            <span className="mt-1 block" title={t('uploadIncompleteHint')}>
+                              <Badge tone="warning">{t('uploadIncomplete')}</Badge>
+                              <span className="sr-only">{t('uploadIncompleteHint')}</span>
+                            </span>
+                          ) : null}
                         </span>
                       </span>
                     </Td>
@@ -280,8 +286,9 @@ export function DocumentsPanel({
                           disabled={isRowPending}
                           className="text-red-700 hover:bg-red-50"
                           title={t('delete')}
+                          aria-label={`${t('delete')}: ${document.file_name}`}
                         >
-                          {isRowPending ? <Spinner /> : <Trash2 className="h-4 w-4" />}
+                          {isRowPending ? <Spinner /> : <Trash2 className="h-4 w-4" aria-hidden />}
                         </Button>
                       </div>
                     </Td>

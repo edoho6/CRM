@@ -33,6 +33,8 @@
       "bad_code": "That code is not right. Try again.",
       "code_expired": "The code has expired. Send a new one.",
       "too_many": "Too many attempts. Try again in a few minutes.",
+      "cooldown": "A code was sent a moment ago. You can ask for a new one in a minute.",
+      "busy": "Lots of requests right now. Try again in a few minutes, or call the clinic.",
       "generic": "Something went wrong. Please try again in a moment."
     },
     "stepOf": "Step {step} of {total}",
@@ -71,7 +73,9 @@
       "queued": "Waiting",
       "sent": "Sent",
       "failed": "Failed",
-      "skipped": "Not sent"
+      "skipped": "Not sent",
+      "sending": "Sending",
+      "stalled": "Needs checking"
     },
     "pushQueued": "Reaches the phone app within minutes; nothing to send by hand.",
     "queueTitle": "Sending queue",
@@ -194,6 +198,9 @@
       "daily_limit": "The daily WhatsApp message limit was reached.",
       "rate_limit": "Too many messages in a short time; try again in a few minutes.",
       "outdated_app": "The patient's WhatsApp is too old for this message.",
+      "claim_abandoned": "Sending stopped half-way, and the message may already have gone out. Check with the patient before sending again.",
+      "bad_recipient": "The recipient does not belong to the clinic, so the message was not sent.",
+      "rescheduled": "The appointment moved; a new reminder goes out for the new time.",
       "other": "Sending failed."
     }
   },
@@ -1542,7 +1549,9 @@
     "emptyBody": "Upload intake forms, images or other files to this patient's file.",
     "fileRequired": "Choose a file",
     "uploadError": "The upload failed",
-    "downloadError": "Couldn't download the file"
+    "downloadError": "Couldn't download the file",
+    "uploadIncomplete": "Upload not completed",
+    "uploadIncompleteHint": "The file was not saved. Delete this row and upload again."
   },
   "inventory": {
     "title": "Herb inventory",
@@ -2653,10 +2662,9 @@
       "roles": {
         "owner": "Owner",
         "practitioner": "Practitioner",
-        "staff": "Staff",
-        "assistant": "Assistant"
+        "staff": "Staff"
       },
-      "roleHint": "For now every role sees the same screens; the one difference is that only owners manage the team. Finer permissions per role come later.",
+      "roleHint": "What each role sees and does is in the table further down. Only owners manage the team.",
       "inviteTitle": "Invite a team member",
       "inviteIntro": "Make a link and send it to the person joining — WhatsApp, or however suits. Whoever opens it signs in or creates an account and joins the clinic in the role you chose. The link is good for seven days and works once.",
       "inviteRole": "Role",

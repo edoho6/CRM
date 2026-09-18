@@ -56,14 +56,16 @@ export async function uploadDocument(
 
   const path = `${scope.context.clinic.id}/${patientId}/${randomUUID()}-${sanitiseFileName(file.name)}`;
 
-  const { error: uploadError } = await scope.supabase.storage
-    .from('patient-documents')
-    .upload(path, file, { contentType: file.type || 'application/octet-stream' });
-
-  if (uploadError) {
-    return actionError(new Error(uploadError.message));
-  }
-
+  /*
+   * The row first, then the file. Storage lets a file in only under a path
+   * whose `patient_documents` row the caller can read (migration 20260919090000),
+   * so the row is what authorises the upload — the same rule that decides who
+   * may see the document decides who may store it.
+   *
+   * The row is marked pending until the file is stored. If the upload fails,
+   * the row is removed; if even that fails, it stays marked, and the panel
+   * shows it as an upload that did not complete, with a way to delete it.
+   */
   const { data, error } = await scope.supabase
     .from('patient_documents')
     .insert({
@@ -77,16 +79,32 @@ export async function uploadDocument(
       category,
       shared_with_patient: sharedWithPatient,
       encounter_id: encounterId,
+      upload_pending: true,
     })
     .select('id')
     .single<{ id: string }>();
 
-  if (error) {
-    // The file is already in storage but the row failed — remove it so a retry
-    // doesn't accumulate an orphaned, invisible copy in the bucket.
-    await scope.supabase.storage.from('patient-documents').remove([path]);
-    return actionError(error);
+  if (error) return actionError(error);
+
+  const { error: uploadError } = await scope.supabase.storage
+    .from('patient-documents')
+    .upload(path, file, { contentType: file.type || 'application/octet-stream' });
+
+  if (uploadError) {
+    const { error: cleanupError } = await scope.supabase
+      .from('patient_documents')
+      .delete()
+      .eq('id', data.id);
+    return actionError(new Error(cleanupError ? 'upload_incomplete' : 'upload_failed'));
   }
+
+  const { error: doneError } = await scope.supabase
+    .from('patient_documents')
+    .update({ upload_pending: false })
+    .eq('id', data.id);
+  // The file is stored; a row still marked pending only means the panel will
+  // offer to delete a document that is in fact complete. Said, not hidden.
+  if (doneError) return actionError(new Error('upload_incomplete'));
 
   return actionOk({ id: data.id });
 }
@@ -120,19 +138,25 @@ export async function deleteDocument(documentId: string): Promise<ActionResult> 
   if (fetchError) return actionError(fetchError);
   if (!document) return actionOk(); // Already gone — deleting twice should not be an error.
 
-  // A filed questionnaire has no object in storage; its path is a marker.
-  const { error: storageError } = document.file_path.startsWith('form-submission:')
-    ? { error: null }
-    : await scope.supabase.storage
-    .from('patient-documents')
-    .remove([document.file_path]);
-
-  // A storage failure here almost always means the object was already removed
-  // (e.g. a retried click). Proceed to drop the row either way rather than
-  // leaving a document the user asked to delete still listed.
-  void storageError;
+  /*
+   * The file before the row. Storage lets a file be removed only while its
+   * `patient_documents` row exists and is readable to the caller, so deleting
+   * the row first would leave a file nobody may remove. Removing a path that is
+   * already gone is not an error, so a retried click passes through; a real
+   * refusal stops here with the row — and the file — still in place.
+   *
+   * A filed questionnaire has no object in storage; its path is a marker.
+   */
+  if (!document.file_path.startsWith('form-submission:')) {
+    const { error: storageError } = await scope.supabase.storage
+      .from('patient-documents')
+      .remove([document.file_path]);
+    if (storageError) return actionError(new Error(storageError.message));
+  }
 
   const { error } = await scope.supabase.from('patient_documents').delete().eq('id', documentId);
+  // The file is gone and the row is not: it stays listed, and opening it says
+  // the file is missing — never a silent success.
   if (error) return actionError(error);
   return actionOk();
 }

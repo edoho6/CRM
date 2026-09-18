@@ -1,5 +1,6 @@
 'use server';
 
+import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import {
   TREATMENT_STATUSES,
@@ -16,7 +17,13 @@ import {
   type DuplicateCandidate,
   type DuplicateMatch,
 } from './duplicate';
-import { IMPORT_FIELDS, IMPORT_MAX_ROWS, planImport, type ImportProblem, type ImportRowStatus } from './csv-import';
+import {
+  IMPORT_FIELDS,
+  IMPORT_MAX_ROWS,
+  planImport,
+  type ImportProblem,
+  type ImportRowStatus,
+} from './csv-import';
 
 /**
  * Patient mutations.
@@ -33,18 +40,22 @@ export async function createPatient(input: unknown): Promise<ActionResult<{ id: 
   const parsed = patientFormSchema.safeParse(input);
   if (!parsed.success) return actionError(new Error('validation'));
 
-  const { data, error } = await scope.supabase
-    .from('patients')
-    .insert({
-      ...parsed.data,
-      clinic_id: scope.context.clinic.id,
-      created_by: scope.context.membership.user_id,
-    })
-    .select('id')
-    .single<{ id: string }>();
+  // The id is chosen here and the insert asks for nothing back. A practitioner
+  // reads a patient only once the file is linked to them, and the link is made
+  // by the table's after-insert trigger, in the same statement — but a
+  // RETURNING clause is checked against the read policy before that trigger
+  // runs, and refused. Having created a file grants nothing by itself: the link
+  // does, and the owner can take it away.
+  const id = randomUUID();
+  const { error } = await scope.supabase.from('patients').insert({
+    ...parsed.data,
+    id,
+    clinic_id: scope.context.clinic.id,
+    created_by: scope.context.membership.user_id,
+  });
 
   if (error) return actionError(error);
-  return actionOk({ id: data.id });
+  return actionOk({ id });
 }
 
 export async function updatePatient(id: string, input: unknown): Promise<ActionResult> {
@@ -235,7 +246,9 @@ export async function findDuplicatePatient(input: {
 const importInputSchema = z.object({
   mapping: z.array(z.enum(IMPORT_FIELDS).nullable()).max(60),
   rows: z
-    .array(z.object({ line: z.number().int().min(1), cells: z.array(z.string().max(5000)).max(60) }))
+    .array(
+      z.object({ line: z.number().int().min(1), cells: z.array(z.string().max(5000)).max(60) }),
+    )
     .min(1)
     .max(IMPORT_MAX_ROWS),
   /** True to see what would happen; false to write the new files. */
@@ -243,7 +256,13 @@ const importInputSchema = z.object({
 });
 
 export interface ImportOutcome {
-  plan: { line: number; name: string; status: ImportRowStatus; problems: ImportProblem[]; matchName: string | null }[];
+  plan: {
+    line: number;
+    name: string;
+    status: ImportRowStatus;
+    problems: ImportProblem[];
+    matchName: string | null;
+  }[];
   created: number;
 }
 

@@ -87,7 +87,12 @@ function smsProvider(): Provider | null {
   const token = Deno.env.get('SMS_019_TOKEN');
   const sender = Deno.env.get('SMS_SENDER');
   if (!username || !token || !sender) return null;
-  return createSms019Provider({ username, token, sender, fetch: (input, init) => fetch(input, init) });
+  return createSms019Provider({
+    username,
+    token,
+    sender,
+    fetch: (input, init) => fetch(input, init),
+  });
 }
 
 /** WhatsApp through the same 019 token; the line is each clinic's own. */
@@ -113,7 +118,12 @@ function makeProvider(): { provider: Provider; channels: Set<Channel> } | null {
       .filter((value): value is Channel => value === 'whatsapp' || value === 'sms'),
   );
   return {
-    provider: createWebhookProvider({ url, secret: Deno.env.get('MAKE_OUTBOUND_SECRET'), name: 'make', fetch: (input, init) => fetch(input, init) }),
+    provider: createWebhookProvider({
+      url,
+      secret: Deno.env.get('MAKE_OUTBOUND_SECRET'),
+      name: 'make',
+      fetch: (input, init) => fetch(input, init),
+    }),
     channels,
   };
 }
@@ -182,12 +192,19 @@ function pushProvider(supabase: SupabaseClient): Provider | null {
       false,
       ['sign'],
     );
-    const signature = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', key, new TextEncoder().encode(`${header}.${claims}`));
+    const signature = await crypto.subtle.sign(
+      'RSASSA-PKCS1-v1_5',
+      key,
+      new TextEncoder().encode(`${header}.${claims}`),
+    );
     const assertion = `${header}.${claims}.${base64url(signature)}`;
     const response = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer', assertion }),
+      body: new URLSearchParams({
+        grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+        assertion,
+      }),
     });
     if (!response.ok) throw new Error(`oauth_${response.status}`);
     const data = (await response.json()) as { access_token: string; expires_in: number };
@@ -260,7 +277,10 @@ function pushProvider(supabase: SupabaseClient): Provider | null {
  * ------------------------------------------------------------------------ */
 
 /** The schedule and the inbound function carry the secret; a signed-in clinic member carries their token. */
-async function callerMode(request: Request, supabase: SupabaseClient): Promise<'schedule' | 'member' | null> {
+async function callerMode(
+  request: Request,
+  supabase: SupabaseClient,
+): Promise<'schedule' | 'member' | null> {
   const secret = Deno.env.get('DISPATCH_SECRET');
   if (secretEquals(request.headers.get('x-dispatch-secret'), secret)) return 'schedule';
 
@@ -292,13 +312,23 @@ async function clinicFacts(supabase: SupabaseClient, clinicIds: string[]) {
   if (clinicIds.length === 0) return { facts, templates: buildTemplateMap([]) };
   const [{ data: clinics }, { data: templateRows }] = await Promise.all([
     supabase.from('clinics').select('id, is_synthetic, whatsapp_number').in('id', clinicIds),
-    supabase.from('clinic_automations').select('clinic_id, kind, whatsapp_template_id').in('clinic_id', clinicIds),
+    supabase
+      .from('clinic_automations')
+      .select('clinic_id, kind, whatsapp_template_id')
+      .in('clinic_id', clinicIds),
   ]);
   for (const row of (clinics ?? []) as ({ id: string } & ClinicFacts)[]) {
-    facts.set(row.id, { is_synthetic: row.is_synthetic === true, whatsapp_number: row.whatsapp_number });
+    facts.set(row.id, {
+      is_synthetic: row.is_synthetic === true,
+      whatsapp_number: row.whatsapp_number,
+    });
   }
   const templates = buildTemplateMap(
-    (templateRows ?? []) as { clinic_id: string; kind: string; whatsapp_template_id: string | null }[],
+    (templateRows ?? []) as {
+      clinic_id: string;
+      kind: string;
+      whatsapp_template_id: string | null;
+    }[],
   );
   return { facts, templates };
 }
@@ -320,22 +350,31 @@ interface QueuedRow {
   params: string[] | null;
 }
 
-async function sendMessageLog(supabase: SupabaseClient, providers: Record<Channel, Provider | null>) {
+async function sendMessageLog(
+  supabase: SupabaseClient,
+  providers: Record<Channel, Provider | null>,
+) {
   const channels = (Object.keys(providers) as Channel[]).filter((channel) => providers[channel]);
   const counts = { sent: 0, failed: 0, skipped: 0 };
   if (channels.length === 0) return counts;
 
-  const { data, error } = await supabase
-    .from('message_log')
-    .select('id, clinic_id, channel, template_key, recipient, body, subject, link_url, appointment_id, params')
-    .eq('status', 'queued')
-    .in('channel', channels)
-    .order('created_at', { ascending: true })
-    .limit(100);
-  if (error) throw new Error('read_failed');
+  // Claimed, not read: one statement moves the rows from queued to sending and
+  // returns only the ones this run took, so two runs that overlap (or a retry
+  // of this one) can never send the same message. A run that dies after
+  // claiming leaves its rows in `sending`; the next claim marks them stalled
+  // for a person, because they may already have gone out (migration
+  // 20260919090000).
+  const { data, error } = await supabase.rpc('claim_queued_messages', {
+    p_channels: channels,
+    p_worker: `dispatch-${crypto.randomUUID()}`,
+    p_limit: 100,
+  });
+  if (error) throw new Error('claim_failed');
 
   const rows = (data ?? []) as QueuedRow[];
-  const { facts, templates } = await clinicFacts(supabase, [...new Set(rows.map((row) => row.clinic_id))]);
+  const { facts, templates } = await clinicFacts(supabase, [
+    ...new Set(rows.map((row) => row.clinic_id)),
+  ]);
 
   for (const row of rows) {
     const clinic = facts.get(row.clinic_id);
@@ -349,7 +388,10 @@ async function sendMessageLog(supabase: SupabaseClient, providers: Record<Channe
 
     const reason = skipReason(message);
     if (reason) {
-      await supabase.from('message_log').update({ status: 'skipped', error_code: reason }).eq('id', message.id);
+      await supabase
+        .from('message_log')
+        .update({ status: 'skipped', error_code: reason })
+        .eq('id', message.id);
       counts.skipped += 1;
       continue;
     }
@@ -367,13 +409,20 @@ async function sendMessageLog(supabase: SupabaseClient, providers: Record<Channe
       // own mark is set in the same statement.
       await supabase.rpc('mark_message_sent', { p_id: message.id, p_provider: provider.name });
       if (result.providerId) {
-        await supabase.from('message_log').update({ provider_message_id: result.providerId }).eq('id', message.id);
+        await supabase
+          .from('message_log')
+          .update({ provider_message_id: result.providerId })
+          .eq('id', message.id);
       }
       counts.sent += 1;
     } else {
       await supabase
         .from('message_log')
-        .update({ status: 'failed', provider: provider.name, error_code: result.errorCode ?? 'failed' })
+        .update({
+          status: 'failed',
+          provider: provider.name,
+          error_code: result.errorCode ?? 'failed',
+        })
         .eq('id', message.id);
       counts.failed += 1;
     }
@@ -417,7 +466,10 @@ async function sendChats(supabase: SupabaseClient, provider: Provider | null) {
   if (rows.length === 0) return counts;
 
   const fail = async (id: string, code: string) => {
-    await supabase.from('whatsapp_messages').update({ status: 'failed', error_code: code }).eq('id', id);
+    await supabase
+      .from('whatsapp_messages')
+      .update({ status: 'failed', error_code: code })
+      .eq('id', id);
     counts.failed += 1;
   };
 
@@ -427,7 +479,10 @@ async function sendChats(supabase: SupabaseClient, provider: Provider | null) {
     await supabase
       .from('whatsapp_messages')
       .update({ status: 'queued', claimed_at: null })
-      .in('id', rows.map((row) => row.id));
+      .in(
+        'id',
+        rows.map((row) => row.id),
+      );
     return counts;
   }
 
@@ -435,7 +490,12 @@ async function sendChats(supabase: SupabaseClient, provider: Provider | null) {
     .from('whatsapp_conversations')
     .select('id, contact_key')
     .in('id', [...new Set(rows.map((row) => row.conversation_id))]);
-  const contacts = new Map((conversations ?? []).map((row: { id: string; contact_key: string }) => [row.id, row.contact_key]));
+  const contacts = new Map(
+    (conversations ?? []).map((row: { id: string; contact_key: string }) => [
+      row.id,
+      row.contact_key,
+    ]),
+  );
   const { facts } = await clinicFacts(supabase, [...new Set(rows.map((row) => row.clinic_id))]);
 
   for (const row of rows) {
@@ -471,7 +531,12 @@ async function sendChats(supabase: SupabaseClient, provider: Provider | null) {
     if (result.ok) {
       await supabase
         .from('whatsapp_messages')
-        .update({ status: 'sent', sent_at: new Date().toISOString(), provider_message_id: result.providerId ?? null, error_code: null })
+        .update({
+          status: 'sent',
+          sent_at: new Date().toISOString(),
+          provider_message_id: result.providerId ?? null,
+          error_code: null,
+        })
         .eq('id', row.id);
       counts.sent += 1;
     } else {
@@ -521,6 +586,9 @@ Deno.serve(async (request) => {
     const log = await sendMessageLog(supabase, providers);
     return Response.json({ ...log, chats });
   } catch (error) {
-    return Response.json({ error: error instanceof Error ? error.message : 'failed' }, { status: 500 });
+    return Response.json(
+      { error: error instanceof Error ? error.message : 'failed' },
+      { status: 500 },
+    );
   }
 });

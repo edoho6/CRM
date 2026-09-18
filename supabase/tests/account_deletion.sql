@@ -66,7 +66,7 @@ begin
     (v_clinic_a, v_owner_a, 'owner'),
     (v_clinic_a, v_doctor_a, 'practitioner'),
     (v_clinic_b, v_owner_b, 'owner'),
-    (v_clinic_b, v_helper_b, 'assistant'),
+    (v_clinic_b, v_helper_b, 'staff'),
     (v_clinic_c, v_owner_c, 'owner');
 
   insert into public.patients (clinic_id, first_name, last_name)

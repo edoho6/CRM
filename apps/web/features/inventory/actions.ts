@@ -198,45 +198,29 @@ export async function dispenseHerbs(input: unknown): Promise<ActionResult<{ id: 
   const parsed = dispenseRequestSchema.safeParse(input);
   if (!parsed.success) return actionError(new Error('validation'));
 
-  const { data, error } = await scope.supabase.rpc('dispense_formula', {
+  /*
+   * One call, one transaction: the allocation and the prescription's details
+   * (preparation, dose, timing) are written together or not at all. They used
+   * to be two calls, and a failure between them reported an error for herbs
+   * that had already left the jar — which a retry then took a second time.
+   * The form's key makes a retry return the first dispensing instead.
+   */
+  const { data, error } = await scope.supabase.rpc('dispense_with_details', {
     p_encounter_id: parsed.data.encounter_id,
     p_formula_id: parsed.data.formula_id,
     p_items: parsed.data.items,
     p_multiplier: parsed.data.multiplier,
-    // The allocator takes only what it needs to deduct stock. The preparation
-    // and the dosing instruction describe the prescription rather than the
-    // deduction, and are written straight onto the record afterwards.
     p_notes: parsed.data.notes,
+    p_preparation: parsed.data.preparation ?? null,
+    p_dose_amount: parsed.data.dose_amount,
+    p_dose_unit: parsed.data.dose_unit ?? null,
+    p_dose_timing: parsed.data.dose_timing ?? null,
+    p_doses_per_day: parsed.data.doses_per_day,
+    p_idempotency_key: parsed.data.idempotency_key ?? null,
   });
 
   if (error) return actionError(error);
-
-  const recordId = data as string;
-
-  /*
-   * The preparation and the dosing instruction describe the prescription, not
-   * the deduction, so the allocator does not take them — it is concerned only
-   * with which batches to draw from and whether there is enough.
-   *
-   * Written straight onto the record it just created. A failure here is not
-   * worth unwinding a successful stock movement over: the herbs did leave the
-   * jar, and reporting that as a failure would be the larger lie. The write is
-   * simple enough that the only realistic cause is the connection dropping
-   * between two statements.
-   */
-  const { error: detailError } = await scope.supabase
-    .from('dispensing_records')
-    .update({
-      preparation: parsed.data.preparation ?? null,
-      dose_amount: parsed.data.dose_amount,
-      dose_unit: parsed.data.dose_unit ?? null,
-      dose_timing: parsed.data.dose_timing ?? null,
-      doses_per_day: parsed.data.doses_per_day,
-    })
-    .eq('id', recordId);
-
-  if (detailError) return actionError(detailError);
-  return actionOk({ id: recordId });
+  return actionOk({ id: data as string });
 }
 
 /**

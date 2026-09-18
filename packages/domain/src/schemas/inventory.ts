@@ -54,11 +54,10 @@ export const herbFormSchema = z
     reorder_quantity: optionalNumber,
     is_active: z.boolean().default(true),
   })
-  .refine(
-    (value) =>
-      Boolean(value.pinyin_name || value.chinese_name || value.english_name),
-    { error: 'at_least_one_name_required', path: ['pinyin_name'] },
-  );
+  .refine((value) => Boolean(value.pinyin_name || value.chinese_name || value.english_name), {
+    error: 'at_least_one_name_required',
+    path: ['pinyin_name'],
+  });
 
 export type HerbFormValues = z.input<typeof herbFormSchema>;
 export type HerbFormData = z.output<typeof herbFormSchema>;
@@ -169,6 +168,8 @@ export const dispenseItemSchema = z.object({
 export const dispenseRequestSchema = z
   .object({
     encounter_id: uuidField,
+    /** Made by the form; the same key twice dispenses once. */
+    idempotency_key: uuidField.optional(),
     formula_id: z.union([uuidField, z.literal(''), z.null()]).transform((v) => (v ? v : null)),
     multiplier: z
       .union([z.string(), z.number()])

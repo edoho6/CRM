@@ -69,3 +69,9 @@
   `mark_message_sent` מקבל גם את ה-service role — בלי זה כל שליחה אוטומטית הייתה נשארת `queued` ויוצאת שוב.
   במסך ההודעות שורת push מוצגת עם פעמון ובלי נמען; בדיאלוג המשימה "התראה בטלפון" זמינה רק כשיש טלפון רשום
   (שאילתה מהדפדפן, RLS של הבעלים). `tenant_isolation.sql` בודק שטלפון של קליניקה אחרת לא נראה
+- **התור נתבע, לא נקרא (18.9, migration 20260919090000):** `dispatch-messages` לוקח שורות דרך `claim_queued_messages`
+  — `update … set status='sending', claimed_at, claimed_by … where id in (select … for update skip locked) returning`,
+  service_role בלבד. תביעה שלא הסתיימה תוך 15 דקות הופכת `stalled` ומוצגת במסך עם הנכשלות, **ולא נשלחת שוב לבד**:
+  ייתכן שכבר יצאה (at-most-once). כל בדיקת כפילות בתור (`status in (...)`) כוללת `sending` ו-`stalled`. מהאפליקציה
+  מותר רק הודעת ניסיון לעצמך ו-skip (טריגר `message_log_guard_client_update`); push רק לנמען מהקליניקה. הזזת תור
+  מבטלת תזכורת `queued` שלא נתבעה ומאפסת `reminder_sent_at` (טריגר `appointments_rescheduled`, עמודה `rescheduled_at`)

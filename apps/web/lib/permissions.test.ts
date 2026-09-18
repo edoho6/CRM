@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { ABILITY_KEYS, CLINIC_ROLES, abilitiesFor, type Abilities } from '@clinic/domain';
+import {
+  ABILITY_KEYS,
+  CLINIC_ROLES,
+  INVITABLE_ROLES,
+  MEMBERSHIP_ROLES,
+  abilitiesFor,
+  invitationSchema,
+  membershipRoleSchema,
+  type Abilities,
+} from '@clinic/domain';
 
 /**
  * These read like the decisions they came from (18.9), on purpose: when someone
@@ -36,11 +45,30 @@ describe('abilitiesFor', () => {
     expect(staff.deletePatient).toBe(false);
   });
 
-  it('gives the unused role nothing', () => {
-    const assistant = abilitiesFor('assistant');
+  it('knows three roles, and the removed one reaches nothing', () => {
+    expect(CLINIC_ROLES).toEqual(['owner', 'practitioner', 'staff']);
+    expect(INVITABLE_ROLES).toEqual(['practitioner', 'staff']);
+    expect(MEMBERSHIP_ROLES).not.toContain('assistant');
+    const removed = abilitiesFor('assistant');
     for (const key of ABILITY_KEYS) {
-      expect(assistant[key], `assistant should not have ${key}`).toBe(false);
+      expect(removed[key], `the removed role should not have ${key}`).toBe(false);
     }
+  });
+
+  it('refuses the removed role in an invitation and a role change', () => {
+    expect(invitationSchema.safeParse({ role: 'assistant' }).success).toBe(false);
+    expect(
+      membershipRoleSchema.safeParse({
+        membershipId: '7d1f4b1e-4a4e-4c55-9d4a-1f2e3d4c5b6a',
+        role: 'assistant',
+      }).success,
+    ).toBe(false);
+    expect(
+      membershipRoleSchema.safeParse({
+        membershipId: '7d1f4b1e-4a4e-4c55-9d4a-1f2e3d4c5b6a',
+        role: 'staff',
+      }).success,
+    ).toBe(true);
   });
 
   it('treats an unknown or missing role as no access, never as full access', () => {

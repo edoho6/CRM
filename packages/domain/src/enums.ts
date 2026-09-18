@@ -13,12 +13,12 @@ export const LOCALES = ['he', 'en'] as const;
 export type Locale = (typeof LOCALES)[number];
 export const DEFAULT_LOCALE: Locale = 'he';
 
-/** Staff roles inside a clinic. Milestone 1 only ever creates `owner`. */
-export const MEMBERSHIP_ROLES = ['owner', 'practitioner', 'staff', 'assistant'] as const;
+/** Staff roles inside a clinic. `assistant` was removed on 18.9 (migration 20260919091000). */
+export const MEMBERSHIP_ROLES = ['owner', 'practitioner', 'staff'] as const;
 export type MembershipRole = (typeof MEMBERSHIP_ROLES)[number];
 
 /** The roles an invitation may carry: ownership is handed over, never mailed. */
-export const INVITABLE_ROLES = ['practitioner', 'staff', 'assistant'] as const;
+export const INVITABLE_ROLES = ['practitioner', 'staff'] as const;
 
 /** Where the clinic name at the top of the menu may lead. Mirrors profiles_home_path_check. */
 export const HOME_PATHS = ['/', '/calendar', '/patients', '/tasks', '/encounters'] as const;

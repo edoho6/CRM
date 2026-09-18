@@ -12,7 +12,7 @@
  * with no sign on it.
  */
 
-export type ClinicRole = 'owner' | 'practitioner' | 'staff' | 'assistant';
+export type ClinicRole = 'owner' | 'practitioner' | 'staff';
 
 export interface Abilities {
   /** Patient files at all: names, contact details, the list. */
@@ -86,9 +86,9 @@ const BY_ROLE: Record<ClinicRole, Abilities> = {
     money: true,
     messages: true,
   },
-  // Defined and unused (decision of 18.9). It reaches nothing until a clinic
-  // asks for it, and then this is the line to change.
-  assistant: { ...NONE },
+  // There was a fourth role, `assistant`, defined and reaching nothing. It was
+  // removed on 18.9 (migration 20260919091000); `abilitiesFor` gives an
+  // unknown role nothing, so a stale value can never open anything.
 };
 
 /**
@@ -102,7 +102,7 @@ export function abilitiesFor(role: string | null | undefined): Abilities {
 }
 
 /** The roles, in the order a person would read them: most access first. */
-export const CLINIC_ROLES: ClinicRole[] = ['owner', 'practitioner', 'staff', 'assistant'];
+export const CLINIC_ROLES: ClinicRole[] = ['owner', 'practitioner', 'staff'];
 
 /** The capabilities, in the order the table on the team screen lists them. */
 export const ABILITY_KEYS: (keyof Abilities)[] = [

@@ -3,22 +3,28 @@
 import { headers } from 'next/headers';
 import { tryCreateServerSupabase } from '@clinic/db/server';
 import { checkRateLimit, recordFailure } from '@/lib/rate-limit';
+import { callerAddress } from '@/lib/caller-address';
 
 /**
  * The booking page's three calls, all through the anonymous client: the
  * functions behind them run as the database owner, take the clinic's public
  * handle, and are the only way in.
  *
- * Rate limits are by caller address, and count only what looks like abuse —
- * a code asked for again and again, a booking refused again and again. A
- * person choosing a different hour because the first was taken is not that.
+ * Limits, in layers. The database limits codes per phone number (a minute
+ * apart, three an hour), per clinic and across the service, and bookings per
+ * clinic — those hold whoever calls. Here, per caller address: every code sent
+ * counts (a flood of codes to many numbers is the abuse), and a refused booking
+ * counts; a person choosing another hour because the first was taken does not.
+ *
+ * The functions answer with a typed result, `{ ok, reason }`, rather than an
+ * error, so a wrong code is counted instead of rolled back. An older database
+ * that still raises is read the old way until its SQL is updated.
  */
 
+const CODE_BUDGET = { max: 5, windowMs: 60 * 60 * 1000, blockMs: 60 * 60 * 1000 };
+
 async function callerKey(prefix: string): Promise<string> {
-  const headerList = await headers();
-  const forwarded = headerList.get('x-forwarded-for') ?? '';
-  const ip = forwarded.split(',')[0]?.trim() || headerList.get('x-real-ip') || 'unknown';
-  return `${prefix}:${ip}`;
+  return `${prefix}:${callerAddress(await headers())}`;
 }
 
 export type BookingError =
@@ -28,17 +34,43 @@ export type BookingError =
   | 'bad_code'
   | 'code_expired'
   | 'too_many'
+  | 'cooldown'
+  | 'busy'
   | 'generic';
 
-function classify(message: string): BookingError {
-  if (message.includes('slot_taken')) return 'slot_taken';
-  if (message.includes('not_available')) return 'not_available';
-  if (message.includes('missing') || message.includes('bad_phone') || message.includes('bad_type'))
+function classify(reason: string): BookingError {
+  if (reason.includes('slot_taken')) return 'slot_taken';
+  if (reason.includes('not_available')) return 'not_available';
+  if (
+    reason.includes('missing') ||
+    reason.includes('bad_phone') ||
+    reason.includes('bad_type') ||
+    reason.includes('bad_location')
+  )
     return 'missing';
-  if (message.includes('bad_code')) return 'bad_code';
-  if (message.includes('code_expired')) return 'code_expired';
-  if (message.includes('too_many')) return 'too_many';
+  if (reason.includes('bad_code')) return 'bad_code';
+  if (reason.includes('code_expired')) return 'code_expired';
+  if (reason.includes('too_many')) return 'too_many';
+  if (reason.includes('cooldown')) return 'cooldown';
+  if (reason.includes('busy')) return 'busy';
   return 'generic';
+}
+
+type Outcome = { ok: true; data: Record<string, unknown> } | { ok: false; reason: string };
+
+/** The typed result, or the raised error of a database not yet updated. */
+function outcome(data: unknown, error: { message: string } | null): Outcome {
+  if (error) return { ok: false, reason: error.message };
+  if (data && typeof data === 'object' && 'ok' in data) {
+    const result = data as { ok: unknown; reason?: unknown };
+    return result.ok === true
+      ? { ok: true, data: result as Record<string, unknown> }
+      : { ok: false, reason: String(result.reason ?? 'generic') };
+  }
+  // The old functions: true / {token, start_at} on success.
+  return data
+    ? { ok: true, data: typeof data === 'object' ? (data as Record<string, unknown>) : {} }
+    : { ok: false, reason: 'generic' };
 }
 
 export async function fetchSlots(
@@ -63,15 +95,20 @@ export async function sendBookingCode(
   phone: string,
 ): Promise<{ ok: true } | { ok: false; error: BookingError }> {
   const key = await callerKey('booking-code');
-  if (!checkRateLimit(key).allowed) return { ok: false, error: 'too_many' };
+  if (!checkRateLimit(key, CODE_BUDGET).allowed) return { ok: false, error: 'too_many' };
+  // Counted before the call: what is bounded is how many codes one caller can
+  // have sent, successful or not.
+  recordFailure(key, CODE_BUDGET);
 
   const supabase = await tryCreateServerSupabase();
   if (!supabase) return { ok: false, error: 'generic' };
 
-  const { error } = await supabase.rpc('booking_send_code', { p_slug: slug, p_phone: phone });
-  if (error) {
-    recordFailure(key);
-    return { ok: false, error: classify(error.message) };
+  const { data, error } = await supabase.rpc('booking_send_code', { p_slug: slug, p_phone: phone });
+  const result = outcome(data, error);
+  if (!result.ok) {
+    // The clinic does not ask for a code: nothing to send, nothing wrong.
+    if (result.reason === 'not_required') return { ok: true };
+    return { ok: false, error: classify(result.reason) };
   }
   return { ok: true };
 }
@@ -113,14 +150,15 @@ export async function submitBooking(
     p_code: input.code,
   });
 
-  if (error) {
-    const kind = classify(error.message);
+  const result = outcome(data, error);
+  if (!result.ok) {
+    const kind = classify(result.reason);
     // A wrong code and a refused booking count; a taken hour does not.
     if (kind !== 'slot_taken') recordFailure(key);
     return { ok: false, error: kind };
   }
 
-  const token = (data as { token?: string } | null)?.token;
-  if (!token) return { ok: false, error: 'generic' };
+  const token = result.data.token;
+  if (typeof token !== 'string' || !token) return { ok: false, error: 'generic' };
   return { ok: true, token };
 }

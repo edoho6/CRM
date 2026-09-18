@@ -64,7 +64,7 @@ export async function skipMessage(id: string): Promise<ActionResult> {
     .from('message_log')
     .update({ status: 'skipped', error_code: 'skipped_by_staff' })
     .eq('id', id)
-    .in('status', ['queued', 'failed']);
+    .in('status', ['queued', 'failed', 'stalled']);
   if (error) return actionError(error);
   return actionOk();
 }

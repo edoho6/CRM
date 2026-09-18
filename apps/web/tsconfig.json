@@ -6,7 +6,8 @@
       "@/*": ["./*"],
       "@shop/*": ["../../supabase/functions/_shared/shop-prices/*"],
       "@messaging/*": ["../../supabase/functions/_shared/messaging/*"],
-      "@catalogue/*": ["../../supabase/functions/_shared/catalogue/*"]
+      "@catalogue/*": ["../../supabase/functions/_shared/catalogue/*"],
+      "@grow/*": ["../../supabase/functions/_shared/grow/*"]
     },
     "allowImportingTsExtensions": true,
     "types": ["node"]

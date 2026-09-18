@@ -167,6 +167,10 @@ export function DispensePanel({
   const [dosesPerDay, setDosesPerDay] = useState('');
   const [doseTiming, setDoseTiming] = useState<DoseTiming | ''>('');
   const [notes, setNotes] = useState('');
+  // One key per prescription on the form: a retry after a dropped connection
+  // returns the dispensing that already happened instead of taking the herbs
+  // from the jar a second time. A new key once it succeeds.
+  const [dispenseKey, setDispenseKey] = useState(() => crypto.randomUUID());
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<{
     key: string;
@@ -365,6 +369,7 @@ export function DispensePanel({
     setDosesPerDay('');
     setDoseTiming('');
     setDoseUnit(preparationUnit(preparation));
+    setDispenseKey(crypto.randomUUID());
   }
 
   /**
@@ -421,6 +426,7 @@ export function DispensePanel({
 
     const payload = {
       encounter_id: encounterId,
+      idempotency_key: dispenseKey,
       formula_id: mode === 'formula' ? (formulaChoice?.id ?? null) : null,
       // A formula typed rather than chosen becomes a named line on this
       // prescription and nothing more. Inventing a formula for one patient

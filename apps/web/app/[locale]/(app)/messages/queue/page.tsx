@@ -47,12 +47,13 @@ export default async function MessagesPage({
       .order('created_at', { ascending: true })
       .limit(200)
       .returns<QueueRow[]>(),
-    // What the sending service refused, with its reason: the person is the
+    // What the sending service refused, with its reason, and what it stopped
+    // half-way through (stalled — it may have gone out): the person is the
     // fallback, so these come back as cards with the manual path.
     scope.supabase
       .from('message_log')
       .select(SELECT)
-      .eq('status', 'failed')
+      .in('status', ['failed', 'stalled'])
       .gte('created_at', monthAgo.toISOString())
       .order('created_at', { ascending: false })
       .limit(100)

@@ -27,10 +27,15 @@ export const MESSAGE_ERROR_KEYS = [
   'daily_limit',
   'rate_limit',
   'outdated_app',
+  'claim_abandoned',
+  'bad_recipient',
+  'rescheduled',
 ] as const;
 
 export type MessageErrorKey = (typeof MESSAGE_ERROR_KEYS)[number] | 'other';
 
 export function messageErrorKey(code: string | null | undefined): MessageErrorKey {
-  return (MESSAGE_ERROR_KEYS as readonly string[]).includes(code ?? '') ? (code as MessageErrorKey) : 'other';
+  return (MESSAGE_ERROR_KEYS as readonly string[]).includes(code ?? '')
+    ? (code as MessageErrorKey)
+    : 'other';
 }

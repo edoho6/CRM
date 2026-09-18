@@ -1,21 +1,27 @@
 // What Grow tells us about a payment.
 //
-// Grow (Meshulam) posts here when a payment page finishes. It sends no
-// signature we could verify, so the credential is the *process token*: a value
-// Grow issued when the payment was created, which this system stored at that
-// moment and has never published. The process id alone proves nothing — it
-// travels through the payer's own browser — and that is exactly how this used
-// to be settled.
+// Grow (Meshulam) posts here when a payment page finishes. It signs nothing,
+// so nothing in the post is taken on its word:
 //
-// Why here and not in the web app: settling a payment writes across the
-// clinic boundary with no signed-in user, which only the service role may do,
-// and the web app by design holds none. It used to call `settle_grow_payment`
-// with the public anon key, which meant anyone else could too.
+//   1 · the callback is read as Grow sends it — `data[processId]`,
+//       `data[statusCode]`, … (../_shared/grow/callback.ts). A callback that
+//       does not say "completed" (status code 2) records a failure at most;
+//   2 · the process token must match the one Grow issued when the payment was
+//       created, which we stored and never published — the process id alone
+//       travels through the payer's browser and proves nothing;
+//   3 · before any money is recorded, Grow's own server is asked about the
+//       transaction (getTransactionInfo), and the amount it reports must equal
+//       the amount we asked for, in shekels;
+//   4 · `settle_grow_payment` does the rest in the database: idempotent, and a
+//       paid payment never goes back, whatever arrives later or twice.
 //
-// There is no secret in this address. The address is public because Grow has
-// to reach it and can carry nothing extra; a secret in the query string would
-// be written into every proxy log on the way. The token in the body is the
-// whole of the check, and a request without a matching one changes nothing.
+// A callback that cannot be verified settles nothing: the payment stays
+// pending, where the desk sees it and can record it by hand. That is the
+// failure worth having — the other one is an invoice marked paid that was not.
+//
+// Why here and not in the web app: settling writes across the clinic
+// boundary with no signed-in user, which only the service role may do, and the
+// web app by design holds none.
 //
 // Deploy:
 //   supabase functions deploy grow-webhook --no-verify-jwt
@@ -24,6 +30,13 @@
 // notification URL — DEPLOY.md, "סליקה דרך Grow".
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import {
+  callbackSaysPaid,
+  readGrowCallback,
+  readTransactionInfo,
+  sameAmount,
+  type GrowCallback,
+} from '../_shared/grow/callback.ts';
 
 const GROW_BASE = {
   sandbox: 'https://sandbox.meshulam.co.il/api/light/server/1.0',
@@ -32,53 +45,77 @@ const GROW_BASE = {
 
 type GrowEnvironment = keyof typeof GROW_BASE;
 
-interface Callback {
-  processId?: string;
-  processToken?: string;
-  transactionId?: string;
-  transactionCode?: string;
-  status?: string;
-  [key: string]: unknown;
+interface Credentials {
+  environment: GrowEnvironment;
+  userId: string;
+  pageCode: string;
 }
 
-/** Grow may post form-encoded or JSON; accept whichever arrives. */
-async function readPayload(request: Request): Promise<Callback> {
+/** Grow posts form fields; JSON is accepted too. Values only, never files. */
+async function readFields(request: Request): Promise<Record<string, unknown>> {
   const contentType = request.headers.get('content-type') ?? '';
   if (contentType.includes('application/json')) {
-    return (await request.json()) as Callback;
+    const body = await request.json();
+    return body && typeof body === 'object' ? (body as Record<string, unknown>) : {};
   }
   const form = await request.formData();
-  const payload: Callback = {};
+  const fields: Record<string, unknown> = {};
   for (const [key, value] of form.entries()) {
-    payload[key] = typeof value === 'string' ? value : value.name;
+    if (typeof value === 'string') fields[key] = value;
   }
-  return payload;
+  return fields;
 }
 
-/**
- * Acknowledges the transaction to Grow, which requires it after every
- * callback. Best effort: the payment is already settled by this point, and a
- * failure here is Grow's retry to make, not a reason to lose the settlement.
- */
-async function approveTransaction(
-  credentials: { environment: GrowEnvironment; userId: string; pageCode: string },
-  processId: string,
-  processToken: string,
-): Promise<void> {
+function baseFor(environment: GrowEnvironment): string {
+  return GROW_BASE[environment] ?? GROW_BASE.sandbox;
+}
+
+/** Asks Grow's server what it knows about this transaction. Null when it cannot say. */
+async function verifyWithGrow(credentials: Credentials, callback: GrowCallback) {
+  if (!callback.transactionId) return null;
   const form = new FormData();
   form.append('pageCode', credentials.pageCode);
   form.append('userId', credentials.userId);
-  form.append('processId', processId);
-  form.append('processToken', processToken);
+  form.append('transactionId', callback.transactionId);
+  if (callback.transactionToken) form.append('transactionToken', callback.transactionToken);
+  if (callback.processId) form.append('processId', callback.processId);
+  if (callback.processToken) form.append('processToken', callback.processToken);
   try {
-    await fetch(`${GROW_BASE[credentials.environment] ?? GROW_BASE.sandbox}/approveTransaction/`, {
+    const response = await fetch(`${baseFor(credentials.environment)}/getTransactionInfo/`, {
+      method: 'POST',
+      body: form,
+    });
+    if (!response.ok) return null;
+    return readTransactionInfo(await response.json());
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Acknowledges the transaction to Grow, which requires it after a callback.
+ * Best effort: the payment is already settled by this point.
+ */
+async function approveTransaction(credentials: Credentials, callback: GrowCallback): Promise<void> {
+  const form = new FormData();
+  form.append('pageCode', credentials.pageCode);
+  form.append('userId', credentials.userId);
+  form.append('processId', callback.processId ?? '');
+  form.append('processToken', callback.processToken ?? '');
+  if (callback.transactionId) form.append('transactionId', callback.transactionId);
+  try {
+    await fetch(`${baseFor(credentials.environment)}/approveTransaction/`, {
       method: 'POST',
       body: form,
     });
   } catch {
-    // Nothing to do and nothing to say: no patient or clinic detail belongs in
-    // a log here, and the money is already recorded.
+    // Nothing of the patient or the clinic belongs in a log here.
   }
+}
+
+/** Every answer is a 200 with a short code: a non-2xx has Grow retrying what no retry would fix. */
+function answer(reason: string | null, status = 200): Response {
+  return Response.json(reason ? { received: true, reason } : { received: true }, { status });
 }
 
 Deno.serve(async (request) => {
@@ -86,23 +123,16 @@ Deno.serve(async (request) => {
     return new Response('Method not allowed', { status: 405 });
   }
 
-  let payload: Callback;
+  let fields: Record<string, unknown>;
   try {
-    payload = await readPayload(request);
+    fields = await readFields(request);
   } catch {
-    return Response.json({ received: true, reason: 'invalid_payload' }, { status: 400 });
+    return answer('invalid_payload', 400);
   }
 
-  const processId = payload.processId ? String(payload.processId) : '';
-  const processToken = payload.processToken ? String(payload.processToken) : '';
-
-  // Checked before the database is touched, so a flood of empty posts costs a
-  // string comparison rather than a query.
-  if (!processId || !processToken || processId.length > 200 || processToken.length > 200) {
-    return Response.json(
-      { received: true, reason: 'missing_process_credentials' },
-      { status: 400 },
-    );
+  const callback = readGrowCallback(fields);
+  if (!callback.processId || !callback.processToken) {
+    return answer('missing_process_credentials', 400);
   }
 
   const supabase = createClient(
@@ -111,35 +141,9 @@ Deno.serve(async (request) => {
     { auth: { persistSession: false } },
   );
 
-  const succeeded = String(payload.status ?? '1') === '1';
-  const transactionId =
-    (payload.transactionId ? String(payload.transactionId) : null) ??
-    (payload.transactionCode ? String(payload.transactionCode) : null);
-
-  const { error } = await supabase.rpc('settle_grow_payment', {
-    p_process_id: processId,
-    p_process_token: processToken,
-    p_transaction_id: transactionId,
-    p_status: succeeded ? 'paid' : 'failed',
-    p_raw: payload,
-  });
-
-  if (error) {
-    // An unknown process id or a token that does not match lands here, and so
-    // does a forged callback. Answer 200 regardless: a non-2xx has Grow
-    // retrying something no retry would fix. The short code says which, with
-    // nothing of the payment in it.
-    const reason = error.message?.includes('payment_token_mismatch')
-      ? 'token_mismatch'
-      : error.message?.includes('payment_not_found')
-        ? 'unknown_process'
-        : 'settle_failed';
-    return Response.json({ received: true, reason }, { status: 200 });
-  }
-
-  // Credentials for the acknowledgement, for this one payment only.
+  // The clinic's Grow identifiers, for this one payment only.
   const { data: credentialRows } = await supabase.rpc('grow_credentials_for_process', {
-    p_process_id: processId,
+    p_process_id: callback.processId,
   });
   const settings = (
     credentialRows as
@@ -150,18 +154,53 @@ Deno.serve(async (request) => {
         }[]
       | null
   )?.[0];
+  if (!settings?.grow_user_id || !settings.grow_page_code) return answer('unknown_process');
+  const credentials: Credentials = {
+    environment: settings.environment,
+    userId: settings.grow_user_id,
+    pageCode: settings.grow_page_code,
+  };
 
-  if (settings?.grow_user_id && settings.grow_page_code) {
-    await approveTransaction(
-      {
-        environment: settings.environment,
-        userId: settings.grow_user_id,
-        pageCode: settings.grow_page_code,
-      },
-      processId,
-      processToken,
-    );
+  // Only the raw fields Grow sent about the transaction are kept, never the
+  // payer's details: those are Grow's to hold, not the log's.
+  const raw = {
+    processId: callback.processId,
+    transactionId: callback.transactionId,
+    statusCode: callback.statusCode,
+    sum: callback.sum,
+  };
+
+  if (!callbackSaysPaid(callback)) {
+    const { data } = await supabase.rpc('settle_grow_payment', {
+      p_process_id: callback.processId,
+      p_process_token: callback.processToken,
+      p_transaction_id: null,
+      p_status: 'failed',
+      p_raw: raw,
+    });
+    const result = data as { ok?: boolean; reason?: string } | null;
+    return answer(result?.ok ? 'not_completed' : (result?.reason ?? 'settle_failed'));
   }
 
-  return Response.json({ received: true }, { status: 200 });
+  const verified = await verifyWithGrow(credentials, callback);
+  if (!verified || !verified.paid || !sameAmount(verified.sum, callback.sum)) {
+    // Not confirmed by Grow's server, or the two disagree about the amount.
+    // Nothing is recorded; the payment stays pending for a person.
+    return answer('unverified');
+  }
+
+  const { data, error } = await supabase.rpc('settle_grow_payment', {
+    p_process_id: callback.processId,
+    p_process_token: callback.processToken,
+    p_transaction_id: callback.transactionId,
+    p_status: 'paid',
+    p_raw: raw,
+    p_amount: verified.sum,
+    p_currency: 'ILS',
+  });
+  const result = data as { ok?: boolean; reason?: string } | null;
+  if (error || !result?.ok) return answer(result?.reason ?? 'settle_failed');
+
+  await approveTransaction(credentials, callback);
+  return answer(null);
 });

@@ -13,6 +13,8 @@ export default defineConfig({
       '@messaging': fileURLToPath(new URL('../../supabase/functions/_shared/messaging', import.meta.url)),
       // The reference-catalogue readers (Bara, American Dragon) and checks are plain TypeScript the scripts import too.
       '@catalogue': fileURLToPath(new URL('../../supabase/functions/_shared/catalogue', import.meta.url)),
+      // Grow's callback reader lives with the webhook; its tests live here.
+      '@grow': fileURLToPath(new URL('../../supabase/functions/_shared/grow', import.meta.url)),
       // Server modules guard themselves with `import 'server-only'`, which throws here; see lib/test/server-only.ts.
       'server-only': fileURLToPath(new URL('./lib/test/server-only.ts', import.meta.url)),
     },

@@ -343,7 +343,10 @@ begin
 
   -- An open invitation in each clinic. The link is the whole secret.
   insert into public.clinic_invitations (clinic_id, role, invitee_name, invited_by)
-  values (v_clinic_a, 'practitioner', 'Iso Invitee A', v_user_a) returning token into v_invite_a;
+  -- A secretary: she reaches every patient file of the clinic, which is what
+  -- the "can read clinic A's patient" check below needs. A practitioner would
+  -- reach only the patients they treat (migration 78) and see none here.
+  values (v_clinic_a, 'staff', 'Iso Invitee A', v_user_a) returning token into v_invite_a;
   insert into public.clinic_invitations (clinic_id, role, invitee_name, invited_by)
   values (v_clinic_b, 'staff', 'Iso Invitee B', v_user_b) returning token into v_invite_b;
   select id into v_owner_a from public.memberships where clinic_id = v_clinic_a and user_id = v_user_a;
@@ -560,6 +563,38 @@ begin
   select count(*) into v_count from public.patient_unsubscribe_tokens;
   if v_count <> 0 then raise exception 'FAIL: a removal token was readable (% row(s))', v_count; end if;
   raise notice 'ok   automation settings, their queue and the removal tokens isolated';
+
+  -- The addresses links may point at are the platform's (18.9 audit): a member
+  -- neither reads nor adds one, and "send now" refuses a base that is not an
+  -- origin.
+  select count(*) into v_count from public.platform_link_bases;
+  if v_count <> 0 then raise exception 'FAIL: a member read the platform link addresses'; end if;
+  begin
+    insert into public.platform_link_bases (url) values ('https://phish.example');
+    raise exception 'FAIL: a member added a link address';
+  exception
+    when insufficient_privilege then null;
+  end;
+  begin
+    perform public.enqueue_now_for_my_clinic('https://iso.test/x?y=');
+    raise exception 'FAIL: "send now" took a link base with a path';
+  exception
+    when invalid_parameter_value then null;
+  end;
+  -- The queue sender and the push check are the service's alone.
+  begin
+    perform public.claim_queued_messages(array['sms'], 'iso', 1);
+    raise exception 'FAIL: a clinic member claimed the message queue';
+  exception
+    when insufficient_privilege then null;
+  end;
+  begin
+    perform public.push_recipient_in_clinic(v_clinic_a, v_user_a::text);
+    raise exception 'FAIL: a clinic member ran the push recipient check';
+  exception
+    when insufficient_privilege then null;
+  end;
+  raise notice 'ok   link addresses, the queue claim and the push check are the platform''s';
 
   -- The audit trail is meant to be unforgeable. It took the table name and the
   -- record id on trust, so a member could write "viewed" rows about a table
