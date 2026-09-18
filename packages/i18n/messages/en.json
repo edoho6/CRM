@@ -355,7 +355,14 @@
     "soon": "Soon",
     "openAll": "All tasks",
     "deleteTaskOf": "Delete task \"{title}\"",
-    "editTaskOf": "Edit task \"{title}\""
+    "editTaskOf": "Edit task \"{title}\"",
+    "noSetTime": "No set time",
+    "testTitle": "Test notification",
+    "testBody": "This is how a task reminder looks.",
+    "sendTest": "Send a test notification",
+    "testHint": "No notification at the task’s time? Send a test. If that one does not appear in the corner of the screen either, the computer is blocking it, not the system.",
+    "testSent": "Sent. Nothing appeared? On Windows: Settings → System → Notifications — make sure the browser is allowed and \"Do not disturb\" is off.",
+    "testFailed": "The browser did not show the notification. Reminders will keep appearing in the bell and as a small message inside the system."
   },
   "common": {
     "shell": {
@@ -1040,7 +1047,8 @@
     "legend": {
       "title": "Legend",
       "types": "Tint — treatment type:",
-      "confirmation": "Attendance:"
+      "confirmation": "Attendance:",
+      "paid": "Paid"
     },
     "drag": {
       "instructions": "Space lifts the appointment, the arrows move it by a quarter hour or a day, Space drops it and Escape cancels. Enter opens its details.",
@@ -1048,6 +1056,11 @@
       "dropped": "Dropped the appointment of {patient}.",
       "cancelled": "Moving the appointment of {patient} was cancelled.",
       "moved": "Moved to {date}, {time}"
+    },
+    "list": {
+      "upToToday": "Up to the end of today, newest first. Future dates — in a custom range.",
+      "empty": "No appointments yet.",
+      "record": "Treatment record"
     }
   },
   "encounters": {

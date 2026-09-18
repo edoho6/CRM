@@ -14,7 +14,8 @@ describe('parentPath', () => {
 
   it('takes a record to its list', () => {
     expect(parentPath('/patients/abc-123')).toBe('/patients');
-    expect(parentPath('/encounters/abc-123')).toBe('/encounters');
+    // The treatments list is the diary's list view now.
+    expect(parentPath('/encounters/abc-123')).toBe('/calendar?view=list');
     expect(parentPath('/billing/abc-123')).toBe('/billing');
   });
 

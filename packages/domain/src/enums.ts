@@ -43,6 +43,13 @@ export type Sex = (typeof SEXES)[number];
  */
 export const DEFAULT_ENTRY_COLOR = '#0369a1';
 
+/**
+ * A booking that has been paid for, in the diary: the green of the same family
+ * and depth as the default blue, so a paid block reads as the same kind of
+ * thing in another state rather than as a louder one.
+ */
+export const PAID_ENTRY_COLOR = '#15803d';
+
 export const APPOINTMENT_STATUSES = [
   'scheduled',
   'confirmed',

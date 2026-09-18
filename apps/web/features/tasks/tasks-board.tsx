@@ -25,6 +25,7 @@ import {
   useToast,
 } from '@clinic/ui';
 import { HeaderTools } from '@/components/header-tools';
+import { showBrowserNotification } from './browser-notify';
 import { formatDate, formatDateTime } from '@clinic/i18n';
 import { Link, useRouter } from '@clinic/i18n/navigation';
 import type { ClinicTaskWithPatient } from '@clinic/db/types';
@@ -147,6 +148,25 @@ export function TasksBoard({
     if (result === 'granted') toast({ tone: 'success', title: t('browserGranted') });
     else if (result === 'denied') toast({ tone: 'warning', title: t('browserDenied') });
     else toast({ tone: 'info', title: t('browserDismissed') });
+  }
+
+  /*
+   * The only way to know the operating system lets it through. The browser
+   * says "granted" and then Windows, with "do not disturb" on or the browser
+   * switched off in its notification settings, shows nothing — and the
+   * reminder looked broken when it had fired. Sent now, it answers that.
+   */
+  function sendTest() {
+    const shown = showBrowserNotification({
+      title: t('testTitle'),
+      body: t('testBody'),
+      tag: 'task-test',
+    });
+    toast(
+      shown
+        ? { tone: 'info', title: t('testSent') }
+        : { tone: 'warning', title: t('testFailed') },
+    );
   }
 
   async function remove(task: ClinicTaskWithPatient) {
@@ -346,8 +366,18 @@ export function TasksBoard({
         <CardHeader>
           <CardTitle>{t('browserNotifications')}</CardTitle>
         </CardHeader>
-        <CardBody>
+        <CardBody className="space-y-3">
           <p className="text-sm text-ink-600">{t('browserHint')}</p>
+          {permission === 'granted' ? (
+            <>
+              <p className="text-sm text-ink-600">{t('testHint')}</p>
+              <div className="flex justify-end">
+                <Button type="button" variant="secondary" onClick={sendTest}>
+                  {t('sendTest')}
+                </Button>
+              </div>
+            </>
+          ) : null}
         </CardBody>
       </Card>
 

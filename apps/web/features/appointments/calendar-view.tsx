@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useId, useMemo, useState, useTransition } from 'react';
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { useFormatter, useLocale, useTranslations } from 'next-intl';
 import {
   DndContext,
@@ -11,7 +11,7 @@ import {
   type Announcements,
   type DragEndEvent,
 } from '@dnd-kit/core';
-import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Info, List, Plus } from 'lucide-react';
 import type { Location, Room } from '@clinic/db/types';
 import { AppointmentBlock, DRAG_SNAP_MINUTES } from './appointment-block';
 import { ConfirmationDot } from './confirmation-status';
@@ -23,6 +23,7 @@ import {
   Dialog,
   DialogContent,
   PageHeader,
+  Popover,
   SegmentedControl,
   cn,
   useToast,
@@ -30,7 +31,7 @@ import {
 import { describeActionError } from '@/lib/action-error';
 import { moveAppointment } from './actions';
 import { DateInput } from '@/components/date-input';
-import type { Locale } from '@clinic/domain';
+import { PAID_ENTRY_COLOR, type Locale } from '@clinic/domain';
 import { Link, usePathname, useRouter } from '@clinic/i18n/navigation';
 import type { AppointmentType, AppointmentWithRelations, Patient } from '@clinic/db/types';
 import { appointmentTypeName, patientFullName } from '@/lib/display';
@@ -59,7 +60,6 @@ import {
   startOfMonth,
   startOfWeek,
   toDateKey,
-  LIST_DAYS,
   type CalendarViewMode,
 } from './date-utils';
 import { formatDate } from '@clinic/i18n';
@@ -76,6 +76,8 @@ import {
 
 export function CalendarView({
   appointments,
+  paidIds,
+  list,
   patients,
   appointmentTypes,
   practitionerId,
@@ -92,6 +94,10 @@ export function CalendarView({
   clinicName,
 }: {
   appointments: AppointmentWithRelations[];
+  /** Bookings on the grid that have been paid for: drawn green, and say so. */
+  paidIds: string[];
+  /** The list view, drawn on the server (`DiaryList`); null in every other view. */
+  list: React.ReactNode;
   patients: Pick<Patient, 'id' | 'full_name' | 'phone'>[];
   appointmentTypes: AppointmentType[];
   practitionerId: string;
@@ -122,15 +128,9 @@ export function CalendarView({
 
   const anchor = useMemo(() => fromDateKey(anchorDate), [anchorDate]);
   const days = useMemo(() => {
-    if (view === 'day') return [anchor];
+    // The list is its own table (`DiaryList`) and reads no days from here.
+    if (view === 'day' || view === 'list') return [anchor];
     if (view === 'month') return monthGridDays(anchor);
-    /*
-     * The list runs forward from the day being looked at, not backwards around
-     * it: "what is coming" is the question this view answers, and a list that
-     * opens on last week's finished appointments answers a different one. Four
-     * weeks is what fits a scroll without becoming a year.
-     */
-    if (view === 'list') return daysBetween(anchor, addDays(anchor, LIST_DAYS - 1));
     if (view === 'range') {
       const from = rangeFrom ? fromDateKey(rangeFrom) : anchor;
       const to = rangeTo ? fromDateKey(rangeTo) : addDays(from, 13);
@@ -212,6 +212,63 @@ export function CalendarView({
     }
     return map;
   }, [shown]);
+
+  const paid = useMemo(() => new Set(paidIds), [paidIds]);
+
+  /*
+   * The grid's panel runs to the bottom of the window.
+   *
+   * It was `100dvh - 14rem`: a guess at what the shell and the toolbar take,
+   * which was too much on a desk (a third of the screen under the diary stood
+   * empty) and wrong again whenever the sandbox banner or the open-files strip
+   * was there. Measured instead, from where the panel actually starts, before
+   * the first paint the browser makes of it; the class keeps the guess for the
+   * server's HTML, so the bottom edge moves once, down, and nothing above it.
+   */
+  const panelRef = useRef<HTMLDivElement>(null);
+  const [panelHeight, setPanelHeight] = useState<number | null>(null);
+  useLayoutEffect(() => {
+    const panel = panelRef.current;
+    if (!panel) return;
+    const measure = () => {
+      const top = panel.getBoundingClientRect().top + window.scrollY;
+      const bar = document.querySelector<HTMLElement>('[data-tab-bar]');
+      const barHeight = bar ? bar.getBoundingClientRect().height : 0;
+      // The main column's own bottom padding, so the panel's border shows.
+      const gap = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+      setPanelHeight(Math.max(320, Math.floor(window.innerHeight - top - barHeight - gap)));
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, [view]);
+
+  /*
+   * A week that is not this week opens on the working morning, not at six.
+   * This week, NowLine scrolls to the current hour; any other, the panel used
+   * to open at the top of the grid — two shaded hours before anyone works.
+   * The earliest of the first open hour and the first booking, half an hour
+   * before it.
+   */
+  const hasToday = days.some((day) => isSameDay(day, new Date()));
+  useLayoutEffect(() => {
+    const panel = panelRef.current;
+    if (!panel || hasToday) return;
+    let first = Number.POSITIVE_INFINITY;
+    for (const day of days) {
+      const open = openMinutes.get(toDateKey(day));
+      if (open && open.length > 0) first = Math.min(first, open[0]!.start);
+      for (const appointment of byDay.get(toDateKey(day)) ?? []) {
+        first = Math.min(first, minutesSinceMidnight(new Date(appointment.start_at)));
+      }
+    }
+    if (!Number.isFinite(first)) first = 8 * 60;
+    const slots = Math.max(0, (first - DAY_START_HOUR * 60) / SLOT_MINUTES - 1);
+    const rootPx = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+    panel.scrollTop = slots * SLOT_HEIGHT_REM * rootPx;
+    // Only when the dates change: a booking added later must not yank the panel.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [anchorDate, view, hasToday]);
 
   // Dragging a block. The mouse needs a few pixels of intent so a click
   // still opens the details; a finger needs a moment so a swipe still
@@ -382,9 +439,7 @@ export function CalendarView({
         ? addDays(anchor, direction)
         : view === 'month'
           ? addMonths(anchor, direction)
-          : view === 'list'
-            ? addDays(anchor, direction * LIST_DAYS)
-            : addDays(anchor, direction * 7);
+          : addDays(anchor, direction * 7);
     router.push({ pathname, query: { date: toDateKey(next), view } });
   }
 
@@ -488,95 +543,89 @@ export function CalendarView({
 
   const totalInView = days.reduce((sum, day) => sum + (byDay.get(toDateKey(day))?.length ?? 0), 0);
 
+  /*
+   * One row, not three.
+   *
+   * The title, the stepping, the view switch and "new" used to sit on two rows
+   * with the legend on a third, and on a laptop the three of them took the
+   * height of four hours of the diary. Now the stepping and the dates sit
+   * beside the title, the switches and "new" at the far end, and the legend
+   * folds behind its own button.
+   */
+  const stepping =
+    view === 'list' ? null : view !== 'range' ? (
+      <div className="flex flex-wrap items-center gap-1">
+        {/* Chevrons point in reading order: "previous" is towards the start edge. */}
+        <Button
+          variant="secondary"
+          size="icon"
+          onClick={() => navigate(-1)}
+          aria-label={t('previousPeriod')}
+          title={t('previousPeriod')}
+        >
+          {isRtl ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+        </Button>
+        <Button
+          variant="secondary"
+          size="icon"
+          onClick={() => navigate(1)}
+          aria-label={t('nextPeriod')}
+          title={t('nextPeriod')}
+        >
+          {isRtl ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+        </Button>
+        <Button variant="secondary" onClick={goToday}>
+          {tc('today')}
+        </Button>
+        <span className="ms-1 text-sm font-medium text-ink-700">{rangeLabel}</span>
+        {/* A diary with no working hours looks exactly like one with them —
+            nothing is shaded either way — so the difference is said here. */}
+        {availability.blocks.length === 0 && availability.exceptions.length === 0 ? (
+          <Link
+            href="/account/schedule"
+            className="ms-2 text-xs font-medium text-amber-700 underline-offset-2 hover:underline"
+          >
+            {t('noHoursHint')}
+          </Link>
+        ) : null}
+      </div>
+    ) : (
+      // The range view is anchored to its own two dates, so stepping and
+      // "today" have nothing to act on and are replaced by the dates.
+      <div className="flex flex-wrap items-center gap-1.5">
+        <DateInput
+          compact={false}
+          aria-label={tFilters('from')}
+          value={rangeFrom ?? toDateKey(days[0]!)}
+          max={rangeTo ?? undefined}
+          onChange={(event) => setRangeBound('from', event.target.value)}
+        />
+        <span className="text-sm text-ink-600">–</span>
+        <DateInput
+          compact={false}
+          aria-label={tFilters('to')}
+          value={rangeTo ?? toDateKey(days[days.length - 1]!)}
+          min={rangeFrom ?? undefined}
+          onChange={(event) => setRangeBound('to', event.target.value)}
+        />
+        <span className="ms-1 text-sm text-ink-600">
+          {t('countInView', { count: totalInView })}
+        </span>
+      </div>
+    );
+
   return (
     <>
       <PageHeader
         title={t('title')}
+        aside={stepping}
+        className="mb-3"
         actions={
-          <Button onClick={openNew}>
-            <Plus className="h-4 w-4" />
-            {t('new')}
-          </Button>
-        }
-      />
-      <div className="space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex flex-wrap items-center gap-1">
-            {/* The range view is anchored to its own two dates, so stepping and
-              "today" have nothing to act on and are hidden rather than left
-              present and inert. */}
-            {view !== 'range' ? (
-              <>
-                {/* Chevrons point in reading order: "previous" is towards the start edge. */}
-                <Button
-                  variant="secondary"
-                  size="icon"
-                  onClick={() => navigate(-1)}
-                  aria-label={t('previousPeriod')}
-                  title={t('previousPeriod')}
-                >
-                  {isRtl ? (
-                    <ChevronRight className="h-4 w-4" />
-                  ) : (
-                    <ChevronLeft className="h-4 w-4" />
-                  )}
-                </Button>
-                <Button
-                  variant="secondary"
-                  size="icon"
-                  onClick={() => navigate(1)}
-                  aria-label={t('nextPeriod')}
-                  title={t('nextPeriod')}
-                >
-                  {isRtl ? (
-                    <ChevronLeft className="h-4 w-4" />
-                  ) : (
-                    <ChevronRight className="h-4 w-4" />
-                  )}
-                </Button>
-                <Button variant="secondary" onClick={goToday}>
-                  {tc('today')}
-                </Button>
-                <span className="ms-2 text-sm font-medium text-ink-700">{rangeLabel}</span>
-                {/* A diary with no working hours looks exactly like one with them —
-                  nothing is shaded either way — so the difference is said here. */}
-                {availability.blocks.length === 0 && availability.exceptions.length === 0 ? (
-                  <Link
-                    href="/account/schedule"
-                    className="ms-2 text-xs font-medium text-amber-700 underline-offset-2 hover:underline"
-                  >
-                    {t('noHoursHint')}
-                  </Link>
-                ) : null}
-              </>
-            ) : (
-              <div className="flex flex-wrap items-center gap-1.5">
-                <DateInput
-                  compact={false}
-                  aria-label={tFilters('from')}
-                  value={rangeFrom ?? toDateKey(days[0]!)}
-                  max={rangeTo ?? undefined}
-                  onChange={(event) => setRangeBound('from', event.target.value)}
-                />
-                <span className="text-sm text-ink-600">–</span>
-                <DateInput
-                  compact={false}
-                  aria-label={tFilters('to')}
-                  value={rangeTo ?? toDateKey(days[days.length - 1]!)}
-                  min={rangeFrom ?? undefined}
-                  onChange={(event) => setRangeBound('to', event.target.value)}
-                />
-                <span className="ms-1 text-sm text-ink-600">
-                  {t('countInView', { count: totalInView })}
-                </span>
-              </div>
-            )}
-          </div>
-
-          <div className="flex flex-wrap items-center gap-1">
-            {/* Shown at every width. It was hidden on a phone, where the day
-              view was forced — now the phone merely starts on the day and
-              can leave it. */}
+          <>
+            {isTimeGrid ? (
+              <CalendarLegend appointmentTypes={appointmentTypes} locale={locale} />
+            ) : null}
+            {/* Shown at every width: a phone merely starts on the day. */}
             <SegmentedControl
               label={t('views.label')}
               size="md"
@@ -586,18 +635,37 @@ export function CalendarView({
                 { value: 'day', label: t('views.day') },
                 { value: 'week', label: t('views.week') },
                 { value: 'month', label: t('views.month') },
-                { value: 'list', label: t('views.list') },
                 { value: 'range', label: t('views.range') },
               ]}
             />
-          </div>
-        </div>
-
-        {isTimeGrid && (roomLane.size > 0 || appointmentTypes.length > 1) ? (
-          <CalendarLegend appointmentTypes={appointmentTypes} locale={locale} />
-        ) : null}
-
-        {!isTimeGrid ? (
+            {/* The list is a different kind of view — a table of what was done,
+                not a stretch of time — so it is its own control, beside the
+                others rather than one of them. */}
+            <SegmentedControl
+              label={t('views.list')}
+              size="md"
+              iconOnly
+              value={view}
+              onChange={(next) => switchView(next)}
+              options={[
+                {
+                  value: 'list',
+                  label: t('views.list'),
+                  icon: <List className="h-4 w-4" aria-hidden />,
+                },
+              ]}
+            />
+            <Button onClick={openNew}>
+              <Plus className="h-4 w-4" />
+              {t('new')}
+            </Button>
+          </>
+        }
+      />
+      <div className="space-y-3">
+        {view === 'list' ? (
+          list
+        ) : !isTimeGrid ? (
           <MonthOrRangeView
             days={days}
             view={view}
@@ -629,7 +697,10 @@ export function CalendarView({
             <div
               data-time-grid
               data-scroll-panel
-              className="max-h-[calc(100dvh-var(--bottom-bar,0px)-14rem)] min-h-[20rem] overflow-auto overscroll-contain rounded-card border border-ink-200 bg-white"
+              ref={panelRef}
+              // A max-height, not a height, so the print rule (`max-height: none !important`) still lays the whole day out.
+              style={panelHeight ? { maxHeight: panelHeight } : undefined}
+              className="max-h-[calc(100dvh-var(--bottom-bar,0px)-11rem)] min-h-[20rem] overflow-auto overscroll-contain rounded-card border border-ink-200 bg-white"
             >
               {/* What the keyboard's move says, for a screen reader. */}
               <p aria-live="assertive" role="status" className="sr-only">
@@ -648,25 +719,32 @@ export function CalendarView({
                       <div
                         key={day.toISOString()}
                         className={cn(
-                          'relative border-e border-ink-100 px-2 py-1.5 text-center last:border-e-0',
+                          'relative border-e border-ink-100 px-2 py-1 text-center last:border-e-0',
                           today && 'bg-jade-50',
                         )}
                       >
+                        {/* One line — the weekday and the date side by side — where it
+                            was two: the row is sticky, and every line it holds is a line
+                            of the diary it hides. */}
                         <div
                           className={cn(
-                            'text-xs font-medium',
-                            today ? 'text-jade-800' : 'text-ink-600',
+                            'flex items-baseline justify-center gap-1.5 text-sm leading-6',
+                            today ? 'text-jade-900' : 'text-ink-800',
                           )}
                         >
-                          {format.dateTime(day, { weekday: 'short' })}
-                        </div>
-                        <div
-                          className={cn(
-                            'text-base leading-tight tabular-nums',
-                            today ? 'font-semibold text-jade-900' : 'font-medium text-ink-800',
-                          )}
-                        >
-                          {format.dateTime(day, { day: 'numeric', month: 'numeric' })}
+                          <span
+                            className={cn(
+                              'text-xs font-medium',
+                              today ? 'text-jade-800' : 'text-ink-600',
+                            )}
+                          >
+                            {format.dateTime(day, { weekday: 'short' })}
+                          </span>
+                          <span
+                            className={cn('tabular-nums', today ? 'font-semibold' : 'font-medium')}
+                          >
+                            {format.dateTime(day, { day: 'numeric', month: 'numeric' })}
+                          </span>
                         </div>
                         {/* Book someone on this day, or close it — in the corner,
                         out of the way of the date. */}
@@ -806,6 +884,7 @@ export function CalendarView({
                           <AppointmentBlock
                             key={appointment.id}
                             appointment={appointment}
+                            paid={paid.has(appointment.id)}
                             top={top}
                             height={height}
                             column={column}
@@ -913,6 +992,14 @@ function CalendarLegend({
         </span>
       ) : null}
       <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1">
+        <span
+          aria-hidden
+          className="h-3 w-3 rounded-sm border"
+          style={{ backgroundColor: `${PAID_ENTRY_COLOR}33`, borderColor: PAID_ENTRY_COLOR }}
+        />
+        {t('paid')}
+      </span>
+      <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1">
         <span className="font-medium text-ink-700">{t('confirmation')}</span>
         <span className="inline-flex items-center gap-1">
           <span aria-hidden className="h-2.5 w-2.5 rounded-full border border-ink-300" />
@@ -933,20 +1020,25 @@ function CalendarLegend({
       </span>
     </>
   );
-  // Above the grid on a desk; folded behind "מקרא" on a phone, where three
-  // rows of colour keys pushed the day itself below the fold.
+  // Behind its own button at every width. It was a row above the grid on a
+  // desk — a row of the diary it pushed down — and it is read once, not daily.
   return (
-    <>
-      <div className="hidden flex-wrap items-center gap-x-4 gap-y-1 text-xs text-ink-600 sm:flex">
-        {body}
-      </div>
-      <details className="text-xs text-ink-600 sm:hidden">
-        <summary className="inline-flex cursor-pointer select-none rounded font-medium text-ink-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus">
-          {t('title')}
-        </summary>
-        <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1">{body}</div>
-      </details>
-    </>
+    <Popover
+      width={300}
+      align="end"
+      triggerLabel={t('title')}
+      triggerTitle={t('title')}
+      panelLabel={t('title')}
+      triggerClassName="inline-flex h-10 items-center gap-1.5 rounded-lg border border-ink-200 bg-white px-3 text-sm font-medium text-ink-700 shadow-xs transition-colors hover:bg-ink-50 hover:text-ink-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+      triggerContent={
+        <>
+          <Info className="h-4 w-4" aria-hidden />
+          <span className="max-sm:sr-only">{t('title')}</span>
+        </>
+      }
+    >
+      <div className="flex flex-col gap-2.5 p-1 text-xs text-ink-600">{body}</div>
+    </Popover>
   );
 }
 
@@ -990,35 +1082,29 @@ function MonthOrRangeView({
   const format = useFormatter();
   const [rangeLayout, setRangeLayout] = useState<'list' | 'calendar'>('list');
 
-  if (view === 'range' || view === 'list') {
+  if (view === 'range') {
     const withSomething = days.filter((day) => (byDay.get(toDateKey(day))?.length ?? 0) > 0);
     const first = days[0];
     const last = days.at(-1);
     const inRange = (day: Date) =>
       Boolean(first && last && day >= startOfDay(first) && day <= startOfDay(last));
 
-    /*
-     * The grid/list switch belongs to the *range* view, where the dates were
-     * chosen and either shape is a fair answer. The list view is already the
-     * answer to "show me this as a list" — offering to turn it into a grid
-     * there would be a control that undoes the view you just picked.
-     */
-    const layoutSwitch =
-      view === 'range' ? (
-        <div className="flex justify-end">
-          <SegmentedControl
-            label={t('rangeLayout.label')}
-            value={rangeLayout}
-            onChange={setRangeLayout}
-            options={[
-              { value: 'list', label: t('rangeLayout.list') },
-              { value: 'calendar', label: t('rangeLayout.calendar') },
-            ]}
-          />
-        </div>
-      ) : null;
+    // The dates were chosen, and either shape is a fair answer to them.
+    const layoutSwitch = (
+      <div className="flex justify-end">
+        <SegmentedControl
+          label={t('rangeLayout.label')}
+          value={rangeLayout}
+          onChange={setRangeLayout}
+          options={[
+            { value: 'list', label: t('rangeLayout.list') },
+            { value: 'calendar', label: t('rangeLayout.calendar') },
+          ]}
+        />
+      </div>
+    );
 
-    if (view === 'range' && rangeLayout === 'calendar' && first && last) {
+    if (rangeLayout === 'calendar' && first && last) {
       return (
         <div className="space-y-3">
           {layoutSwitch}
@@ -1042,7 +1128,7 @@ function MonthOrRangeView({
         {layoutSwitch}
         {withSomething.length === 0 ? (
           <div className="rounded-card border border-ink-200 bg-white p-8 text-center text-sm text-ink-600">
-            {view === 'list' ? t('noneAhead', { days: LIST_DAYS }) : t('noneInRange')}
+            {t('noneInRange')}
           </div>
         ) : (
           <div className="space-y-2">

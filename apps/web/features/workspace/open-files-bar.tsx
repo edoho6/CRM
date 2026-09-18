@@ -20,7 +20,7 @@ import {
  */
 const KIND_META: Record<OpenFileKind, { Icon: typeof User; list: string }> = {
   patient: { Icon: User, list: '/patients' },
-  encounter: { Icon: ClipboardList, list: '/encounters' },
+  encounter: { Icon: ClipboardList, list: '/calendar?view=list' },
   herb: { Icon: Sprout, list: '/reference/herbs' },
   formula: { Icon: FlaskConical, list: '/reference/formulas' },
   point: { Icon: MapPin, list: '/reference/points' },

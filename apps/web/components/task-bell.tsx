@@ -7,6 +7,7 @@ import { Popover, cn, useToast } from '@clinic/ui';
 import { formatTime } from '@clinic/i18n';
 import { Link, useRouter } from '@clinic/i18n/navigation';
 import { dueTasks, markTaskReminded, setTaskDone, type DueTask } from '@/features/tasks/actions';
+import { showBrowserNotification } from '@/features/tasks/browser-notify';
 
 /** How often the bell asks. A minute is the resolution a task's time has. */
 const POLL_MS = 60_000;
@@ -55,14 +56,12 @@ export function TaskBell() {
       announced.current.add(task.id);
 
       toast({ tone: 'warning', title: `${t('dueNow')}: ${task.title}` });
-      if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-        try {
-          new Notification(task.title, { body: t('dueNow'), tag: task.id });
-        } catch {
-          // Some browsers only allow notifications from a service worker;
-          // the toast above has already said it.
-        }
-      }
+      showBrowserNotification({
+        title: task.title,
+        body: task.patient ? `${t('dueNow')} · ${task.patient.full_name}` : t('dueNow'),
+        tag: task.id,
+        href: `/${document.documentElement.lang || 'he'}/tasks`,
+      });
       void markTaskReminded(task.id);
     }
   }, [t, toast]);

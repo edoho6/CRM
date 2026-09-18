@@ -26,7 +26,6 @@ import {
   CalendarDays,
   ChartColumn,
   ChevronsRight,
-  ClipboardList,
   FlaskConical,
   GripVertical,
   LayoutDashboard,
@@ -163,14 +162,6 @@ const NAV_ITEMS = [
     exact: false,
     stockOnly: false,
     needs: 'messages',
-  },
-  {
-    href: '/encounters',
-    labelKey: 'encounters',
-    icon: ClipboardList,
-    exact: false,
-    stockOnly: false,
-    needs: 'clinicalRecords',
   },
   {
     href: '/reference',

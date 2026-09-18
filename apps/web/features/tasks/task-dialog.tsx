@@ -18,6 +18,7 @@ import {
   Spinner,
   Textarea,
   TimeSelect,
+  cn,
   useConfirm,
   useToast,
   type ComboboxOption,
@@ -209,17 +210,30 @@ export function TaskDialog({
                 }}
               />
             </Field>
-            <Field label={t('dueTime')} htmlFor="task_time" hint={!date ? t('noTime') : undefined}>
-              <TimeSelect
-                value={time}
-                onChange={setTime}
-                label={t('dueTime')}
-                disabled={!date}
-                allowEmpty
-                emptyLabel={t('noTime')}
-                hourLabel={tSchedule('hour')}
-                minuteLabel={tSchedule('minute')}
-              />
+            {/* 00:00 in the boxes and "no set time" ticked beside them, rather
+                than a blank first choice: the blank's label did not fit the box
+                and was cut to "בלי …". Picking an hour unticks it; ticking it
+                takes the time away again. */}
+            <Field label={t('dueTime')} htmlFor="task_time">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                <TimeSelect
+                  value={time || '00:00'}
+                  onChange={setTime}
+                  label={t('dueTime')}
+                  disabled={!date}
+                  hourLabel={tSchedule('hour')}
+                  minuteLabel={tSchedule('minute')}
+                  className={cn('w-auto min-w-0 flex-1 basis-40', !time && '[&_select]:text-ink-500')}
+                />
+                <label className="flex items-center gap-2 text-sm text-ink-800">
+                  <Checkbox
+                    checked={!time}
+                    disabled={!date}
+                    onChange={(event) => setTime(event.target.checked ? '' : '00:00')}
+                  />
+                  {t('noSetTime')}
+                </label>
+              </div>
             </Field>
           </FieldGrid>
 

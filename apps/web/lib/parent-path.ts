@@ -23,6 +23,13 @@ const HOME = '/';
  */
 const REDIRECT_ONLY = new Set(['/reference']);
 
+/**
+ * Lists that moved. The treatments list became the diary's list view (18.9)
+ * and left the menu; its page still answers, but "up" from a treatment is the
+ * list the menu leads to now.
+ */
+const MOVED: Record<string, string> = { '/encounters': '/calendar?view=list' };
+
 export function parentPath(pathname: string): string | null {
   const path = pathname.replace(/\/+$/, '') || HOME;
   if (path === HOME) return null;
@@ -31,5 +38,6 @@ export function parentPath(pathname: string): string | null {
   segments.pop();
   const parent = segments.length === 0 ? HOME : `/${segments.join('/')}`;
 
-  return REDIRECT_ONLY.has(parent) ? HOME : parent;
+  if (REDIRECT_ONLY.has(parent)) return HOME;
+  return MOVED[parent] ?? parent;
 }

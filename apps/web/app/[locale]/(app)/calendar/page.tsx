@@ -8,10 +8,14 @@ import type {
   Patient,
   Room,
 } from '@clinic/db/types';
-import { getClinicScope } from '@/lib/session';
+import { getAbilities, getClinicScope } from '@/lib/session';
+import { dateKeyIn, zonedMidnight } from '@clinic/domain';
+import { resolveRange } from '@/lib/date-range';
+import { pageFrom, pageRange } from '@/components/pagination';
+import { DiaryList, type DiaryListRow } from '@/features/appointments/diary-list';
+import type { PaymentStatusRow } from '@/features/billing/payment-summary';
 import { CalendarView } from '@/features/appointments/calendar-view';
 import {
-  LIST_DAYS,
   type CalendarViewMode,
   addDays,
   fromDateKey,
@@ -47,6 +51,8 @@ export default async function CalendarPage({
     new?: string;
     from?: string;
     to?: string;
+    range?: string;
+    page?: string;
   }>;
 }) {
   const { locale } = await params;
@@ -57,11 +63,14 @@ export default async function CalendarPage({
     new: newParam,
     from: fromParam,
     to: toParam,
+    range: rangeParam,
+    page: pageParam,
   } = await searchParams;
   setRequestLocale(locale);
 
   const scope = await getClinicScope();
   if (!scope) return null;
+  const abilities = await getAbilities();
 
   const DATE_KEY = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -98,8 +107,9 @@ export default async function CalendarPage({
       const grid = monthGridDays(anchor);
       return [addDays(grid[0]!, -1), addDays(grid[grid.length - 1]!, 2)];
     }
-    // The list runs forward from the day in view, so the window does too.
-    if (view === 'list') return [addDays(anchor, -1), addDays(anchor, LIST_DAYS + 1)];
+    // The list asks its own paged question below; the grid behind it draws
+    // nothing, so the window is only the day in view.
+    if (view === 'list') return [addDays(anchor, -1), addDays(anchor, 2)];
     if (view === 'range') {
       const start = rangeFrom ? fromDateKey(rangeFrom) : addDays(anchor, -7);
       const end = rangeTo ? fromDateKey(rangeTo) : addDays(anchor, 7);
@@ -183,10 +193,113 @@ export default async function CalendarPage({
       .returns<Location[]>(),
   ]);
 
+  const appointments = appointmentsResult.data ?? [];
+
+  /*
+   * Which bookings on the grid have been paid for, so the block can turn green
+   * and say so. The same view the patient's file reads, which counts an invoice
+   * raised against the treatment the booking produced. Only for the time grid
+   * (the month has no room to say it) and only for someone who sees money; the
+   * identifiers go in slices so a busy week is not one very long address.
+   */
+  const paidIds: string[] = [];
+  if (abilities.money && (view === 'day' || view === 'week')) {
+    const ids = appointments.map((appointment) => appointment.id);
+    const slices = [];
+    for (let index = 0; index < ids.length; index += 100)
+      slices.push(ids.slice(index, index + 100));
+    const answers = await Promise.all(
+      slices.map((slice) =>
+        scope.supabase
+          .from('appointment_payment_status')
+          .select('appointment_id')
+          .eq('payment_state', 'paid')
+          .in('appointment_id', slice)
+          .returns<{ appointment_id: string }[]>(),
+      ),
+    );
+    for (const answer of answers)
+      for (const row of answer.data ?? []) paidIds.push(row.appointment_id);
+  }
+
+  const list = view === 'list' ? await loadList() : null;
+
+  /**
+   * The list view: the diary's rows newest first, filtered and paged in the
+   * query (the treatments page it replaces did the same). Up to the end of
+   * today unless a later date was asked for — "what has been done"; the week
+   * and the month are where the future is read.
+   */
+  async function loadList() {
+    if (!scope) return null;
+    const timeZone = scope.context.clinic.timezone;
+    const range = resolveRange({ range: rangeParam, from: fromParam, to: toParam });
+    const page = pageFrom(pageParam);
+    const midnight = (key: string, plusDays = 0) => {
+      const [year, month, day] = key.split('-').map(Number) as [number, number, number];
+      return zonedMidnight(year, month, day + plusDays, timeZone);
+    };
+    const todayEnd = midnight(dateKeyIn(new Date(), timeZone), 1);
+
+    let query = scope.supabase
+      .from('appointments')
+      .select(
+        'id, start_at, status, reminder_sent_at, confirmation_response, patient:patients(id, full_name), encounter:encounters(id, status)',
+        { count: 'exact' },
+      )
+      .neq('status', 'cancelled')
+      .lt('start_at', (range.to ? midnight(range.to, 1) : todayEnd).toISOString())
+      .order('start_at', { ascending: false })
+      .range(...pageRange(page));
+    if (range.from) query = query.gte('start_at', midnight(range.from).toISOString());
+    const { data, count } = await query.returns<DiaryListRow[]>();
+    const rows = data ?? [];
+
+    const payments = new Map<string, PaymentStatusRow>();
+    let canBill = false;
+    if (abilities.money && rows.length > 0) {
+      const [{ data: paymentRows }, { data: settings }] = await Promise.all([
+        scope.supabase
+          .from('appointment_payment_status')
+          .select(
+            'appointment_id, invoice_id, invoice_number, total, amount_paid, payment_url, payment_state',
+          )
+          .in(
+            'appointment_id',
+            rows.map((row) => row.id),
+          )
+          .returns<(PaymentStatusRow & { appointment_id: string })[]>(),
+        // No provider set up means "raise an invoice" would only ever fail.
+        scope.supabase
+          .from('clinic_payment_settings')
+          .select('is_active')
+          .maybeSingle<{ is_active: boolean }>(),
+      ]);
+      for (const row of paymentRows ?? []) payments.set(row.appointment_id, row);
+      canBill = settings?.is_active === true;
+    }
+
+    return (
+      <DiaryList
+        rows={rows}
+        matching={count ?? null}
+        page={page}
+        payments={payments}
+        canBill={canBill}
+        showRecords={abilities.clinicalRecords}
+        showPayments={abilities.money}
+        query={{ range: rangeParam, from: fromParam, to: toParam }}
+        timeZone={timeZone}
+      />
+    );
+  }
+
   return (
     <>
       <CalendarView
-        appointments={appointmentsResult.data ?? []}
+        appointments={appointments}
+        paidIds={paidIds}
+        list={list}
         appointmentTypes={typesResult.data ?? []}
         patients={patientsResult.data ?? []}
         practitionerId={scope.context.membership.user_id}

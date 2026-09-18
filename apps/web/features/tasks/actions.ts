@@ -75,9 +75,23 @@ export async function updateTask(id: string, input: unknown): Promise<ActionResu
   const parsed = clinicTaskSchema.safeParse(input);
   if (!parsed.success) return actionError(new Error('validation'));
 
-  let { error } = await scope.supabase.from('clinic_tasks').update(parsed.data).eq('id', id);
+  /*
+   * A task moved to a later moment rings again at that moment.
+   *
+   * `reminded_at` is what keeps an alert from firing twice, and it was never
+   * cleared: a task whose alert had gone off — or had been set a minute ahead
+   * to try it — stayed silent at its new time forever, and all it did was add
+   * to the number on the bell. Only when the new moment is still ahead, so
+   * editing the notes of a task that is already late does not ring it again.
+   */
+  const moment = parsed.data.due_at
+    ? new Date(parsed.data.due_at).getTime() - parsed.data.remind_offset_minutes * 60_000
+    : null;
+  const row = moment !== null && moment > Date.now() ? { ...parsed.data, reminded_at: null } : parsed.data;
+
+  let { error } = await scope.supabase.from('clinic_tasks').update(row).eq('id', id);
   if (error && unknownColumn(error)) {
-    ({ error } = await scope.supabase.from('clinic_tasks').update(withoutOffset(parsed.data)).eq('id', id));
+    ({ error } = await scope.supabase.from('clinic_tasks').update(withoutOffset(row)).eq('id', id));
   }
   if (error) return actionError(error);
   return actionOk();

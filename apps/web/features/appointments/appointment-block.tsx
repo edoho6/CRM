@@ -3,9 +3,10 @@
 import { useRef } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import { useFormatter } from 'next-intl';
+import { useFormatter, useTranslations } from 'next-intl';
+import { Check } from 'lucide-react';
 import type { AppointmentWithRelations } from '@clinic/db/types';
-import { DEFAULT_ENTRY_COLOR, type Locale } from '@clinic/domain';
+import { DEFAULT_ENTRY_COLOR, PAID_ENTRY_COLOR, type Locale } from '@clinic/domain';
 import { cn } from '@clinic/ui';
 import { appointmentTypeName, patientFullName } from '@/lib/display';
 import { ConfirmationDot } from './confirmation-status';
@@ -29,6 +30,7 @@ export const DRAG_SNAP_MINUTES = 15;
  */
 export function AppointmentBlock({
   appointment,
+  paid,
   top,
   height,
   column,
@@ -43,6 +45,11 @@ export function AppointmentBlock({
   onBlur,
 }: {
   appointment: AppointmentWithRelations;
+  /**
+   * Paid for: the block turns green, in the same light tint the type colour
+   * uses, and says "paid" in words — the colour is never the only sign.
+   */
+  paid: boolean;
   /** Position and size in half-hour slots. */
   top: number;
   height: number;
@@ -60,6 +67,7 @@ export function AppointmentBlock({
   onBlur: () => void;
 }) {
   const format = useFormatter();
+  const tPayment = useTranslations('billing.payment.state');
   // The diary reads the drop against the block's column, which it finds from
   // the node itself; the ref travels with the drag's data.
   const nodeRef = useRef<HTMLButtonElement | null>(null);
@@ -68,8 +76,11 @@ export function AppointmentBlock({
     data: { appointment, node: nodeRef },
   });
 
-  const color = appointment.appointment_type?.color ?? DEFAULT_ENTRY_COLOR;
   const isCancelled = appointment.status === 'cancelled';
+  const isPaid = paid && !isCancelled;
+  const color = isPaid
+    ? PAID_ENTRY_COLOR
+    : (appointment.appointment_type?.color ?? DEFAULT_ENTRY_COLOR);
   const widthPercent = 100 / columns;
   const start = new Date(appointment.start_at);
   const slotsToRem = (slots: number) => `${slots * slotHeightRem}rem`;
@@ -136,6 +147,14 @@ export function AppointmentBlock({
         {!isCancelled ? (
           <ConfirmationDot appointment={appointment} className={narrow ? 'h-2 w-2' : undefined} />
         ) : null}
+        {/* In a narrow lane there is no room for the word: a tick, named. */}
+        {isPaid && narrow ? (
+          <Check
+            className="h-3 w-3 shrink-0 text-jade-800"
+            aria-label={tPayment('paid')}
+            role="img"
+          />
+        ) : null}
         <span className="block truncate text-xs font-semibold tabular-nums" dir="ltr">
           {format.dateTime(shown, 'time')}
         </span>
@@ -152,13 +171,22 @@ export function AppointmentBlock({
           </span>
         ) : null}
       </span>
-      <span
-        className={cn(
-          'block leading-tight',
-          narrow ? 'line-clamp-2 text-xs font-medium' : 'truncate text-sm',
-        )}
-      >
-        {patientFullName(appointment.patient)}
+      <span className="flex items-baseline gap-1">
+        <span
+          className={cn(
+            'block min-w-0 leading-tight',
+            narrow ? 'line-clamp-2 text-xs font-medium' : 'truncate text-sm',
+          )}
+        >
+          {patientFullName(appointment.patient)}
+        </span>
+        {/* Under the room, at the far end: where the eye already goes for
+            the booking's facts. */}
+        {isPaid && !narrow ? (
+          <span className="ms-auto shrink-0 text-xs font-semibold leading-tight text-jade-800">
+            {tPayment('paid')}
+          </span>
+        ) : null}
       </span>
       {height > 1.5 && !narrow ? (
         <span className="block truncate text-xs text-ink-500">
