@@ -7,6 +7,9 @@ import type { ConsentDocument, PatientConsentStatus } from '@clinic/db/types';
 import type { Locale } from '@clinic/domain';
 import { ConsentCard } from './consent-card';
 import { PortalShell } from '../portal-shell';
+import { pageTitle } from '@/lib/page-title';
+
+export const generateMetadata = pageTitle('portal.consent');
 
 /**
  * What the patient has agreed to, and the ability to change it.

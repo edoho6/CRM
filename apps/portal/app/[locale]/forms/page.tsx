@@ -8,6 +8,9 @@ import type { Locale } from '@clinic/domain';
 import { Link } from '@clinic/i18n/navigation';
 import { PortalShell } from '../portal-shell';
 import { formatDate } from '@clinic/i18n';
+import { pageTitle } from '@/lib/page-title';
+
+export const generateMetadata = pageTitle('portal.forms');
 
 /**
  * The questionnaires a patient can fill in before their visit.
@@ -27,11 +30,7 @@ import { formatDate } from '@clinic/i18n';
  */
 export const dynamic = 'force-dynamic';
 
-export default async function PortalFormsPage({
-  params,
-}: {
-  params: Promise<{ locale: string }>;
-}) {
+export default async function PortalFormsPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   setRequestLocale(locale);
 

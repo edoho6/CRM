@@ -507,12 +507,17 @@ export default async function PatientDetailPage({
         // The labels the practitioner put on this file, each a link to
         // everyone else who carries it. A toolbar under the heading, in the
         // header's own slot for one, rather than pulled up with a negative margin.
+        // Tags can state a condition, so they are part of the record: the
+        // policies already refuse them to the secretary, and a picker that
+        // shows an empty list and then fails to save is only confusing.
         below={
-          <PatientTags
-            patientId={patient.id}
-            tags={(tagLinksResult.data ?? []).flatMap((row) => (row.tag ? [row.tag] : []))}
-            allTags={allTagsResult.data ?? []}
-          />
+          abilities.clinicalRecords ? (
+            <PatientTags
+              patientId={patient.id}
+              tags={(tagLinksResult.data ?? []).flatMap((row) => (row.tag ? [row.tag] : []))}
+              allTags={allTagsResult.data ?? []}
+            />
+          ) : undefined
         }
       />
 

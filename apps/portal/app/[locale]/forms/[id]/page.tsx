@@ -8,6 +8,9 @@ import type { Locale } from '@clinic/domain';
 import { PortalForm } from '../portal-form';
 import { PortalShell } from '../../portal-shell';
 import { formatDate } from '@clinic/i18n';
+import { pageTitle } from '@/lib/page-title';
+
+export const generateMetadata = pageTitle('portal.forms');
 
 /**
  * One questionnaire, on its own screen, a section at a time.

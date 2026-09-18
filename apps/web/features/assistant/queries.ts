@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { addMonthsIn, zonedMidnight, zonedParts } from '@clinic/domain';
 import { fetchAllRows } from '@/lib/fetch-all';
 import { PATIENT_ID_COLUMN } from './outbound';
 
@@ -25,6 +26,12 @@ import { PATIENT_ID_COLUMN } from './outbound';
 
 export type Row = Record<string, string | number | null>;
 
+/** What every query is told about the clinic asking. */
+export interface QueryContext {
+  /** The clinic's zone, for month and day boundaries. */
+  timeZone: string;
+}
+
 export interface QueryResult {
   /** Column order, so the table renders as it was asked for. */
   columns: string[];
@@ -42,20 +49,30 @@ type Client = SupabaseClient;
  * Shared helpers
  * ---------------------------------------------------------------------- */
 
+/*
+ * Both on the clinic's calendar. The server runs in UTC, so "the start of the
+ * day" and "the first of the month" there were two or three hours off Israel's —
+ * a treatment at 01:00 on the 1st counted in the month before.
+ */
+
 /** `months` ago, at the start of that day. Clamped so a bad number cannot ask for all of history. */
-function monthsAgo(months: number): string {
+function monthsAgo(months: number, timeZone: string): string {
   const safe = Math.min(Math.max(Math.round(months), 1), 60);
-  const date = new Date();
-  date.setMonth(date.getMonth() - safe);
-  date.setHours(0, 0, 0, 0);
-  return date.toISOString();
+  const today = zonedParts(new Date(), timeZone);
+  // The same day of the month, `safe` months back — clamped to that month's
+  // last day, where setMonth rolled 31 March back to 3 March.
+  const first = new Date(Date.UTC(today.year, today.month - 1 - safe, 1));
+  const year = first.getUTCFullYear();
+  const month = first.getUTCMonth() + 1;
+  const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  return zonedMidnight(year, month, Math.min(today.day, lastDay), timeZone).toISOString();
 }
 
-function startOfMonth(offset: number): { from: string; to: string } {
+function startOfMonth(offset: number, timeZone: string): { from: string; to: string } {
   const safe = Math.min(Math.max(Math.round(offset), 0), 60);
   const now = new Date();
-  const from = new Date(now.getFullYear(), now.getMonth() - safe, 1);
-  const to = new Date(now.getFullYear(), now.getMonth() - safe + 1, 1);
+  const from = addMonthsIn(now, -safe, timeZone);
+  const to = addMonthsIn(now, -safe + 1, timeZone);
   return { from: from.toISOString(), to: to.toISOString() };
 }
 
@@ -101,7 +118,11 @@ export interface QueryDefinition {
     properties: Record<string, { type: string; description: string }>;
     required?: string[];
   };
-  run: (client: Client, args: Record<string, unknown>) => Promise<QueryResult>;
+  run: (
+    client: Client,
+    args: Record<string, unknown>,
+    context: QueryContext,
+  ) => Promise<QueryResult>;
 }
 
 const number = (value: unknown, fallback: number): number => {
@@ -155,7 +176,7 @@ export const QUERIES: QueryDefinition[] = [
         months: { type: 'number', description: 'How many months back, 1 to 24. Defaults to 12.' },
       },
     },
-    async run(client, args) {
+    async run(client, args, { timeZone }) {
       const months = Math.min(Math.max(number(args.months, 12), 1), 24);
       const data = rows(
         'new_patients_by_month',
@@ -163,7 +184,7 @@ export const QUERIES: QueryDefinition[] = [
           client
             .from('patients')
             .select('created_at')
-            .gte('created_at', monthsAgo(months))
+            .gte('created_at', monthsAgo(months, timeZone))
             .order('id', { ascending: true })
             .range(lo, hi)
             .returns<{ created_at: string }[]>(),
@@ -196,7 +217,7 @@ export const QUERIES: QueryDefinition[] = [
         months: { type: 'number', description: 'How many months back, 1 to 24. Defaults to 12.' },
       },
     },
-    async run(client, args) {
+    async run(client, args, { timeZone }) {
       const months = Math.min(Math.max(number(args.months, 12), 1), 24);
       const data = rows(
         'treatments_by_month',
@@ -204,7 +225,7 @@ export const QUERIES: QueryDefinition[] = [
           client
             .from('encounters')
             .select('encounter_date')
-            .gte('encounter_date', monthsAgo(months))
+            .gte('encounter_date', monthsAgo(months, timeZone))
             .order('id', { ascending: true })
             .range(lo, hi)
             .returns<{ encounter_date: string }[]>(),
@@ -240,8 +261,8 @@ export const QUERIES: QueryDefinition[] = [
         },
       },
     },
-    async run(client, args) {
-      const { from, to } = startOfMonth(number(args.months_ago, 0));
+    async run(client, args, { timeZone }) {
+      const { from, to } = startOfMonth(number(args.months_ago, 0), timeZone);
       const data = rows(
         'appointments_summary',
         await fetchAllRows((lo, hi) =>
@@ -282,9 +303,9 @@ export const QUERIES: QueryDefinition[] = [
         },
       },
     },
-    async run(client, args) {
+    async run(client, args, { timeZone }) {
       const months = Math.min(Math.max(number(args.months, 3), 1), 36);
-      const cutoff = monthsAgo(months);
+      const cutoff = monthsAgo(months, timeZone);
 
       const [patientsResult, encountersResult] = await Promise.all([
         fetchAllRows((lo, hi) =>
@@ -349,7 +370,7 @@ export const QUERIES: QueryDefinition[] = [
         months: { type: 'number', description: 'How many months back, 1 to 36. Defaults to 12.' },
       },
     },
-    async run(client, args) {
+    async run(client, args, { timeZone }) {
       const months = Math.min(Math.max(number(args.months, 12), 1), 36);
       const data = rows(
         'top_herbs',
@@ -359,7 +380,7 @@ export const QUERIES: QueryDefinition[] = [
             .select(
               'quantity, custom_name, herb:herbs(pinyin_name), record:dispensing_records!inner(dispensed_at)',
             )
-            .gte('record.dispensed_at', monthsAgo(months))
+            .gte('record.dispensed_at', monthsAgo(months, timeZone))
             .order('id', { ascending: true })
             .range(lo, hi)
             .returns<
@@ -406,7 +427,7 @@ export const QUERIES: QueryDefinition[] = [
         months: { type: 'number', description: 'How many months back, 1 to 36. Defaults to 12.' },
       },
     },
-    async run(client, args) {
+    async run(client, args, { timeZone }) {
       const months = Math.min(Math.max(number(args.months, 12), 1), 36);
       const data = rows(
         'top_points',
@@ -414,7 +435,7 @@ export const QUERIES: QueryDefinition[] = [
           client
             .from('tcm_notes')
             .select('points_used, encounter:encounters!inner(encounter_date)')
-            .gte('encounter.encounter_date', monthsAgo(months))
+            .gte('encounter.encounter_date', monthsAgo(months, timeZone))
             .order('id', { ascending: true })
             .range(lo, hi)
             .returns<{ points_used: { point?: string }[] }[]>(),
@@ -450,7 +471,7 @@ export const QUERIES: QueryDefinition[] = [
         months: { type: 'number', description: 'How many months back, 1 to 24. Defaults to 12.' },
       },
     },
-    async run(client, args) {
+    async run(client, args, { timeZone }) {
       const months = Math.min(Math.max(number(args.months, 12), 1), 24);
       const data = rows(
         'revenue_by_month',
@@ -458,7 +479,7 @@ export const QUERIES: QueryDefinition[] = [
           client
             .from('invoices')
             .select('issued_at, total, amount_paid, status')
-            .gte('issued_at', monthsAgo(months))
+            .gte('issued_at', monthsAgo(months, timeZone))
             .neq('status', 'cancelled')
             .order('id', { ascending: true })
             .range(lo, hi)
@@ -544,7 +565,7 @@ export const QUERIES: QueryDefinition[] = [
         months: { type: 'number', description: 'How many months back, 1 to 24. Defaults to 6.' },
       },
     },
-    async run(client, args) {
+    async run(client, args, { timeZone }) {
       const months = Math.min(Math.max(number(args.months, 6), 1), 24);
       const data = rows(
         'busiest_days',
@@ -552,7 +573,7 @@ export const QUERIES: QueryDefinition[] = [
           client
             .from('appointments')
             .select('start_at')
-            .gte('start_at', monthsAgo(months))
+            .gte('start_at', monthsAgo(months, timeZone))
             .neq('status', 'cancelled')
             .order('id', { ascending: true })
             .range(lo, hi)
@@ -636,9 +657,9 @@ export const QUERIES: QueryDefinition[] = [
         months: { type: 'number', description: 'How many months back, 1 to 24. Defaults to 12.' },
       },
     },
-    async run(client, args) {
+    async run(client, args, { timeZone }) {
       const months = Math.min(Math.max(number(args.months, 12), 1), 24);
-      const cutoff = monthsAgo(months);
+      const cutoff = monthsAgo(months, timeZone);
 
       /*
        * Every encounter, not only the ones in the window.
@@ -701,7 +722,7 @@ export const QUERIES: QueryDefinition[] = [
         months: { type: 'number', description: 'How many months back, 1 to 24. Defaults to 12.' },
       },
     },
-    async run(client, args) {
+    async run(client, args, { timeZone }) {
       const months = Math.min(Math.max(number(args.months, 12), 1), 24);
       const data = rows(
         'appointment_outcomes_by_month',
@@ -709,7 +730,7 @@ export const QUERIES: QueryDefinition[] = [
           client
             .from('appointments')
             .select('start_at, status')
-            .gte('start_at', monthsAgo(months))
+            .gte('start_at', monthsAgo(months, timeZone))
             .order('id', { ascending: true })
             .range(lo, hi)
             .returns<{ start_at: string; status: string }[]>(),
@@ -755,7 +776,7 @@ export const QUERIES: QueryDefinition[] = [
         months: { type: 'number', description: 'How many months back, 1 to 24. Defaults to 12.' },
       },
     },
-    async run(client, args) {
+    async run(client, args, { timeZone }) {
       const months = Math.min(Math.max(number(args.months, 12), 1), 24);
       const data = rows(
         'bookings_by_weekday',
@@ -763,7 +784,7 @@ export const QUERIES: QueryDefinition[] = [
           client
             .from('appointments')
             .select('start_at')
-            .gte('start_at', monthsAgo(months))
+            .gte('start_at', monthsAgo(months, timeZone))
             .neq('status', 'cancelled')
             .order('id', { ascending: true })
             .range(lo, hi)

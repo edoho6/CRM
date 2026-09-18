@@ -41,6 +41,8 @@ import { combineDateAndTime, toDateKey } from './date-utils';
  */
 
 interface Draft {
+  /** The row's own key: removing a middle window must not move the next one's focus. */
+  key: string;
   from: string;
   to: string;
   reason: string;
@@ -91,14 +93,13 @@ export function BlockDayDialog({
     setDrafts(
       existing?.is_closed || blockedWindowsFor(day, availability).length > 0
         ? []
-        : [{ from: '12:00', to: '13:00', reason: '' }],
+        : [{ key: crypto.randomUUID(), from: '12:00', to: '13:00', reason: '' }],
     );
     setError(null);
     // The windows of the day are derived from `availability`, which changes
     // only through a refresh — no need to re-run on it.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [day, existing]);
-
 
   const invalidDraft = drafts.some((draft) => minutes(draft.to) <= minutes(draft.from));
 
@@ -116,7 +117,7 @@ export function BlockDayDialog({
       const from = lastDraft ? lastDraft.to : lastWindow ? clock(lastWindow.end) : '12:00';
       const [h] = from.split(':').map(Number);
       const to = `${String(Math.min(23, (h ?? 12) + 1)).padStart(2, '0')}:${from.slice(3)}`;
-      return [...current, { from, to, reason: '' }];
+      return [...current, { key: crypto.randomUUID(), from, to, reason: '' }];
     });
   }
 
@@ -247,7 +248,7 @@ export function BlockDayDialog({
 
               {drafts.map((draft, index) => (
                 <div
-                  key={index}
+                  key={draft.key}
                   className="space-y-2 rounded-lg border border-dashed border-ink-300 p-3"
                 >
                   <div className="flex flex-wrap items-center gap-2">

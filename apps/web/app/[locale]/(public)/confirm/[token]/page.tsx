@@ -19,7 +19,11 @@ interface ChangeOptions {
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** A page reached only by its own link: never in a search index, whatever robots.txt says. */
-export const metadata = { robots: { index: false, follow: false } };
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: 'confirm' });
+  return { title: t('pageTitle'), robots: { index: false, follow: false } };
+}
 
 interface TokenRow {
   start_at: string;
@@ -62,7 +66,10 @@ export default async function ConfirmPage({
     : { data: null };
   const row = (Array.isArray(data) ? data[0] : null) as TokenRow | undefined;
   // What the link may change (migration 75). Nothing when the clinic has not allowed it, or before SQL 69.
-  const { data: optionsData } = supabase && row ? await supabase.rpc('appointment_change_options', { p_token: token }) : { data: null };
+  const { data: optionsData } =
+    supabase && row
+      ? await supabase.rpc('appointment_change_options', { p_token: token })
+      : { data: null };
   const options = (optionsData ?? null) as ChangeOptions | null;
 
   const brand = (
@@ -97,7 +104,9 @@ export default async function ConfirmPage({
       <Card>
         <CardBody className="space-y-4">
           {booked === '1' ? <Alert tone="success">{t('booked')}</Alert> : null}
-          <p className="text-base text-ink-800">{t('greeting', { name: row.patient_first_name })}</p>
+          <p className="text-base text-ink-800">
+            {t('greeting', { name: row.patient_first_name })}
+          </p>
 
           <div className="rounded-lg border border-ink-200 bg-ink-50 p-4 text-center">
             <p className="text-xs text-ink-600">{t('youHave')}</p>
@@ -150,9 +159,15 @@ export default async function ConfirmPage({
           )}
 
           {!cancelled && options?.can_cancel ? (
-            <ChangeForm token={token} canMove={options.can_move} horizonDays={options.horizon_days} />
+            <ChangeForm
+              token={token}
+              canMove={options.can_move}
+              horizonDays={options.horizon_days}
+            />
           ) : !cancelled && options?.reason === 'too_late' ? (
-            <p className="text-center text-xs text-ink-600">{t('change.tooLate', { hours: options.notice_hours })}</p>
+            <p className="text-center text-xs text-ink-600">
+              {t('change.tooLate', { hours: options.notice_hours })}
+            </p>
           ) : null}
 
           {row.clinic_phone ? (

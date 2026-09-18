@@ -77,7 +77,10 @@ export default async function ReportsPage({
       const query = QUERY_BY_NAME.get(name);
       if (!query) return [name, null] as const;
       try {
-        return [name, await query.run(scope.supabase, { months })] as const;
+        return [
+          name,
+          await query.run(scope.supabase, { months }, { timeZone: scope.context.clinic.timezone }),
+        ] as const;
       } catch (error) {
         if (error instanceof QueryFailedError) return [name, null] as const;
         throw error;
@@ -85,7 +88,9 @@ export default async function ReportsPage({
     }),
   );
 
-  const results = new Map<QueryName, QueryResult | null>(entries as [QueryName, QueryResult | null][]);
+  const results = new Map<QueryName, QueryResult | null>(
+    entries as [QueryName, QueryResult | null][],
+  );
   const get = (name: QueryName) => results.get(name) ?? null;
 
   const tracksInventory = scope.context.clinic.tracks_inventory !== false;
@@ -268,9 +273,7 @@ export default async function ReportsPage({
           </div>
         </section>
 
-        <p className="text-xs text-ink-600">
-          {t('generatedOn', { date: formatDate(new Date()) })}
-        </p>
+        <p className="text-xs text-ink-600">{t('generatedOn', { date: formatDate(new Date()) })}</p>
       </div>
     </>
   );
@@ -286,7 +289,11 @@ export default async function ReportsPage({
 function buildTable(
   result: QueryResult | null,
   headers: Record<string, string>,
-): { columns: string[]; rows: Record<string, string | number | null>[]; headers: Record<string, string> } {
+): {
+  columns: string[];
+  rows: Record<string, string | number | null>[];
+  headers: Record<string, string>;
+} {
   return { columns: result?.columns ?? [], rows: result?.rows ?? [], headers };
 }
 
@@ -397,7 +404,10 @@ async function NewVsReturningCard({
       <BarChart
         labels={rows.map((row) => monthLabel(String(row.month)))}
         series={[
-          { label: t('columns.firstVisit'), values: rows.map((row) => Number(row.first_visit) || 0) },
+          {
+            label: t('columns.firstVisit'),
+            values: rows.map((row) => Number(row.first_visit) || 0),
+          },
           { label: t('columns.returning'), values: rows.map((row) => Number(row.returning) || 0) },
         ]}
       />

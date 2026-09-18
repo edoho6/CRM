@@ -1,5 +1,6 @@
 {
   "booking": {
+    "pageTitle": "Book an appointment",
     "notAvailable": "This page is not open at the moment. Call the clinic to book.",
     "defaultIntro": "Pick a treatment, an hour that suits you, and leave a name and a number. That's it.",
     "chooseTreatment": "Which treatment?",
@@ -251,6 +252,7 @@
     }
   },
   "confirm": {
+    "pageTitle": "Your appointment",
     "booked": "Booked! The details are below, and you can confirm arrival right away.",
     "greeting": "Hello {name},",
     "youHave": "You have an appointment",
@@ -2352,8 +2354,8 @@
       "accessories": "Accessories"
     }
   },
-  "amount_exceeds_outstanding": "That is more than the invoice still owes. Check the amount typed.",
   "errors": {
+    "amount_exceeds_outstanding": "That is more than the invoice still owes. Check the amount typed.",
     "slugTaken": "That address is already taken.",
     "notFound": "Page not found",
     "notFoundBody": "The address may be wrong, or the item was deleted.",
@@ -3366,6 +3368,9 @@
     "single": "Questionnaire"
   },
   "schedule": {
+    "startTimeOn": "{day}: from",
+    "endTimeOn": "{day}: until",
+    "removeHoursOn": "Remove this range of hours on {day}",
     "feed": {
       "title": "The diary on your phone — Google Calendar and iPhone",
       "intro": "A private address that Google Calendar or the iPhone calendar subscribes to once; from then on bookings appear there by themselves. One way only: a change on the phone does not change anything here.",

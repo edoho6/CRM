@@ -5,6 +5,9 @@ import { getClinicScope } from '@/lib/session';
 import { logRecordAccess } from '@/lib/access-log';
 import { PrintButton } from '@/features/documents/print-button';
 import { formatDate } from '@clinic/i18n';
+import { pageTitle } from '@/lib/page-title';
+
+export const generateMetadata = pageTitle('billing.document', 'heading');
 
 /**
  * An invoice on paper.

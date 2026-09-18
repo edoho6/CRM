@@ -1117,7 +1117,10 @@ const flows = {
     const box = await block.boundingBox();
     const columnBox = await block.locator('xpath=..').boundingBox();
     if (!box || !columnBox) return { ok: false, detail: 'the block has no box to drag' };
-    const slotPx = columnBox.height / 30;
+    // The column is the whole day, DAY_START_HOUR to DAY_END_HOUR in half hours
+    // (day-layout.ts: 06–23, so 34). A fixed 30 was right once; with 34 rows the
+    // "two slots" were 68 minutes and the block snapped to 11:15.
+    const slotPx = columnBox.height / (((23 - 6) * 60) / 30);
     await page.mouse.move(box.x + box.width / 2, box.y + 10);
     await page.mouse.down();
     await page.mouse.move(box.x + box.width / 2, box.y + 10 + slotPx * 2, { steps: 12 });
@@ -1546,7 +1549,7 @@ const STATIC_ROUTES = [
   '/calendar?view=range', '/calendar?view=list', '/tasks', '/messages', '/messages/queue', '/encounters', '/encounters?layout=calendar', '/encounters/new', '/forms',
   '/forms/new', '/reference/herbs', '/reference/formulas', '/reference/points', '/reference/western-herbs', '/reference/compare',
   '/reference/medicine', '/reference/medicine?kind=drug', '/reference/medicine?kind=lab_test', '/reference/medicine/credits',
-  '/library', '/library/sources', '/library/activity',
+  '/library', '/library/activity',
   '/inventory', '/inventory?tab=low', '/inventory/batches', '/inventory/batches/receive',
   '/inventory/suppliers', '/prices', '/prices?cat=needles&min=2', '/prices/credits', '/billing', '/billing/new',
   '/billing/settings', '/reports', '/assistant',
@@ -1662,6 +1665,9 @@ async function main() {
       for (const route of [...STATIC_ROUTES, ...dynamic]) await visit(context, { route, locale, width });
       await visit(context, { route: '/platform', locale, width, expect404: true });
       await visit(context, { route: '/prices/stores', locale, width, expect404: true });
+      // The library's file list is the operator's (migration 71), and the test
+      // account is a clinic owner, not a platform admin.
+      await visit(context, { route: '/library/sources', locale, width, expect404: true });
     }
 
     // Flows, desktop, Hebrew: what a static read cannot judge. On a fresh

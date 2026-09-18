@@ -128,7 +128,9 @@ export function AppointmentBlock({
       onClick={onOpen}
       {...attributes}
       {...listeners}
-      aria-pressed={lifted}
+      // Only while lifted: a button that always says "not pressed" reads as a
+      // toggle with no meaning. dnd-kit sets the attribute; this narrows it.
+      aria-pressed={lifted || undefined}
       onKeyDown={onKeyDown}
       onBlur={onBlur}
       style={{

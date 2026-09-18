@@ -1,6 +1,16 @@
 'use client';
 
-import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, useTransition } from 'react';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+} from 'react';
 import { useFormatter, useLocale, useTranslations } from 'next-intl';
 import {
   DndContext,
@@ -33,7 +43,7 @@ import { moveAppointment } from './actions';
 import { HeaderTools } from '@/components/header-tools';
 import { toPaymentSummary, type PaymentStatusRow } from '@/features/billing/payment-summary';
 import { DateInput } from '@/components/date-input';
-import { PAID_ENTRY_COLOR, type Locale } from '@clinic/domain';
+import { PAID_ENTRY_COLOR, dateKeyIn, type Locale } from '@clinic/domain';
 import { Link, usePathname, useRouter } from '@clinic/i18n/navigation';
 import type { AppointmentType, AppointmentWithRelations, Patient } from '@clinic/db/types';
 import { appointmentTypeName, patientFullName } from '@/lib/display';
@@ -76,6 +86,9 @@ import {
   slotsToRem,
 } from './day-layout';
 
+/** The clinic's today as YYYY-MM-DD, for the grids drawn below the view. */
+const TodayKey = createContext('');
+
 export function CalendarView({
   appointments,
   payments,
@@ -96,6 +109,7 @@ export function CalendarView({
   locations,
   reminderTemplate,
   clinicName,
+  timeZone,
 }: {
   appointments: AppointmentWithRelations[];
   /**
@@ -127,6 +141,8 @@ export function CalendarView({
   locations: Location[];
   reminderTemplate: string | null;
   clinicName: string;
+  /** The clinic's zone: "today" is its day, not the server's or the browser's. */
+  timeZone: string;
 }) {
   const t = useTranslations('appointments');
   const tc = useTranslations('common');
@@ -228,6 +244,9 @@ export function CalendarView({
   // browser would disagree with the server's HTML for a visit ending between
   // the two, and React would redraw the diary (#418).
   const renderedAtMs = useMemo(() => new Date(renderedAt).getTime(), [renderedAt]);
+  // Today by the same clock and on the clinic's calendar: the server runs in UTC,
+  // where until two or three in the morning it is still yesterday.
+  const todayKey = useMemo(() => dateKeyIn(new Date(renderedAt), timeZone), [renderedAt, timeZone]);
   // The everyday visit — the first type the clinic lists, the one a new
   // booking starts with. Its name on every block said nothing.
   const everydayTypeId = appointmentTypes.find((type) => type.is_active !== false)?.id ?? null;
@@ -277,7 +296,7 @@ export function CalendarView({
    * The earliest of the first open hour and the first booking, half an hour
    * before it.
    */
-  const hasToday = days.some((day) => isSameDay(day, new Date()));
+  const hasToday = days.some((day) => toDateKey(day) === todayKey);
   useLayoutEffect(() => {
     const panel = panelRef.current;
     if (!panel || hasToday) return;
@@ -471,7 +490,7 @@ export function CalendarView({
   }
 
   function goToday() {
-    router.push({ pathname, query: { date: toDateKey(new Date()), view } });
+    router.push({ pathname, query: { date: dateKeyIn(new Date(), timeZone), view } });
   }
 
   function switchView(nextView: CalendarViewMode) {
@@ -482,8 +501,8 @@ export function CalendarView({
         pathname,
         query: {
           view: 'range',
-          from: rangeFrom ?? toDateKey(addDays(new Date(), -7)),
-          to: rangeTo ?? toDateKey(addDays(new Date(), 7)),
+          from: rangeFrom ?? toDateKey(addDays(fromDateKey(todayKey), -7)),
+          to: rangeTo ?? toDateKey(addDays(fromDateKey(todayKey), 7)),
         },
       });
       return;
@@ -642,7 +661,7 @@ export function CalendarView({
     );
 
   return (
-    <>
+    <TodayKey.Provider value={todayKey}>
       <PageHeader
         title={t('title')}
         aside={
@@ -745,7 +764,7 @@ export function CalendarView({
                 >
                   <div className="border-e border-ink-100" />
                   {days.map((day) => {
-                    const today = isSameDay(day, new Date());
+                    const today = toDateKey(day) === todayKey;
                     return (
                       <div
                         key={day.toISOString()}
@@ -827,7 +846,7 @@ export function CalendarView({
                     const key = toDateKey(day);
                     const dayAppointments = byDay.get(key) ?? [];
                     const positioned = positionDay(dayAppointments, roomLane);
-                    const today = isSameDay(day, new Date());
+                    const today = toDateKey(day) === todayKey;
                     // Undefined means no schedule has been set, which shades nothing.
                     const open = openMinutes.get(key);
 
@@ -987,7 +1006,7 @@ export function CalendarView({
           onOpenChange={(open) => !open && setBlockDay(null)}
         />
       </div>
-    </>
+    </TodayKey.Provider>
   );
 }
 
@@ -1265,6 +1284,7 @@ function MonthGrid({
   const tc = useTranslations('common');
   const format = useFormatter();
   const [dayOpen, setDayOpen] = useState<Date | null>(null);
+  const todayKey = useContext(TodayKey);
 
   const dayOpenAppointments = dayOpen ? (byDay.get(toDateKey(dayOpen)) ?? []) : [];
 
@@ -1286,7 +1306,7 @@ function MonthGrid({
           {days.map((day) => {
             const key = toDateKey(day);
             const dayAppointments = byDay.get(key) ?? [];
-            const today = isSameDay(day, new Date());
+            const today = toDateKey(day) === todayKey;
             // A closed day is tinted, and says something only when there is
             // something to say. "Closed" under every Saturday and every day off
             // is a word repeated ten times a month that carries no information

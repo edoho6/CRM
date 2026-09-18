@@ -4,6 +4,9 @@ import { Alert, Card, CardBody } from '@clinic/ui';
 import { Link } from '@clinic/i18n/navigation';
 import type { Locale } from '@clinic/domain';
 import { PortalLoginForm } from './login-form';
+import { pageTitle } from '@/lib/page-title';
+
+export const generateMetadata = pageTitle('auth', 'signIn');
 
 export default async function PortalLoginPage({
   params,
@@ -29,11 +32,7 @@ export default async function PortalLoginPage({
           <h1 className="text-lg font-semibold text-ink-900">{tc('appName')}</h1>
         </div>
 
-        {deleted ? (
-          <Alert tone="success">
-            {t('deletedNotice')}
-          </Alert>
-        ) : null}
+        {deleted ? <Alert tone="success">{t('deletedNotice')}</Alert> : null}
 
         <Card>
           <CardBody className="space-y-4">

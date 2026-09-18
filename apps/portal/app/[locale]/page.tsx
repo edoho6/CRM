@@ -21,6 +21,9 @@ import { appointmentTypeName } from './appointment-name';
 import { portalSignOut } from './login/actions';
 import { PortalShell } from './portal-shell';
 import { formatDate } from '@clinic/i18n';
+import { pageTitle } from '@/lib/page-title';
+
+export const generateMetadata = pageTitle('portal.nav', 'home');
 
 // Everything here is one patient's own data; nothing may be cached at build time.
 export const dynamic = 'force-dynamic';

@@ -205,7 +205,9 @@ export async function askAssistant(question: string): Promise<ActionResult<Assis
         // every appearance of having checked.
         let result: QueryResult;
         try {
-          result = await query.run(scope.supabase, use.input ?? {});
+          result = await query.run(scope.supabase, use.input ?? {}, {
+            timeZone: scope.context.clinic.timezone,
+          });
         } catch (queryError) {
           if (!(queryError instanceof QueryFailedError)) throw queryError;
           results.push({

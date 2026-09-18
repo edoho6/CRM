@@ -8,6 +8,9 @@ import { PortalShell } from '../portal-shell';
 import { DeleteAccountForm } from './delete-account-form';
 import { PushSettings } from '@clinic/native';
 import { registerPortalPushDevice } from './push-actions';
+import { pageTitle } from '@/lib/page-title';
+
+export const generateMetadata = pageTitle('portal.account');
 
 /**
  * The patient's account: the address they sign in with, the documents that
@@ -20,7 +23,11 @@ export const dynamic = 'force-dynamic';
 
 const STAYS = ['file', 'invoices'] as const;
 
-export default async function PortalAccountPage({ params }: { params: Promise<{ locale: string }> }) {
+export default async function PortalAccountPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
   const { locale } = await params;
   setRequestLocale(locale);
 
@@ -67,12 +74,18 @@ export default async function PortalAccountPage({ params }: { params: Promise<{ 
         <CardBody>
           <ul className="space-y-1.5 text-sm">
             <li>
-              <Link href="/privacy" className="font-medium text-jade-700 underline-offset-4 hover:underline">
+              <Link
+                href="/privacy"
+                className="font-medium text-jade-700 underline-offset-4 hover:underline"
+              >
                 {tLegal('privacy.title')}
               </Link>
             </li>
             <li>
-              <Link href="/terms" className="font-medium text-jade-700 underline-offset-4 hover:underline">
+              <Link
+                href="/terms"
+                className="font-medium text-jade-700 underline-offset-4 hover:underline"
+              >
                 {tLegal('terms.title')}
               </Link>
             </li>

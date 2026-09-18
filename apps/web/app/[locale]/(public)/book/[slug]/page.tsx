@@ -1,3 +1,5 @@
+import { cache } from 'react';
+import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Leaf } from 'lucide-react';
 import { Card, CardBody } from '@clinic/ui';
@@ -12,6 +14,26 @@ import {
 } from './booking-flow';
 
 const SLUG = /^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$/;
+
+/** One read per request, shared by the tab title and the page. */
+const loadBooking = cache(async (slug: string) => {
+  const supabase = SLUG.test(slug) ? await tryCreateServerSupabase() : null;
+  const { data } = supabase
+    ? await supabase.rpc('booking_clinic', { p_slug: slug })
+    : { data: null };
+  return (data ?? null) as BookingPayload | null;
+});
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string; slug: string }>;
+}): Promise<Metadata> {
+  const { locale, slug } = await params;
+  const t = await getTranslations({ locale, namespace: 'booking' });
+  const payload = await loadBooking(slug);
+  return { title: payload ? `${t('pageTitle')} · ${payload.clinic.name}` : t('pageTitle') };
+}
 
 interface BookingPayload {
   clinic: BookingClinic;
@@ -38,16 +60,16 @@ export default async function BookingPage({
   const tc = await getTranslations('common');
   const tSite = await getTranslations('site');
 
-  const supabase = SLUG.test(slug) ? await tryCreateServerSupabase() : null;
-  const { data } = supabase ? await supabase.rpc('booking_clinic', { p_slug: slug }) : { data: null };
-  const payload = (data ?? null) as BookingPayload | null;
+  const payload = await loadBooking(slug);
 
   const brand = (
     <div className="flex flex-col items-center gap-2 text-center">
       <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-accent text-accent-fg">
         <Leaf className="h-5 w-5" aria-hidden />
       </span>
-      <h1 className="text-xl font-semibold text-ink-900">{payload?.clinic.name ?? tc('appName')}</h1>
+      <h1 className="text-xl font-semibold text-ink-900">
+        {payload?.clinic.name ?? tc('appName')}
+      </h1>
     </div>
   );
 
@@ -92,7 +114,10 @@ export default async function BookingPage({
       ) : null}
       {/* A public page owes its reader the accessibility statement. */}
       <p className="text-center text-xs">
-        <Link href="/accessibility" className="text-ink-600 underline-offset-2 hover:text-ink-900 hover:underline">
+        <Link
+          href="/accessibility"
+          className="text-ink-600 underline-offset-2 hover:text-ink-900 hover:underline"
+        >
           {tSite('footer.accessibility')}
         </Link>
       </p>

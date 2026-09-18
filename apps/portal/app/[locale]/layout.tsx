@@ -32,7 +32,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'portal' });
-  return { title: t('title') };
+  return { title: { default: t('title'), template: `%s · ${t('title')}` } };
 }
 
 /** Same reasons as the staff app; the portal has one theme, so one colour. */
@@ -66,7 +66,10 @@ export default async function PortalLocaleLayout({
             anything paints, so the status bar has its room in the first
             frame. Raw markup for the reason the staff app's theme script is:
             a script React renders runs after the paint it should precede. */}
-        <div suppressHydrationWarning dangerouslySetInnerHTML={{ __html: `<script>${shellInitScript}</script>` }} />
+        <div
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{ __html: `<script>${shellInitScript}</script>` }}
+        />
         <NativeShellBridge />
         <NextIntlClientProvider messages={messages}>
           <UiDirectionProvider dir={dir}>

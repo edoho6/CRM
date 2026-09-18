@@ -8,6 +8,9 @@ import { formulaPrimaryName, herbPrimaryName } from '@/lib/display';
 import { PrintButton } from '@/features/documents/print-button';
 import { formatDate } from '@clinic/i18n';
 import { Dash } from '@clinic/ui';
+import { pageTitle } from '@/lib/page-title';
+
+export const generateMetadata = pageTitle('prescriptionPrint', 'heading');
 
 /**
  * The prescription, on paper, for the patient to take home with the bag.
@@ -177,7 +180,9 @@ export default async function PrescriptionPrintPage({
               {record.items.map((item) => (
                 <tr key={item.id}>
                   <td className="border-b border-ink-100 py-1" dir="auto">
-                    {item.herb ? herbPrimaryName(item.herb, uiLocale) : (item.custom_name ?? <Dash />)}
+                    {item.herb
+                      ? herbPrimaryName(item.herb, uiLocale)
+                      : (item.custom_name ?? <Dash />)}
                   </td>
                   {/* No direction override: in a Hebrew line the bidi algorithm
                       already puts the figure before its unit, and forcing LTR is
@@ -201,9 +206,7 @@ export default async function PrescriptionPrintPage({
         </section>
       ) : null}
 
-      <footer className="border-t border-ink-200 pt-3 text-xs text-ink-600">
-        {t('keepAway')}
-      </footer>
+      <footer className="border-t border-ink-200 pt-3 text-xs text-ink-600">{t('keepAway')}</footer>
     </article>
   );
 }

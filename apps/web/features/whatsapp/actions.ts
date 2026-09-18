@@ -5,6 +5,7 @@ import { getTranslations } from 'next-intl/server';
 import type { WhatsappConversation, WhatsappMessage } from '@clinic/db/types';
 import { getScopeWithAbility, type ClinicScope } from '@/lib/session';
 import { actionError, actionOk, type ActionResult } from '@/lib/errors';
+import { logRecordAccess } from '@/lib/access-log';
 import { CHAT_MESSAGE_MAX, type ConversationSummary, type ThreadMessage } from './types';
 
 /**
@@ -24,14 +25,40 @@ const Body = z.string().trim().min(1).max(CHAT_MESSAGE_MAX);
 
 const CONVERSATION_SELECT =
   'id, contact_key, phone, contact_name, patient_id, status, unread_count, last_message_at, last_message_preview, last_inbound_at, patient:patients(id, full_name, first_name)';
-const MESSAGE_SELECT = 'id, direction, kind, body, media_url, status, error_code, template_id, created_at';
+const MESSAGE_SELECT =
+  'id, direction, kind, body, media_url, status, error_code, template_id, created_at';
 
 type ConversationRow = Pick<
   WhatsappConversation,
-  'id' | 'contact_key' | 'phone' | 'contact_name' | 'patient_id' | 'status' | 'unread_count' | 'last_message_at' | 'last_message_preview' | 'last_inbound_at'
-> & { patient: { id: string; full_name: string; first_name: string } | { id: string; full_name: string; first_name: string }[] | null };
+  | 'id'
+  | 'contact_key'
+  | 'phone'
+  | 'contact_name'
+  | 'patient_id'
+  | 'status'
+  | 'unread_count'
+  | 'last_message_at'
+  | 'last_message_preview'
+  | 'last_inbound_at'
+> & {
+  patient:
+    | { id: string; full_name: string; first_name: string }
+    | { id: string; full_name: string; first_name: string }[]
+    | null;
+};
 
-type MessageRow = Pick<WhatsappMessage, 'id' | 'direction' | 'kind' | 'body' | 'media_url' | 'status' | 'error_code' | 'template_id' | 'created_at'>;
+type MessageRow = Pick<
+  WhatsappMessage,
+  | 'id'
+  | 'direction'
+  | 'kind'
+  | 'body'
+  | 'media_url'
+  | 'status'
+  | 'error_code'
+  | 'template_id'
+  | 'created_at'
+>;
 
 function toSummary(row: ConversationRow): ConversationSummary {
   // PostgREST embeds a one-to-one as an object, but the type says either.
@@ -41,7 +68,9 @@ function toSummary(row: ConversationRow): ConversationSummary {
     contactKey: row.contact_key,
     phone: row.phone,
     contactName: row.contact_name,
-    patient: patient ? { id: patient.id, fullName: patient.full_name, firstName: patient.first_name } : null,
+    patient: patient
+      ? { id: patient.id, fullName: patient.full_name, firstName: patient.first_name }
+      : null,
     status: row.status,
     unread: row.unread_count,
     lastMessageAt: row.last_message_at,
@@ -96,7 +125,11 @@ export async function loadConversation(
   if (!id.success) return actionError(new Error('validation'));
 
   const [conversation, messages] = await Promise.all([
-    scope.supabase.from('whatsapp_conversations').select(CONVERSATION_SELECT).eq('id', id.data).maybeSingle<ConversationRow>(),
+    scope.supabase
+      .from('whatsapp_conversations')
+      .select(CONVERSATION_SELECT)
+      .eq('id', id.data)
+      .maybeSingle<ConversationRow>(),
     scope.supabase
       .from('whatsapp_messages')
       .select(MESSAGE_SELECT)
@@ -108,11 +141,23 @@ export async function loadConversation(
   if (conversation.error) return actionError(conversation.error);
   if (!conversation.data) return actionError(new Error('not_found'));
   if (messages.error) return actionError(messages.error);
-  return actionOk({ conversation: toSummary(conversation.data), messages: (messages.data ?? []).map(toMessage) });
+  // A thread linked to a file is that patient's correspondence, and reading it
+  // is a read of their record like any other; the access log hears of it under
+  // the patient. An unlinked number is nobody's file yet and has nothing to log.
+  if (conversation.data.patient_id) {
+    await logRecordAccess(scope.supabase, 'patients', conversation.data.patient_id);
+  }
+  return actionOk({
+    conversation: toSummary(conversation.data),
+    messages: (messages.data ?? []).map(toMessage),
+  });
 }
 
 /** What the practitioner typed: queued for the sender, and the sender woken. */
-export async function sendChatMessage(conversationId: string, body: string): Promise<ActionResult<ThreadMessage>> {
+export async function sendChatMessage(
+  conversationId: string,
+  body: string,
+): Promise<ActionResult<ThreadMessage>> {
   const scope = await getScopeWithAbility('messages');
   if (!scope) return actionError(new Error('unauthorized'));
   const id = Id.safeParse(conversationId);
@@ -155,7 +200,11 @@ export async function sendOpener(conversationId: string): Promise<ActionResult<T
       .select('whatsapp_template_id')
       .eq('kind', 'conversation_opener')
       .maybeSingle<{ whatsapp_template_id: string | null }>(),
-    scope.supabase.from('whatsapp_conversations').select(CONVERSATION_SELECT).eq('id', id.data).maybeSingle<ConversationRow>(),
+    scope.supabase
+      .from('whatsapp_conversations')
+      .select(CONVERSATION_SELECT)
+      .eq('id', id.data)
+      .maybeSingle<ConversationRow>(),
   ]);
   const templateId = opener?.whatsapp_template_id?.trim();
   if (!templateId) return actionError(new Error('no_opener'));
@@ -206,27 +255,41 @@ export async function markConversationRead(conversationId: string): Promise<Acti
   if (!scope) return actionError(new Error('unauthorized'));
   const id = Id.safeParse(conversationId);
   if (!id.success) return actionError(new Error('validation'));
-  const { error } = await scope.supabase.from('whatsapp_conversations').update({ unread_count: 0 }).eq('id', id.data);
+  const { error } = await scope.supabase
+    .from('whatsapp_conversations')
+    .update({ unread_count: 0 })
+    .eq('id', id.data);
   if (error) return actionError(error);
   return actionOk();
 }
 
-export async function setConversationStatus(conversationId: string, status: 'open' | 'closed'): Promise<ActionResult> {
+export async function setConversationStatus(
+  conversationId: string,
+  status: 'open' | 'closed',
+): Promise<ActionResult> {
   const scope = await getScopeWithAbility('messages');
   if (!scope) return actionError(new Error('unauthorized'));
   const id = Id.safeParse(conversationId);
-  if (!id.success || (status !== 'open' && status !== 'closed')) return actionError(new Error('validation'));
-  const { error } = await scope.supabase.from('whatsapp_conversations').update({ status }).eq('id', id.data);
+  if (!id.success || (status !== 'open' && status !== 'closed'))
+    return actionError(new Error('validation'));
+  const { error } = await scope.supabase
+    .from('whatsapp_conversations')
+    .update({ status })
+    .eq('id', id.data);
   if (error) return actionError(error);
   return actionOk();
 }
 
 /** Which file the thread belongs to — a person's choice when the number is not in one file alone. */
-export async function linkConversationPatient(conversationId: string, patientId: string | null): Promise<ActionResult> {
+export async function linkConversationPatient(
+  conversationId: string,
+  patientId: string | null,
+): Promise<ActionResult> {
   const scope = await getScopeWithAbility('messages');
   if (!scope) return actionError(new Error('unauthorized'));
   const id = Id.safeParse(conversationId);
-  const patient = patientId === null ? { success: true as const, data: null } : Id.safeParse(patientId);
+  const patient =
+    patientId === null ? { success: true as const, data: null } : Id.safeParse(patientId);
   if (!id.success || !patient.success) return actionError(new Error('validation'));
   const { error } = await scope.supabase
     .from('whatsapp_conversations')
@@ -237,12 +300,16 @@ export async function linkConversationPatient(conversationId: string, patientId:
 }
 
 /** A thread for this file's number, made if there is none; the number must be one WhatsApp can address. */
-export async function openConversationForPatient(patientId: string): Promise<ActionResult<{ id: string }>> {
+export async function openConversationForPatient(
+  patientId: string,
+): Promise<ActionResult<{ id: string }>> {
   const scope = await getScopeWithAbility('messages');
   if (!scope) return actionError(new Error('unauthorized'));
   const id = Id.safeParse(patientId);
   if (!id.success) return actionError(new Error('validation'));
-  const { data, error } = await scope.supabase.rpc('whatsapp_open_for_patient', { p_patient: id.data });
+  const { data, error } = await scope.supabase.rpc('whatsapp_open_for_patient', {
+    p_patient: id.data,
+  });
   if (error) return actionError(error.message.includes('no_phone') ? new Error('no_phone') : error);
   return actionOk({ id: data as string });
 }

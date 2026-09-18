@@ -235,7 +235,9 @@ export function ScheduleForm({
                             value={block.start_time}
                             onChange={(value) => setBlockTime(block.key, 'start_time', value)}
                             disabled={isPending}
-                            label={t('startTime')}
+                            // Named with its day: seven identical "from" fields
+                            // are indistinguishable to a screen reader.
+                            label={t('startTimeOn', { day: tWeekday(String(weekday)) })}
                             hourLabel={t('hour')}
                             minuteLabel={t('minute')}
                           />
@@ -246,15 +248,15 @@ export function ScheduleForm({
                             value={block.end_time}
                             onChange={(value) => setBlockTime(block.key, 'end_time', value)}
                             disabled={isPending}
-                            label={t('endTime')}
+                            label={t('endTimeOn', { day: tWeekday(String(weekday)) })}
                             hourLabel={t('hour')}
                             minuteLabel={t('minute')}
                           />
                           {dayBlocks.length > 1 ? (
                             <button
                               type="button"
-                              aria-label={tc('delete')}
-                              title={tc('delete')}
+                              aria-label={t('removeHoursOn', { day: tWeekday(String(weekday)) })}
+                              title={t('removeHoursOn', { day: tWeekday(String(weekday)) })}
                               disabled={isPending}
                               onClick={() =>
                                 setBlocks((current) =>

@@ -318,6 +318,7 @@ export default async function CalendarPage({
         canBill={canBill}
         list={list}
         renderedAt={new Date().toISOString()}
+        timeZone={scope.context.clinic.timezone}
         appointmentTypes={typesResult.data ?? []}
         patients={patientsResult.data ?? []}
         practitionerId={scope.context.membership.user_id}

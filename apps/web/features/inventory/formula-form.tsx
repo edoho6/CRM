@@ -33,6 +33,8 @@ import { parentPath } from '@/lib/parent-path';
 import { saveFormula } from './actions';
 
 interface ItemRow {
+  /** The row's own key, so removing a middle line does not hand its focus and draft to the next. */
+  key: string;
   herb_id: string;
   dosage: string;
   unit: HerbUnit;
@@ -75,12 +77,13 @@ export function FormulaForm({ formula, herbs }: { formula?: HerbFormulaWithItems
   const [items, setItems] = useState<ItemRow[]>(
     formula?.items?.length
       ? formula.items.map((item) => ({
+          key: crypto.randomUUID(),
           herb_id: item.herb_id,
           dosage: String(item.dosage),
           unit: item.unit,
           notes: item.notes ?? '',
         }))
-      : [{ herb_id: '', dosage: '', unit: 'gram', notes: '' }],
+      : [{ key: crypto.randomUUID(), herb_id: '', dosage: '', unit: 'gram', notes: '' }],
   );
 
   const totalWeight = useMemo(
@@ -263,7 +266,7 @@ export function FormulaForm({ formula, herbs }: { formula?: HerbFormulaWithItems
           >
             <ul className="space-y-2">
               {items.map((item, index) => (
-                <li key={index} className="flex flex-wrap items-end gap-2">
+                <li key={item.key} className="flex flex-wrap items-end gap-2">
                   <div className="min-w-0 flex-1 basis-48">
                     <Select
                       aria-label={t('selectHerb')}
@@ -332,7 +335,10 @@ export function FormulaForm({ formula, herbs }: { formula?: HerbFormulaWithItems
               size="sm"
               className="mt-2"
               onClick={() =>
-                setItems([...items, { herb_id: '', dosage: '', unit: 'gram', notes: '' }])
+                setItems([
+                  ...items,
+                  { key: crypto.randomUUID(), herb_id: '', dosage: '', unit: 'gram', notes: '' },
+                ])
               }
             >
               <Plus className="h-4 w-4" />
