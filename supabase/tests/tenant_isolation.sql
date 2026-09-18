@@ -998,12 +998,17 @@ begin
   exception
     when invalid_parameter_value then null;
   end;
+  -- Since 20260919090000 no member deletes a membership directly (the policy is
+  -- gone; the team screen goes through set_membership_*), so the delete finds no
+  -- row it may touch — and the trigger stays behind it as a second lock.
   begin
     delete from public.memberships where id = v_owner_a;
-    raise exception 'FAIL: the last owner was deleted';
   exception
     when check_violation then null;
   end;
+  if not exists (select 1 from public.memberships where id = v_owner_a) then
+    raise exception 'FAIL: the last owner was deleted';
+  end if;
   begin
     perform public.accept_invitation(v_invite_b);
     raise exception 'FAIL: a member of clinic A accepted an invitation to clinic B';
