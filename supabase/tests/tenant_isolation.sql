@@ -955,7 +955,7 @@ begin
     when insufficient_privilege then null;
     when undefined_function then null; -- before migration 47
   end;
-  perform public.library_log_query('no_sources', '[]'::jsonb, null, null, null, null);
+  perform public.library_log_query(p_status => 'no_sources', p_sources => '[]'::jsonb, p_cache_read_tokens => null);
   select count(*) into v_count from public.library_queries where clinic_id = v_clinic_a and user_id = v_user_a;
   if v_count <> 1 then raise exception 'FAIL: the library log did not record the caller''s own clinic'; end if;
   update public.library_queries set status = 'answered' where clinic_id = v_clinic_a;
