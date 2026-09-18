@@ -1,11 +1,21 @@
 'use client';
 
-import { useTransition } from 'react';
+import { useState, useTransition } from 'react';
 import { useFormatter, useTranslations } from 'next-intl';
-import { ChevronDown, CreditCard, ExternalLink, FileText, Receipt } from 'lucide-react';
-import { Badge, Button, Popover, Spinner } from '@clinic/ui';
+import {
+  Check,
+  ChevronDown,
+  CreditCard,
+  ExternalLink,
+  FileText,
+  Receipt,
+  Undo2,
+} from 'lucide-react';
+import { VISIT_PAYMENT_METHODS } from '@clinic/domain';
+import { Badge, Button, Popover, Select, Spinner, useToast } from '@clinic/ui';
 import { Link, useRouter } from '@clinic/i18n/navigation';
 import { createInvoiceFromEncounter } from './actions';
+import { markAppointmentPaid, unmarkAppointmentPaid } from './manual-payment-actions';
 
 /**
  * Whether a visit has been paid for, and the way to take the payment.
@@ -29,6 +39,9 @@ export interface PaymentSummary {
   total: number | null;
   amountPaid: number | null;
   paymentUrl: string | null;
+  /** Marked paid by hand on the booking, without an invoice; wins over the invoice. */
+  manualPaidAt: string | null;
+  manualMethod: string | null;
 }
 
 const TONES: Record<PaymentState, 'success' | 'warning' | 'danger' | 'neutral' | 'muted'> = {
@@ -46,7 +59,13 @@ export function PaymentBadge({ summary }: { summary: PaymentSummary }) {
 
   return (
     <span className="inline-flex items-center gap-1.5">
-      <Badge tone={TONES[summary.state]}>{t(`state.${summary.state}`)}</Badge>
+      <Badge tone={TONES[summary.state]}>
+        {t(`state.${summary.state}`)}
+        {/* How, when it was marked by hand: "paid · cash" answers the next question. */}
+        {summary.manualPaidAt && summary.manualMethod
+          ? ` · ${t(`methods.${summary.manualMethod}`)}`
+          : null}
+      </Badge>
       {summary.state === 'partially_paid' &&
       summary.amountPaid !== null &&
       summary.total !== null ? (
@@ -70,9 +89,15 @@ export function PaymentBadge({ summary }: { summary: PaymentSummary }) {
 export function PaymentAction({
   summary,
   encounterId,
+  appointmentId,
   canBill,
 }: {
   summary: PaymentSummary;
+  /**
+   * The booking, when there is one and this person may mark money: offers
+   * "mark as paid" without an invoice (cash, Bit…), and taking the mark back.
+   */
+  appointmentId?: string | null;
   /** Present when there is a treatment to bill for. */
   encounterId?: string | null;
   /** False when no provider is configured — the button would only ever fail. */
@@ -83,6 +108,34 @@ export function PaymentAction({
   const format = useFormatter();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const { toast } = useToast();
+  const [method, setMethod] = useState('');
+
+  function mark(close: () => void) {
+    if (!appointmentId) return;
+    startTransition(async () => {
+      const result = await markAppointmentPaid(appointmentId, method || null);
+      if (!result.ok) {
+        toast({ tone: 'danger', title: tc('errorGeneric') });
+        return;
+      }
+      close();
+      router.refresh();
+    });
+  }
+
+  function unmark(close: () => void) {
+    if (!appointmentId) return;
+    startTransition(async () => {
+      const result = await unmarkAppointmentPaid(appointmentId);
+      if (!result.ok) {
+        toast({ tone: 'danger', title: tc('errorGeneric') });
+        return;
+      }
+      close();
+      router.refresh();
+    });
+  }
 
   function bill() {
     if (!encounterId) return;
@@ -125,7 +178,53 @@ export function PaymentAction({
             </p>
           ) : null}
 
-          {summary.state === 'unbilled' ? (
+          {/* Paid by hand: when and how, and the way back if it was a mistake. */}
+          {summary.manualPaidAt ? (
+            <div className="space-y-2">
+              <p className="text-sm text-ink-700">{t('markedPaid')}</p>
+              {appointmentId ? (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  disabled={isPending}
+                  onClick={() => unmark(close)}
+                >
+                  {isPending ? (
+                    <Spinner className="h-3.5 w-3.5" />
+                  ) : (
+                    <Undo2 className="h-3.5 w-3.5" />
+                  )}
+                  {t('unmarkPaid')}
+                </Button>
+              ) : null}
+            </div>
+          ) : summary.state !== 'paid' && appointmentId ? (
+            // Paid without an invoice: cash on the desk, a transfer, Bit. The
+            // method is optional — "paid" is the fact, how is a detail.
+            <div className="space-y-2 border-b border-ink-100 pb-2">
+              <label className="block space-y-1 text-xs text-ink-700">
+                <span>{t('method')}</span>
+                <Select value={method} onChange={(event) => setMethod(event.target.value)}>
+                  <option value="">{t('methodNone')}</option>
+                  {VISIT_PAYMENT_METHODS.map((option) => (
+                    <option key={option} value={option}>
+                      {t(`methods.${option}`)}
+                    </option>
+                  ))}
+                </Select>
+              </label>
+              <Button size="sm" className="w-full" disabled={isPending} onClick={() => mark(close)}>
+                {isPending ? (
+                  <Spinner className="h-3.5 w-3.5" />
+                ) : (
+                  <Check className="h-3.5 w-3.5" />
+                )}
+                {t('markPaid')}
+              </Button>
+            </div>
+          ) : null}
+
+          {summary.state === 'unbilled' && !summary.manualPaidAt ? (
             encounterId && canBill ? (
               <Button
                 size="sm"

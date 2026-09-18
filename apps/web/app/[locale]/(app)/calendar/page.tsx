@@ -11,7 +11,7 @@ import type {
 import { getAbilities, getClinicScope } from '@/lib/session';
 import { dateKeyIn, zonedMidnight } from '@clinic/domain';
 import { resolveRange } from '@/lib/date-range';
-import { pageFrom, pageRange } from '@/components/pagination';
+import { PAGE_SIZE, pageFrom, pageRange } from '@/components/pagination';
 import { DiaryList, type DiaryListRow } from '@/features/appointments/diary-list';
 import type { PaymentStatusRow } from '@/features/billing/payment-summary';
 import { CalendarView } from '@/features/appointments/calendar-view';
@@ -196,50 +196,70 @@ export default async function CalendarPage({
   const appointments = appointmentsResult.data ?? [];
 
   /*
-   * Which bookings on the grid have been paid for, so the block can turn green
-   * and say so. The same view the patient's file reads, which counts an invoice
-   * raised against the treatment the booking produced. Only for the time grid
-   * (the month has no room to say it) and only for someone who sees money; the
-   * identifiers go in slices so a busy week is not one very long address.
+   * Where each booking on screen stands with money: the grid paints a paid one
+   * green, and the details window shows the state and lets the desk mark it
+   * paid. The same view the patient's file reads, which counts an invoice
+   * raised against the treatment and a payment marked by hand. Only for
+   * someone who sees money; the identifiers go in slices so a busy month is not
+   * one very long address.
    */
-  const paidIds: string[] = [];
-  if (abilities.money && (view === 'day' || view === 'week')) {
+  const payments: Record<string, PaymentStatusRow> = {};
+  let canBill = false;
+  if (abilities.money && view !== 'list' && appointments.length > 0) {
     const ids = appointments.map((appointment) => appointment.id);
     const slices = [];
     for (let index = 0; index < ids.length; index += 100)
       slices.push(ids.slice(index, index + 100));
-    const answers = await Promise.all(
-      slices.map((slice) =>
-        scope.supabase
-          .from('appointment_payment_status')
-          .select('appointment_id')
-          .eq('payment_state', 'paid')
-          .in('appointment_id', slice)
-          .returns<{ appointment_id: string }[]>(),
+    const [settings, answers] = await Promise.all([
+      // No provider set up means "raise an invoice" would only ever fail.
+      scope.supabase
+        .from('clinic_payment_settings')
+        .select('is_active')
+        .maybeSingle<{ is_active: boolean }>(),
+      Promise.all(
+        slices.map((slice) =>
+          scope.supabase
+            .from('appointment_payment_status')
+            .select('*')
+            .in('appointment_id', slice)
+            .returns<(PaymentStatusRow & { appointment_id: string })[]>(),
+        ),
       ),
-    );
+    ]);
+    canBill = settings.data?.is_active === true;
     for (const answer of answers)
-      for (const row of answer.data ?? []) paidIds.push(row.appointment_id);
+      for (const row of answer.data ?? []) payments[row.appointment_id] = row;
   }
 
   const list = view === 'list' ? await loadList() : null;
 
   /**
-   * The list view: the diary's rows newest first, filtered and paged in the
-   * query (the treatments page it replaces did the same). Up to the end of
-   * today unless a later date was asked for — "what has been done"; the week
-   * and the month are where the future is read.
+   * The list view: the diary's rows latest first, the future included,
+   * filtered and paged in the query (the treatments page it replaces did the
+   * same). With no page asked for and no filter, it opens on the page that
+   * holds today: counting what lies after today says which page that is, so
+   * the page before is further ahead and the page after further back.
    */
   async function loadList() {
     if (!scope) return null;
     const timeZone = scope.context.clinic.timezone;
     const range = resolveRange({ range: rangeParam, from: fromParam, to: toParam });
-    const page = pageFrom(pageParam);
+    const unfiltered = !rangeParam || rangeParam === 'all';
     const midnight = (key: string, plusDays = 0) => {
       const [year, month, day] = key.split('-').map(Number) as [number, number, number];
       return zonedMidnight(year, month, day + plusDays, timeZone);
     };
     const todayEnd = midnight(dateKeyIn(new Date(), timeZone), 1);
+
+    let page = pageFrom(pageParam);
+    if (!pageParam && unfiltered && !fromParam && !toParam) {
+      const { count: ahead } = await scope.supabase
+        .from('appointments')
+        .select('id', { count: 'exact', head: true })
+        .neq('status', 'cancelled')
+        .gte('start_at', todayEnd.toISOString());
+      page = Math.floor((ahead ?? 0) / PAGE_SIZE) + 1;
+    }
 
     let query = scope.supabase
       .from('appointments')
@@ -248,9 +268,9 @@ export default async function CalendarPage({
         { count: 'exact' },
       )
       .neq('status', 'cancelled')
-      .lt('start_at', (range.to ? midnight(range.to, 1) : todayEnd).toISOString())
       .order('start_at', { ascending: false })
       .range(...pageRange(page));
+    if (range.to) query = query.lt('start_at', midnight(range.to, 1).toISOString());
     if (range.from) query = query.gte('start_at', midnight(range.from).toISOString());
     const { data, count } = await query.returns<DiaryListRow[]>();
     const rows = data ?? [];
@@ -298,7 +318,8 @@ export default async function CalendarPage({
     <>
       <CalendarView
         appointments={appointments}
-        paidIds={paidIds}
+        payments={abilities.money ? payments : null}
+        canBill={canBill}
         list={list}
         appointmentTypes={typesResult.data ?? []}
         patients={patientsResult.data ?? []}

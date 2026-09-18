@@ -451,6 +451,7 @@ export default async function PatientDetailPage({
                 <Td>
                   <PaymentAction
                     summary={toPaymentSummary(appointmentPayments.get(appointment.id))}
+                    appointmentId={abilities.money ? appointment.id : null}
                     canBill={canBill}
                   />
                 </Td>

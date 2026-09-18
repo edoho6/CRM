@@ -49,6 +49,7 @@ import { LanguageSwitcher } from './language-switcher';
 import { ThemeToggle } from './theme-toggle';
 import { UserMenu } from './user-menu';
 import { TaskBell } from './task-bell';
+import { HeaderToolsSlot } from './header-tools';
 import { MessagesBadge } from './messages-badge';
 import { LinkPending } from './link-pending';
 import { GlobalSearch } from '@/features/quick-bar/global-search';
@@ -707,6 +708,12 @@ export function AppShell({
             />
           </div>
           <div className="flex shrink-0 items-center gap-1.5">
+            {/* A page's quiet information for the bar's empty middle — the
+                diary's legend — on a wide screen only, where the bar has room
+                it otherwise leaves blank. It costs the page no height. */}
+            <span className="me-2 hidden xl:inline-flex">
+              <HeaderToolsSlot id="top-bar-tools" />
+            </span>
             <GlobalSearch />
             <TaskBell />
             <QuickCreateMenu />

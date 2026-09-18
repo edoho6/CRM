@@ -30,6 +30,8 @@ import {
 } from '@clinic/ui';
 import { describeActionError } from '@/lib/action-error';
 import { moveAppointment } from './actions';
+import { HeaderTools } from '@/components/header-tools';
+import { toPaymentSummary, type PaymentStatusRow } from '@/features/billing/payment-summary';
 import { DateInput } from '@/components/date-input';
 import { PAID_ENTRY_COLOR, type Locale } from '@clinic/domain';
 import { Link, usePathname, useRouter } from '@clinic/i18n/navigation';
@@ -76,7 +78,8 @@ import {
 
 export function CalendarView({
   appointments,
-  paidIds,
+  payments,
+  canBill,
   list,
   patients,
   appointmentTypes,
@@ -94,8 +97,13 @@ export function CalendarView({
   clinicName,
 }: {
   appointments: AppointmentWithRelations[];
-  /** Bookings on the grid that have been paid for: drawn green, and say so. */
-  paidIds: string[];
+  /**
+   * Where each booking stands with money, keyed by appointment: paid ones are
+   * drawn green, and the details window shows it and marks it. Null for a role
+   * that does not see money.
+   */
+  payments: Record<string, PaymentStatusRow> | null;
+  canBill: boolean;
   /** The list view, drawn on the server (`DiaryList`); null in every other view. */
   list: React.ReactNode;
   patients: Pick<Patient, 'id' | 'full_name' | 'phone'>[];
@@ -213,7 +221,15 @@ export function CalendarView({
     return map;
   }, [shown]);
 
-  const paid = useMemo(() => new Set(paidIds), [paidIds]);
+  const paid = useMemo(
+    () =>
+      new Set(
+        Object.entries(payments ?? {})
+          .filter(([, row]) => row.payment_state === 'paid')
+          .map(([id]) => id),
+      ),
+    [payments],
+  );
 
   /*
    * The grid's panel runs to the bottom of the window.
@@ -618,13 +634,17 @@ export function CalendarView({
     <>
       <PageHeader
         title={t('title')}
-        aside={stepping}
-        className="mb-3"
-        actions={
+        aside={
           <>
+            {stepping}
             {isTimeGrid ? (
               <CalendarLegend appointmentTypes={appointmentTypes} locale={locale} />
             ) : null}
+          </>
+        }
+        className="mb-3"
+        actions={
+          <>
             {/* Shown at every width: a phone merely starts on the day. */}
             <SegmentedControl
               label={t('views.label')}
@@ -831,7 +851,10 @@ export function CalendarView({
                               onClick={() => openSlot(day, index)}
                               style={{ height: slotsToRem(1) }}
                               className={cn(
-                                'block w-full transition-colors hover:bg-jade-100/60',
+                                // Light blue, the family of the bookings themselves: "a
+                                // booking would go here". It was jade, the green that
+                                // now means paid.
+                                'block w-full transition-colors hover:bg-sky-50',
                                 minutes % 60 === 0
                                   ? 'border-t border-ink-100'
                                   : 'border-t border-ink-50',
@@ -919,6 +942,8 @@ export function CalendarView({
           appointment={details}
           locale={locale}
           onClose={() => setDetails(null)}
+          payment={details && payments ? toPaymentSummary(payments[details.id]) : null}
+          canBill={canBill}
           onEdit={(appointment) => {
             setDetails(null);
             openAppointment(appointment);
@@ -974,71 +999,76 @@ function CalendarLegend({
   const t = useTranslations('appointments.legend');
   const tConfirmation = useTranslations('appointments.confirmation');
   const activeTypes = appointmentTypes.filter((type) => type.is_active !== false);
-  const body = (
+  const swatch = (background: string, border: string) => (
+    <span
+      aria-hidden
+      className="h-3 w-3 shrink-0 rounded-sm border"
+      style={{ backgroundColor: background, borderColor: border }}
+    />
+  );
+  // Short words on the row, the full sentence as the title and in the panel.
+  const dots = [
+    { key: 'none', dot: 'border border-ink-300' },
+    { key: 'sent', dot: 'bg-amber-500' },
+    { key: 'confirmed', dot: 'bg-jade-600' },
+    { key: 'declined', dot: 'bg-red-600' },
+  ] as const;
+  const body = (short: boolean) => (
     <>
-      {activeTypes.length > 1 ? (
-        <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1">
-          <span className="font-medium text-ink-700">{t('types')}</span>
-          {activeTypes.map((type) => (
+      {activeTypes.length > 1
+        ? activeTypes.map((type) => (
             <span key={type.id} className="inline-flex items-center gap-1">
-              <span
-                aria-hidden
-                className="h-3 w-3 rounded-sm border"
-                style={{ backgroundColor: `${type.color}33`, borderColor: type.color }}
-              />
+              {swatch(`${type.color}33`, type.color)}
               {appointmentTypeName(type, locale)}
             </span>
-          ))}
-        </span>
-      ) : null}
-      <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1">
-        <span
-          aria-hidden
-          className="h-3 w-3 rounded-sm border"
-          style={{ backgroundColor: `${PAID_ENTRY_COLOR}33`, borderColor: PAID_ENTRY_COLOR }}
-        />
+          ))
+        : null}
+      <span className="inline-flex items-center gap-1">
+        {swatch('var(--color-jade-100)', PAID_ENTRY_COLOR)}
         {t('paid')}
       </span>
-      <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1">
-        <span className="font-medium text-ink-700">{t('confirmation')}</span>
-        <span className="inline-flex items-center gap-1">
-          <span aria-hidden className="h-2.5 w-2.5 rounded-full border border-ink-300" />
-          {tConfirmation('none')}
+      {dots.map(({ key, dot }) => (
+        <span key={key} className="inline-flex items-center gap-1" title={tConfirmation(key)}>
+          <span aria-hidden className={cn('h-2.5 w-2.5 shrink-0 rounded-full', dot)} />
+          {short ? t(`short.${key}`) : tConfirmation(key)}
         </span>
-        <span className="inline-flex items-center gap-1">
-          <span aria-hidden className="h-2.5 w-2.5 rounded-full bg-amber-500" />
-          {tConfirmation('sent')}
-        </span>
-        <span className="inline-flex items-center gap-1">
-          <span aria-hidden className="h-2.5 w-2.5 rounded-full bg-jade-600" />
-          {tConfirmation('confirmed')}
-        </span>
-        <span className="inline-flex items-center gap-1">
-          <span aria-hidden className="h-2.5 w-2.5 rounded-full bg-red-600" />
-          {tConfirmation('declined')}
-        </span>
-      </span>
+      ))}
     </>
   );
-  // Behind its own button at every width. It was a row above the grid on a
-  // desk — a row of the diary it pushed down — and it is read once, not daily.
+  /*
+   * Always in sight where the screen is wide: in the top bar, whose middle
+   * stands empty — so it is read without a click and costs the diary no
+   * height. It sat beside the dates first and pushed the view switch onto a
+   * second row. Narrower than that, behind its button.
+   */
   return (
-    <Popover
-      width={300}
-      align="end"
-      triggerLabel={t('title')}
-      triggerTitle={t('title')}
-      panelLabel={t('title')}
-      triggerClassName="inline-flex h-10 items-center gap-1.5 rounded-lg border border-ink-200 bg-white px-3 text-sm font-medium text-ink-700 shadow-xs transition-colors hover:bg-ink-50 hover:text-ink-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
-      triggerContent={
-        <>
-          <Info className="h-4 w-4" aria-hidden />
-          <span className="max-sm:sr-only">{t('title')}</span>
-        </>
-      }
-    >
-      <div className="flex flex-col gap-2.5 p-1 text-xs text-ink-600">{body}</div>
-    </Popover>
+    <>
+      <HeaderTools slotId="top-bar-tools">
+        <p
+          aria-label={t('title')}
+          className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink-600"
+        >
+          {body(true)}
+        </p>
+      </HeaderTools>
+      <Popover
+        width={300}
+        align="end"
+        triggerLabel={t('title')}
+        triggerTitle={t('title')}
+        panelLabel={t('title')}
+        className="xl:hidden"
+        triggerClassName="inline-flex h-10 items-center gap-1.5 rounded-lg border border-ink-200 bg-white px-3 text-sm font-medium text-ink-700 shadow-xs transition-colors hover:bg-ink-50 hover:text-ink-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+        triggerContent={
+          <>
+            <Info className="h-4 w-4" aria-hidden />
+            <span className="max-sm:sr-only">{t('title')}</span>
+          </>
+        }
+      >
+        <div className="flex flex-col gap-2 p-1 text-xs text-ink-600">{body(false)}</div>
+      </Popover>
+    </>
   );
 }
 

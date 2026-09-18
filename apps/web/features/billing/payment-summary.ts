@@ -19,6 +19,9 @@ export interface PaymentStatusRow {
   amount_paid: number | null;
   payment_url: string | null;
   payment_state: string;
+  /** The booking's hand mark (migration 20260919100000); absent before it. */
+  paid_at?: string | null;
+  paid_method?: string | null;
 }
 
 const STATES: readonly PaymentState[] = [
@@ -38,6 +41,8 @@ export function toPaymentSummary(row: PaymentStatusRow | undefined | null): Paym
       total: null,
       amountPaid: null,
       paymentUrl: null,
+      manualPaidAt: null,
+      manualMethod: null,
     };
   }
 
@@ -52,5 +57,7 @@ export function toPaymentSummary(row: PaymentStatusRow | undefined | null): Paym
     total: row.total === null ? null : Number(row.total),
     amountPaid: row.amount_paid === null ? null : Number(row.amount_paid),
     paymentUrl: row.payment_url,
+    manualPaidAt: row.paid_at ?? null,
+    manualMethod: row.paid_method ?? null,
   };
 }

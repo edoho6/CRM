@@ -129,7 +129,10 @@ export function AppointmentBlock({
         insetInlineStart: `calc(${column * widthPercent}% + 2px)`,
         width: `calc(${widthPercent}% - 4px)`,
         borderInlineStartColor: color,
-        backgroundColor: isCancelled ? undefined : `${color}1a`,
+        // Paid fills the whole box with the theme's light green (it turns
+        // dark in the dark theme), not the faint tint the other bookings
+        // wear: at ten percent a paid block read as grey.
+        backgroundColor: isCancelled ? undefined : isPaid ? 'var(--color-jade-100)' : `${color}1a`,
         transform: keyTransform ?? CSS.Translate.toString(transform),
       }}
       className={cn(

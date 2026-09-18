@@ -1,5 +1,6 @@
 import type {
   MedKind,
+  VisitPaymentMethod,
   MedRelation,
   MedStatus,
   AppointmentStatus,
@@ -273,6 +274,10 @@ export interface Appointment {
   reminder_sent_at: string | null;
   /** When the appointment last moved; reminders from before it were for the old time. */
   rescheduled_at: string | null;
+  /** Marked paid by hand, without (or regardless of) an invoice — migration 20260919100000. */
+  paid_at?: string | null;
+  paid_method?: VisitPaymentMethod | null;
+  paid_by?: string | null;
   /** The secret in the reminder link. Never rendered to anyone but the patient. */
   confirmation_token: string;
   /** What the patient tapped. Null until they answer. */
@@ -1083,6 +1088,9 @@ export interface EncounterPaymentStatus {
   amount_paid: number | null;
   payment_url: string | null;
   payment_state: 'unbilled' | 'unpaid' | 'partially_paid' | 'paid' | 'cancelled';
+  /** The booking's hand mark, which wins over the invoice (migration 20260919100000). */
+  paid_at?: string | null;
+  paid_method?: VisitPaymentMethod | null;
 }
 
 /** The same question for a booking, from `appointment_payment_status`. */
@@ -1097,6 +1105,9 @@ export interface AppointmentPaymentStatus {
   amount_paid: number | null;
   payment_url: string | null;
   payment_state: 'unbilled' | 'unpaid' | 'partially_paid' | 'paid' | 'cancelled';
+  /** The booking's hand mark, which wins over the invoice (migration 20260919100000). */
+  paid_at?: string | null;
+  paid_method?: VisitPaymentMethod | null;
 }
 
 /** A questionnaire the practitioner built. Questions live in `fields`. */

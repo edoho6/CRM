@@ -10,6 +10,7 @@ import { appointmentTypeName, patientFullName } from '@/lib/display';
 import { StartEncounterButton } from '@/features/encounters/start-encounter-button';
 import { PhoneActions } from '@/components/phone-actions';
 import { ConfirmationBadge } from './confirmation-status';
+import { PaymentAction, type PaymentSummary } from '@/features/billing/payment-status';
 import { formatDateTime } from '@clinic/i18n';
 
 /**
@@ -30,8 +31,17 @@ export function AppointmentDetails({
   locale,
   onClose,
   onEdit,
+  payment,
+  canBill,
 }: {
   appointment: AppointmentWithRelations | null;
+  /**
+   * Whether the visit is paid, and the way to mark it paid (cash, Bit…) from
+   * here — the desk's question as the patient leaves. Null for a role that
+   * does not see money: the row is not drawn at all.
+   */
+  payment: PaymentSummary | null;
+  canBill: boolean;
   locale: Locale;
   onClose: () => void;
   onEdit: (appointment: AppointmentWithRelations) => void;
@@ -65,7 +75,9 @@ export function AppointmentDetails({
                 it is in the booking form, where it is set. */}
             <Row icon={<CalendarClock className="h-4 w-4" aria-hidden />} label={td('when')}>
               <span className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
-                <span className="font-medium text-ink-900">{format.dateTime(start, 'weekday')}</span>
+                <span className="font-medium text-ink-900">
+                  {format.dateTime(start, 'weekday')}
+                </span>
                 {/* Isolated, so the dash between the hours stays between them in a
                     Hebrew sentence. */}
                 <bdi className="tabular-nums" dir="ltr">
@@ -116,6 +128,12 @@ export function AppointmentDetails({
               </span>
             </Row>
 
+            {payment && !isCancelled ? (
+              <Row label={td('payment')}>
+                <PaymentAction summary={payment} appointmentId={appointment.id} canBill={canBill} />
+              </Row>
+            ) : null}
+
             {/* The number, with the two things anyone does with it. Ringing was
                 the only offer, and on a desk `tel:` usually does nothing at
                 all — while the message that actually gets sent between a
@@ -137,7 +155,9 @@ export function AppointmentDetails({
 
             {appointment.reminder_sent_at ? (
               <Row label={td('reminder')}>
-                {td('reminderSentAt', { date: formatDateTime(new Date(appointment.reminder_sent_at)) })}
+                {td('reminderSentAt', {
+                  date: formatDateTime(new Date(appointment.reminder_sent_at)),
+                })}
               </Row>
             ) : null}
           </dl>

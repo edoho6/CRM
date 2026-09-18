@@ -20,7 +20,7 @@ import type {
 import { PageHeader } from '@/components/app-shell';
 import { RegisterOpenFile } from '@/features/workspace/register-open-file';
 import { HeaderToolsSlot } from '@/components/header-tools';
-import { getClinicScope } from '@/lib/session';
+import { getAbilities, getClinicScope } from '@/lib/session';
 import { logRecordAccess } from '@/lib/access-log';
 import { EncounterForm } from '@/features/encounters/encounter-form';
 import type { TonguePhoto } from '@/features/encounters/tongue-photos';
@@ -153,6 +153,7 @@ export default async function EncounterPage({
   const t = await getTranslations('encounters');
 
   const scope = await getClinicScope();
+  const abilities = await getAbilities();
   if (!scope) return null;
 
   const { data: encounter } = await scope.supabase
@@ -503,6 +504,7 @@ export default async function EncounterPage({
           <PaymentAction
             summary={toPaymentSummary(paymentResult.data)}
             encounterId={encounter.id}
+            appointmentId={abilities.money ? encounter.appointment_id : null}
             canBill={canBill}
           />
         }

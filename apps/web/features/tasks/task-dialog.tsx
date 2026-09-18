@@ -110,9 +110,13 @@ export function TaskDialog({
       setDate(toDateKey(due));
       setTime(toTimeValue(due));
     } else {
-      // A new task lands on today; the time field only unlocks once a date exists.
-      setDate(task?.due_on ?? (task ? '' : toDateKey(new Date())));
-      setTime('');
+      // A new task lands on today, at the next whole hour — with a time, so it
+      // rings: a task without one only waits on the list. Not 00:00, which
+      // on today is already past and would ring the moment it is saved.
+      // An existing task that never had a time keeps having none.
+      const now = new Date();
+      setDate(task?.due_on ?? (task ? '' : toDateKey(now)));
+      setTime(task ? '' : `${String(Math.min(now.getHours() + 1, 23)).padStart(2, '0')}:00`);
     }
     setUrgent(task?.is_urgent ?? false);
     setChannel(task?.remind_via ?? 'app');

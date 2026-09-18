@@ -50,6 +50,10 @@ export const DEFAULT_ENTRY_COLOR = '#0369a1';
  */
 export const PAID_ENTRY_COLOR = '#15803d';
 
+/** How a visit marked paid by hand was paid. Mirrored by appointments_paid_method_check. */
+export const VISIT_PAYMENT_METHODS = ['cash', 'card', 'bank_transfer', 'bit', 'paybox'] as const;
+export type VisitPaymentMethod = (typeof VISIT_PAYMENT_METHODS)[number];
+
 export const APPOINTMENT_STATUSES = [
   'scheduled',
   'confirmed',

@@ -1043,7 +1043,8 @@
       "edit": "Edit appointment",
       "file": "Patient file",
       "treatment": "Open treatment",
-      "start": "Start treatment"
+      "start": "Start treatment",
+      "payment": "Payment"
     },
     "rangeLayout": {
       "label": "Range view",
@@ -1055,7 +1056,13 @@
       "title": "Legend",
       "types": "Tint — treatment type:",
       "confirmation": "Attendance:",
-      "paid": "Paid"
+      "paid": "Paid",
+      "short": {
+        "none": "No reminder",
+        "sent": "Awaiting reply",
+        "confirmed": "Confirmed",
+        "declined": "Not coming"
+      }
     },
     "drag": {
       "instructions": "Space lifts the appointment, the arrows move it by a quarter hour or a day, Space drops it and Escape cancels. Enter opens its details.",
@@ -1065,9 +1072,9 @@
       "moved": "Moved to {date}, {time}"
     },
     "list": {
-      "upToToday": "Up to the end of today, newest first. Future dates — in a custom range.",
       "empty": "No appointments yet.",
-      "record": "Treatment record"
+      "record": "Treatment record",
+      "order": "Latest first, future appointments included. Opens on today: the previous page is further ahead, the next further back."
     }
   },
   "encounters": {
@@ -1436,7 +1443,8 @@
         "cash": "Cash",
         "bank_transfer": "Bank transfer",
         "bit": "Bit",
-        "other": "Other"
+        "other": "Other",
+        "paybox": "PayBox"
       },
       "statuses": {
         "pending": "Pending",
@@ -1457,7 +1465,11 @@
       "actionsFor": "Payment: {state} — open actions",
       "openInvoiceNumbered": "Invoice #{number}",
       "noProvider": "No payment provider configured. Set one under Settings → Payments.",
-      "noEncounterToBill": "No linked treatment to bill for."
+      "noEncounterToBill": "No linked treatment to bill for.",
+      "methodNone": "Not stated",
+      "markPaid": "Mark as paid",
+      "unmarkPaid": "Undo the mark",
+      "markedPaid": "Marked paid, without an invoice."
     },
     "cancel": "Cancel invoice",
     "cancelConfirm": "Cancel this invoice? It cannot be restored.",

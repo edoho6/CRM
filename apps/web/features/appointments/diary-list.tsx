@@ -1,6 +1,6 @@
 import { getFormatter, getTranslations } from 'next-intl/server';
 import { CalendarDays } from 'lucide-react';
-import { Badge, Dash, EmptyState, Table, TableWrapper, Td, Th, Tr } from '@clinic/ui';
+import { Badge, Dash, EmptyState, Table, TableWrapper, Td, Th, Tr, cn } from '@clinic/ui';
 import { ENCOUNTER_STATUS_TONES, dateKeyIn, statusTone } from '@clinic/domain';
 import { formatDate } from '@clinic/i18n';
 import { Link } from '@clinic/i18n/navigation';
@@ -37,10 +37,11 @@ function encounterOf(row: DiaryListRow): Pick<Encounter, 'id' | 'status'> | null
  * so the list moved here and the menu lost a line. It reads the diary's own
  * rows, the appointments, and the treatment record hangs off each one.
  *
- * Newest first and up to today unless a later date is chosen: this is the
- * "what has been done" view. What is coming is the week and the month.
- * Filtered and paged in the query, like the page it replaces; a practice five
- * years in has thousands of these.
+ * Latest first, the future included, and it opens on the page that holds
+ * today (the page decides that): the page before it is further ahead, the
+ * one after it further back. Filtered and paged in the query, like the page it
+ * replaces; a practice five years in has thousands of these. A darker line
+ * closes each day, so a day's rows read as one group.
  */
 export async function DiaryList({
   rows,
@@ -84,7 +85,7 @@ export async function DiaryList({
         <p className="text-xs text-ink-600">
           {matching !== null && matching > rows.length
             ? tc('showingOf', { shown: rows.length, total: matching })
-            : t('list.upToToday')}
+            : t('list.order')}
         </p>
       </div>
 
@@ -107,12 +108,16 @@ export async function DiaryList({
               </tr>
             </thead>
             <tbody>
-              {rows.map((row) => {
+              {rows.map((row, index) => {
                 const encounter = encounterOf(row);
                 const start = new Date(row.start_at);
+                const next = rows[index + 1];
+                const lastOfDay =
+                  next !== undefined &&
+                  dateKeyIn(new Date(next.start_at), timeZone) !== dateKeyIn(start, timeZone);
                 const noShow = row.status === 'no_show';
                 return (
-                  <Tr key={row.id}>
+                  <Tr key={row.id} className={cn(lastOfDay && '[&>td]:border-b-ink-300')}>
                     <Td className="w-28 pe-1" data-card-title>
                       {/* The day in the diary: the row's own place in the week. */}
                       <Link
@@ -172,6 +177,7 @@ export async function DiaryList({
                         <PaymentAction
                           summary={toPaymentSummary(payments.get(row.id))}
                           encounterId={encounter?.id ?? null}
+                          appointmentId={row.id}
                           canBill={canBill}
                         />
                       </Td>
