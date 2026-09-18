@@ -12,7 +12,7 @@ import { useDashboardContext, useRenderedAt, useWidgetInitialData } from '../das
 import { computeStats, type Period, type PeriodStats } from '../kpi-stats';
 import { fetchEncountersSince, type EncounterRow } from '../queries/encounters';
 import { registerWidget } from '../registry';
-import { WidgetLoading } from '../widget-frame';
+import { WidgetLoading, WidgetError } from '../widget-frame';
 
 /**
  * Treatment KPIs: today, this week, this month.
@@ -46,7 +46,15 @@ function DayColumns({ days, labelEvery }: { days: PeriodStats['days']; labelEver
 
   return (
     <div className="mt-3">
-      <div className="relative" style={{ height }}>
+      <ul className="sr-only">
+        {days.map((day) => (
+          <li key={day.key}>
+            {format.dateTime(day.date, { day: 'numeric', month: 'short' })}:{' '}
+            {t('treatmentCount', { count: day.count })}
+          </li>
+        ))}
+      </ul>
+      <div className="relative" style={{ height }} aria-hidden>
         {/* Hairline gridlines, recessive, at the top and the midpoint. */}
         <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-ink-100" />
         <div className="pointer-events-none absolute inset-x-0 top-1/2 h-px bg-ink-100" />
@@ -63,6 +71,7 @@ function DayColumns({ days, labelEvery }: { days: PeriodStats['days']; labelEver
                 style={{ width: `${columnWidth}%` }}
                 onMouseEnter={() => setHover(day.key)}
                 onMouseLeave={() => setHover(null)}
+                onClick={() => setHover((current) => (current === day.key ? null : day.key))}
               >
                 <div
                   className={cn(
@@ -82,9 +91,7 @@ function DayColumns({ days, labelEvery }: { days: PeriodStats['days']; labelEver
                     role="tooltip"
                     className="pointer-events-none absolute bottom-full z-10 mb-1 rounded-md border border-ink-200 bg-white px-2 py-1 text-xs whitespace-nowrap text-ink-800 shadow-md"
                   >
-                    <span dir="ltr">
-                      {format.dateTime(day.date, { day: 'numeric', month: 'short' })}
-                    </span>
+                    <span>{format.dateTime(day.date, { day: 'numeric', month: 'short' })}</span>
                     {' · '}
                     {t('treatmentCount', { count: day.count })}
                   </div>
@@ -95,7 +102,7 @@ function DayColumns({ days, labelEvery }: { days: PeriodStats['days']; labelEver
         </div>
       </div>
 
-      <div className="mt-1 flex text-xs text-ink-600">
+      <div className="mt-1 flex text-xs text-ink-600" aria-hidden>
         {days.map((day, index) => (
           <div key={day.key} className="text-center" style={{ width: `${columnWidth}%` }}>
             {index % labelEvery === 0 || day.isToday ? (
@@ -155,7 +162,7 @@ function TreatmentKpisWidget({ size }: WidgetProps<Record<string, never>>) {
   );
 
   const initial = useWidgetInitialData<EncounterRow[]>('treatment-kpis');
-  const { data, loading } = useAsyncData<EncounterRow[]>(
+  const { data, loading, error, reload } = useAsyncData<EncounterRow[]>(
     (supabase) => fetchEncountersSince(supabase, fromKey),
     [fromKey],
     { initial },
@@ -164,6 +171,7 @@ function TreatmentKpisWidget({ size }: WidgetProps<Record<string, never>>) {
   const stats = useMemo(() => computeStats(data ?? [], { timeZone }), [data, timeZone]);
 
   if (loading) return <WidgetLoading />;
+  if (error && !data) return <WidgetError onRetry={reload} />;
 
   const periods: { key: Period; label: string; previousLabel: string }[] = [
     { key: 'today', label: t('today'), previousLabel: t('yesterday') },
@@ -232,7 +240,9 @@ function TreatmentKpisWidget({ size }: WidgetProps<Record<string, never>>) {
                       href={`/encounters/${row.id}`}
                       className="flex items-center justify-between gap-2 py-2 text-sm transition-colors hover:bg-ink-50"
                     >
-                      <span className="truncate text-ink-900">{row.patient?.full_name ?? <Dash />}</span>
+                      <span className="truncate text-ink-900">
+                        {row.patient?.full_name ?? <Dash />}
+                      </span>
                       <span className="shrink-0 text-xs text-ink-500" dir="ltr">
                         {format.dateTime(new Date(row.created_at), 'time')}
                       </span>

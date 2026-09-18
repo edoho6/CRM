@@ -10,20 +10,21 @@ import { useAsyncData } from '@/lib/use-supabase';
 import { useDashboardContext, useWidgetInitialData } from '../dashboard-context';
 import { fetchPatientStats, type PatientStats } from '../queries/patient-stats';
 import { registerWidget } from '../registry';
-import { WidgetLoading } from '../widget-frame';
+import { WidgetLoading, WidgetError } from '../widget-frame';
 
 function PatientStatsWidget() {
   const t = useTranslations('widgets.patientStats');
 
   const { timeZone } = useDashboardContext();
   const initial = useWidgetInitialData<PatientStats>('patient-stats');
-  const { data, loading } = useAsyncData<PatientStats>(
+  const { data, loading, error, reload } = useAsyncData<PatientStats>(
     (supabase) => fetchPatientStats(supabase, monthStartIn(new Date(), timeZone).toISOString()),
     [timeZone],
     { initial },
   );
 
   if (loading) return <WidgetLoading />;
+  if (error && !data) return <WidgetError onRetry={reload} />;
 
   return (
     <div className="grid h-full grid-cols-2 gap-3">

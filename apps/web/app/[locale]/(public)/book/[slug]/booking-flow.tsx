@@ -19,7 +19,7 @@ import {
 import type { Locale } from '@clinic/domain';
 import { useRouter } from '@clinic/i18n/navigation';
 import { formatTime } from '@clinic/i18n';
-import { addDays, toDateKey } from '@/features/appointments/date-utils';
+import { addDaysIn, dateKeyIn } from '@clinic/domain';
 import { fetchSlots, sendBookingCode, submitBooking, type BookingError } from '../actions';
 
 export interface BookingClinic {
@@ -90,7 +90,7 @@ export function BookingFlow({
   const [locationId, setLocationId] = useState<string | null>(
     locations.length === 1 ? locations[0]!.id : null,
   );
-  const [day, setDay] = useState<string>(toDateKey(new Date()));
+  const [day, setDay] = useState<string>(() => dateKeyIn(new Date(), clinic.timezone));
   const [slots, setSlots] = useState<string[] | null>(null);
   const [startAt, setStartAt] = useState<string | null>(null);
 
@@ -123,12 +123,11 @@ export function BookingFlow({
         : 'who';
 
   const days = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const now = new Date();
     return Array.from({ length: Math.min(clinic.horizon_days, 21) }, (_, index) =>
-      addDays(today, index),
+      addDaysIn(now, index, clinic.timezone),
     );
-  }, [clinic.horizon_days]);
+  }, [clinic.horizon_days, clinic.timezone]);
 
   // The free hours of the chosen day, fetched when the day or the treatment
   // changes. Cleared first so a stale grid never sits under a new day's name.
@@ -136,9 +135,16 @@ export function BookingFlow({
     if (step === 'what' || !typeId || !practitionerId) return;
     let cancelled = false;
     setSlots(null);
-    void fetchSlots(slug, typeId, practitionerId, day).then((result) => {
-      if (!cancelled) setSlots(result);
-    });
+    void fetchSlots(slug, typeId, practitionerId, day)
+      .then((result) => {
+        if (!cancelled) setSlots(result);
+      })
+      .catch(() => {
+        // An empty grid with a message, not a spinner that never stops.
+        if (cancelled) return;
+        setSlots([]);
+        setError('generic');
+      });
     return () => {
       cancelled = true;
     };
@@ -181,7 +187,9 @@ export function BookingFlow({
         if (result.error === 'slot_taken') {
           setStartAt(null);
           setSlots(null);
-          void fetchSlots(slug, typeId, practitionerId, day).then(setSlots);
+          void fetchSlots(slug, typeId, practitionerId, day)
+            .then(setSlots)
+            .catch(() => setSlots([]));
         }
         return;
       }
@@ -342,7 +350,7 @@ export function BookingFlow({
             aria-label={t('day')}
           >
             {days.map((candidate) => {
-              const key = toDateKey(candidate);
+              const key = dateKeyIn(candidate, clinic.timezone);
               const selected = key === day;
               return (
                 <button
@@ -357,7 +365,9 @@ export function BookingFlow({
                       : 'border-ink-200 bg-white text-ink-800 hover:bg-ink-50',
                   )}
                 >
-                  <span className="text-xs">{format.dateTime(candidate, { weekday: 'short' })}</span>
+                  <span className="text-xs">
+                    {format.dateTime(candidate, { weekday: 'short' })}
+                  </span>
                   <span className="font-semibold tabular-nums">
                     {format.dateTime(candidate, { day: 'numeric', month: 'numeric' })}
                   </span>
@@ -399,7 +409,7 @@ export function BookingFlow({
                 <span className="block font-medium">
                   {typeName(types.find((type) => type.id === typeId)!)}
                 </span>
-                <span dir="ltr" className="tabular-nums">
+                <span className="tabular-nums">
                   {format.dateTime(new Date(startAt), 'weekday')} · {formatTime(new Date(startAt))}
                 </span>
               </span>
@@ -453,7 +463,12 @@ export function BookingFlow({
             />
           </Field>
           <Field label={t('note')} htmlFor="note">
-            <Textarea id="note" rows={2} value={note} onChange={(event) => setNote(event.target.value)} />
+            <Textarea
+              id="note"
+              rows={2}
+              value={note}
+              onChange={(event) => setNote(event.target.value)}
+            />
           </Field>
 
           {clinic.verify_sms ? (

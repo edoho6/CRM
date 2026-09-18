@@ -72,6 +72,7 @@ export async function HerbsCatalogue({
 
   const t = await getTranslations('inventory.herbs');
   const tUnit = await getTranslations('inventory.unit');
+  const tStockTabs = await getTranslations('inventory.tabs');
   const tTcm = await getTranslations('inventory.tcmCategory');
   const tTemp = await getTranslations('inventory.temperature');
   const tTaste = await getTranslations('inventory.taste');
@@ -384,7 +385,7 @@ export async function HerbsCatalogue({
                     </Td>
                     <Td>
                       {dose ? (
-                        <span dir="ltr" className="text-sm font-semibold tabular-nums text-ink-800">
+                        <span className="text-sm font-semibold tabular-nums text-ink-800">
                           {dose}
                         </span>
                       ) : (
@@ -395,7 +396,6 @@ export async function HerbsCatalogue({
                       <Td>
                         {stock ? (
                           <span
-                            dir="ltr"
                             className={
                               stock.remaining <= 0
                                 ? 'font-semibold tabular-nums text-red-700'
@@ -405,6 +405,13 @@ export async function HerbsCatalogue({
                             }
                           >
                             {format.number(stock.remaining)} {tUnit(stock.unit as never)}
+                            {/* The colour says it at a glance; the words say it to
+                                a screen reader and to anyone who does not see red. */}
+                            {stock.remaining <= 0 ? (
+                              <span className="sr-only"> · {tStockTabs('out')}</span>
+                            ) : stock.low ? (
+                              <span className="sr-only"> · {tStockTabs('low')}</span>
+                            ) : null}
                           </span>
                         ) : (
                           <span className="text-xs text-ink-500">{t('notStocked')}</span>

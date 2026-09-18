@@ -80,9 +80,7 @@ export function WidgetFrame({
         {isEditing ? (
           <GripVertical className="h-3.5 w-3.5 shrink-0 text-ink-500" aria-hidden />
         ) : null}
-        <h2 className="min-w-0 flex-1 truncate text-sm font-semibold text-ink-900">
-          {title}
-        </h2>
+        <h2 className="min-w-0 flex-1 truncate text-sm font-semibold text-ink-900">{title}</h2>
         {headerAction}
         {isEditing && onResize ? (
           <button
@@ -114,7 +112,9 @@ export function WidgetFrame({
           </button>
         ) : null}
       </header>
-      <div className={cn('min-h-0 flex-1 overflow-y-auto p-3', BODY_MAX_HEIGHT[size], bodyClassName)}>
+      <div
+        className={cn('min-h-0 flex-1 overflow-y-auto p-3', BODY_MAX_HEIGHT[size], bodyClassName)}
+      >
         {children}
       </div>
     </section>
@@ -131,6 +131,29 @@ export function WidgetEmpty({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex h-full items-center justify-center px-2 text-center text-sm text-ink-500">
       {children}
+    </div>
+  );
+}
+
+/**
+ * A widget whose data did not load. Said, with a way to ask again — the
+ * alternative was zeros and empty lists that look exactly like a quiet month.
+ */
+export function WidgetError({ onRetry }: { onRetry: () => void }) {
+  const t = useTranslations('common');
+  return (
+    <div
+      role="alert"
+      className="flex h-full flex-col items-center justify-center gap-2 px-2 text-center text-sm text-ink-600"
+    >
+      <p>{t('errorGeneric')}</p>
+      <button
+        type="button"
+        onClick={onRetry}
+        className="rounded-md px-2 py-1 text-xs font-medium text-jade-700 underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+      >
+        {t('retry')}
+      </button>
     </div>
   );
 }

@@ -243,11 +243,13 @@ export default async function HerbDetailPage({
           <div>
             <p className="text-xs font-medium text-ink-600">{t('fields.dosageRange')}</p>
             {dosage ? (
-              <p dir="ltr" className="text-3xl leading-tight font-bold tabular-nums text-jade-800">
+              <p className="text-3xl leading-tight font-bold tabular-nums text-jade-800">
                 {dosage}
               </p>
             ) : (
-              <p className="text-3xl leading-tight font-bold text-ink-500">—</p>
+              <p className="text-3xl leading-tight font-bold text-ink-500">
+                <Dash />
+              </p>
             )}
           </div>
 

@@ -12,7 +12,7 @@ import { useWidgetInitialData } from '../dashboard-context';
 import { fetchLowStock } from '../queries/low-stock';
 import { herbPrimaryName, herbSecondaryName } from '@/lib/display';
 import { registerWidget } from '../registry';
-import { WidgetEmpty, WidgetLoading } from '../widget-frame';
+import { WidgetEmpty, WidgetLoading, WidgetError } from '../widget-frame';
 
 /**
  * Low-stock widget.
@@ -28,9 +28,12 @@ function LowStockWidget() {
   const format = useFormatter();
 
   const initial = useWidgetInitialData<HerbStockLevel[]>('low-stock');
-  const { data, loading } = useAsyncData<HerbStockLevel[]>(fetchLowStock, [], { initial });
+  const { data, loading, error, reload } = useAsyncData<HerbStockLevel[]>(fetchLowStock, [], {
+    initial,
+  });
 
   if (loading) return <WidgetLoading />;
+  if (error && !data) return <WidgetError onRetry={reload} />;
 
   const rows = data ?? [];
   if (rows.length === 0) {

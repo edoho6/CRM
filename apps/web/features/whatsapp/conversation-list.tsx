@@ -3,8 +3,20 @@
 import { useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { MessageCircle, Plus, Search } from 'lucide-react';
-import { Button, Combobox, Dialog, DialogContent, DialogFooter, EmptyNote, Input, SegmentedControl, cn, type ComboboxValue } from '@clinic/ui';
-import { formatDate, formatTime } from '@clinic/i18n';
+import {
+  Button,
+  Combobox,
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  EmptyNote,
+  Input,
+  SegmentedControl,
+  cn,
+  type ComboboxValue,
+} from '@clinic/ui';
+import { CLINIC_TIME_ZONE, formatDate, formatTime } from '@clinic/i18n';
+import { dateKeyIn } from '@clinic/domain';
 import type { ConversationSummary, PatientOption } from './types';
 
 type Filter = 'all' | 'unread' | 'closed';
@@ -50,7 +62,15 @@ export function ConversationList({
   }, [conversations, filter, query]);
 
   const options = useMemo(
-    () => patients.filter((patient) => patient.phone).map((patient) => ({ id: patient.id, label: patient.fullName, tertiary: patient.phone, keywords: patient.phone ?? undefined })),
+    () =>
+      patients
+        .filter((patient) => patient.phone)
+        .map((patient) => ({
+          id: patient.id,
+          label: patient.fullName,
+          tertiary: patient.phone,
+          keywords: patient.phone ?? undefined,
+        })),
     [patients],
   );
 
@@ -69,7 +89,10 @@ export function ConversationList({
     <div className="space-y-2" data-conversation-list>
       <div className="flex items-center gap-2">
         <div className="relative min-w-0 flex-1">
-          <Search className="pointer-events-none absolute start-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" aria-hidden />
+          <Search
+            className="pointer-events-none absolute start-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400"
+            aria-hidden
+          />
           <Input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
@@ -123,7 +146,13 @@ export function ConversationList({
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="flex items-baseline justify-between gap-2">
-                      <span className={cn('truncate text-sm', row.unread > 0 ? 'font-semibold text-ink-900' : 'text-ink-900')} dir="auto">
+                      <span
+                        className={cn(
+                          'truncate text-sm',
+                          row.unread > 0 ? 'font-semibold text-ink-900' : 'text-ink-900',
+                        )}
+                        dir="auto"
+                      >
                         {name}
                       </span>
                       <span dir="ltr" className="shrink-0 text-xs tabular-nums text-ink-500">
@@ -188,7 +217,7 @@ function initial(name: string): string {
 /** Today: the hour; otherwise the date. */
 function whenLabel(iso: string): string {
   const at = new Date(iso);
-  const now = new Date();
-  const sameDay = at.getFullYear() === now.getFullYear() && at.getMonth() === now.getMonth() && at.getDate() === now.getDate();
+  // The clinic's day, as formatTime and formatDate already are.
+  const sameDay = dateKeyIn(at, CLINIC_TIME_ZONE) === dateKeyIn(new Date(), CLINIC_TIME_ZONE);
   return sameDay ? formatTime(at) : formatDate(at);
 }

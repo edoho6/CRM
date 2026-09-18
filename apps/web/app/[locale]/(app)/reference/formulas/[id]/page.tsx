@@ -186,8 +186,8 @@ export default async function FormulaDetailPage({
         <div className="flex flex-wrap items-center gap-x-8 gap-y-4">
           <div>
             <p className="text-xs font-medium text-ink-600">{t('totalWeight')}</p>
-            <p dir="ltr" className="text-3xl leading-tight font-bold tabular-nums text-jade-800">
-              {format.number(totalWeight)} g
+            <p className="text-3xl leading-tight font-bold tabular-nums text-jade-800">
+              {format.number(totalWeight)} {tUnit('gram')}
             </p>
           </div>
 
@@ -218,7 +218,6 @@ export default async function FormulaDetailPage({
               <div>
                 <p className="mb-1 text-xs font-medium text-ink-600">{tStock('available')}</p>
                 <p
-                  dir="ltr"
                   className={
                     !stock || Number(stock.doses_available) <= 0
                       ? 'text-xl font-semibold tabular-nums text-red-700'
@@ -227,7 +226,14 @@ export default async function FormulaDetailPage({
                         : 'text-xl font-semibold tabular-nums text-jade-700'
                   }
                 >
-                  {format.number(Number(stock?.doses_available ?? 0) * totalWeight)} g
+                  {/* No stock row is no measurement: a dash, not "0". */}
+                  {stock ? (
+                    <>
+                      {format.number(Number(stock.doses_available) * totalWeight)} {tUnit('gram')}
+                    </>
+                  ) : (
+                    <Dash />
+                  )}
                 </p>
                 {stock && stock.missing_count > 0 ? (
                   <p className="text-xs text-red-700">
@@ -248,8 +254,8 @@ export default async function FormulaDetailPage({
           <Card>
             <CardHeader>
               <CardTitle>{t('items')}</CardTitle>
-              <span dir="ltr" className="text-sm font-semibold tabular-nums text-ink-700">
-                {format.number(totalWeight)} g
+              <span className="text-sm font-semibold tabular-nums text-ink-700">
+                {format.number(totalWeight)} {tUnit('gram')}
               </span>
             </CardHeader>
             <CardBody className="p-0">

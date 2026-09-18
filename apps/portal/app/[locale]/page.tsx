@@ -35,11 +35,7 @@ type PortalAppointment = Appointment & {
  * is the question they opened the portal with; the rest of the diary and
  * the documents as plain rows under it.
  */
-export default async function PortalHomePage({
-  params,
-}: {
-  params: Promise<{ locale: string }>;
-}) {
+export default async function PortalHomePage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   setRequestLocale(locale);
 
@@ -153,10 +149,10 @@ export default async function PortalHomePage({
           ) : (
             <div className="space-y-4">
               <div className="rounded-lg bg-jade-50 p-4 text-center">
-                <p className="text-2xl font-semibold text-ink-900" dir="ltr">
+                <p className="text-2xl font-semibold text-ink-900">
                   {format.dateTime(new Date(next.start_at), 'weekday')}
                 </p>
-                <p className="text-3xl font-semibold text-jade-800 tabular-nums" dir="ltr">
+                <p className="text-3xl font-semibold text-jade-800 tabular-nums">
                   {format.dateTime(new Date(next.start_at), 'time')}
                 </p>
                 <p className="mt-2 text-sm text-ink-700">{describe(next)}</p>
@@ -188,7 +184,7 @@ export default async function PortalHomePage({
                 key={appointment.id}
                 leading={<CalendarDays className="h-5 w-5" aria-hidden />}
                 title={
-                  <span dir="ltr">
+                  <span>
                     {format.dateTime(new Date(appointment.start_at), 'weekday')}
                     {' · '}
                     {format.dateTime(new Date(appointment.start_at), 'time')}
@@ -221,13 +217,15 @@ export default async function PortalHomePage({
                 chevron
                 leading={<FileText className="h-5 w-5" aria-hidden />}
                 title={document.file_name}
-                description={
-                  <span dir="ltr">{formatDate(new Date(document.created_at))}</span>
-                }
+                description={<span dir="ltr">{formatDate(new Date(document.created_at))}</span>}
               >
                 {/* Opened in place rather than downloaded: a phone shows a PDF
                     on the spot, and "download" leaves a file nobody finds. */}
-                <a href={`/api/documents/${document.id}?inline=1`} target="_blank" rel="noreferrer" />
+                <a
+                  href={`/api/documents/${document.id}?inline=1`}
+                  target="_blank"
+                  rel="noreferrer"
+                />
               </ListRow>
             ))}
           </List>

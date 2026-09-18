@@ -273,7 +273,8 @@ export function GlobalSearch() {
         'relative',
         // On a phone the bar has no room beside the buttons: the search takes
         // the whole bar while it is open, the way a phone's mail search does.
-        open && 'max-sm:absolute max-sm:inset-x-3 max-sm:top-2.5 max-sm:bottom-2.5 max-sm:z-10 max-sm:flex max-sm:items-center max-sm:bg-white',
+        open &&
+          'max-sm:absolute max-sm:inset-x-3 max-sm:top-2.5 max-sm:bottom-2.5 max-sm:z-10 max-sm:flex max-sm:items-center max-sm:bg-white',
       )}
     >
       <div className="flex items-center gap-1.5 max-sm:w-full">
@@ -314,7 +315,9 @@ export function GlobalSearch() {
             aria-expanded={showPanel}
             aria-controls="global-search-results"
             aria-autocomplete="list"
-            aria-activedescendant={showPanel && flat[highlight] ? optionId(flat[highlight]) : undefined}
+            aria-activedescendant={
+              showPanel && flat[highlight] ? optionId(flat[highlight]) : undefined
+            }
             tabIndex={open ? 0 : -1}
             className={cn(
               'h-10 w-full rounded-lg border border-ink-200 bg-white px-3 pe-8 text-base sm:text-sm text-ink-900',
@@ -374,7 +377,7 @@ export function GlobalSearch() {
                             router.push(result.href);
                           }}
                           className={cn(
-                            'flex w-full items-start gap-2.5 rounded-lg px-2 py-2 text-start transition-colors hover:bg-jade-50 focus-visible:bg-jade-50 focus-visible:outline-none',
+                            'flex w-full items-start gap-2.5 rounded-lg px-2 py-2 text-start transition-colors hover:bg-jade-50 focus-visible:bg-jade-50 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus',
                             flat[highlight] === result && 'bg-jade-50',
                           )}
                         >

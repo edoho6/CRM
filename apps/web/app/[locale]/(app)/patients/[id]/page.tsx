@@ -297,8 +297,8 @@ export default async function PatientDetailPage({
             </DetailRow>
             <DetailRow label={t('fields.dateOfBirth')}>
               {patient.date_of_birth ? (
-                <span dir="ltr">
-                  {formatDate(new Date(patient.date_of_birth))}
+                <span>
+                  <bdi dir="ltr">{formatDate(new Date(patient.date_of_birth))}</bdi>
                   {age !== null ? ` · ${t('years', { count: age })}` : ''}
                 </span>
               ) : (

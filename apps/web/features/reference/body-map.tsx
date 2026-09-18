@@ -295,7 +295,11 @@ export function BodyMap({
                         onSelect?.(point);
                       }
                     }}
-                    className={onSelect ? 'cursor-pointer focus:outline-none' : undefined}
+                    className={
+                      onSelect
+                        ? 'cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus'
+                        : undefined
+                    }
                   >
                     {/* A generous invisible target: the visible dot is 5px wide
                         on a chart often rendered at half size, well below the
@@ -325,7 +329,11 @@ export function BodyMap({
                         y={cy - 9}
                         textAnchor={cx > W / 2 ? 'start' : 'end'}
                         className="fill-ink-900 text-xs font-semibold"
-                        style={{ paintOrder: 'stroke', stroke: 'var(--color-white)', strokeWidth: 3.5 }}
+                        style={{
+                          paintOrder: 'stroke',
+                          stroke: 'var(--color-white)',
+                          strokeWidth: 3.5,
+                        }}
                       >
                         {point.code}
                       </text>

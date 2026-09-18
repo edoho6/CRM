@@ -6,7 +6,8 @@ import { CalendarClock, X } from 'lucide-react';
 import { Alert, Button, Spinner, cn, useConfirm } from '@clinic/ui';
 import { useRouter } from '@clinic/i18n/navigation';
 import { formatTime } from '@clinic/i18n';
-import { addDays, toDateKey } from '@/features/appointments/date-utils';
+import { addDaysIn, dateKeyIn } from '@clinic/domain';
+import { CLINIC_TIME_ZONE } from '@clinic/i18n';
 import {
   cancelAppointment,
   fetchChangeSlots,
@@ -38,23 +39,30 @@ export function ChangeForm({
   const confirm = useConfirm();
   const [open, setOpen] = useState(false);
   const [moving, setMoving] = useState(false);
-  const [day, setDay] = useState(toDateKey(new Date()));
+  const [day, setDay] = useState(() => dateKeyIn(new Date(), CLINIC_TIME_ZONE));
   const [slots, setSlots] = useState<string[] | null>(null);
   const [result, setResult] = useState<ChangeResult | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const days = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return Array.from({ length: Math.min(horizonDays, 21) }, (_, index) => addDays(today, index));
+    const now = new Date();
+    return Array.from({ length: Math.min(horizonDays, 21) }, (_, index) =>
+      addDaysIn(now, index, CLINIC_TIME_ZONE),
+    );
   }, [horizonDays]);
 
   useEffect(() => {
     if (!moving) return;
     let stale = false;
-    void fetchChangeSlots(token, day).then((found) => {
-      if (!stale) setSlots(found);
-    });
+    void fetchChangeSlots(token, day)
+      .then((found) => {
+        if (!stale) setSlots(found);
+      })
+      .catch(() => {
+        if (stale) return;
+        setSlots([]);
+        setResult('error');
+      });
     return () => {
       stale = true;
     };
@@ -153,7 +161,7 @@ export function ChangeForm({
             aria-label={t('day')}
           >
             {days.map((candidate) => {
-              const key = toDateKey(candidate);
+              const key = dateKeyIn(candidate, CLINIC_TIME_ZONE);
               const selected = key === day;
               return (
                 <button

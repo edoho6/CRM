@@ -329,7 +329,9 @@ function LightboxContent({
 }) {
   const t = useTranslations('encounters.tonguePhotos');
   const main = photoById(lightbox.main);
-  const beside = lightbox.beside.map(photoById).filter((photo): photo is TonguePhoto => photo !== null);
+  const beside = lightbox.beside
+    .map(photoById)
+    .filter((photo): photo is TonguePhoto => photo !== null);
   const others = photos.filter((photo) => photo.id !== lightbox.main);
   if (!main) return null;
 
@@ -345,8 +347,8 @@ function LightboxContent({
         labels={zoomLabels}
         className="h-[60vh] w-full rounded-lg border border-ink-200"
       />
-      <figcaption className="mt-1 text-center text-xs text-ink-600" dir="ltr">
-        {formatDate(photo.date)}
+      <figcaption className="mt-1 text-center text-xs text-ink-600">
+        <bdi dir="ltr">{formatDate(photo.date)}</bdi>
         {photo.encounterId === encounterId ? ` · ${t('current')}` : ''}
       </figcaption>
     </figure>
@@ -390,8 +392,8 @@ function LightboxContent({
                       alt={alt(photo)}
                       className="h-14 w-14 rounded-md border border-ink-200 object-cover"
                     />
-                    <span className="mt-0.5 block text-center text-xs text-ink-600" dir="ltr">
-                      {formatDate(photo.date)}
+                    <span className="mt-0.5 block text-center text-xs text-ink-600">
+                      <bdi dir="ltr">{formatDate(photo.date)}</bdi>
                       {photo.encounterId === encounterId ? ` · ${t('current')}` : ''}
                     </span>
                   </button>

@@ -68,7 +68,19 @@ import { formatDate, formatDateTime } from '@clinic/i18n';
 import { ReferenceChip } from '@/features/reference/reference-sheet';
 import { cn } from '@clinic/ui/cn';
 
+let nextRowKey = 0;
+/** An empty herb line with a key of its own. */
+function emptyRow(): HerbRow {
+  nextRowKey += 1;
+  return { key: nextRowKey, choice: null, dose: '' };
+}
+
 interface HerbRow {
+  /**
+   * The row's own identity for React. The position was the key, so deleting
+   * the second of three rows handed its half-typed search to the third.
+   */
+  key: number;
   /** Null when the name was typed rather than chosen — an off-catalogue line. */
   choice: ComboboxValue | null;
   /** A relative part when a total is given, otherwise grams as written. */
@@ -161,7 +173,7 @@ export function DispensePanel({
   const [formulaChoice, setFormulaChoice] = useState<ComboboxValue | null>(null);
   const [preparation, setPreparation] = useState<HerbPreparation>('dried_herb');
   const [totalQuantity, setTotalQuantity] = useState('');
-  const [rows, setRows] = useState<HerbRow[]>([{ choice: null, dose: '' }]);
+  const [rows, setRows] = useState<HerbRow[]>(() => [emptyRow()]);
   const [doseAmount, setDoseAmount] = useState('');
   const [doseUnit, setDoseUnit] = useState<HerbUnit>(() => preparationUnit('dried_herb'));
   const [dosesPerDay, setDosesPerDay] = useState('');
@@ -237,6 +249,11 @@ export function DispensePanel({
     filledRows.map((row) => ({ item: row.choice!, dose: Number(row.dose) })),
     hasTotal ? requestedTotal : null,
   ).map((line) => ({ choice: line.item, quantity: line.quantity }));
+
+  // Each filled row and its computed line, by the row itself: the same herb on
+  // two rows is two lines, and finding the line by the herb showed the first
+  // row's weight on both.
+  const lineOfRow = new Map(filledRows.map((row, index) => [row, herbLines[index]] as const));
 
   const herbLinesTotal = round2(herbLines.reduce((sum, line) => sum + line.quantity, 0));
 
@@ -362,7 +379,7 @@ export function DispensePanel({
 
   function reset() {
     setFormulaChoice(null);
-    setRows([{ choice: null, dose: '' }]);
+    setRows([emptyRow()]);
     setNotes('');
     setTotalQuantity('');
     setDoseAmount('');
@@ -400,6 +417,7 @@ export function DispensePanel({
         protocol.herbs.map((entry) => {
           const herb = entry.herb_id ? herbs.find((h) => h.id === entry.herb_id) : undefined;
           return {
+            ...emptyRow(),
             choice: herb
               ? { id: herb.id, label: herbPrimaryName(herb, locale) }
               : { id: '', label: entry.name },
@@ -584,11 +602,9 @@ export function DispensePanel({
                 </div>
 
                 {rows.map((row, index) => {
-                  const line = row.choice
-                    ? herbLines.find((entry) => entry.choice === row.choice)
-                    : undefined;
+                  const line = lineOfRow.get(row);
                   return (
-                    <div key={index} className="flex items-end gap-2">
+                    <div key={row.key} className="flex items-end gap-2">
                       <div className="min-w-0 flex-1">
                         <Combobox
                           label={t('herb')}
@@ -647,7 +663,7 @@ export function DispensePanel({
                   <Button
                     variant="secondary"
                     size="sm"
-                    onClick={() => setRows([...rows, { choice: null, dose: '' }])}
+                    onClick={() => setRows([...rows, emptyRow()])}
                   >
                     <Plus className="h-4 w-4" />
                     {tc('add')}

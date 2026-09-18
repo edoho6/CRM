@@ -385,7 +385,6 @@ export default async function StockRoomPage({
                                     className="flex items-baseline gap-1.5"
                                   >
                                     <span
-                                      dir="ltr"
                                       className={
                                         level.is_below_threshold
                                           ? 'font-semibold tabular-nums text-amber-700'
@@ -439,9 +438,7 @@ export default async function StockRoomPage({
                                   ? null
                                   : Number(level.reorder_quantity)
                               }
-                              listedPreparations={
-                                listedPreparationsByHerb.get(level.herb_id) ?? []
-                              }
+                              listedPreparations={listedPreparationsByHerb.get(level.herb_id) ?? []}
                               suppliers={suppliers}
                             />
                           </Td>

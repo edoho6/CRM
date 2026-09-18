@@ -16,7 +16,7 @@ import { withPending } from '@/features/tasks/optimistic';
 import { useDashboardContext, useRenderedAt, useWidgetInitialData } from '../dashboard-context';
 import { fetchOpenTasks } from '../queries/tasks';
 import { registerWidget } from '../registry';
-import { WidgetEmpty, WidgetLoading } from '../widget-frame';
+import { WidgetEmpty, WidgetLoading, WidgetError } from '../widget-frame';
 
 /**
  * The to-do list, on the dashboard.
@@ -44,7 +44,7 @@ function TasksWidget() {
   const formRef = useRef<HTMLFormElement>(null);
 
   const initial = useWidgetInitialData<ClinicTaskWithPatient[]>('tasks');
-  const { data, loading } = useAsyncData<ClinicTaskWithPatient[]>(
+  const { data, loading, error, reload } = useAsyncData<ClinicTaskWithPatient[]>(
     fetchOpenTasks,
     // Re-read after every write. The list is short and the alternative is
     // guessing at the new order, which the urgent-first sort would get wrong.
@@ -110,8 +110,12 @@ function TasksWidget() {
     const boxes = [...(list?.querySelectorAll<HTMLInputElement>('input[type="checkbox"]') ?? [])];
     const index = boxes.findIndex((box) => row.contains(box));
     requestAnimationFrame(() => {
-      const left = [...(listRef.current?.querySelectorAll<HTMLInputElement>('input[type="checkbox"]') ?? [])];
-      const next = left[Math.min(Math.max(index, 0), left.length - 1)] ?? formRef.current?.querySelector<HTMLInputElement>('input');
+      const left = [
+        ...(listRef.current?.querySelectorAll<HTMLInputElement>('input[type="checkbox"]') ?? []),
+      ];
+      const next =
+        left[Math.min(Math.max(index, 0), left.length - 1)] ??
+        formRef.current?.querySelector<HTMLInputElement>('input');
       next?.focus();
     });
   }
@@ -165,6 +169,8 @@ function TasksWidget() {
           rows on screen — and keeps the focus a keyboard user has in them. */}
       {loading && !data ? (
         <WidgetLoading />
+      ) : error && !data ? (
+        <WidgetError onRetry={reload} />
       ) : rows.length === 0 ? (
         <WidgetEmpty>{t('empty')}</WidgetEmpty>
       ) : (
@@ -173,81 +179,81 @@ function TasksWidget() {
         // keeps the frame's own cap (md and up). Every task stays in the list —
         // a task added in the field above must not vanish past a slice.
         <div className="max-h-80 overflow-y-auto md:max-h-none md:overflow-visible">
-        <ul ref={listRef} className="divide-y divide-ink-100">
-          {rows.map((task) => {
-            const overdue = task.due_at
-              ? new Date(task.due_at).getTime() < nowMs
-              : task.due_on !== null && task.due_on < today;
-            return (
-              <li key={task.id} data-task-id={task.id} className="flex items-start gap-2 py-1.5">
-                <input
-                  type="checkbox"
-                  checked={false}
-                  aria-label={t('markDone', { title: task.title })}
-                  disabled={busyIds.has(task.id)}
-                  onChange={() => settle(task.id, () => setTaskDone(task.id, true))}
-                  className="mt-0.5 h-5 w-5 shrink-0 rounded border-ink-300 accent-accent"
-                />
+          <ul ref={listRef} className="divide-y divide-ink-100">
+            {rows.map((task) => {
+              const overdue = task.due_at
+                ? new Date(task.due_at).getTime() < nowMs
+                : task.due_on !== null && task.due_on < today;
+              return (
+                <li key={task.id} data-task-id={task.id} className="flex items-start gap-2 py-1.5">
+                  <input
+                    type="checkbox"
+                    checked={false}
+                    aria-label={t('markDone', { title: task.title })}
+                    disabled={busyIds.has(task.id)}
+                    onChange={() => settle(task.id, () => setTaskDone(task.id, true))}
+                    className="mt-0.5 h-5 w-5 shrink-0 rounded border-ink-300 accent-accent"
+                  />
 
-                <span className="min-w-0 flex-1">
-                  <span className="flex flex-wrap items-center gap-1.5">
-                    {task.is_urgent ? (
-                      <AlertTriangle
-                        aria-label={t('urgent')}
-                        className="h-3.5 w-3.5 shrink-0 text-amber-700"
-                      />
-                    ) : null}
-                    <span className="text-sm text-ink-900" dir="auto">
-                      {task.title}
+                  <span className="min-w-0 flex-1">
+                    <span className="flex flex-wrap items-center gap-1.5">
+                      {task.is_urgent ? (
+                        <AlertTriangle
+                          aria-label={t('urgent')}
+                          className="h-3.5 w-3.5 shrink-0 text-amber-700"
+                        />
+                      ) : null}
+                      <span className="text-sm text-ink-900" dir="auto">
+                        {task.title}
+                      </span>
+                    </span>
+
+                    <span className="flex flex-wrap items-center gap-2 text-xs">
+                      {task.due_on || task.due_at ? (
+                        /* Overdue is said in words as well as in colour — an amber
+                         date and a grey date are the same date to anyone not
+                         comparing them side by side. */
+                        <span
+                          dir="ltr"
+                          className={cn(
+                            'tabular-nums',
+                            overdue ? 'font-medium text-amber-800' : 'text-ink-600',
+                          )}
+                        >
+                          {task.due_at
+                            ? formatDateTime(new Date(task.due_at))
+                            : task.due_on
+                              ? formatDate(task.due_on)
+                              : ''}
+                          {overdue ? ` · ${t('overdue')}` : ''}
+                        </span>
+                      ) : null}
+
+                      {task.patient ? (
+                        <Link
+                          href={`/patients/${task.patient.id}`}
+                          className="truncate text-jade-700 underline-offset-2 hover:underline"
+                        >
+                          {task.patient.full_name}
+                        </Link>
+                      ) : null}
                     </span>
                   </span>
 
-                  <span className="flex flex-wrap items-center gap-2 text-xs">
-                    {task.due_on || task.due_at ? (
-                      /* Overdue is said in words as well as in colour — an amber
-                         date and a grey date are the same date to anyone not
-                         comparing them side by side. */
-                      <span
-                        dir="ltr"
-                        className={cn(
-                          'tabular-nums',
-                          overdue ? 'font-medium text-amber-800' : 'text-ink-600',
-                        )}
-                      >
-                        {task.due_at
-                          ? formatDateTime(new Date(task.due_at))
-                          : task.due_on
-                            ? formatDate(task.due_on)
-                            : ''}
-                        {overdue ? ` · ${t('overdue')}` : ''}
-                      </span>
-                    ) : null}
-
-                    {task.patient ? (
-                      <Link
-                        href={`/patients/${task.patient.id}`}
-                        className="truncate text-jade-700 underline-offset-2 hover:underline"
-                      >
-                        {task.patient.full_name}
-                      </Link>
-                    ) : null}
-                  </span>
-                </span>
-
-                <button
-                  type="button"
-                  aria-label={t('deleteTaskOf', { title: task.title })}
-                  title={t('deleteTaskOf', { title: task.title })}
-                  disabled={busyIds.has(task.id)}
-                  onClick={() => settle(task.id, () => deleteTask(task.id))}
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-ink-500 transition-colors hover:bg-red-50 hover:text-red-700 active:bg-red-100"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
-              </li>
-            );
-          })}
-        </ul>
+                  <button
+                    type="button"
+                    aria-label={t('deleteTaskOf', { title: task.title })}
+                    title={t('deleteTaskOf', { title: task.title })}
+                    disabled={busyIds.has(task.id)}
+                    onClick={() => settle(task.id, () => deleteTask(task.id))}
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-ink-500 transition-colors hover:bg-red-50 hover:text-red-700 active:bg-red-100"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
         </div>
       )}
       {/* A jump to the full page when the list is long, so triage does not

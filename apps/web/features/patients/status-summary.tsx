@@ -1,6 +1,7 @@
 'use client';
 
 import { useLayoutEffect, useState } from 'react';
+import { TREATMENT_STATUS_TONES, statusTone, type StatusTone } from '@clinic/domain';
 import { useTranslations } from 'next-intl';
 import { ChevronLeft, Eye, EyeOff, RotateCcw } from 'lucide-react';
 import { ArrangeToggle, Button, cn } from '@clinic/ui';
@@ -61,14 +62,22 @@ const TONES: Record<Tone, { text: string; active: string; fill: string }> = {
   ink: { text: 'text-ink-900', active: 'border-ink-400 bg-ink-100', fill: 'bg-ink-400' },
 };
 
-/* Outcomes by tone; anything not named here is neutral. */
-const OUTCOME_TONES = new Map<string, Tone>([
-  ['full_success', 'jade'],
-  ['completed', 'jade'],
-  ['partial_success', 'sky'],
-  ['dropped_out', 'amber'],
-  ['unsuccessful', 'red'],
-]);
+/*
+ * The tile's colour is the badge's colour: both come from the one map of
+ * statuses (packages/domain/src/status-tones.ts). A local map here painted
+ * "completed" green on the tile and grey on the badge beside it.
+ */
+const TONE_OF: Record<StatusTone, Tone> = {
+  success: 'jade',
+  info: 'sky',
+  warning: 'amber',
+  danger: 'red',
+  neutral: 'ink',
+  muted: 'ink',
+};
+function outcomeTone(status: string): Tone {
+  return TONE_OF[statusTone(TREATMENT_STATUS_TONES, status)] ?? 'ink';
+}
 
 interface Item {
   key: string;
@@ -176,7 +185,7 @@ export function PatientStatusSummary({ counts }: { counts: StatusCounts }) {
     key: status,
     label: t(`status.${status}`),
     value: counts.byStatus[status] ?? 0,
-    tone: OUTCOME_TONES.get(status) ?? 'ink',
+    tone: outcomeTone(status),
     active: currentStatus === status,
     onClick: () => go({ status }),
   }));

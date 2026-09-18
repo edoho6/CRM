@@ -18,6 +18,8 @@ import {
   cn,
   useConfirm,
 } from '@clinic/ui';
+import { dateKeyIn } from '@clinic/domain';
+import { CLINIC_TIME_ZONE } from '@clinic/i18n';
 import { CHAT_TITLE_MAX, type ChatSummary } from './chat-types';
 
 /**
@@ -54,7 +56,13 @@ export function ChatList({
   const recent = chats.filter((chat) => !chat.pinned);
 
   async function remove(chat: ChatSummary) {
-    const ok = await confirm({ title: t('deleteTitle'), body: t('deleteBody'), confirmLabel: tc('delete'), cancelLabel: tc('cancel'), destructive: true });
+    const ok = await confirm({
+      title: t('deleteTitle'),
+      body: t('deleteBody'),
+      confirmLabel: tc('delete'),
+      cancelLabel: tc('cancel'),
+      destructive: true,
+    });
     if (ok) onDelete(chat.id);
   }
 
@@ -64,7 +72,13 @@ export function ChatList({
         <p className="px-2 pb-1 pt-2 text-xs font-medium text-ink-500">{label}</p>
         <ul className="space-y-0.5">
           {items.map((chat) => (
-            <li key={chat.id} className={cn('group flex items-center gap-1 rounded-lg', chat.id === activeId ? 'bg-ink-100' : 'hover:bg-ink-50')}>
+            <li
+              key={chat.id}
+              className={cn(
+                'group flex items-center gap-1 rounded-lg',
+                chat.id === activeId ? 'bg-ink-100' : 'hover:bg-ink-50',
+              )}
+            >
               <button
                 type="button"
                 onClick={() => onSelect(chat.id)}
@@ -74,7 +88,9 @@ export function ChatList({
                 <span className="w-full truncate text-sm text-ink-900" dir="auto">
                   {chat.title}
                 </span>
-                <span className="text-xs text-ink-500">{whenLabel(chat.lastMessageAt, localeTag, tc('today'))}</span>
+                <span className="text-xs text-ink-500">
+                  {whenLabel(chat.lastMessageAt, localeTag, tc('today'))}
+                </span>
               </button>
               <DropdownMenu modal={false}>
                 <DropdownMenuTrigger asChild>
@@ -88,7 +104,11 @@ export function ChatList({
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem onSelect={() => onPin(chat.id, !chat.pinned)}>
-                    {chat.pinned ? <PinOff className="h-4 w-4" aria-hidden /> : <Pin className="h-4 w-4" aria-hidden />}
+                    {chat.pinned ? (
+                      <PinOff className="h-4 w-4" aria-hidden />
+                    ) : (
+                      <Pin className="h-4 w-4" aria-hidden />
+                    )}
                     {chat.pinned ? t('unpin') : t('pin')}
                   </DropdownMenuItem>
                   <DropdownMenuItem
@@ -115,7 +135,13 @@ export function ChatList({
 
   return (
     <nav aria-label={t('title')} className="flex flex-col gap-1" data-chat-list>
-      <Button type="button" variant="secondary" onClick={onNew} className="justify-start" data-chat-new>
+      <Button
+        type="button"
+        variant="secondary"
+        onClick={onNew}
+        className="justify-start"
+        data-chat-new
+      >
         <Plus className="h-4 w-4" aria-hidden />
         {t('new')}
       </Button>
@@ -136,7 +162,14 @@ export function ChatList({
           >
             <div className="space-y-1.5">
               <Label htmlFor="chat-title">{t('renameLabel')}</Label>
-              <Input id="chat-title" value={draft} maxLength={CHAT_TITLE_MAX} onChange={(event) => setDraft(event.target.value)} autoFocus dir="auto" />
+              <Input
+                id="chat-title"
+                value={draft}
+                maxLength={CHAT_TITLE_MAX}
+                onChange={(event) => setDraft(event.target.value)}
+                autoFocus
+                dir="auto"
+              />
             </div>
             <DialogFooter>
               <Button type="button" variant="ghost" onClick={() => setRenaming(null)}>
@@ -162,8 +195,14 @@ function useLocaleTag(): string {
 function whenLabel(iso: string, localeTag: string, today: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return '';
-  const now = new Date();
-  const sameDay = date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth() && date.getDate() === now.getDate();
-  if (sameDay) return `${today} ${new Intl.DateTimeFormat(localeTag, { hour: '2-digit', minute: '2-digit' }).format(date)}`;
-  return new Intl.DateTimeFormat(localeTag, { day: 'numeric', month: 'short' }).format(date);
+  // The clinic's day and the clinic's clock, on the server and in the browser alike.
+  const sameDay = dateKeyIn(date, CLINIC_TIME_ZONE) === dateKeyIn(new Date(), CLINIC_TIME_ZONE);
+  if (sameDay) {
+    return `${today} ${new Intl.DateTimeFormat(localeTag, { hour: '2-digit', minute: '2-digit', timeZone: CLINIC_TIME_ZONE }).format(date)}`;
+  }
+  return new Intl.DateTimeFormat(localeTag, {
+    day: 'numeric',
+    month: 'short',
+    timeZone: CLINIC_TIME_ZONE,
+  }).format(date);
 }

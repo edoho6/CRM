@@ -1,15 +1,6 @@
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
 import { FlaskConical, Plus } from 'lucide-react';
-import {
-  Dash,
-  Badge,
-  Button,
-  EmptyState,
-  Table,
-  TableWrapper,
-  Td,
-  Tr,
-} from '@clinic/ui';
+import { Dash, Badge, Button, EmptyState, Table, TableWrapper, Td, Tr } from '@clinic/ui';
 import { Link } from '@clinic/i18n/navigation';
 import type { HerbFormulaWithItems } from '@clinic/db/types';
 import type { Locale } from '@clinic/domain';
@@ -67,6 +58,7 @@ export default async function FormulasPage({
   const tFormulaTcm = await getTranslations('inventory.formulaTcmCategory');
   const tKind = await getTranslations('inventory.formulas.category');
   const tc = await getTranslations('common');
+  const tUnit = await getTranslations('inventory.unit');
   const tCompare = await getTranslations('reference.compare');
   const format = await getFormatter();
 
@@ -174,11 +166,21 @@ export default async function FormulasPage({
                 <th scope="col" className="w-10 border-b border-ink-200 bg-ink-50 px-3 py-2">
                   <span className="sr-only">{tCompare('column')}</span>
                 </th>
-                <SortLinkTh sortKey="name" sort={sort} defaultSort={FORMULA_DEFAULT_SORT}>{tc('name')}</SortLinkTh>
-                <SortLinkTh sortKey="cat" sort={sort} defaultSort={FORMULA_DEFAULT_SORT}>{t('fields.tcmCategory')}</SortLinkTh>
-                <SortLinkTh sortKey="source" sort={sort} defaultSort={FORMULA_DEFAULT_SORT}>{t('fields.sourceText')}</SortLinkTh>
-                <SortLinkTh sortKey="items" sort={sort} defaultSort={FORMULA_DEFAULT_SORT}>{t('herbCount')}</SortLinkTh>
-                <SortLinkTh sortKey="weight" sort={sort} defaultSort={FORMULA_DEFAULT_SORT}>{t('totalWeight')}</SortLinkTh>
+                <SortLinkTh sortKey="name" sort={sort} defaultSort={FORMULA_DEFAULT_SORT}>
+                  {tc('name')}
+                </SortLinkTh>
+                <SortLinkTh sortKey="cat" sort={sort} defaultSort={FORMULA_DEFAULT_SORT}>
+                  {t('fields.tcmCategory')}
+                </SortLinkTh>
+                <SortLinkTh sortKey="source" sort={sort} defaultSort={FORMULA_DEFAULT_SORT}>
+                  {t('fields.sourceText')}
+                </SortLinkTh>
+                <SortLinkTh sortKey="items" sort={sort} defaultSort={FORMULA_DEFAULT_SORT}>
+                  {t('herbCount')}
+                </SortLinkTh>
+                <SortLinkTh sortKey="weight" sort={sort} defaultSort={FORMULA_DEFAULT_SORT}>
+                  {t('totalWeight')}
+                </SortLinkTh>
               </tr>
             </thead>
             <tbody>
@@ -195,8 +197,7 @@ export default async function FormulasPage({
                   .filter(Boolean)
                   .join(' · ');
                 return (
-                  <Tr
-                    key={formula.id}>
+                  <Tr key={formula.id}>
                     <Td className="w-10">
                       <CompareToggle
                         kind="formula"
@@ -252,8 +253,8 @@ export default async function FormulasPage({
                       <span className="tabular-nums">{formula.items.length}</span>
                     </Td>
                     <Td>
-                      <span dir="ltr" className="font-semibold tabular-nums">
-                        {format.number(total)} g
+                      <span className="font-semibold tabular-nums">
+                        {format.number(total)} {tUnit('gram')}
                       </span>
                     </Td>
                   </Tr>

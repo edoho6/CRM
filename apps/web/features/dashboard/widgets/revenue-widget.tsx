@@ -9,7 +9,7 @@ import { useAsyncData } from '@/lib/use-supabase';
 import { useDashboardContext, useWidgetInitialData } from '../dashboard-context';
 import { fetchRevenueStats, type RevenueStats } from '../queries/revenue';
 import { registerWidget } from '../registry';
-import { WidgetLoading } from '../widget-frame';
+import { WidgetLoading, WidgetError } from '../widget-frame';
 
 /**
  * Money this month: what came in, and what is still owed.
@@ -25,13 +25,14 @@ function RevenueWidget() {
 
   const { timeZone } = useDashboardContext();
   const initial = useWidgetInitialData<RevenueStats>('revenue');
-  const { data, loading } = useAsyncData<RevenueStats>(
+  const { data, loading, error, reload } = useAsyncData<RevenueStats>(
     (supabase) => fetchRevenueStats(supabase, monthStartIn(new Date(), timeZone).toISOString()),
     [timeZone],
     { initial },
   );
 
   if (loading) return <WidgetLoading />;
+  if (error && !data) return <WidgetError onRetry={reload} />;
 
   return (
     <Link

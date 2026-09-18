@@ -75,7 +75,9 @@ export function InboxWorkspace({
     const id = activeRef.current;
     if (!id) return;
     const thread = await loadConversation(id);
-    if (!thread.ok) return;
+    // Another conversation was opened while this one was loading: its
+    // messages must not land under the other's name.
+    if (!thread.ok || activeRef.current !== id) return;
     setMessages(thread.data.messages);
     if (thread.data.conversation.unread > 0) {
       void markConversationRead(id);
@@ -97,9 +99,14 @@ export function InboxWorkspace({
 
   // The thread the page opened with counts as read the moment it is seen.
   useEffect(() => {
-    if (initialActiveId && initialConversations.some((row) => row.id === initialActiveId && row.unread > 0)) {
+    if (
+      initialActiveId &&
+      initialConversations.some((row) => row.id === initialActiveId && row.unread > 0)
+    ) {
       void markConversationRead(initialActiveId);
-      setConversations((rows) => rows.map((row) => (row.id === initialActiveId ? { ...row, unread: 0 } : row)));
+      setConversations((rows) =>
+        rows.map((row) => (row.id === initialActiveId ? { ...row, unread: 0 } : row)),
+      );
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -108,10 +115,14 @@ export function InboxWorkspace({
     setDrawerOpen(false);
     if (id === activeId) return;
     setActiveId(id);
+    activeRef.current = id;
     syncUrl(id);
     setLoading(true);
     setMessages([]);
     const result = await loadConversation(id);
+    // A quick A → B: A's answer may come back after B's. Only the thread still
+    // open is drawn.
+    if (activeRef.current !== id) return;
     setLoading(false);
     if (!result.ok) {
       toast({ tone: 'danger', title: tc('errorGeneric') });
@@ -124,8 +135,9 @@ export function InboxWorkspace({
     }
   }
 
-  async function send(text: string) {
-    if (!activeId) return;
+  /** True when the message was accepted; the composer keeps the text otherwise. */
+  async function send(text: string): Promise<boolean> {
+    if (!activeId) return false;
     const temp: ThreadMessage = {
       // Inside the send handler, not during a render: this id is minted when a
       // person presses the button, which is exactly when a clock may be read.
@@ -142,17 +154,25 @@ export function InboxWorkspace({
     };
     setMessages((list) => [...list, temp]);
     setSending(true);
-    const result = await sendChatMessage(activeId, text);
-    setSending(false);
+    let result: Awaited<ReturnType<typeof sendChatMessage>>;
+    try {
+      result = await sendChatMessage(activeId, text);
+    } catch {
+      // The action never answered (the connection dropped): the same as a refusal.
+      result = { ok: false, error: { key: 'errors.serverError' } };
+    } finally {
+      setSending(false);
+    }
     if (!result.ok) {
       setMessages((list) => list.filter((message) => message.id !== temp.id));
       toast({ tone: 'danger', title: tc('errorGeneric') });
-      return;
+      return false;
     }
     setMessages((list) => list.map((message) => (message.id === temp.id ? result.data : message)));
     bump(activeId, text);
     // The ticks arrive a moment later.
     setTimeout(() => void refresh(), 3_000);
+    return true;
   }
 
   async function opener() {
@@ -161,7 +181,10 @@ export function InboxWorkspace({
     const result = await sendOpener(activeId);
     setSending(false);
     if (!result.ok) {
-      toast({ tone: 'danger', title: result.error.key === 'errors.serverError' ? tc('errorGeneric') : t('openerMissing') });
+      toast({
+        tone: 'danger',
+        title: result.error.key === 'errors.serverError' ? tc('errorGeneric') : t('openerMissing'),
+      });
       return;
     }
     setMessages((list) => [...list, result.data]);
@@ -172,12 +195,18 @@ export function InboxWorkspace({
   function bump(id: string, preview: string) {
     const now = new Date().toISOString();
     setConversations((rows) =>
-      [...rows.map((row) => (row.id === id ? { ...row, lastMessageAt: now, preview } : row))].sort((a, b) => b.lastMessageAt.localeCompare(a.lastMessageAt)),
+      [...rows.map((row) => (row.id === id ? { ...row, lastMessageAt: now, preview } : row))].sort(
+        (a, b) => b.lastMessageAt.localeCompare(a.lastMessageAt),
+      ),
     );
   }
 
   async function retry(messageId: string) {
-    setMessages((list) => list.map((message) => (message.id === messageId ? { ...message, status: 'queued', errorCode: null } : message)));
+    setMessages((list) =>
+      list.map((message) =>
+        message.id === messageId ? { ...message, status: 'queued', errorCode: null } : message,
+      ),
+    );
     const result = await retryChatMessage(messageId);
     if (!result.ok) toast({ tone: 'danger', title: tc('errorGeneric') });
     setTimeout(() => void refresh(), 3_000);
@@ -194,7 +223,16 @@ export function InboxWorkspace({
     setConversations((rows) =>
       rows.map((row) =>
         row.id === activeId
-          ? { ...row, patient: patient ? { id: patient.id, fullName: patient.fullName, firstName: patient.fullName.split(' ')[0] ?? patient.fullName } : null }
+          ? {
+              ...row,
+              patient: patient
+                ? {
+                    id: patient.id,
+                    fullName: patient.fullName,
+                    firstName: patient.fullName.split(' ')[0] ?? patient.fullName,
+                  }
+                : null,
+            }
           : row,
       ),
     );
@@ -208,13 +246,18 @@ export function InboxWorkspace({
       toast({ tone: 'danger', title: tc('errorGeneric') });
       return;
     }
-    setConversations((rows) => rows.map((row) => (row.id === activeId ? { ...row, status: next } : row)));
+    setConversations((rows) =>
+      rows.map((row) => (row.id === activeId ? { ...row, status: next } : row)),
+    );
   }
 
   async function openFor(patientId: string): Promise<boolean> {
     const result = await openConversationForPatient(patientId);
     if (!result.ok) {
-      toast({ tone: 'danger', title: result.error.key === 'errors.serverError' ? tc('errorGeneric') : t('noPhone') });
+      toast({
+        tone: 'danger',
+        title: result.error.key === 'errors.serverError' ? tc('errorGeneric') : t('noPhone'),
+      });
       return false;
     }
     const list = await listConversations();
@@ -223,7 +266,15 @@ export function InboxWorkspace({
     return true;
   }
 
-  const list = <ConversationList conversations={conversations} activeId={activeId} patients={patients} onSelect={(id) => void select(id)} onOpenFor={openFor} />;
+  const list = (
+    <ConversationList
+      conversations={conversations}
+      activeId={activeId}
+      patients={patients}
+      onSelect={(id) => void select(id)}
+      onOpenFor={openFor}
+    />
+  );
   const unread = conversations.reduce((sum, row) => sum + (row.unread > 0 ? 1 : 0), 0);
 
   return (
@@ -231,26 +282,43 @@ export function InboxWorkspace({
       {!lineConfigured ? (
         <Alert tone="warning">
           {t('notConnected')}{' '}
-          <Link href="/settings/messaging" className="font-medium underline-offset-2 hover:underline">
+          <Link
+            href="/settings/messaging"
+            className="font-medium underline-offset-2 hover:underline"
+          >
             {t('toSettings')}
           </Link>
         </Alert>
       ) : null}
       <div className="flex gap-6">
         <aside className="hidden w-80 shrink-0 lg:block" aria-label={t('list')}>
-          <div className="sticky top-20 max-h-[calc(100dvh-6rem)] overflow-y-auto pe-1" data-scroll-panel>
+          <div
+            className="sticky top-20 max-h-[calc(100dvh-6rem)] overflow-y-auto pe-1"
+            data-scroll-panel
+          >
             {list}
           </div>
         </aside>
         <div className="min-w-0 flex-1">
           <div className="mb-3 flex items-center justify-between gap-2 lg:hidden">
             <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
-              <Button type="button" variant="secondary" size="sm" onClick={() => setDrawerOpen(true)} data-conversation-drawer>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => setDrawerOpen(true)}
+                data-conversation-drawer
+              >
                 <MessagesSquare className="h-4 w-4" aria-hidden />
                 {t('open')}
                 {unread > 0 ? <span className="text-ink-500">({unread})</span> : null}
               </Button>
-              <SheetContent title={t('list')} closeLabel={tc('close')} side="start" className="lg:hidden">
+              <SheetContent
+                title={t('list')}
+                closeLabel={tc('close')}
+                side="start"
+                className="lg:hidden"
+              >
                 {list}
               </SheetContent>
             </Sheet>
@@ -262,7 +330,7 @@ export function InboxWorkspace({
             sending={sending}
             patients={patients}
             openerConfigured={openerConfigured}
-            onSend={(text) => void send(text)}
+            onSend={send}
             onOpener={() => void opener()}
             onRetry={(id) => void retry(id)}
             onLink={link}
