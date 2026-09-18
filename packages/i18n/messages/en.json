@@ -1074,7 +1074,9 @@
     "list": {
       "empty": "No appointments yet.",
       "record": "Treatment record",
-      "order": "Latest first, future appointments included. Opens on today: the previous page is further ahead, the next further back."
+      "noneAhead": "No appointments from today on.",
+      "fold": "Fold {day}",
+      "unfold": "Unfold {day}"
     }
   },
   "encounters": {
@@ -1474,8 +1476,7 @@
       "noEncounterToBill": "No linked treatment to bill for.",
       "methodNone": "Not stated",
       "markPaid": "Mark as paid",
-      "unmarkPaid": "Undo the mark",
-      "markedPaid": "Marked paid, without an invoice."
+      "unmarkPaid": "Undo \"paid\""
     },
     "cancel": "Cancel invoice",
     "cancelConfirm": "Cancel this invoice? It cannot be restored.",
@@ -2351,7 +2352,7 @@
       "accessories": "Accessories"
     }
   },
-    "amount_exceeds_outstanding": "That is more than the invoice still owes. Check the amount typed.",
+  "amount_exceeds_outstanding": "That is more than the invoice still owes. Check the amount typed.",
   "errors": {
     "slugTaken": "That address is already taken.",
     "notFound": "Page not found",
@@ -3182,7 +3183,8 @@
     "from": "From",
     "to": "To",
     "clear": "Clear",
-    "noneInRange": "Nothing in this range"
+    "noneInRange": "Nothing in this range",
+    "upcoming": "From today on"
   },
   "account": {
     "scheduleManage": "Edit working hours",

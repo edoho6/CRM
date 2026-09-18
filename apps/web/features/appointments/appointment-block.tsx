@@ -31,6 +31,8 @@ export const DRAG_SNAP_MINUTES = 15;
 export function AppointmentBlock({
   appointment,
   paid,
+  past,
+  showType,
   top,
   height,
   column,
@@ -50,6 +52,13 @@ export function AppointmentBlock({
    * uses, and says "paid" in words — the colour is never the only sign.
    */
   paid: boolean;
+  /** Over by the time the page was drawn: the name is struck through. */
+  past: boolean;
+  /**
+   * The type's name at the foot of the block, only when it says something:
+   * not for the clinic's everyday visit, which every block would repeat.
+   */
+  showType: boolean;
   /** Position and size in half-hour slots. */
   top: number;
   height: number;
@@ -179,6 +188,7 @@ export function AppointmentBlock({
           className={cn(
             'block min-w-0 leading-tight',
             narrow ? 'line-clamp-2 text-xs font-medium' : 'truncate text-sm',
+            past && 'line-through decoration-ink-500',
           )}
         >
           {patientFullName(appointment.patient)}
@@ -191,7 +201,7 @@ export function AppointmentBlock({
           </span>
         ) : null}
       </span>
-      {height > 1.5 && !narrow ? (
+      {showType && height > 1.5 && !narrow ? (
         <span className="block truncate text-xs text-ink-500">
           {appointmentTypeName(appointment.appointment_type, locale)}
         </span>

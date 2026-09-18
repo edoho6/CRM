@@ -188,6 +188,12 @@
   display: none;
 }
 
+/* A folded day in the diary list (ListDayToggle): its heading stays, its
+   rows go — on a desk and in the phone's cards alike. */
+tbody[data-collapsed] > tr:not([data-list-day]) {
+  display: none;
+}
+
 @media screen and (max-width: 767px) {
   .table-cards {
     overflow-x: visible;
@@ -236,6 +242,20 @@
     line-height: 1.25;
     color: var(--color-ink-600);
     text-align: start;
+  }
+  /* A heading row inside a card table (the diary list's day): a plain
+     heading over its cards, not a card of its own. */
+  .table-cards tr[data-list-day] {
+    margin: 1rem 0 0.5rem;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+  .table-cards tr[data-list-day] th {
+    display: block;
+    padding: 0;
+    border: 0;
   }
   .table-cards td:not([data-label]) {
     justify-content: flex-start;

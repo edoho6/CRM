@@ -25,13 +25,25 @@ import { DateInput } from './date-input';
  * survives, so this composes with a search box or a sort without either having
  * to know about the other.
  */
-export function DateRangeFilter({ className }: { className?: string }) {
+export function DateRangeFilter({
+  className,
+  upcoming = false,
+}: {
+  className?: string;
+  /**
+   * A first choice, "from today on", that is also what an empty URL means —
+   * for a list whose default is what is coming (the diary's), not everything.
+   * "All" then has to be written into the URL to be told apart from it.
+   */
+  upcoming?: boolean;
+}) {
   const t = useTranslations('filters');
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const current = (searchParams.get('range') ?? 'all') as RangePreset;
+  const current = (searchParams.get('range') ?? (upcoming ? 'upcoming' : 'all')) as
+    RangePreset | 'upcoming';
   const from = searchParams.get('from') ?? '';
   const to = searchParams.get('to') ?? '';
   const hasCustom = Boolean(from || to);
@@ -53,7 +65,10 @@ export function DateRangeFilter({ className }: { className?: string }) {
     router.replace(query ? `${pathname}?${query}` : pathname);
   }
 
-  const selected: RangePreset = showCustom || hasCustom ? 'custom' : current;
+  const selected: RangePreset | 'upcoming' = showCustom || hasCustom ? 'custom' : current;
+  const presets: (RangePreset | 'upcoming')[] = upcoming
+    ? ['upcoming', ...RANGE_PRESETS]
+    : [...RANGE_PRESETS];
 
   return (
     <div className={cn('flex flex-wrap items-center gap-2', className)}>
@@ -66,9 +81,12 @@ export function DateRangeFilter({ className }: { className?: string }) {
             return;
           }
           setShowCustom(false);
-          apply({ range: preset === 'all' ? null : preset, from: null, to: null });
+          // The URL's empty state is the default choice: "all" normally,
+          // "from today on" where that is offered.
+          const empty = upcoming ? 'upcoming' : 'all';
+          apply({ range: preset === empty ? null : (preset as RangePreset), from: null, to: null });
         }}
-        options={RANGE_PRESETS.map((preset) => ({
+        options={presets.map((preset) => ({
           value: preset,
           label: t(preset),
           icon:

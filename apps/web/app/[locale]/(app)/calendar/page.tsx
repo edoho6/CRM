@@ -11,7 +11,7 @@ import type {
 import { getAbilities, getClinicScope } from '@/lib/session';
 import { dateKeyIn, zonedMidnight } from '@clinic/domain';
 import { resolveRange } from '@/lib/date-range';
-import { PAGE_SIZE, pageFrom, pageRange } from '@/components/pagination';
+import { pageFrom, pageRange } from '@/components/pagination';
 import { DiaryList, type DiaryListRow } from '@/features/appointments/diary-list';
 import type { PaymentStatusRow } from '@/features/billing/payment-summary';
 import { CalendarView } from '@/features/appointments/calendar-view';
@@ -234,32 +234,27 @@ export default async function CalendarPage({
   const list = view === 'list' ? await loadList() : null;
 
   /**
-   * The list view: the diary's rows latest first, the future included,
-   * filtered and paged in the query (the treatments page it replaces did the
-   * same). With no page asked for and no filter, it opens on the page that
-   * holds today: counting what lies after today says which page that is, so
-   * the page before is further ahead and the page after further back.
+   * The list view: the diary's rows grouped by day, filtered and paged in the
+   * query (the treatments page it replaces did the same). With no filter it
+   * runs from today forward, so today's appointments are the first thing on
+   * the page and the next ones follow them.
    */
   async function loadList() {
     if (!scope) return null;
     const timeZone = scope.context.clinic.timezone;
     const range = resolveRange({ range: rangeParam, from: fromParam, to: toParam });
-    const unfiltered = !rangeParam || rangeParam === 'all';
+    // Nothing chosen: from today on, in order — today's appointments first,
+    // then who comes after. The past presets (a week, a month, all) read
+    // latest first, the way the treatments list did; today and a chosen span
+    // read in the order they happen.
+    const upcoming = !rangeParam && !fromParam && !toParam;
+    const ascending = upcoming || range.preset === 'today' || range.preset === 'custom';
     const midnight = (key: string, plusDays = 0) => {
       const [year, month, day] = key.split('-').map(Number) as [number, number, number];
       return zonedMidnight(year, month, day + plusDays, timeZone);
     };
-    const todayEnd = midnight(dateKeyIn(new Date(), timeZone), 1);
-
-    let page = pageFrom(pageParam);
-    if (!pageParam && unfiltered && !fromParam && !toParam) {
-      const { count: ahead } = await scope.supabase
-        .from('appointments')
-        .select('id', { count: 'exact', head: true })
-        .neq('status', 'cancelled')
-        .gte('start_at', todayEnd.toISOString());
-      page = Math.floor((ahead ?? 0) / PAGE_SIZE) + 1;
-    }
+    const todayKey = dateKeyIn(new Date(), timeZone);
+    const page = pageFrom(pageParam);
 
     let query = scope.supabase
       .from('appointments')
@@ -268,8 +263,9 @@ export default async function CalendarPage({
         { count: 'exact' },
       )
       .neq('status', 'cancelled')
-      .order('start_at', { ascending: false })
+      .order('start_at', { ascending })
       .range(...pageRange(page));
+    if (upcoming) query = query.gte('start_at', midnight(todayKey).toISOString());
     if (range.to) query = query.lt('start_at', midnight(range.to, 1).toISOString());
     if (range.from) query = query.gte('start_at', midnight(range.from).toISOString());
     const { data, count } = await query.returns<DiaryListRow[]>();
@@ -281,9 +277,8 @@ export default async function CalendarPage({
       const [{ data: paymentRows }, { data: settings }] = await Promise.all([
         scope.supabase
           .from('appointment_payment_status')
-          .select(
-            'appointment_id, invoice_id, invoice_number, total, amount_paid, payment_url, payment_state',
-          )
+          // Everything, the hand mark (paid_at, paid_method) included.
+          .select('*')
           .in(
             'appointment_id',
             rows.map((row) => row.id),
@@ -310,6 +305,7 @@ export default async function CalendarPage({
         showPayments={abilities.money}
         query={{ range: rangeParam, from: fromParam, to: toParam }}
         timeZone={timeZone}
+        todayKey={todayKey}
       />
     );
   }
@@ -321,6 +317,7 @@ export default async function CalendarPage({
         payments={abilities.money ? payments : null}
         canBill={canBill}
         list={list}
+        renderedAt={new Date().toISOString()}
         appointmentTypes={typesResult.data ?? []}
         patients={patientsResult.data ?? []}
         practitionerId={scope.context.membership.user_id}

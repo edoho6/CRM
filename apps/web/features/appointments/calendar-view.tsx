@@ -81,6 +81,7 @@ export function CalendarView({
   payments,
   canBill,
   list,
+  renderedAt,
   patients,
   appointmentTypes,
   practitionerId,
@@ -103,6 +104,8 @@ export function CalendarView({
    * that does not see money.
    */
   payments: Record<string, PaymentStatusRow> | null;
+  /** When the server drew the page, as ISO: what "already over" is measured from. */
+  renderedAt: string;
   canBill: boolean;
   /** The list view, drawn on the server (`DiaryList`); null in every other view. */
   list: React.ReactNode;
@@ -220,6 +223,14 @@ export function CalendarView({
     }
     return map;
   }, [shown]);
+
+  // The page's clock, not the browser's: "over" decided at render in the
+  // browser would disagree with the server's HTML for a visit ending between
+  // the two, and React would redraw the diary (#418).
+  const renderedAtMs = useMemo(() => new Date(renderedAt).getTime(), [renderedAt]);
+  // The everyday visit — the first type the clinic lists, the one a new
+  // booking starts with. Its name on every block said nothing.
+  const everydayTypeId = appointmentTypes.find((type) => type.is_active !== false)?.id ?? null;
 
   const paid = useMemo(
     () =>
@@ -908,6 +919,8 @@ export function CalendarView({
                             key={appointment.id}
                             appointment={appointment}
                             paid={paid.has(appointment.id)}
+                            past={new Date(appointment.end_at).getTime() < renderedAtMs}
+                            showType={appointment.appointment_type_id !== everydayTypeId}
                             top={top}
                             height={height}
                             column={column}

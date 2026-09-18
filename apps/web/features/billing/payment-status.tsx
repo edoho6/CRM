@@ -178,26 +178,25 @@ export function PaymentAction({
             </p>
           ) : null}
 
-          {/* Paid by hand: when and how, and the way back if it was a mistake. */}
+          {/* Paid by hand: the way back, and nothing else — the badge
+              already says paid and how. */}
           {summary.manualPaidAt ? (
-            <div className="space-y-2">
-              <p className="text-sm text-ink-700">{t('markedPaid')}</p>
-              {appointmentId ? (
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  disabled={isPending}
-                  onClick={() => unmark(close)}
-                >
-                  {isPending ? (
-                    <Spinner className="h-3.5 w-3.5" />
-                  ) : (
-                    <Undo2 className="h-3.5 w-3.5" />
-                  )}
-                  {t('unmarkPaid')}
-                </Button>
-              ) : null}
-            </div>
+            appointmentId ? (
+              <Button
+                size="sm"
+                variant="secondary"
+                className="w-full"
+                disabled={isPending}
+                onClick={() => unmark(close)}
+              >
+                {isPending ? (
+                  <Spinner className="h-3.5 w-3.5" />
+                ) : (
+                  <Undo2 className="h-3.5 w-3.5" />
+                )}
+                {t('unmarkPaid')}
+              </Button>
+            ) : null
           ) : summary.state !== 'paid' && appointmentId ? (
             // Paid without an invoice: cash on the desk, a transfer, Bit. The
             // method is optional — "paid" is the fact, how is a detail.
