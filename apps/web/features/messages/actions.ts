@@ -1,6 +1,6 @@
 'use server';
 
-import { getClinicScope } from '@/lib/session';
+import { getScopeWithAbility } from '@/lib/session';
 import { actionError, actionOk, type ActionResult } from '@/lib/errors';
 
 /**
@@ -18,7 +18,7 @@ function baseUrl(): string {
 }
 
 export async function refreshMessageQueue(): Promise<ActionResult<{ queued: number }>> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('messages');
   if (!scope) return actionError(new Error('unauthorized'));
 
   // One function, for this clinic only. The three jobs behind it run over every
@@ -39,7 +39,7 @@ export async function refreshMessageQueue(): Promise<ActionResult<{ queued: numb
  * in the diary and the queue can never disagree.
  */
 export async function markMessageSent(id: string): Promise<ActionResult> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('messages');
   if (!scope) return actionError(new Error('unauthorized'));
 
   const { data, error } = await scope.supabase.rpc('mark_message_sent', {
@@ -57,7 +57,7 @@ export async function markMessageSent(id: string): Promise<ActionResult> {
  * has been read.
  */
 export async function skipMessage(id: string): Promise<ActionResult> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('messages');
   if (!scope) return actionError(new Error('unauthorized'));
 
   const { error } = await scope.supabase

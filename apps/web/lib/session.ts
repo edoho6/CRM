@@ -1,6 +1,7 @@
 import 'server-only';
 
 import { cache } from 'react';
+import { notFound } from 'next/navigation';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createServerSupabase, getCurrentUser, tryCreateServerSupabase } from '@clinic/db/server';
 import type { Clinic, Membership, MembershipContext, Profile } from '@clinic/db/types';
@@ -111,6 +112,34 @@ export const getAbilities = cache(async (): Promise<Abilities> => {
   const context = await getMembershipContext();
   return abilitiesFor(context?.membership.role);
 });
+
+/**
+ * A section of the app that a role may not open, closed at the door.
+ *
+ * The menu already hides what a role cannot use, but a menu is a suggestion:
+ * the address still opens, and a page that half-loads (the database refusing
+ * its rows) reads as broken. A layout calls this and the section answers "not
+ * found" instead. Nobody signed in is left to the app layout, which sends them
+ * to sign in — a 404 there would be the wrong answer.
+ */
+export async function requireAbility(key: keyof Abilities): Promise<void> {
+  const context = await getMembershipContext();
+  if (!context) return;
+  if (!abilitiesFor(context.membership.role)[key]) notFound();
+}
+
+/**
+ * The scope for a server action or route that needs a capability, or null.
+ *
+ * A server action is a public endpoint whatever the menu shows, so each one
+ * that reads or spends on the clinic's behalf asks here rather than trusting
+ * that the button was only drawn for the right people.
+ */
+export async function getScopeWithAbility(key: keyof Abilities): Promise<ClinicScope | null> {
+  const scope = await getClinicScope();
+  if (!scope) return null;
+  return abilitiesFor(scope.context.membership.role)[key] ? scope : null;
+}
 
 /** Display name for the signed-in user, falling back to the email local part. */
 export function displayName(context: MembershipContext | null, fallback = ''): string {

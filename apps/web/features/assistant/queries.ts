@@ -1,4 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { fetchAllRows } from '@/lib/fetch-all';
+import { PATIENT_ID_COLUMN } from './outbound';
 
 /**
  * The closed set of questions the assistant can ask of the database.
@@ -117,11 +119,14 @@ export const QUERIES: QueryDefinition[] = [
     async run(client) {
       const data = rows(
         'patient_counts',
-        await client
-          .from('patients')
-          .select('treatment_status')
-          .limit(5000)
-          .returns<{ treatment_status: string | null }[]>(),
+        await fetchAllRows((lo, hi) =>
+          client
+            .from('patients')
+            .select('treatment_status')
+            .order('id', { ascending: true })
+            .range(lo, hi)
+            .returns<{ treatment_status: string | null }[]>(),
+        ),
       );
 
       const counts = new Map<string, number>();
@@ -154,12 +159,15 @@ export const QUERIES: QueryDefinition[] = [
       const months = Math.min(Math.max(number(args.months, 12), 1), 24);
       const data = rows(
         'new_patients_by_month',
-        await client
-          .from('patients')
-          .select('created_at')
-          .gte('created_at', monthsAgo(months))
-          .limit(5000)
-          .returns<{ created_at: string }[]>(),
+        await fetchAllRows((lo, hi) =>
+          client
+            .from('patients')
+            .select('created_at')
+            .gte('created_at', monthsAgo(months))
+            .order('id', { ascending: true })
+            .range(lo, hi)
+            .returns<{ created_at: string }[]>(),
+        ),
       );
 
       const counts = new Map<string, number>();
@@ -192,12 +200,15 @@ export const QUERIES: QueryDefinition[] = [
       const months = Math.min(Math.max(number(args.months, 12), 1), 24);
       const data = rows(
         'treatments_by_month',
-        await client
-          .from('encounters')
-          .select('encounter_date')
-          .gte('encounter_date', monthsAgo(months))
-          .limit(5000)
-          .returns<{ encounter_date: string }[]>(),
+        await fetchAllRows((lo, hi) =>
+          client
+            .from('encounters')
+            .select('encounter_date')
+            .gte('encounter_date', monthsAgo(months))
+            .order('id', { ascending: true })
+            .range(lo, hi)
+            .returns<{ encounter_date: string }[]>(),
+        ),
       );
 
       const counts = new Map<string, number>();
@@ -233,13 +244,16 @@ export const QUERIES: QueryDefinition[] = [
       const { from, to } = startOfMonth(number(args.months_ago, 0));
       const data = rows(
         'appointments_summary',
-        await client
-          .from('appointments')
-          .select('status')
-          .gte('start_at', from)
-          .lt('start_at', to)
-          .limit(5000)
-          .returns<{ status: string }[]>(),
+        await fetchAllRows((lo, hi) =>
+          client
+            .from('appointments')
+            .select('status')
+            .gte('start_at', from)
+            .lt('start_at', to)
+            .order('id', { ascending: true })
+            .range(lo, hi)
+            .returns<{ status: string }[]>(),
+        ),
       );
 
       const counts = new Map<string, number>();
@@ -262,7 +276,10 @@ export const QUERIES: QueryDefinition[] = [
     parameters: {
       type: 'object',
       properties: {
-        months: { type: 'number', description: 'How many months of silence, 1 to 36. Defaults to 3.' },
+        months: {
+          type: 'number',
+          description: 'How many months of silence, 1 to 36. Defaults to 3.',
+        },
       },
     },
     async run(client, args) {
@@ -270,17 +287,23 @@ export const QUERIES: QueryDefinition[] = [
       const cutoff = monthsAgo(months);
 
       const [patientsResult, encountersResult] = await Promise.all([
-        client
-          .from('patients')
-          .select('id, full_name, treatment_status')
-          .limit(5000)
-          .returns<{ id: string; full_name: string; treatment_status: string | null }[]>(),
-        client
-          .from('encounters')
-          .select('patient_id, encounter_date')
-          .order('encounter_date', { ascending: false })
-          .limit(5000)
-          .returns<{ patient_id: string; encounter_date: string }[]>(),
+        fetchAllRows((lo, hi) =>
+          client
+            .from('patients')
+            .select('id, full_name, treatment_status')
+            .order('id', { ascending: true })
+            .range(lo, hi)
+            .returns<{ id: string; full_name: string; treatment_status: string | null }[]>(),
+        ),
+        fetchAllRows((lo, hi) =>
+          client
+            .from('encounters')
+            .select('patient_id, encounter_date')
+            .order('encounter_date', { ascending: false })
+            .order('id', { ascending: true })
+            .range(lo, hi)
+            .returns<{ patient_id: string; encounter_date: string }[]>(),
+        ),
       ]);
 
       const patients = rows('inactive_patients', patientsResult);
@@ -301,12 +324,16 @@ export const QUERIES: QueryDefinition[] = [
         if (last !== null && last >= cutoff) continue;
         out.push({
           patient: patient.full_name,
+          // Kept for our side only: the name leaves as a token mapped to this id (outbound.ts).
+          [PATIENT_ID_COLUMN]: patient.id,
           last_treatment: last ? last.slice(0, 10) : null,
           status: patient.treatment_status,
         });
       }
 
-      out.sort((a, b) => String(b.last_treatment ?? '').localeCompare(String(a.last_treatment ?? '')));
+      out.sort((a, b) =>
+        String(b.last_treatment ?? '').localeCompare(String(a.last_treatment ?? '')),
+      );
       return result(['patient', 'last_treatment', 'status'], out);
     },
   },
@@ -326,20 +353,23 @@ export const QUERIES: QueryDefinition[] = [
       const months = Math.min(Math.max(number(args.months, 12), 1), 36);
       const data = rows(
         'top_herbs',
-        await client
-        .from('dispensing_items')
-        .select(
-          'quantity, custom_name, herb:herbs(pinyin_name), record:dispensing_records!inner(dispensed_at)',
-        )
-        .gte('record.dispensed_at', monthsAgo(months))
-        .limit(5000)
-        .returns<
-          {
-            quantity: number;
-            custom_name: string | null;
-            herb: { pinyin_name: string | null } | null;
-          }[]
-        >(),
+        await fetchAllRows((lo, hi) =>
+          client
+            .from('dispensing_items')
+            .select(
+              'quantity, custom_name, herb:herbs(pinyin_name), record:dispensing_records!inner(dispensed_at)',
+            )
+            .gte('record.dispensed_at', monthsAgo(months))
+            .order('id', { ascending: true })
+            .range(lo, hi)
+            .returns<
+              {
+                quantity: number;
+                custom_name: string | null;
+                herb: { pinyin_name: string | null } | null;
+              }[]
+            >(),
+        ),
       );
 
       const totals = new Map<string, { times: number; quantity: number }>();
@@ -380,12 +410,15 @@ export const QUERIES: QueryDefinition[] = [
       const months = Math.min(Math.max(number(args.months, 12), 1), 36);
       const data = rows(
         'top_points',
-        await client
-          .from('tcm_notes')
-          .select('points_used, encounter:encounters!inner(encounter_date)')
-          .gte('encounter.encounter_date', monthsAgo(months))
-          .limit(2000)
-          .returns<{ points_used: { point?: string }[] }[]>(),
+        await fetchAllRows((lo, hi) =>
+          client
+            .from('tcm_notes')
+            .select('points_used, encounter:encounters!inner(encounter_date)')
+            .gte('encounter.encounter_date', monthsAgo(months))
+            .order('id', { ascending: true })
+            .range(lo, hi)
+            .returns<{ points_used: { point?: string }[] }[]>(),
+        ),
       );
 
       const counts = new Map<string, number>();
@@ -399,7 +432,9 @@ export const QUERIES: QueryDefinition[] = [
 
       return result(
         ['point', 'times'],
-        [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([point, times]) => ({ point, times })),
+        [...counts.entries()]
+          .sort((a, b) => b[1] - a[1])
+          .map(([point, times]) => ({ point, times })),
       );
     },
   },
@@ -419,13 +454,16 @@ export const QUERIES: QueryDefinition[] = [
       const months = Math.min(Math.max(number(args.months, 12), 1), 24);
       const data = rows(
         'revenue_by_month',
-        await client
-          .from('invoices')
-          .select('issued_at, total, amount_paid, status')
-          .gte('issued_at', monthsAgo(months))
-          .neq('status', 'cancelled')
-          .limit(5000)
-          .returns<{ issued_at: string; total: number; amount_paid: number; status: string }[]>(),
+        await fetchAllRows((lo, hi) =>
+          client
+            .from('invoices')
+            .select('issued_at, total, amount_paid, status')
+            .gte('issued_at', monthsAgo(months))
+            .neq('status', 'cancelled')
+            .order('id', { ascending: true })
+            .range(lo, hi)
+            .returns<{ issued_at: string; total: number; amount_paid: number; status: string }[]>(),
+        ),
       );
 
       const totals = new Map<string, { billed: number; paid: number }>();
@@ -461,20 +499,20 @@ export const QUERIES: QueryDefinition[] = [
       const data = rows(
         'unpaid_invoices',
         await client
-        .from('invoices')
-        .select('invoice_number, issued_at, total, amount_paid, patient:patients(full_name)')
-        .in('status', ['draft', 'sent', 'partially_paid'])
-        .order('issued_at', { ascending: true })
-        .limit(200)
-        .returns<
-          {
-            invoice_number: number | null;
-            issued_at: string | null;
-            total: number;
-            amount_paid: number;
-            patient: { full_name: string } | null;
-          }[]
-        >(),
+          .from('invoices')
+          .select('invoice_number, issued_at, total, amount_paid, patient:patients(id, full_name)')
+          .in('status', ['draft', 'sent', 'partially_paid'])
+          .order('issued_at', { ascending: true })
+          .limit(200)
+          .returns<
+            {
+              invoice_number: number | null;
+              issued_at: string | null;
+              total: number;
+              amount_paid: number;
+              patient: { id: string; full_name: string } | null;
+            }[]
+          >(),
       );
 
       const out: Row[] = [];
@@ -485,6 +523,7 @@ export const QUERIES: QueryDefinition[] = [
         out.push({
           invoice: row.invoice_number,
           patient: row.patient?.full_name ?? null,
+          [PATIENT_ID_COLUMN]: row.patient?.id ?? null,
           issued: row.issued_at ? row.issued_at.slice(0, 10) : null,
           outstanding: Math.round(outstanding * 100) / 100,
         });
@@ -509,13 +548,16 @@ export const QUERIES: QueryDefinition[] = [
       const months = Math.min(Math.max(number(args.months, 6), 1), 24);
       const data = rows(
         'busiest_days',
-        await client
-          .from('appointments')
-          .select('start_at')
-          .gte('start_at', monthsAgo(months))
-          .neq('status', 'cancelled')
-          .limit(5000)
-          .returns<{ start_at: string }[]>(),
+        await fetchAllRows((lo, hi) =>
+          client
+            .from('appointments')
+            .select('start_at')
+            .gte('start_at', monthsAgo(months))
+            .neq('status', 'cancelled')
+            .order('id', { ascending: true })
+            .range(lo, hi)
+            .returns<{ start_at: string }[]>(),
+        ),
       );
 
       const counts = new Map<string, number>();
@@ -586,7 +628,7 @@ export const QUERIES: QueryDefinition[] = [
   {
     name: 'new_vs_returning_by_month',
     description:
-      'For each of the last N months, how many treatments were a patient\'s first ever and ' +
+      "For each of the last N months, how many treatments were a patient's first ever and " +
       'how many were a return. Use for "am I keeping patients" or "how many first visits".',
     parameters: {
       type: 'object',
@@ -608,12 +650,15 @@ export const QUERIES: QueryDefinition[] = [
        */
       const data = rows(
         'new_vs_returning_by_month',
-        await client
-          .from('encounters')
-          .select('patient_id, encounter_date')
-          .order('encounter_date', { ascending: true })
-          .limit(5000)
-          .returns<{ patient_id: string; encounter_date: string }[]>(),
+        await fetchAllRows((lo, hi) =>
+          client
+            .from('encounters')
+            .select('patient_id, encounter_date')
+            .order('encounter_date', { ascending: true })
+            .order('id', { ascending: true })
+            .range(lo, hi)
+            .returns<{ patient_id: string; encounter_date: string }[]>(),
+        ),
       );
 
       const seen = new Set<string>();
@@ -660,12 +705,15 @@ export const QUERIES: QueryDefinition[] = [
       const months = Math.min(Math.max(number(args.months, 12), 1), 24);
       const data = rows(
         'appointment_outcomes_by_month',
-        await client
-          .from('appointments')
-          .select('start_at, status')
-          .gte('start_at', monthsAgo(months))
-          .limit(5000)
-          .returns<{ start_at: string; status: string }[]>(),
+        await fetchAllRows((lo, hi) =>
+          client
+            .from('appointments')
+            .select('start_at, status')
+            .gte('start_at', monthsAgo(months))
+            .order('id', { ascending: true })
+            .range(lo, hi)
+            .returns<{ start_at: string; status: string }[]>(),
+        ),
       );
 
       const counts = new Map<string, Map<string, number>>();
@@ -711,13 +759,16 @@ export const QUERIES: QueryDefinition[] = [
       const months = Math.min(Math.max(number(args.months, 12), 1), 24);
       const data = rows(
         'bookings_by_weekday',
-        await client
-          .from('appointments')
-          .select('start_at')
-          .gte('start_at', monthsAgo(months))
-          .neq('status', 'cancelled')
-          .limit(5000)
-          .returns<{ start_at: string }[]>(),
+        await fetchAllRows((lo, hi) =>
+          client
+            .from('appointments')
+            .select('start_at')
+            .gte('start_at', monthsAgo(months))
+            .neq('status', 'cancelled')
+            .order('id', { ascending: true })
+            .range(lo, hi)
+            .returns<{ start_at: string }[]>(),
+        ),
       );
 
       const counts = new Array<number>(7).fill(0);

@@ -2,7 +2,7 @@
 
 import { randomUUID } from 'node:crypto';
 import { DOCUMENT_CATEGORIES, type DocumentCategory } from '@clinic/domain';
-import { getClinicScope } from '@/lib/session';
+import { getScopeWithAbility } from '@/lib/session';
 import { actionError, actionOk, type ActionResult } from '@/lib/errors';
 
 /**
@@ -35,7 +35,7 @@ export async function uploadDocument(
   patientId: string,
   formData: FormData,
 ): Promise<ActionResult<{ id: string }>> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('clinicalRecords');
   if (!scope) return actionError(new Error('unauthorized'));
 
   const file = formData.get('file');
@@ -66,25 +66,39 @@ export async function uploadDocument(
    * the row is removed; if even that fails, it stays marked, and the panel
    * shows it as an upload that did not complete, with a way to delete it.
    */
-  const { data, error } = await scope.supabase
+  const row = {
+    clinic_id: scope.context.clinic.id,
+    patient_id: patientId,
+    uploaded_by: scope.context.membership.user_id,
+    file_path: path,
+    file_name: file.name || 'document',
+    mime_type: file.type || null,
+    size_bytes: file.size,
+    category,
+    shared_with_patient: sharedWithPatient,
+    encounter_id: encounterId,
+    upload_pending: true,
+  };
+  let { data, error } = await scope.supabase
     .from('patient_documents')
-    .insert({
-      clinic_id: scope.context.clinic.id,
-      patient_id: patientId,
-      uploaded_by: scope.context.membership.user_id,
-      file_path: path,
-      file_name: file.name || 'document',
-      mime_type: file.type || null,
-      size_bytes: file.size,
-      category,
-      shared_with_patient: sharedWithPatient,
-      encounter_id: encounterId,
-      upload_pending: true,
-    })
+    .insert(row)
     .select('id')
     .single<{ id: string }>();
 
-  if (error) return actionError(error);
+  // Before migration 20260919090000 there is no `upload_pending` column
+  // (PGRST204). The row is written without it, and the file still follows it.
+  let pendingColumn = true;
+  if (error?.code === 'PGRST204' || error?.code === '42703') {
+    const { upload_pending: _pending, ...withoutPending } = row;
+    pendingColumn = false;
+    ({ data, error } = await scope.supabase
+      .from('patient_documents')
+      .insert(withoutPending)
+      .select('id')
+      .single<{ id: string }>());
+  }
+
+  if (error || !data) return actionError(error ?? new Error('insert'));
 
   const { error: uploadError } = await scope.supabase.storage
     .from('patient-documents')
@@ -98,10 +112,12 @@ export async function uploadDocument(
     return actionError(new Error(cleanupError ? 'upload_incomplete' : 'upload_failed'));
   }
 
-  const { error: doneError } = await scope.supabase
-    .from('patient_documents')
-    .update({ upload_pending: false })
-    .eq('id', data.id);
+  const { error: doneError } = pendingColumn
+    ? await scope.supabase
+        .from('patient_documents')
+        .update({ upload_pending: false })
+        .eq('id', data.id)
+    : { error: null };
   // The file is stored; a row still marked pending only means the panel will
   // offer to delete a document that is in fact complete. Said, not hidden.
   if (doneError) return actionError(new Error('upload_incomplete'));
@@ -113,7 +129,7 @@ export async function setDocumentShared(
   documentId: string,
   shared: boolean,
 ): Promise<ActionResult> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('clinicalRecords');
   if (!scope) return actionError(new Error('unauthorized'));
 
   const { error } = await scope.supabase
@@ -126,7 +142,7 @@ export async function setDocumentShared(
 }
 
 export async function deleteDocument(documentId: string): Promise<ActionResult> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('clinicalRecords');
   if (!scope) return actionError(new Error('unauthorized'));
 
   const { data: document, error: fetchError } = await scope.supabase

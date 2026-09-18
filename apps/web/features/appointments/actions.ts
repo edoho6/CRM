@@ -4,12 +4,13 @@ import {
   appointmentFormSchema,
   appointmentMoveSchema,
   appointmentSeriesSchema,
+  dateKeyIn,
   type AppointmentStatus,
 } from '@clinic/domain';
 import { getClinicScope } from '@/lib/session';
 import { actionError, actionOk, type ActionResult } from '@/lib/errors';
 import { isClosedDay, type DayException, type WorkingBlock } from './availability';
-import { toDateKey } from './date-utils';
+import { seriesDates } from './series';
 
 /**
  * Appointment mutations.
@@ -91,14 +92,10 @@ export async function createAppointmentSeries(
     return actionError(new Error('validation'));
   }
 
-  const dates = Array.from({ length: occurrences }, (_, index) => {
-    const offsetDays = index * everyWeeks * 7;
-    const start = new Date(firstStart);
-    start.setDate(start.getDate() + offsetDays);
-    const end = new Date(firstEnd);
-    end.setDate(end.getDate() + offsetDays);
-    return { start, end };
-  });
+  // On the clinic's clock, so a series that crosses a change of summer time
+  // keeps its hour (series.ts, with tests on both 2026 changes).
+  const timeZone = scope.context.clinic.timezone;
+  const dates = seriesDates(firstStart, firstEnd, everyWeeks, occurrences, timeZone);
 
   // Only the exceptions that could fall inside the series, not the whole table.
   const lastDate = dates[dates.length - 1]!.start;
@@ -113,8 +110,8 @@ export async function createAppointmentSeries(
       .from('schedule_exceptions')
       .select('date, is_closed, start_time, end_time, reason')
       .eq('practitioner_id', parsed.data.practitioner_id)
-      .gte('date', toDateKey(firstStart))
-      .lte('date', toDateKey(lastDate))
+      .gte('date', dateKeyIn(firstStart, timeZone))
+      .lte('date', dateKeyIn(lastDate, timeZone))
       .returns<DayException[]>(),
   ]);
 
@@ -163,9 +160,15 @@ export async function updateAppointment(id: string, input: unknown): Promise<Act
   const parsed = appointmentFormSchema.safeParse(input);
   if (!parsed.success) return actionError(new Error('validation'));
 
-  const { error } = await scope.supabase.from('appointments').update(parsed.data).eq('id', id);
+  const { data, error } = await scope.supabase
+    .from('appointments')
+    .update(parsed.data)
+    .eq('id', id)
+    .select('id');
 
   if (error) return actionError(error);
+  // No row back: the rules refused it or it is gone. Not "saved".
+  if (!data?.length) return actionError(new Error('not_found'));
   return actionOk();
 }
 
@@ -182,9 +185,15 @@ export async function moveAppointment(id: string, input: unknown): Promise<Actio
   const parsed = appointmentMoveSchema.safeParse(input);
   if (!parsed.success) return actionError(new Error('validation'));
 
-  const { error } = await scope.supabase.from('appointments').update(parsed.data).eq('id', id);
+  const { data, error } = await scope.supabase
+    .from('appointments')
+    .update(parsed.data)
+    .eq('id', id)
+    .select('id');
 
   if (error) return actionError(error);
+  // No row back: the rules refused it or it is gone. Not "saved".
+  if (!data?.length) return actionError(new Error('not_found'));
   return actionOk();
 }
 
@@ -196,7 +205,7 @@ export async function setAppointmentStatus(
   const scope = await getClinicScope();
   if (!scope) return actionError(new Error('unauthorized'));
 
-  const { error } = await scope.supabase
+  const { data, error } = await scope.supabase
     .from('appointments')
     .update({
       status,
@@ -204,9 +213,12 @@ export async function setAppointmentStatus(
       // booking is un-cancelled, so only the reason is set here.
       cancelled_reason: status === 'cancelled' ? (cancelledReason ?? null) : null,
     })
-    .eq('id', id);
+    .eq('id', id)
+    .select('id');
 
   if (error) return actionError(error);
+  // No row back: the rules refused it or it is gone. Not "saved".
+  if (!data?.length) return actionError(new Error('not_found'));
   return actionOk();
 }
 
@@ -214,8 +226,14 @@ export async function deleteAppointment(id: string): Promise<ActionResult> {
   const scope = await getClinicScope();
   if (!scope) return actionError(new Error('unauthorized'));
 
-  const { error } = await scope.supabase.from('appointments').delete().eq('id', id);
+  const { data, error } = await scope.supabase
+    .from('appointments')
+    .delete()
+    .eq('id', id)
+    .select('id');
   if (error) return actionError(error);
+  // No row back: the rules refused it or it is gone. Not "saved".
+  if (!data?.length) return actionError(new Error('not_found'));
   return actionOk();
 }
 
@@ -232,12 +250,15 @@ export async function markReminderSent(id: string, sent: boolean): Promise<Actio
   const scope = await getClinicScope();
   if (!scope) return actionError(new Error('unauthorized'));
 
-  const { error } = await scope.supabase
+  const { data, error } = await scope.supabase
     .from('appointments')
     .update({ reminder_sent_at: sent ? new Date().toISOString() : null })
-    .eq('id', id);
+    .eq('id', id)
+    .select('id');
 
   if (error) return actionError(error);
+  // No row back: the rules refused it or it is gone. Not "saved".
+  if (!data?.length) return actionError(new Error('not_found'));
   return actionOk();
 }
 
@@ -256,14 +277,17 @@ export async function setConfirmationResponse(
   const scope = await getClinicScope();
   if (!scope) return actionError(new Error('unauthorized'));
 
-  const { error } = await scope.supabase
+  const { data, error } = await scope.supabase
     .from('appointments')
     .update({
       confirmation_response: response,
       responded_at: response ? new Date().toISOString() : null,
     })
-    .eq('id', id);
+    .eq('id', id)
+    .select('id');
 
   if (error) return actionError(error);
+  // No row back: the rules refused it or it is gone. Not "saved".
+  if (!data?.length) return actionError(new Error('not_found'));
   return actionOk();
 }

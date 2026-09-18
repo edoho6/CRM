@@ -18,6 +18,8 @@ import {
   Tr,
 } from '@clinic/ui';
 import { askAssistant, type AssistantAnswer } from './actions';
+import { restorePatients } from './outbound';
+import { Link } from '@clinic/i18n/navigation';
 
 /**
  * Ask a question about the clinic's own data.
@@ -67,6 +69,7 @@ export function AssistantPanel({ examples }: { examples: string[] }) {
     if (errorKey.endsWith('assistant_gave_up')) return t('gaveUp');
     if (errorKey.endsWith('assistant_quota')) return t('quota');
     if (errorKey.endsWith('question_too_long')) return t('tooLong');
+    if (errorKey.endsWith('assistant_name_in_question')) return t('nameInQuestion');
     return tc('errorGeneric');
   }
 
@@ -147,7 +150,24 @@ export function AssistantPanel({ examples }: { examples: string[] }) {
               {/* `whitespace-pre-line` because the model writes in paragraphs and
                   they should stay paragraphs. */}
               <p className="min-w-0 whitespace-pre-line text-sm text-ink-900" dir="auto">
-                {answer.text || t('noAnswer')}
+                {/* The model wrote [PATIENT_n]; the name is put back here, on
+                    our side, from the map the server kept (outbound.ts). A
+                    token the map does not know stays as it came. */}
+                {answer.text
+                  ? restorePatients(answer.text, answer.patients ?? {}).map((segment, index) =>
+                      segment.type === 'text' ? (
+                        <span key={index}>{segment.text}</span>
+                      ) : (
+                        <Link
+                          key={index}
+                          href={`/patients/${segment.patient.id}`}
+                          className="font-medium text-jade-700 underline-offset-4 hover:underline"
+                        >
+                          {segment.patient.name || segment.token}
+                        </Link>
+                      ),
+                    )
+                  : t('noAnswer')}
               </p>
             </div>
 

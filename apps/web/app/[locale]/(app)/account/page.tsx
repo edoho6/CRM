@@ -18,6 +18,7 @@ import type { AppointmentType, Location, Profile, Room } from '@clinic/db/types'
 import { PageHeader } from '@/components/app-shell';
 import { SettingsNav } from '@/features/settings/settings-nav';
 import { getClinicScope } from '@/lib/session';
+import { abilitiesFor } from '@clinic/domain';
 import { AppointmentTypesManager } from '@/features/settings/appointment-types-manager';
 import { AppearanceSettings } from '@/features/settings/appearance-settings';
 import { PractitionerForm } from '@/features/settings/practitioner-form';
@@ -60,6 +61,7 @@ export default async function AccountPage({ params }: { params: Promise<{ locale
 
   const scope = await getClinicScope();
   if (!scope) return null;
+  const abilities = abilitiesFor(scope.context.membership.role);
   const factor = await verifiedTotpFactor(scope.supabase);
 
   const [{ data: types }, { data: profile }, locationsResult, roomsResult] = await Promise.all([
@@ -91,7 +93,11 @@ export default async function AccountPage({ params }: { params: Promise<{ locale
 
   return (
     <>
-      <PageHeader title={t('title')} description={t('subtitle')} below={<SettingsNav />} />
+      <PageHeader
+        title={t('title')}
+        description={t('subtitle')}
+        below={<SettingsNav clinicSettings={abilities.settings} />}
+      />
 
       {/* Collapsed by default, except the one that gates a printed document.
           Six open panels made a page that had to be scrolled to find anything;
@@ -177,50 +183,60 @@ export default async function AccountPage({ params }: { params: Promise<{ locale
           </div>
         </Collapsible>
 
-        <Collapsible
-          title={tProtocols('title')}
-          description={tProtocols('subtitle')}
-          icon={<ClipboardList className="h-4 w-4" aria-hidden />}
-        >
-          <Link
-            href="/account/protocols"
-            className="inline-flex items-center gap-1.5 rounded-md text-sm font-medium text-jade-700 underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+        {/* Protocols and questionnaires are clinical libraries; the section
+            they lead to is closed to a role without clinical records (18.9),
+            so the way there is not drawn either. */}
+        {abilities.clinicalRecords ? (
+          <Collapsible
+            title={tProtocols('title')}
+            description={tProtocols('subtitle')}
+            icon={<ClipboardList className="h-4 w-4" aria-hidden />}
           >
-            {tProtocols('manage')}
-          </Link>
-        </Collapsible>
+            <Link
+              href="/account/protocols"
+              className="inline-flex items-center gap-1.5 rounded-md text-sm font-medium text-jade-700 underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+            >
+              {tProtocols('manage')}
+            </Link>
+          </Collapsible>
+        ) : null}
 
         {/* Beside the protocols, and for the same reason: a library the
             practitioner builds once and then uses from a patient's file or a
             treatment. It had a place of its own in the sidebar, which put a
             thing you touch a few times a year next to the diary. */}
-        <Collapsible
-          title={tForms('title')}
-          description={tForms('subtitle')}
-          icon={<FileText className="h-4 w-4" aria-hidden />}
-        >
-          <Link
-            href="/forms"
-            className="inline-flex items-center gap-1.5 rounded-md text-sm font-medium text-jade-700 underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+        {abilities.clinicalRecords ? (
+          <Collapsible
+            title={tForms('title')}
+            description={tForms('subtitle')}
+            icon={<FileText className="h-4 w-4" aria-hidden />}
           >
-            {tForms('manage')}
-          </Link>
-        </Collapsible>
+            <Link
+              href="/forms"
+              className="inline-flex items-center gap-1.5 rounded-md text-sm font-medium text-jade-700 underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+            >
+              {tForms('manage')}
+            </Link>
+          </Collapsible>
+        ) : null}
 
         {/* Where the money is configured is a property of the practice rather
-            than of the person, so it is named here and lives in Settings. */}
-        <Collapsible
-          title={t('payments')}
-          description={t('paymentsBody')}
-          icon={<CreditCard className="h-4 w-4" aria-hidden />}
-        >
-          <Link
-            href="/settings"
-            className="inline-flex items-center gap-1.5 rounded-md text-sm font-medium text-jade-700 underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+            than of the person, so it is named here and lives in Settings —
+            which is the owner's. */}
+        {abilities.settings ? (
+          <Collapsible
+            title={t('payments')}
+            description={t('paymentsBody')}
+            icon={<CreditCard className="h-4 w-4" aria-hidden />}
           >
-            {t('toSettings')}
-          </Link>
-        </Collapsible>
+            <Link
+              href="/settings"
+              className="inline-flex items-center gap-1.5 rounded-md text-sm font-medium text-jade-700 underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+            >
+              {t('toSettings')}
+            </Link>
+          </Collapsible>
+        ) : null}
 
         {/* Alerts on this phone: only inside the store app is there anything
             to switch on; in a browser the card says so. */}

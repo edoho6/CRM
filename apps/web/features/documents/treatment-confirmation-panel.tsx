@@ -18,10 +18,7 @@ import {
 } from '@clinic/ui';
 import { Link, useRouter } from '@clinic/i18n/navigation';
 import type { TreatmentConfirmation } from '@clinic/db/types';
-import {
-  deleteTreatmentConfirmation,
-  issueTreatmentConfirmation,
-} from './confirmation-actions';
+import { deleteTreatmentConfirmation, issueTreatmentConfirmation } from './confirmation-actions';
 import { formatDate } from '@clinic/i18n';
 import { DateInput } from '@/components/date-input';
 
@@ -73,10 +70,7 @@ export function TreatmentConfirmationPanel({
   const [isPending, startTransition] = useTransition();
 
   /** Ticked plus typed, de-duplicated and in order — the same shape the server stores. */
-  const dates = useMemo(
-    () => [...new Set([...selected, ...manual])].sort(),
-    [selected, manual],
-  );
+  const dates = useMemo(() => [...new Set([...selected, ...manual])].sort(), [selected, manual]);
 
   function toggle(date: string) {
     setSelected((current) => {
@@ -118,6 +112,7 @@ export function TreatmentConfirmationPanel({
   function renderError() {
     if (!errorKey) return null;
     if (errorKey.endsWith('practitioner_details_missing')) return t('missingPractitioner');
+    if (errorKey.endsWith('treatment_dates_unverified')) return t('datesUnverified');
     return tc('errorGeneric');
   }
 

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { acupuncturePointFormSchema } from '@clinic/domain';
-import { getClinicScope } from '@/lib/session';
+import { getScopeWithAbility } from '@/lib/session';
 import { actionError, actionOk, type ActionResult } from '@/lib/errors';
 
 /**
@@ -11,7 +11,7 @@ import { actionError, actionOk, type ActionResult } from '@/lib/errors';
  * when the clinical text changes, exactly as it does for a herb.
  */
 export async function updateAcupuncturePoint(id: string, input: unknown): Promise<ActionResult> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('clinicalRecords');
   if (!scope) return actionError(new Error('unauthorized'));
 
   const parsed = acupuncturePointFormSchema.safeParse(input);

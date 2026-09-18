@@ -1,6 +1,7 @@
 import { getCurrentUser, tryCreateServerSupabase } from '@clinic/db';
 import { checkRateLimit, recordFailure } from '@clinic/db/rate-limit';
 import { buildIcs, ICS_DOWNLOAD_HEADERS } from '@clinic/domain/ics';
+import { logRecordAccess } from '@clinic/db/access-log';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -51,6 +52,9 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
     .eq('id', id)
     .maybeSingle<Row>();
   if (!data) return new Response('Not found', { status: 404 });
+
+  // A copy of the appointment leaves as a file: recorded like any other copy.
+  await logRecordAccess(supabase, 'appointments', id, 'export');
 
   const type =
     data.appointment_type?.name_he?.trim() || data.appointment_type?.name_en?.trim() || '';

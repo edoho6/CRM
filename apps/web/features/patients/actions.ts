@@ -65,9 +65,15 @@ export async function updatePatient(id: string, input: unknown): Promise<ActionR
   const parsed = patientFormSchema.safeParse(input);
   if (!parsed.success) return actionError(new Error('validation'));
 
-  const { error } = await scope.supabase.from('patients').update(parsed.data).eq('id', id);
+  const { data, error } = await scope.supabase
+    .from('patients')
+    .update(parsed.data)
+    .eq('id', id)
+    .select('id');
 
   if (error) return actionError(error);
+  // No row back: the rules refused it or it is gone. Not "saved".
+  if (!data?.length) return actionError(new Error('not_found'));
   return actionOk();
 }
 
@@ -115,12 +121,15 @@ export async function setPatientStatus(id: string, status: unknown): Promise<Act
   const parsed = z.enum(TREATMENT_STATUSES).safeParse(status);
   if (!parsed.success) return actionError(new Error('validation'));
 
-  const { error } = await scope.supabase
+  const { data, error } = await scope.supabase
     .from('patients')
     .update({ treatment_status: parsed.data })
-    .eq('id', id);
+    .eq('id', id)
+    .select('id');
 
   if (error) return actionError(error);
+  // No row back: the rules refused it or it is gone. Not "saved".
+  if (!data?.length) return actionError(new Error('not_found'));
   return actionOk();
 }
 

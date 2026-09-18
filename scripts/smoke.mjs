@@ -17,6 +17,7 @@
  *
  * Credentials come from apps/web/.env.test.local (git-ignored):
  *   SMOKE_EMAIL=…      SMOKE_PASSWORD=…      SMOKE_BASE_URL=http://localhost:3000
+ *   SMOKE_CLINIC_ID=…  (required for --write: the test clinic's id; any other clinic is refused)
  * The browser is the Edge already installed on Windows (`channel: 'msedge'`);
  * set PW_CHANNEL=chromium after `npx playwright install chromium` to use that.
  *
@@ -441,6 +442,25 @@ async function login(browser, contextOptions = {}) {
     throw new Error(
       'Signed in, but this clinic is not marked synthetic (no sandbox banner). Refusing to continue: a smoke run must never open a real practice.',
     );
+  }
+  // The banner alone is not enough for the flows that write: the practitioner's
+  // own clinic carries it too while it holds practice patients (14.9). Writing
+  // needs the exact clinic named in apps/web/.env.test.local.
+  if (writeFlows) {
+    const expected = (env.SMOKE_CLINIC_ID || process.env.SMOKE_CLINIC_ID || '').trim();
+    const actual = await page.locator('[data-clinic-id]').first().getAttribute('data-clinic-id').catch(() => null);
+    if (!expected) {
+      await context.close();
+      throw new Error(
+        'SMOKE_CLINIC_ID is not set in apps/web/.env.test.local. --write changes data, so it runs only against the one clinic named there (the id of the test clinic).',
+      );
+    }
+    if (actual !== expected) {
+      await context.close();
+      throw new Error(
+        `Signed in to clinic ${actual ?? '(unknown)'}, but SMOKE_CLINIC_ID is ${expected}. Refusing to write anywhere but the test clinic.`,
+      );
+    }
   }
   await page.close();
   return context;

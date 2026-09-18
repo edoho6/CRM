@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { LIBRARY_DISCLAIMER_HE, LIBRARY_LIMITS, chatTitleFrom } from '@clinic/domain';
-import { getClinicScope } from '@/lib/session';
+import { getScopeWithAbility } from '@/lib/session';
 import { askLibrary, type AskResult, type StageListener } from '@/features/library/ask';
 import { LibraryUnavailableError } from '@/features/library/claude';
 import { streamReply } from '@/features/library/stream';
@@ -36,7 +36,12 @@ export const maxDuration = 300;
 const Body = z.object({
   question: z.string().trim().min(1).max(LIBRARY_LIMITS.questionChars),
   history: z
-    .array(z.object({ role: z.enum(['user', 'assistant']), content: z.string().max(LIBRARY_LIMITS.historyChars) }))
+    .array(
+      z.object({
+        role: z.enum(['user', 'assistant']),
+        content: z.string().max(LIBRARY_LIMITS.historyChars),
+      }),
+    )
     .max(LIBRARY_LIMITS.historyTurns * 2)
     .default([]),
   /** The conversation to continue. None for a new one: it is opened with the first answer. */
@@ -55,7 +60,15 @@ export interface KeptResult extends AskResult {
 function errorReply(error: unknown): KeptResult & { error: string } {
   // A short code, never the question and never a provider's message body.
   const code = error instanceof LibraryUnavailableError ? error.message : 'error';
-  return { status: 'error', answer: '', citations: [], retrieved: [], disclaimer: LIBRARY_DISCLAIMER_HE, error: code, chatId: null };
+  return {
+    status: 'error',
+    answer: '',
+    citations: [],
+    retrieved: [],
+    disclaimer: LIBRARY_DISCLAIMER_HE,
+    error: code,
+    chatId: null,
+  };
 }
 
 /**
@@ -79,7 +92,11 @@ async function keep(
   if (!id) {
     const { data } = await supabase
       .from('library_chats')
-      .insert({ clinic_id: ids.clinicId, user_id: ids.userId, title: chatTitleFrom(question) || '…' })
+      .insert({
+        clinic_id: ids.clinicId,
+        user_id: ids.userId,
+        title: chatTitleFrom(question) || '…',
+      })
       .select('id')
       .single<{ id: string }>();
     id = data?.id ?? null;
@@ -88,20 +105,32 @@ async function keep(
   const base = { chat_id: id, clinic_id: ids.clinicId, user_id: ids.userId };
   const { error } = await supabase.from('library_messages').insert([
     { ...base, role: 'user', status: null, content: question, general: null },
-    { ...base, role: 'assistant', status: result.status, content: result.answer, general: result.general || null },
+    {
+      ...base,
+      role: 'assistant',
+      status: result.status,
+      content: result.answer,
+      general: result.general || null,
+    },
   ]);
   if (error) return chatId ?? null;
-  await supabase.from('library_chats').update({ last_message_at: new Date().toISOString() }).eq('id', id);
+  await supabase
+    .from('library_chats')
+    .update({ last_message_at: new Date().toISOString() })
+    .eq('id', id);
   return id;
 }
 
 export async function POST(request: Request) {
   const site = request.headers.get('sec-fetch-site');
-  if (site && site !== 'same-origin') return NextResponse.json({ error: 'forbidden' }, { status: 403 });
+  if (site && site !== 'same-origin')
+    return NextResponse.json({ error: 'forbidden' }, { status: 403 });
 
-  const scope = await getClinicScope();
+  // The library is for the clinical roles (18.9), and every question costs money.
+  const scope = await getScopeWithAbility('library');
   if (!scope) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
-  if (!isLibraryConfigured()) return NextResponse.json({ error: 'not_configured' }, { status: 503 });
+  if (!isLibraryConfigured())
+    return NextResponse.json({ error: 'not_configured' }, { status: 503 });
 
   const parsed = Body.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: 'bad_request' }, { status: 400 });
@@ -109,15 +138,25 @@ export async function POST(request: Request) {
   // A conversation named by the caller must be theirs: the policies answer with nothing otherwise.
   const { chatId } = parsed.data;
   if (chatId) {
-    const { data } = await scope.supabase.from('library_chats').select('id').eq('id', chatId).maybeSingle<{ id: string }>();
+    const { data } = await scope.supabase
+      .from('library_chats')
+      .select('id')
+      .eq('id', chatId)
+      .maybeSingle<{ id: string }>();
     if (!data) return NextResponse.json({ error: 'not_found' }, { status: 404 });
   }
 
   const ids = { userId: scope.context.membership.user_id, clinicId: scope.context.clinic.id };
   const run = async (onStage?: StageListener): Promise<KeptResult> => {
-    const input = { ...parsed.data, course: parsed.data.course === true && scope.context.isPlatformAdmin };
+    const input = {
+      ...parsed.data,
+      course: parsed.data.course === true && scope.context.isPlatformAdmin,
+    };
     const result = await askLibrary(scope.supabase, input, onStage);
-    return { ...result, chatId: await keep(scope.supabase, ids, chatId, parsed.data.question, result) };
+    return {
+      ...result,
+      chatId: await keep(scope.supabase, ids, chatId, parsed.data.question, result),
+    };
   };
 
   const wantsStream = (request.headers.get('accept') ?? '').includes('application/x-ndjson');

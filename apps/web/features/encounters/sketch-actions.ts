@@ -1,6 +1,6 @@
 'use server';
 
-import { getClinicScope } from '@/lib/session';
+import { getScopeWithAbility } from '@/lib/session';
 import { actionError, actionOk, type ActionResult } from '@/lib/errors';
 import { logRecordAccess } from '@/lib/access-log';
 
@@ -18,7 +18,7 @@ import { logRecordAccess } from '@/lib/access-log';
  * Opening a page to edit it is a view, and is logged as one.
  */
 export async function loadSketchImage(documentId: string): Promise<ActionResult<{ dataUrl: string }>> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('clinicalRecords');
   if (!scope) return actionError(new Error('unauthorized'));
 
   const { data: document, error } = await scope.supabase

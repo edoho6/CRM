@@ -1,7 +1,7 @@
 'use server';
 
 import type { Herb } from '@clinic/db/types';
-import { getClinicScope } from '@/lib/session';
+import { getScopeWithAbility } from '@/lib/session';
 import { actionError, actionOk, type ActionResult } from '@/lib/errors';
 
 /**
@@ -13,7 +13,7 @@ import { actionError, actionOk, type ActionResult } from '@/lib/errors';
  * what comes back — another clinic's herb is simply not found.
  */
 export async function loadHerbMonograph(id: string): Promise<ActionResult<Herb>> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('inventory');
   if (!scope) return actionError(new Error('unauthorized'));
   if (!/^[0-9a-f-]{36}$/i.test(id)) return actionError(new Error('validation'));
 

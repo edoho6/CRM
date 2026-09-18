@@ -1,7 +1,7 @@
 'use server';
 
 import { shopRefreshSchema, shopStoreStatusSchema } from '@clinic/domain';
-import { getClinicScope } from '@/lib/session';
+import { getScopeWithAbility } from '@/lib/session';
 import { actionError, actionOk, type ActionResult } from '@/lib/errors';
 
 /**
@@ -16,7 +16,7 @@ import { actionError, actionOk, type ActionResult } from '@/lib/errors';
  */
 
 export async function setStoreStatus(input: unknown): Promise<ActionResult> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('inventory');
   if (!scope) return actionError(new Error('unauthorized'));
   if (!scope.context.isPlatformAdmin) return actionError(new Error('forbidden'));
 
@@ -33,7 +33,7 @@ export async function setStoreStatus(input: unknown): Promise<ActionResult> {
 }
 
 export async function refreshStoreNow(input: unknown): Promise<ActionResult<{ started: boolean }>> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('inventory');
   if (!scope) return actionError(new Error('unauthorized'));
   if (!scope.context.isPlatformAdmin) return actionError(new Error('forbidden'));
 

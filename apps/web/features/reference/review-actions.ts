@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { getClinicScope } from '@/lib/session';
+import { getScopeWithAbility } from '@/lib/session';
 import { actionError, actionOk, type ActionResult } from '@/lib/errors';
 
 export type ReferenceKind = 'herb' | 'formula' | 'point';
@@ -27,7 +27,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
  * kind decides the table and nothing else.
  */
 export async function approveReference(kind: ReferenceKind, id: string): Promise<ActionResult> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('clinicalRecords');
   if (!scope) return actionError(new Error('unauthorized'));
   const table = TABLES[kind];
   if (!table || !UUID.test(id)) return actionError(new Error('validation'));

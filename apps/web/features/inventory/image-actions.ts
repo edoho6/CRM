@@ -1,7 +1,7 @@
 'use server';
 
 import { randomUUID } from 'node:crypto';
-import { getClinicScope } from '@/lib/session';
+import { getScopeWithAbility } from '@/lib/session';
 import { actionError, actionOk, type ActionResult } from '@/lib/errors';
 
 /**
@@ -35,7 +35,7 @@ export async function uploadHerbImage(
   herbId: string,
   formData: FormData,
 ): Promise<ActionResult<{ url: string }>> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('inventory');
   if (!scope) return actionError(new Error('unauthorized'));
 
   const file = formData.get('image');
@@ -79,7 +79,7 @@ export async function uploadHerbImage(
 }
 
 export async function removeHerbImage(herbId: string): Promise<ActionResult> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('inventory');
   if (!scope) return actionError(new Error('unauthorized'));
 
   const { data: herb } = await scope.supabase

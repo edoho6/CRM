@@ -20,7 +20,23 @@ import { testClinicScope } from '@/lib/test/clinic-scope';
 const { getClinicScope } = vi.hoisted(() => ({ getClinicScope: vi.fn() }));
 const { createPaymentProcess } = vi.hoisted(() => ({ createPaymentProcess: vi.fn() }));
 
-vi.mock('@/lib/session', () => ({ getClinicScope }));
+// Every money action asks for the `money` ability (or `settings`); the role
+// itself is tested in lib/permissions.test.ts, so the scope stands in for both.
+vi.mock('@/lib/session', () => ({ getClinicScope, getScopeWithAbility: getClinicScope }));
+// Invoice lines are written in the clinic's language; the English catalogue here.
+vi.mock('next-intl/server', async () => {
+  const { default: en } = await import('../../../../packages/i18n/messages/en.json');
+  return {
+    getTranslations: async ({ namespace }: { namespace: string }) => {
+      const table = namespace.split('.').reduce<Record<string, unknown>>(
+        (node, part) => node[part] as Record<string, unknown>,
+        en as unknown as Record<string, unknown>,
+      );
+      return (key: string, values: Record<string, string | number> = {}) =>
+        String(table[key]).replace(/\{(\w+)\}/g, (_, name: string) => String(values[name] ?? ''));
+    },
+  };
+});
 vi.mock('./grow-client', () => ({ createPaymentProcess }));
 vi.mock('@clinic/db', () => ({
   readSupabaseEnv: () => ({ url: 'https://project.supabase.co', anonKey: 'anon' }),
@@ -177,7 +193,9 @@ describe('cancelInvoice', () => {
 
 describe('recordManualPayment', () => {
   it('records cash at the desk against the clinic and the invoice', async () => {
-    const db = createSupabaseDouble();
+    const db = createSupabaseDouble({
+      tables: { invoices: [{ id: 'inv-1', total: 300, amount_paid: 0 }] },
+    });
     getClinicScope.mockResolvedValue(testClinicScope(db.client));
 
     const result = await recordManualPayment('inv-1', 250, 'cash');
@@ -191,6 +209,18 @@ describe('recordManualPayment', () => {
       status: 'paid',
       provider: 'manual',
     });
+  });
+
+  it('refuses more than the invoice still owes — 4,000 typed for 400', async () => {
+    const db = createSupabaseDouble({
+      tables: { invoices: [{ id: 'inv-1', total: 400, amount_paid: 0 }] },
+    });
+    getClinicScope.mockResolvedValue(testClinicScope(db.client));
+
+    const result = await recordManualPayment('inv-1', 4000, 'cash');
+
+    expect(result.ok).toBe(false);
+    expect(db.rows('payments')).toHaveLength(0);
   });
 
   it('refuses a zero or negative amount before it reaches the database', async () => {

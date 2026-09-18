@@ -3,7 +3,7 @@
 import { z } from 'zod';
 import { getTranslations } from 'next-intl/server';
 import type { WhatsappConversation, WhatsappMessage } from '@clinic/db/types';
-import { getClinicScope, type ClinicScope } from '@/lib/session';
+import { getScopeWithAbility, type ClinicScope } from '@/lib/session';
 import { actionError, actionOk, type ActionResult } from '@/lib/errors';
 import { CHAT_MESSAGE_MAX, type ConversationSummary, type ThreadMessage } from './types';
 
@@ -75,7 +75,7 @@ async function wakeSender(scope: ClinicScope): Promise<void> {
 
 /** The most recent two hundred threads, open ones first by their last message. */
 export async function listConversations(): Promise<ActionResult<ConversationSummary[]>> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('messages');
   if (!scope) return actionError(new Error('unauthorized'));
   const { data, error } = await scope.supabase
     .from('whatsapp_conversations')
@@ -90,7 +90,7 @@ export async function listConversations(): Promise<ActionResult<ConversationSumm
 export async function loadConversation(
   conversationId: string,
 ): Promise<ActionResult<{ conversation: ConversationSummary; messages: ThreadMessage[] }>> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('messages');
   if (!scope) return actionError(new Error('unauthorized'));
   const id = Id.safeParse(conversationId);
   if (!id.success) return actionError(new Error('validation'));
@@ -113,7 +113,7 @@ export async function loadConversation(
 
 /** What the practitioner typed: queued for the sender, and the sender woken. */
 export async function sendChatMessage(conversationId: string, body: string): Promise<ActionResult<ThreadMessage>> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('messages');
   if (!scope) return actionError(new Error('unauthorized'));
   const id = Id.safeParse(conversationId);
   const text = Body.safeParse(body);
@@ -144,7 +144,7 @@ export async function sendChatMessage(conversationId: string, body: string): Pro
  * was said; the service sends the approved wording.
  */
 export async function sendOpener(conversationId: string): Promise<ActionResult<ThreadMessage>> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('messages');
   if (!scope) return actionError(new Error('unauthorized'));
   const id = Id.safeParse(conversationId);
   if (!id.success) return actionError(new Error('validation'));
@@ -187,7 +187,7 @@ export async function sendOpener(conversationId: string): Promise<ActionResult<T
 
 /** A message the service refused, offered again once its reason was seen to. */
 export async function retryChatMessage(messageId: string): Promise<ActionResult> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('messages');
   if (!scope) return actionError(new Error('unauthorized'));
   const id = Id.safeParse(messageId);
   if (!id.success) return actionError(new Error('validation'));
@@ -202,7 +202,7 @@ export async function retryChatMessage(messageId: string): Promise<ActionResult>
 }
 
 export async function markConversationRead(conversationId: string): Promise<ActionResult> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('messages');
   if (!scope) return actionError(new Error('unauthorized'));
   const id = Id.safeParse(conversationId);
   if (!id.success) return actionError(new Error('validation'));
@@ -212,7 +212,7 @@ export async function markConversationRead(conversationId: string): Promise<Acti
 }
 
 export async function setConversationStatus(conversationId: string, status: 'open' | 'closed'): Promise<ActionResult> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('messages');
   if (!scope) return actionError(new Error('unauthorized'));
   const id = Id.safeParse(conversationId);
   if (!id.success || (status !== 'open' && status !== 'closed')) return actionError(new Error('validation'));
@@ -223,7 +223,7 @@ export async function setConversationStatus(conversationId: string, status: 'ope
 
 /** Which file the thread belongs to — a person's choice when the number is not in one file alone. */
 export async function linkConversationPatient(conversationId: string, patientId: string | null): Promise<ActionResult> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('messages');
   if (!scope) return actionError(new Error('unauthorized'));
   const id = Id.safeParse(conversationId);
   const patient = patientId === null ? { success: true as const, data: null } : Id.safeParse(patientId);
@@ -238,7 +238,7 @@ export async function linkConversationPatient(conversationId: string, patientId:
 
 /** A thread for this file's number, made if there is none; the number must be one WhatsApp can address. */
 export async function openConversationForPatient(patientId: string): Promise<ActionResult<{ id: string }>> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('messages');
   if (!scope) return actionError(new Error('unauthorized'));
   const id = Id.safeParse(patientId);
   if (!id.success) return actionError(new Error('validation'));
@@ -249,7 +249,7 @@ export async function openConversationForPatient(patientId: string): Promise<Act
 
 /** How many threads hold something unread — the number on the menu. */
 export async function unreadConversations(): Promise<ActionResult<number>> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('messages');
   if (!scope) return actionError(new Error('unauthorized'));
   const { count, error } = await scope.supabase
     .from('whatsapp_conversations')

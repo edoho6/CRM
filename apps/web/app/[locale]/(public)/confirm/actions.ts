@@ -1,7 +1,17 @@
 'use server';
 
 import { tryCreateServerSupabase } from '@clinic/db/server';
+import { headers } from 'next/headers';
 import { checkRateLimit, recordFailure } from '@/lib/rate-limit';
+import { callerAddress } from '@/lib/caller-address';
+
+/**
+ * Wrong tokens are counted per caller, not per token: a key made of the token
+ * itself was new on every guess, so nothing guessing ever reached the limit.
+ */
+async function callerKey(prefix: string): Promise<string> {
+  return `${prefix}:${callerAddress(await headers())}`;
+}
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -21,7 +31,7 @@ export async function respondToAppointment(
 ): Promise<RespondResult> {
   if (!UUID.test(token)) return 'expired';
 
-  const limit = checkRateLimit(`confirm:${token}`);
+  const limit = checkRateLimit(await callerKey('confirm'));
   if (!limit.allowed) return 'error';
 
   const supabase = await tryCreateServerSupabase();
@@ -34,7 +44,7 @@ export async function respondToAppointment(
 
   if (error) return 'error';
   if (data !== true) {
-    recordFailure(`confirm:${token}`);
+    recordFailure(await callerKey('confirm'));
     return 'expired';
   }
   return response;
@@ -52,7 +62,8 @@ export async function fetchChangeSlots(token: string, day: string): Promise<stri
   return (Array.isArray(data) ? data : []).map((value) => String(value));
 }
 
-export type ChangeResult = 'moved' | 'cancelled' | 'slot_taken' | 'not_allowed' | 'expired' | 'error';
+export type ChangeResult =
+  'moved' | 'cancelled' | 'slot_taken' | 'not_allowed' | 'expired' | 'error';
 
 function changeError(message: string): ChangeResult {
   if (message.includes('slot_taken')) return 'slot_taken';
@@ -62,13 +73,16 @@ function changeError(message: string): ChangeResult {
 
 export async function moveAppointment(token: string, startAt: string): Promise<ChangeResult> {
   if (!UUID.test(token) || Number.isNaN(Date.parse(startAt))) return 'expired';
-  if (!checkRateLimit(`confirm:${token}`).allowed) return 'error';
+  if (!checkRateLimit(await callerKey('confirm')).allowed) return 'error';
   const supabase = await tryCreateServerSupabase();
   if (!supabase) return 'error';
-  const { data, error } = await supabase.rpc('move_appointment_by_token', { p_token: token, p_start_at: startAt });
+  const { data, error } = await supabase.rpc('move_appointment_by_token', {
+    p_token: token,
+    p_start_at: startAt,
+  });
   if (error) return changeError(error.message);
   if (data !== true) {
-    recordFailure(`confirm:${token}`);
+    recordFailure(await callerKey('confirm'));
     return 'expired';
   }
   return 'moved';
@@ -76,13 +90,13 @@ export async function moveAppointment(token: string, startAt: string): Promise<C
 
 export async function cancelAppointment(token: string): Promise<ChangeResult> {
   if (!UUID.test(token)) return 'expired';
-  if (!checkRateLimit(`confirm:${token}`).allowed) return 'error';
+  if (!checkRateLimit(await callerKey('confirm')).allowed) return 'error';
   const supabase = await tryCreateServerSupabase();
   if (!supabase) return 'error';
   const { data, error } = await supabase.rpc('cancel_appointment_by_token', { p_token: token });
   if (error) return changeError(error.message);
   if (data !== true) {
-    recordFailure(`confirm:${token}`);
+    recordFailure(await callerKey('confirm'));
     return 'expired';
   }
   return 'cancelled';

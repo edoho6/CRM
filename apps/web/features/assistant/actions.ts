@@ -1,6 +1,6 @@
 'use server';
 
-import { getClinicScope } from '@/lib/session';
+import { getScopeWithAbility } from '@/lib/session';
 import { actionError, actionOk, type ActionResult } from '@/lib/errors';
 import {
   ASSISTANT_MODEL,
@@ -8,11 +8,22 @@ import {
   callModel,
   isAssistantConfigured,
   type ContentBlock,
-  type Message,
   type ModelUsage,
   type ToolSpec,
 } from './anthropic';
 import { QueryFailedError, QUERIES, QUERY_BY_NAME, type QueryResult } from './queries';
+import {
+  buildOutboundRequest,
+  OutboundBlockedError,
+  outboundResult,
+  PatientTokens,
+  sanitizeFreeText,
+  type KnownPatient,
+  type OutboundContent,
+  type OutboundMessage,
+  type PatientTokenMap,
+} from './outbound';
+import { fetchAllRows } from '@/lib/fetch-all';
 
 /**
  * The assistant turn: a question in, an answer and the tables behind it out.
@@ -47,6 +58,8 @@ export interface AssistantTable {
 export interface AssistantAnswer {
   text: string;
   tables: AssistantTable[];
+  /** `[PATIENT_n]` in the text → the patient, for the screen to draw the name. Never sent out. */
+  patients: PatientTokenMap;
 }
 
 const SYSTEM = `You help a practitioner understand the data in their own Chinese-medicine clinic
@@ -65,7 +78,11 @@ Rules:
   patient, or anything requiring clinical judgement, say that is outside what you do and that the
   record is where that belongs. Reporting a number that happens to be clinical — how often a point
   was used — is fine; advising on care is not.
-- If a result is empty, say so directly rather than apologising at length.`;
+- If a result is empty, say so directly rather than apologising at length.
+- Patients appear only as tokens such as [PATIENT_1]. Refer to a patient by their token, written
+  exactly as it appears, and never guess or invent who a token stands for. Names are shown to the
+  practitioner by the system, not by you.
+- A result marked "withheld" was not shared with you: say you could not check that, and do not guess.`;
 
 function toolSpecs(): ToolSpec[] {
   return QUERIES.map((query) => ({
@@ -76,7 +93,7 @@ function toolSpecs(): ToolSpec[] {
 }
 
 export async function askAssistant(question: string): Promise<ActionResult<AssistantAnswer>> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('reports');
   if (!scope) return actionError(new Error('unauthorized'));
 
   if (!isAssistantConfigured()) return actionError(new Error('assistant_not_configured'));
@@ -87,7 +104,24 @@ export async function askAssistant(question: string): Promise<ActionResult<Assis
   // fill the context with instructions, and neither is a question about the data.
   if (trimmed.length > 500) return actionError(new Error('question_too_long'));
 
-  const messages: Message[] = [{ role: 'user', content: trimmed }];
+  // The clinic's patients, for the name check on everything that leaves
+  // (outbound.ts). Read through the caller's own rules, all of them.
+  const known = await fetchAllRows<KnownPatient>((lo, hi) =>
+    scope.supabase
+      .from('patients')
+      .select('id, first_name, last_name')
+      .order('id', { ascending: true })
+      .range(lo, hi),
+  );
+  // Without the list there is no way to know a name when one is typed; the
+  // question does not leave rather than leave unchecked.
+  if (known.error) return actionError(new Error('assistant_failed'));
+  const tokens = new PatientTokens();
+
+  const question0 = sanitizeFreeText(trimmed, known.data, tokens);
+  if (!question0.ok) return actionError(new Error('assistant_name_in_question'));
+
+  const messages: OutboundMessage[] = [{ role: 'user', content: question0.text }];
   const tables: AssistantTable[] = [];
   const started = Date.now();
   const spent: ModelUsage = { input: 0, cacheWrite: 0, cacheRead: 0, output: 0 };
@@ -109,16 +143,23 @@ export async function askAssistant(question: string): Promise<ActionResult<Assis
     }
   };
 
-  // The ceiling, before anything costs.
-  const { data: askedToday } = await scope.supabase.rpc('assistant_questions_today');
+  // The ceiling, before anything costs. A count that cannot be read is not a
+  // zero: the question waits rather than spend without a limit.
+  const { data: askedToday, error: quotaError } = await scope.supabase.rpc(
+    'assistant_questions_today',
+  );
+  if (quotaError) return actionError(new Error('assistant_failed'));
   if (Number(askedToday ?? 0) >= DAILY_QUOTA) {
     await log('refused_quota');
     return actionError(new Error('assistant_quota'));
   }
 
+  let logged = false;
   try {
     for (let step = 0; step < MAX_STEPS; step += 1) {
-      const reply = await callModel({ system: SYSTEM, messages, tools: toolSpecs() });
+      const reply = await callModel(
+        buildOutboundRequest({ system: SYSTEM, messages, tools: toolSpecs() }, known.data, tokens),
+      );
       spent.input += reply.usage.input;
       spent.cacheWrite += reply.usage.cacheWrite;
       spent.cacheRead += reply.usage.cacheRead;
@@ -138,12 +179,14 @@ export async function askAssistant(question: string): Promise<ActionResult<Assis
           .trim();
 
         await log('answered');
-        return actionOk({ text: text || '', tables });
+        logged = true;
+        // The names go back into the answer here, on our side, by exact token.
+        return actionOk({ text: text || '', tables, patients: tokens.mapping });
       }
 
       messages.push({ role: 'assistant', content: reply.content });
 
-      const results: ContentBlock[] = [];
+      const results: OutboundContent[] = [];
       for (const use of toolUses) {
         const query = QUERY_BY_NAME.get(use.name);
         if (!query) {
@@ -175,11 +218,13 @@ export async function askAssistant(question: string): Promise<ActionResult<Assis
           continue;
         }
 
+        // The whole table stays on our side for the screen; the model gets the
+        // allowlisted columns with patients as tokens.
         tables.push({ query: query.name, result });
         results.push({
           type: 'tool_result',
           tool_use_id: use.id,
-          content: JSON.stringify(result),
+          content: JSON.stringify(outboundResult(query.name, result, tokens)),
         });
       }
 
@@ -188,16 +233,20 @@ export async function askAssistant(question: string): Promise<ActionResult<Assis
 
     // Out of steps with no answer. Better to say so than to return the last
     // half-formed thing the model said on its way to a fourth query.
-    await log('error');
     return actionError(new Error('assistant_gave_up'));
   } catch (error) {
-    // The tokens were spent whether or not an answer came back, so they are
-    // recorded either way — a bill that only counts successes is not a bill.
-    await log('error');
+    if (error instanceof OutboundBlockedError) {
+      return actionError(new Error('assistant_name_in_question'));
+    }
     if (error instanceof AssistantUnavailableError) {
       return actionError(new Error('assistant_unavailable'));
     }
     return actionError(error instanceof Error ? error : new Error('assistant_failed'));
+  } finally {
+    // The tokens were spent whether or not an answer came back, so every path
+    // that called the model is recorded — a ceiling that counts only answers
+    // is no ceiling (migration 20260919110000 counts every row).
+    if (!logged && (spent.input > 0 || spent.output > 0)) await log('error');
   }
 }
 

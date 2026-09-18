@@ -1,7 +1,7 @@
 'use server';
 
 import { bodyPointSchema } from '@clinic/domain';
-import { getClinicScope } from '@/lib/session';
+import { getScopeWithAbility } from '@/lib/session';
 import { actionError, actionOk, type ActionResult } from '@/lib/errors';
 
 /**
@@ -13,7 +13,7 @@ import { actionError, actionOk, type ActionResult } from '@/lib/errors';
  * through: a code and six numbers.
  */
 export async function saveBodyPoint(input: unknown): Promise<ActionResult> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('clinicalRecords');
   if (!scope) return actionError(new Error('unauthorized'));
   if (!scope.context.isPlatformAdmin) return actionError(new Error('forbidden'));
 
@@ -38,7 +38,7 @@ export async function saveBodyPoint(input: unknown): Promise<ActionResult> {
 }
 
 export async function deleteBodyPoint(code: unknown): Promise<ActionResult> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('clinicalRecords');
   if (!scope) return actionError(new Error('unauthorized'));
   if (!scope.context.isPlatformAdmin) return actionError(new Error('forbidden'));
   if (typeof code !== 'string' || !/^[A-Za-z]{1,4}\d{1,3}$/.test(code.trim())) {

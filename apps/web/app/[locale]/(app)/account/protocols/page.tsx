@@ -4,7 +4,7 @@ import { PageBody } from '@clinic/ui';
 import { PageHeader } from '@/components/app-shell';
 import { HeaderToolsSlot } from '@/components/header-tools';
 import { SettingsNav } from '@/features/settings/settings-nav';
-import { getClinicScope } from '@/lib/session';
+import { getAbilities, getClinicScope } from '@/lib/session';
 import { ProtocolsManager } from '@/features/encounters/protocols-manager';
 import { pageTitle } from '@/lib/page-title';
 
@@ -17,17 +17,14 @@ export const generateMetadata = pageTitle('protocols', 'title');
  * which one can be brought back, so it is the only screen that needs to see
  * them. The treatment page loads active protocols only.
  */
-export default async function ProtocolsPage({
-  params,
-}: {
-  params: Promise<{ locale: string }>;
-}) {
+export default async function ProtocolsPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   setRequestLocale(locale);
 
   const t = await getTranslations('protocols');
 
   const scope = await getClinicScope();
+  const abilities = await getAbilities();
   if (!scope) return null;
 
   const { data } = await scope.supabase
@@ -45,7 +42,7 @@ export default async function ProtocolsPage({
         title={t('title')}
         description={t('subtitle')}
         actions={<HeaderToolsSlot id="protocols-header-tools" />}
-        below={<SettingsNav />}
+        below={<SettingsNav clinicSettings={abilities.settings} />}
       />
       <PageBody width="narrow">
         <ProtocolsManager protocols={data ?? []} />

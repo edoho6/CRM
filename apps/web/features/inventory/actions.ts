@@ -12,8 +12,9 @@ import {
   stockAdjustmentSchema,
   supplierFormSchema,
   thresholdUpdateSchema,
+  type DispenseRequestData,
 } from '@clinic/domain';
-import { getClinicScope } from '@/lib/session';
+import { getScopeWithAbility, type ClinicScope } from '@/lib/session';
 import { actionError, actionOk, type ActionResult } from '@/lib/errors';
 
 /**
@@ -26,7 +27,7 @@ import { actionError, actionOk, type ActionResult } from '@/lib/errors';
  */
 
 export async function createHerb(input: unknown): Promise<ActionResult<{ id: string }>> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('inventory');
   if (!scope) return actionError(new Error('unauthorized'));
 
   const parsed = herbFormSchema.safeParse(input);
@@ -43,7 +44,7 @@ export async function createHerb(input: unknown): Promise<ActionResult<{ id: str
 }
 
 export async function updateHerb(id: string, input: unknown): Promise<ActionResult> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('inventory');
   if (!scope) return actionError(new Error('unauthorized'));
 
   const parsed = herbFormSchema.safeParse(input);
@@ -55,7 +56,7 @@ export async function updateHerb(id: string, input: unknown): Promise<ActionResu
 }
 
 export async function createSupplier(input: unknown): Promise<ActionResult<{ id: string }>> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('inventory');
   if (!scope) return actionError(new Error('unauthorized'));
 
   const parsed = supplierFormSchema.safeParse(input);
@@ -93,7 +94,7 @@ export async function saveFormula(
   formulaId: string | null,
   input: unknown,
 ): Promise<ActionResult<{ id: string }>> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('inventory');
   if (!scope) return actionError(new Error('unauthorized'));
 
   const parsed = herbFormulaFormSchema.safeParse(input);
@@ -142,7 +143,7 @@ export async function saveFormula(
 }
 
 export async function receiveBatch(input: unknown): Promise<ActionResult<{ id: string }>> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('inventory');
   if (!scope) return actionError(new Error('unauthorized'));
 
   const parsed = receiveBatchSchema.safeParse(input);
@@ -167,7 +168,7 @@ export async function receiveBatch(input: unknown): Promise<ActionResult<{ id: s
 }
 
 export async function adjustStock(input: unknown): Promise<ActionResult> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('inventory');
   if (!scope) return actionError(new Error('unauthorized'));
 
   const parsed = stockAdjustmentSchema.safeParse(input);
@@ -192,7 +193,7 @@ export async function adjustStock(input: unknown): Promise<ActionResult> {
  * herb is short, so the caller never has to unwind a partial deduction.
  */
 export async function dispenseHerbs(input: unknown): Promise<ActionResult<{ id: string }>> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('inventory');
   if (!scope) return actionError(new Error('unauthorized'));
 
   const parsed = dispenseRequestSchema.safeParse(input);
@@ -219,6 +220,10 @@ export async function dispenseHerbs(input: unknown): Promise<ActionResult<{ id: 
     p_idempotency_key: parsed.data.idempotency_key ?? null,
   });
 
+  // A database that has not run migration 20260919090000 has no such
+  // function (PGRST202): the two calls of before, so dispensing keeps working
+  // until the SQL is pasted.
+  if (error?.code === 'PGRST202') return dispenseTheOldWay(scope, parsed.data);
   if (error) return actionError(error);
   return actionOk({ id: data as string });
 }
@@ -232,7 +237,7 @@ export async function dispenseHerbs(input: unknown): Promise<ActionResult<{ id: 
  * move. Without this a stockless clinic could not record a prescription at all.
  */
 export async function recordPrescription(input: unknown): Promise<ActionResult<{ id: string }>> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('inventory');
   if (!scope) return actionError(new Error('unauthorized'));
 
   const parsed = prescriptionRequestSchema.safeParse(input);
@@ -259,7 +264,7 @@ export async function recordPrescription(input: unknown): Promise<ActionResult<{
 
 /** Sets what counts as low stock for one herb, edited straight from the table. */
 export async function setHerbThreshold(herbId: string, input: unknown): Promise<ActionResult> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('inventory');
   if (!scope) return actionError(new Error('unauthorized'));
 
   const parsed = thresholdUpdateSchema.safeParse(input);
@@ -275,7 +280,7 @@ export async function setFormulaThreshold(
   formulaId: string,
   input: unknown,
 ): Promise<ActionResult> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('inventory');
   if (!scope) return actionError(new Error('unauthorized'));
 
   const parsed = formulaThresholdUpdateSchema.safeParse(input);
@@ -300,7 +305,7 @@ export async function setFormulaThreshold(
  * Monday and again on Thursday should not produce two orders.
  */
 export async function addToOrderList(input: unknown): Promise<ActionResult<{ id: string }>> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('inventory');
   if (!scope) return actionError(new Error('unauthorized'));
 
   const parsed = orderListEntrySchema.safeParse(input);
@@ -353,7 +358,7 @@ export async function addToOrderList(input: unknown): Promise<ActionResult<{ id:
 }
 
 export async function updateOrderListEntry(id: string, input: unknown): Promise<ActionResult> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('inventory');
   if (!scope) return actionError(new Error('unauthorized'));
 
   const parsed = orderListEntrySchema.safeParse(input);
@@ -365,7 +370,7 @@ export async function updateOrderListEntry(id: string, input: unknown): Promise<
 }
 
 export async function removeFromOrderList(id: string): Promise<ActionResult> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('inventory');
   if (!scope) return actionError(new Error('unauthorized'));
 
   const { error } = await scope.supabase.from('order_list').delete().eq('id', id);
@@ -380,7 +385,7 @@ export async function removeFromOrderList(id: string): Promise<ActionResult> {
  * a ledger entry, so turning it back on restores exactly what was there.
  */
 export async function saveClinicSettings(input: unknown): Promise<ActionResult> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('settings');
   if (!scope) return actionError(new Error('unauthorized'));
 
   const parsed = clinicSettingsSchema.safeParse(input);
@@ -393,4 +398,32 @@ export async function saveClinicSettings(input: unknown): Promise<ActionResult> 
 
   if (error) return actionError(error);
   return actionOk();
+}
+
+/** Before migration 20260919090000: allocate, then write the details. Kept only as the bridge. */
+async function dispenseTheOldWay(
+  scope: ClinicScope,
+  request: DispenseRequestData,
+): Promise<ActionResult<{ id: string }>> {
+  const { data, error } = await scope.supabase.rpc('dispense_formula', {
+    p_encounter_id: request.encounter_id,
+    p_formula_id: request.formula_id,
+    p_items: request.items,
+    p_multiplier: request.multiplier,
+    p_notes: request.notes,
+  });
+  if (error) return actionError(error);
+  const recordId = data as string;
+  const { error: detailError } = await scope.supabase
+    .from('dispensing_records')
+    .update({
+      preparation: request.preparation ?? null,
+      dose_amount: request.dose_amount,
+      dose_unit: request.dose_unit ?? null,
+      dose_timing: request.dose_timing ?? null,
+      doses_per_day: request.doses_per_day,
+    })
+    .eq('id', recordId);
+  if (detailError) return actionError(detailError);
+  return actionOk({ id: recordId });
 }

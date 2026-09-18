@@ -4,7 +4,7 @@ import { dateKeyIn } from '@clinic/domain';
 import { PageBody } from '@clinic/ui';
 import { PageHeader } from '@/components/app-shell';
 import { SettingsNav } from '@/features/settings/settings-nav';
-import { getClinicScope } from '@/lib/session';
+import { getAbilities, getClinicScope } from '@/lib/session';
 import { ScheduleForm } from '@/features/settings/schedule-form';
 import { CalendarFeedCard } from '@/features/settings/calendar-feed-card';
 import type { CalendarFeed } from '@clinic/db/types';
@@ -23,17 +23,14 @@ export const generateMetadata = pageTitle('schedule', 'title');
  * list that accumulates them makes the one that matters — next week's — harder
  * to find.
  */
-export default async function SchedulePage({
-  params,
-}: {
-  params: Promise<{ locale: string }>;
-}) {
+export default async function SchedulePage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   setRequestLocale(locale);
 
   const t = await getTranslations('schedule');
 
   const scope = await getClinicScope();
+  const abilities = await getAbilities();
   if (!scope) return null;
 
   const practitionerId = scope.context.membership.user_id;
@@ -67,7 +64,11 @@ export default async function SchedulePage({
 
   return (
     <>
-      <PageHeader title={t('title')} description={t('subtitle')} below={<SettingsNav />} />
+      <PageHeader
+        title={t('title')}
+        description={t('subtitle')}
+        below={<SettingsNav clinicSettings={abilities.settings} />}
+      />
       <PageBody width="narrow">
         <ScheduleForm
           schedules={schedulesResult.data ?? []}

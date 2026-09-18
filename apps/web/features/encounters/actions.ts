@@ -1,7 +1,7 @@
 'use server';
 
-import { tcmNoteSchema } from '@clinic/domain';
-import { getClinicScope } from '@/lib/session';
+import { tcmNoteSchema, dayBoundsIn } from '@clinic/domain';
+import { getScopeWithAbility } from '@/lib/session';
 import { actionError, actionOk, type ActionResult } from '@/lib/errors';
 import type { Encounter } from '@clinic/db/types';
 
@@ -17,7 +17,7 @@ export async function startEncounter(
   patientId: string,
   appointmentId?: string | null,
 ): Promise<ActionResult<{ id: string }>> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('clinicalRecords');
   if (!scope) return actionError(new Error('unauthorized'));
 
   // Re-open the existing draft rather than creating a second record for the same
@@ -49,10 +49,13 @@ export async function startEncounter(
   let resolvedAppointmentId = appointmentId ?? null;
 
   if (!resolvedAppointmentId) {
-    const startOfDay = new Date();
-    startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(startOfDay);
-    endOfDay.setDate(endOfDay.getDate() + 1);
+    // Today in the clinic's zone. The server runs in UTC, and its "today"
+    // began at 02:00 or 03:00 Israel time, so an appointment at 01:30 — or any
+    // treatment started before three in the morning — looked for yesterday's.
+    const { start: startOfDay, end: endOfDay } = dayBoundsIn(
+      new Date(),
+      scope.context.clinic.timezone,
+    );
 
     const { data: candidates } = await scope.supabase
       .from('appointments')
@@ -113,20 +116,34 @@ export async function saveEncounterNote(
   encounterId: string,
   input: unknown,
 ): Promise<ActionResult> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('clinicalRecords');
   if (!scope) return actionError(new Error('unauthorized'));
 
   const parsed = tcmNoteSchema.safeParse(input);
   if (!parsed.success) return actionError(new Error('validation'));
 
-  const { error } = await scope.supabase
+  const { data, error } = await scope.supabase
     .from('tcm_notes')
     .update(parsed.data)
-    .eq('encounter_id', encounterId);
+    .eq('encounter_id', encounterId)
+    .select('id');
 
   // The database refuses edits to a signed record; surface that as a translated
   // message rather than a generic failure.
   if (error) return actionError(error);
+
+  // Nothing was updated: the record has no note row (a start that lost its
+  // second insert), or the row is not this person's to write. The autosave
+  // used to say "saved" either way while nothing was kept. The row is made
+  // now, with what was typed; if that is refused too, the screen says so.
+  if (!data || data.length === 0) {
+    const { error: insertError } = await scope.supabase.from('tcm_notes').insert({
+      ...parsed.data,
+      clinic_id: scope.context.clinic.id,
+      encounter_id: encounterId,
+    });
+    if (insertError) return actionError(insertError);
+  }
   return actionOk();
 }
 
@@ -138,7 +155,7 @@ export async function saveEncounterNote(
  * no signature attached.
  */
 export async function signEncounter(encounterId: string): Promise<ActionResult> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('clinicalRecords');
   if (!scope) return actionError(new Error('unauthorized'));
 
   const { error } = await scope.supabase.rpc('sign_encounter', {
@@ -157,7 +174,7 @@ export async function signEncounter(encounterId: string): Promise<ActionResult> 
  * after that, and the record has to be signed again.
  */
 export async function reopenEncounter(encounterId: string, reason: string): Promise<ActionResult> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('clinicalRecords');
   if (!scope) return actionError(new Error('unauthorized'));
   const trimmed = reason.trim();
   if (!trimmed || trimmed.length > 500) return actionError(new Error('validation'));
@@ -175,10 +192,12 @@ export async function updateEncounterDate(
   encounterId: string,
   encounterDate: string,
 ): Promise<ActionResult> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('clinicalRecords');
   if (!scope) return actionError(new Error('unauthorized'));
 
-  const { error } = await scope.supabase
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(encounterDate)) return actionError(new Error('validation'));
+
+  const { data, error } = await scope.supabase
     .from('encounters')
     .update({ encounter_date: encounterDate })
     .eq('id', encounterId)
@@ -186,5 +205,8 @@ export async function updateEncounterDate(
     .maybeSingle<Pick<Encounter, 'id'>>();
 
   if (error) return actionError(error);
+  // No row came back: the date was not changed, whatever the reason. Saying
+  // "saved" here was the silent kind of failure.
+  if (!data) return actionError(new Error('not_found'));
   return actionOk();
 }

@@ -6,7 +6,7 @@ import {
   validateAnswers,
   type FormField,
 } from '@clinic/domain';
-import { getClinicScope } from '@/lib/session';
+import { getScopeWithAbility } from '@/lib/session';
 import { libraryEntry } from './library';
 import { actionError, actionOk, type ActionResult } from '@/lib/errors';
 
@@ -29,7 +29,7 @@ export async function saveFormTemplate(
   id: string | null,
   input: unknown,
 ): Promise<ActionResult<{ id: string }>> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('clinicalRecords');
   if (!scope) return actionError(new Error('unauthorized'));
 
   const parsed = formTemplateSchema.safeParse(input);
@@ -38,20 +38,25 @@ export async function saveFormTemplate(
   const { fields, ...template } = parsed.data;
 
   if (id) {
-    const { data: existing } = await scope.supabase
+    const { data: existing, error: readError } = await scope.supabase
       .from('form_templates')
       .select('fields, version')
       .eq('id', id)
       .maybeSingle<{ fields: FormField[]; version: number }>();
 
-    const questionsChanged = JSON.stringify(existing?.fields ?? []) !== JSON.stringify(fields);
+    // Without the saved version there is no telling what the answers already
+    // given were answers to; a failed read used to restart the count at 2.
+    if (readError) return actionError(readError);
+    if (!existing) return actionError(new Error('not_found'));
+
+    const questionsChanged = JSON.stringify(existing.fields ?? []) !== JSON.stringify(fields);
 
     const { error } = await scope.supabase
       .from('form_templates')
       .update({
         ...template,
         fields,
-        version: (existing?.version ?? 1) + (questionsChanged ? 1 : 0),
+        version: existing.version + (questionsChanged ? 1 : 0),
       })
       .eq('id', id);
 
@@ -75,7 +80,7 @@ export async function saveFormTemplate(
 }
 
 export async function deleteFormTemplate(id: string): Promise<ActionResult> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('clinicalRecords');
   if (!scope) return actionError(new Error('unauthorized'));
 
   const { count } = await scope.supabase
@@ -109,7 +114,7 @@ export async function deleteFormTemplate(id: string): Promise<ActionResult> {
  * to a mutable template cannot promise that.
  */
 export async function submitForm(input: unknown): Promise<ActionResult<{ id: string }>> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('clinicalRecords');
   if (!scope) return actionError(new Error('unauthorized'));
 
   const parsed = formSubmissionSchema.safeParse(input);

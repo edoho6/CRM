@@ -1,7 +1,7 @@
 'use server';
 
 import { z } from 'zod';
-import { getClinicScope } from '@/lib/session';
+import { getScopeWithAbility } from '@/lib/session';
 import { actionError, actionOk, type ActionResult } from '@/lib/errors';
 import { CHAT_TITLE_MAX, type ChatMessage, type ChatSummary } from './chat-types';
 
@@ -41,7 +41,7 @@ const toSummary = (row: ChatRow): ChatSummary => ({ id: row.id, title: row.title
 
 /** Pinned first, then the most recently active; two hundred is more than a list can show. */
 export async function listChats(): Promise<ActionResult<ChatSummary[]>> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('library');
   if (!scope) return actionError(new Error('unauthorized'));
   const { data, error } = await scope.supabase
     .from('library_chats')
@@ -55,7 +55,7 @@ export async function listChats(): Promise<ActionResult<ChatSummary[]>> {
 }
 
 export async function loadChatMessages(chatId: string): Promise<ActionResult<ChatMessage[]>> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('library');
   if (!scope) return actionError(new Error('unauthorized'));
   const id = Id.safeParse(chatId);
   if (!id.success) return actionError(new Error('validation'));
@@ -71,7 +71,7 @@ export async function loadChatMessages(chatId: string): Promise<ActionResult<Cha
 }
 
 export async function renameChat(chatId: string, title: string): Promise<ActionResult> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('library');
   if (!scope) return actionError(new Error('unauthorized'));
   const id = Id.safeParse(chatId);
   const name = Title.safeParse(title);
@@ -83,7 +83,7 @@ export async function renameChat(chatId: string, title: string): Promise<ActionR
 }
 
 export async function setChatPinned(chatId: string, pinned: boolean): Promise<ActionResult> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('library');
   if (!scope) return actionError(new Error('unauthorized'));
   const id = Id.safeParse(chatId);
   if (!id.success) return actionError(new Error('validation'));
@@ -95,7 +95,7 @@ export async function setChatPinned(chatId: string, pinned: boolean): Promise<Ac
 
 /** The conversation and every message in it; the activity log keeps its line, which never held the text. */
 export async function deleteChat(chatId: string): Promise<ActionResult> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('library');
   if (!scope) return actionError(new Error('unauthorized'));
   const id = Id.safeParse(chatId);
   if (!id.success) return actionError(new Error('validation'));

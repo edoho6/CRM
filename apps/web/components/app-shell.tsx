@@ -447,7 +447,9 @@ export function AppShell({
   const nav = navList(false);
 
   return (
-    <div className="flex min-h-dvh">
+    // The clinic in force, for the smoke run's write lock (scripts/smoke.mjs):
+    // it writes only when this matches the clinic it was told to test.
+    <div className="flex min-h-dvh" data-clinic-id={clinicId}>
       {/* The first thing a keyboard reaches on every page. It is visually
           hidden until focused, which is the whole point: a sighted mouse user
           never sees it, and someone tabbing does not have to walk the entire
@@ -582,22 +584,26 @@ export function AppShell({
             </Button>
           ) : null}
 
-          <Button
-            asChild
-            variant="ghost"
-            size="sm"
-            data-sidebar-row
-            className={cn('w-full', collapsed ? 'justify-center px-0' : 'justify-start')}
-          >
-            <Link href="/settings" title={collapsed ? t('settings') : undefined}>
-              <Settings className="h-4 w-4" />
-              {!collapsed ? (
-                <span data-sidebar-expanded-only>{t('settings')}</span>
-              ) : (
-                <span className="sr-only">{t('settings')}</span>
-              )}
-            </Link>
-          </Button>
+          {/* The clinic's settings are the owner's (18.9); the section itself
+              answers "not found" to anyone else, so the link is not drawn. */}
+          {abilities.settings ? (
+            <Button
+              asChild
+              variant="ghost"
+              size="sm"
+              data-sidebar-row
+              className={cn('w-full', collapsed ? 'justify-center px-0' : 'justify-start')}
+            >
+              <Link href="/settings" title={collapsed ? t('settings') : undefined}>
+                <Settings className="h-4 w-4" />
+                {!collapsed ? (
+                  <span data-sidebar-expanded-only>{t('settings')}</span>
+                ) : (
+                  <span className="sr-only">{t('settings')}</span>
+                )}
+              </Link>
+            </Button>
+          ) : null}
 
           {/* The personal area beside the clinic's settings. It used to live
               only behind your own name, and nobody found it there. */}
@@ -776,7 +782,9 @@ export function AppShell({
             >
               {[
                 { href: '/account' as const, label: t('account'), icon: UserCog },
-                { href: '/settings' as const, label: t('settings'), icon: Settings },
+                ...(abilities.settings
+                  ? [{ href: '/settings' as const, label: t('settings'), icon: Settings }]
+                  : []),
                 { href: '/accessibility' as const, label: t('accessibility'), icon: Accessibility },
               ].map((item) => (
                 <Link

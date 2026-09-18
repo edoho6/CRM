@@ -5,7 +5,7 @@
 --  Everything is rolled back at the end; your real data is never touched.
 --
 --  The promises being tested:
---    1. the log counts only this person's answered questions, in this clinic
+--    1. the log counts this person's questions that spent (answered or failed), in this clinic
 --    2. a member of another clinic cannot read the rows
 --    3. the table is not writable from outside the function
 --    4. an anonymous caller reaches neither function
@@ -46,6 +46,17 @@ begin
     raise exception 'FAIL 1: two answered questions counted as %', public.assistant_questions_today();
   end if;
   raise notice 'PASS 1: answered questions count, refusals do not';
+
+  -- A question that reached the model and then failed cost as much as an
+  -- answer, and counts like one (migration 20260919110000, server_fixes).
+  perform public.assistant_log_query('error', 'claude-sonnet-5', 120, 0, 2400, 80, 900);
+  if public.assistant_questions_today() <> 3 then
+    raise exception 'FAIL 1b: a failed question that spent was not counted (% counted)', public.assistant_questions_today();
+  end if;
+  perform set_config('role', 'postgres', true);
+  delete from public.assistant_queries where status = 'error' and user_id = v_asker;
+  perform set_config('role', 'authenticated', true);
+  raise notice 'PASS 1b: a failed question that spent counts too';
 
   select * into v_row from public.assistant_queries where cache_write_tokens = 2400 limit 1;
   if v_row.cache_read_tokens is distinct from 2400 or v_row.input_tokens is distinct from 120 then

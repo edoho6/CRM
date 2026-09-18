@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { getClinicScope } from '@/lib/session';
+import { getScopeWithAbility } from '@/lib/session';
 import { actionError, actionOk, type ActionResult } from '@/lib/errors';
 
 /** verified and flagged are verdicts; clear takes the entry back to what its sources said. */
@@ -17,7 +17,7 @@ const MAX_NOTE = 2000;
  * the list, and the platform's card.
  */
 export async function setMedicineStatus(id: string, verdict: MedicineVerdict, note: string): Promise<ActionResult> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('clinicalRecords');
   if (!scope) return actionError(new Error('unauthorized'));
   if (!scope.context.isPlatformAdmin) return actionError(new Error('forbidden'));
   const clean = String(note ?? '').trim().slice(0, MAX_NOTE);

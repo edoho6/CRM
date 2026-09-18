@@ -1,6 +1,6 @@
 'use server';
 
-import { treatmentConfirmationSchema } from '@clinic/domain';
+import { treatmentConfirmationSchema, dateKeyIn } from '@clinic/domain';
 import type { Patient, Profile } from '@clinic/db/types';
 import { getClinicScope } from '@/lib/session';
 import { actionError, actionOk, type ActionResult } from '@/lib/errors';
@@ -37,13 +37,44 @@ export async function issueTreatmentConfirmation(
       .from('profiles')
       .select('id, full_name, title, license_number, national_id')
       .eq('id', scope.context.membership.user_id)
-      .maybeSingle<Pick<Profile, 'id' | 'full_name' | 'title' | 'license_number' | 'national_id'>>(),
+      .maybeSingle<
+        Pick<Profile, 'id' | 'full_name' | 'title' | 'license_number' | 'national_id'>
+      >(),
   ]);
 
   const patient = patientResult.data;
   const profile = profileResult.data;
 
   if (!patient) return actionError(new Error('patient_not_found'));
+
+  // A confirmation for a health fund states that treatments took place on these
+  // dates. Each one must be a day the file shows a visit — a kept appointment
+  // or a written treatment — or the document says something the record does not.
+  const timeZone = scope.context.clinic.timezone;
+  const [visits, records] = await Promise.all([
+    scope.supabase
+      .from('appointments')
+      .select('start_at, status')
+      .eq('patient_id', patient.id)
+      .in('status', ['scheduled', 'confirmed', 'checked_in', 'completed'])
+      .lte('start_at', new Date().toISOString())
+      .returns<{ start_at: string; status: string }[]>(),
+    scope.supabase
+      .from('encounters')
+      .select('encounter_date')
+      .eq('patient_id', patient.id)
+      .returns<{ encounter_date: string }[]>(),
+  ]);
+  if (visits.error) return actionError(visits.error);
+  const days = new Set<string>([
+    ...(visits.data ?? []).map((row) => dateKeyIn(new Date(row.start_at), timeZone)),
+    // A secretary reads no treatment records; for her this is simply empty.
+    ...(records.data ?? []).map((row) => row.encounter_date.slice(0, 10)),
+  ]);
+  const unverified = parsed.data.treatment_dates.filter(
+    (date) => !days.has(String(date).slice(0, 10)),
+  );
+  if (unverified.length > 0) return actionError(new Error('treatment_dates_unverified'));
 
   // A confirmation with no practitioner name is not a confirmation of anything.
   // Refused here rather than printed blank, with a message that says where to

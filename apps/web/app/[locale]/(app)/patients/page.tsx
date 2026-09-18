@@ -20,7 +20,9 @@ import type { PatientWithDiary } from '@clinic/db/types';
 import { PageHeader } from '@/components/app-shell';
 import { SegmentedLinks } from '@/components/segmented-links';
 import { PAGE_SIZE, Pagination, pageFrom, pageRange } from '@/components/pagination';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { getClinicScope } from '@/lib/session';
+import { fetchAllRows } from '@/lib/fetch-all';
 import { ageFromDateOfBirth } from '@/lib/display';
 import { PatientSearch } from '@/features/patients/patient-search';
 import { PatientStatusCell } from '@/features/patients/status-cell';
@@ -128,18 +130,14 @@ export default async function PatientsPage({
   /*
    * The counts are of the whole practice, not of the rows on screen.
    *
-   * One query returning just the status column, counted here. Aggregating in the
-   * database would be tidier, but PostgREST has no GROUP BY and adding an RPC
-   * for a tally of a few thousand short strings is more machinery than the
-   * problem deserves — and a count over the loaded page would be wrong in a way
-   * nobody would notice until they filtered.
+   * Counted by the database (`patient_status_counts`, migration 20260919090000):
+   * the list used to fetch every patient's status and count them here, which
+   * stopped silently at the service's 1,000-row cap — the header said 1,000
+   * patients in a practice of 1,400. A database that has not run that SQL yet
+   * is counted the old way (`loadStatusCounts`).
    */
-  const [{ data: statusRows }, { count: noUpcomingCount }, { data: tagLinks }] = await Promise.all([
-    scope.supabase
-      .from('patients')
-      .select('treatment_status')
-      .limit(20_000)
-      .returns<{ treatment_status: TreatmentStatus | null }[]>(),
+  const [statusCounts, { count: noUpcomingCount }, { data: tagLinks }] = await Promise.all([
+    loadStatusCounts(scope.supabase),
     scope.supabase
       .from('patients_with_diary')
       .select('id', { count: 'exact', head: true })
@@ -171,12 +169,12 @@ export default async function PatientsPage({
     number
   >;
 
-  for (const row of statusRows ?? []) {
-    const value = row.treatment_status ?? 'active';
-    if (value in byStatus) byStatus[value] += 1;
+  for (const row of statusCounts) {
+    const value = (row.treatment_status ?? 'active') as TreatmentStatus;
+    if (value in byStatus) byStatus[value] += row.patients;
   }
 
-  const total = statusRows?.length ?? 0;
+  const total = statusCounts.reduce((sum, row) => sum + row.patients, 0);
   // Only "in treatment" counts as active — finishing a course, successfully or
   // not, is not being in treatment.
   const activeCount = byStatus.active;
@@ -401,10 +399,7 @@ export default async function PatientsPage({
                         </span>
                       ) : (
                         <span
-                          className={cn(
-                            'text-ink-500',
-                            patient.is_active && 'text-amber-800',
-                          )}
+                          className={cn('text-ink-500', patient.is_active && 'text-amber-800')}
                           title={patient.is_active ? t('noUpcomingHint') : undefined}
                         >
                           —
@@ -433,7 +428,11 @@ export default async function PatientsPage({
                       />
                     </Td>
                     <Td className="text-end">
-                      <PatientRowActions patientId={patient.id} name={patient.full_name} phone={patient.phone} />
+                      <PatientRowActions
+                        patientId={patient.id}
+                        name={patient.full_name}
+                        phone={patient.phone}
+                      />
                     </Td>
                   </Tr>
                 );
@@ -451,4 +450,37 @@ export default async function PatientsPage({
       />
     </>
   );
+}
+
+interface StatusCountRow {
+  treatment_status: string | null;
+  patients: number;
+}
+
+/**
+ * Patients per treatment status, counted by the database. Before migration
+ * 20260919090000 there is no such function, and the statuses are read a page
+ * at a time and counted here — slower, but never capped.
+ */
+async function loadStatusCounts(supabase: SupabaseClient): Promise<StatusCountRow[]> {
+  const { data, error } = await supabase.rpc('patient_status_counts');
+  if (!error && Array.isArray(data)) {
+    return (data as StatusCountRow[]).map((row) => ({ ...row, patients: Number(row.patients) }));
+  }
+  const rows = await fetchAllRows<{ treatment_status: string | null }>((lo, hi) =>
+    supabase
+      .from('patients')
+      .select('treatment_status')
+      .order('id', { ascending: true })
+      .range(lo, hi),
+  );
+  const counts = new Map<string, number>();
+  for (const row of rows.data) {
+    const key = row.treatment_status ?? 'active';
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  return [...counts.entries()].map(([treatment_status, patients]) => ({
+    treatment_status,
+    patients,
+  }));
 }

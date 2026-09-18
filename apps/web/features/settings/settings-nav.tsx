@@ -25,9 +25,16 @@ const SECTIONS = [
   { href: '/billing/settings', labelKey: 'billing', exact: false },
 ] as const;
 
-export function SettingsNav() {
+/**
+ * `clinicSettings` is false for anyone but the owner (18.9): the clinic's
+ * settings answer "not found" to them, so the strip is not drawn and the
+ * personal area stands alone.
+ */
+export function SettingsNav({ clinicSettings = true }: { clinicSettings?: boolean } = {}) {
   const t = useTranslations('settings.nav');
   const pathname = usePathname();
+
+  if (!clinicSettings) return null;
 
   return (
     <SegmentedLinks

@@ -1373,6 +1373,12 @@
     }
   },
   "billing": {
+    "lines": {
+      "treatment": "Treatment",
+      "herbs": "Herbs",
+      "herbsNamed": "Herbs — {name}",
+      "description": "{clinic} — invoice {number}"
+    },
     "openInvoices": "{count, plural, =0 {No open invoices} one {One open invoice} other {# open invoices}}",
     "keepInvoice": "Keep the invoice",
     "removeLineConfirm": "The invoice total updates accordingly.",
@@ -2345,6 +2351,7 @@
       "accessories": "Accessories"
     }
   },
+    "amount_exceeds_outstanding": "That is more than the invoice still owes. Check the amount typed.",
   "errors": {
     "slugTaken": "That address is already taken.",
     "notFound": "Page not found",
@@ -3472,6 +3479,7 @@
     "gaveUp": "I could not answer that from the data I can reach. Try putting it another way.",
     "quota": "You have reached today's number of questions. You can carry on tomorrow.",
     "tooLong": "That question is too long. One sentence is enough.",
+    "nameInQuestion": "The question has a name in it that could not be matched to one patient, so it was not sent. Ask without the name — for example \"who has not been in for three months\" — and the names will appear in the answer.",
     "examples": {
       "busy": "When am I busiest?",
       "inactive": "Who has not been in for three months?",
@@ -3556,6 +3564,7 @@
     "datesCount": "{count, plural, one {1 treatment} other {# treatments}}",
     "print": "Print",
     "missingPractitioner": "Fill in your name in the personal area before issuing a confirmation.",
+    "datesUnverified": "One of the dates is not a treatment day in the file — neither a kept appointment nor a treatment record. Check the dates and try again.",
     "goToProfile": "Go to the personal area",
     "document": {
       "heading": "Confirmation of treatment",

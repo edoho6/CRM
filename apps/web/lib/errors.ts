@@ -16,6 +16,23 @@ export interface AppError {
   values?: Record<string, string | number>;
 }
 
+/** Action codes that reach the screen by name: `errors.<code>`. */
+export const PASS_THROUGH_CODES = [
+  'assistant_not_configured',
+  'assistant_unavailable',
+  'assistant_gave_up',
+  'assistant_quota',
+  'assistant_name_in_question',
+  'question_too_long',
+  'amount_exceeds_outstanding',
+  'patient_phone_required',
+  'grow_not_configured',
+  'practitioner_details_missing',
+  'treatment_dates_unverified',
+  'package_exhausted',
+  'already_redeemed',
+] as const;
+
 interface InsufficientStockDetail {
   herb?: string;
   herb_id?: string;
@@ -118,13 +135,19 @@ export function mapDatabaseError(error: PostgrestError | Error | null | undefine
     return { key: 'errors.forbidden' };
   }
 
+  // Codes an action raises itself, carried through as they are so the screen
+  // that knows them can say something specific. They all fell through to
+  // "server error" before, so the assistant's own messages ("today's questions
+  // are used up") were never shown.
+  if ((PASS_THROUGH_CODES as readonly string[]).includes(message)) {
+    return { key: `errors.${message}` };
+  }
+
   return { key: 'errors.serverError' };
 }
 
 /** Shape returned by every Server Action, so forms handle success and failure alike. */
-export type ActionResult<T = void> =
-  | { ok: true; data: T }
-  | { ok: false; error: AppError };
+export type ActionResult<T = void> = { ok: true; data: T } | { ok: false; error: AppError };
 
 export function actionError(error: PostgrestError | Error | null | undefined): ActionResult<never> {
   return { ok: false, error: mapDatabaseError(error) };

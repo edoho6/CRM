@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { getClinicScope } from '@/lib/session';
+import { getScopeWithAbility } from '@/lib/session';
 import { actionError, actionOk, type ActionResult } from '@/lib/errors';
 
 /** What the load reports back: rows added now, and totals after it. */
@@ -41,7 +41,7 @@ export interface CatalogueRefreshResult {
 export async function refreshReferenceCatalogueText(): Promise<
   ActionResult<CatalogueRefreshResult>
 > {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('clinicalRecords');
   if (!scope) return actionError(new Error('unauthorized'));
 
   const { data, error } = await scope.supabase.rpc('clinic_refresh_catalogue_text');
@@ -55,7 +55,7 @@ export async function refreshReferenceCatalogueText(): Promise<
 }
 
 export async function loadReferenceCatalogue(): Promise<ActionResult<CatalogueLoadResult>> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('clinicalRecords');
   if (!scope) return actionError(new Error('unauthorized'));
 
   const { data, error } = await scope.supabase.rpc('clinic_load_catalogue');

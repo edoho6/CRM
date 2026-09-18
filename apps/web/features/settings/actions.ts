@@ -23,7 +23,7 @@ import {
   HOME_PATHS,
 } from '@clinic/domain';
 import { isPaymentProviderId } from '@/features/billing/providers';
-import { getClinicScope } from '@/lib/session';
+import { getClinicScope, getScopeWithAbility } from '@/lib/session';
 import { actionError, actionOk, type ActionResult } from '@/lib/errors';
 
 /**
@@ -119,7 +119,7 @@ export async function savePaymentProvider(input: {
   credentials: Record<string, string>;
   isActive: boolean;
 }): Promise<ActionResult> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('settings');
   if (!scope) return actionError(new Error('unauthorized'));
 
   if (!isPaymentProviderId(input.provider)) return actionError(new Error('unknown_provider'));
@@ -450,7 +450,7 @@ export async function savePatientTag(
   id: string | null,
   input: unknown,
 ): Promise<ActionResult<{ id: string }>> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('settings');
   if (!scope) return actionError(new Error('unauthorized'));
 
   const parsed = patientTagSchema.safeParse(input);
@@ -477,7 +477,7 @@ export async function savePatientTag(
  * cascades — so the confirmation in the UI says how many that is.
  */
 export async function deletePatientTag(id: string): Promise<ActionResult> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('settings');
   if (!scope) return actionError(new Error('unauthorized'));
 
   const { error } = await scope.supabase.from('patient_tags').delete().eq('id', id);
@@ -490,7 +490,7 @@ export async function deletePatientTag(id: string): Promise<ActionResult> {
  * ------------------------------------------------------------------------ */
 
 export async function saveReminderSettings(input: unknown): Promise<ActionResult> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('settings');
   if (!scope) return actionError(new Error('unauthorized'));
 
   const parsed = reminderSettingsSchema.safeParse(input);
@@ -533,7 +533,7 @@ export async function saveReminderSettings(input: unknown): Promise<ActionResult
  * switch a message on for someone else's patients.
  */
 export async function saveAutomation(kind: string, input: unknown): Promise<ActionResult> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('settings');
   if (!scope) return actionError(new Error('unauthorized'));
 
   if (!(AUTOMATION_KINDS as readonly string[]).includes(kind))
@@ -557,7 +557,7 @@ export async function saveAutomation(kind: string, input: unknown): Promise<Acti
  * automations' under its own kind, read by the composer and the sender.
  */
 export async function saveWhatsappLine(input: unknown): Promise<ActionResult> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('settings');
   if (!scope) return actionError(new Error('unauthorized'));
 
   const parsed = whatsappLineSchema.safeParse(input);
@@ -584,7 +584,7 @@ export async function saveWhatsappLine(input: unknown): Promise<ActionResult> {
 }
 
 export async function saveGoogleReviewUrl(input: unknown): Promise<ActionResult> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('settings');
   if (!scope) return actionError(new Error('unauthorized'));
 
   const parsed = googleReviewUrlSchema.safeParse(input);
@@ -608,7 +608,7 @@ const TEST_CHANNELS = ['sms', 'whatsapp', 'email'] as const;
  * marked as a sandbox — it is how you find out the service is connected.
  */
 export async function sendTestMessage(channel: unknown): Promise<ActionResult> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('settings');
   if (!scope) return actionError(new Error('unauthorized'));
   if (!(TEST_CHANNELS as readonly unknown[]).includes(channel))
     return actionError(new Error('validation'));
@@ -805,7 +805,7 @@ export async function deleteLocation(id: string): Promise<ActionResult> {
  * ------------------------------------------------------------------------ */
 
 export async function saveBookingSettings(input: unknown): Promise<ActionResult> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('settings');
   if (!scope) return actionError(new Error('unauthorized'));
 
   const parsed = bookingSettingsSchema.safeParse(input);
@@ -837,7 +837,7 @@ export async function saveBookingSettings(input: unknown): Promise<ActionResult>
  * the schema keeps the column to the two values the database will accept.
  */
 export async function savePatientVisibility(input: unknown): Promise<ActionResult> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('settings');
   if (!scope) return actionError(new Error('unauthorized'));
 
   const parsed = patientVisibilitySchema.safeParse(input);
@@ -852,7 +852,7 @@ export async function savePatientVisibility(input: unknown): Promise<ActionResul
 }
 
 export async function savePatientChangesSettings(input: unknown): Promise<ActionResult> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('settings');
   if (!scope) return actionError(new Error('unauthorized'));
 
   const parsed = patientChangesSchema.safeParse(input);

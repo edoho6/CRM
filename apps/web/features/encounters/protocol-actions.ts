@@ -2,7 +2,7 @@
 
 import { treatmentProtocolSchema } from '@clinic/domain';
 import type { DispensingRecord, Herb, TcmNote } from '@clinic/db/types';
-import { getClinicScope } from '@/lib/session';
+import { getScopeWithAbility } from '@/lib/session';
 import { actionError, actionOk, type ActionResult } from '@/lib/errors';
 
 /** Just enough of a dispensing record to rebuild a protocol's prescription. */
@@ -53,7 +53,7 @@ export async function saveProtocolFromEncounter(
   name: string,
   description: string,
 ): Promise<ActionResult<{ id: string }>> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('clinicalRecords');
   if (!scope) return actionError(new Error('unauthorized'));
 
   if (!name.trim()) return actionError(new Error('validation'));
@@ -125,7 +125,7 @@ export async function saveProtocolFromEncounter(
 }
 
 export async function createProtocol(input: unknown): Promise<ActionResult<{ id: string }>> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('clinicalRecords');
   if (!scope) return actionError(new Error('unauthorized'));
 
   const parsed = treatmentProtocolSchema.safeParse(input);
@@ -146,7 +146,7 @@ export async function createProtocol(input: unknown): Promise<ActionResult<{ id:
 }
 
 export async function updateProtocol(id: string, input: unknown): Promise<ActionResult> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('clinicalRecords');
   if (!scope) return actionError(new Error('unauthorized'));
 
   const parsed = treatmentProtocolSchema.safeParse(input);
@@ -169,7 +169,7 @@ export async function updateProtocol(id: string, input: unknown): Promise<Action
  * "delete" is a heavier promise than the situation usually needs.
  */
 export async function setProtocolActive(id: string, isActive: boolean): Promise<ActionResult> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('clinicalRecords');
   if (!scope) return actionError(new Error('unauthorized'));
 
   const { error } = await scope.supabase
@@ -182,7 +182,7 @@ export async function setProtocolActive(id: string, isActive: boolean): Promise<
 }
 
 export async function deleteProtocol(id: string): Promise<ActionResult> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('clinicalRecords');
   if (!scope) return actionError(new Error('unauthorized'));
 
   // Nothing references a protocol — a treatment started from one carries a copy,

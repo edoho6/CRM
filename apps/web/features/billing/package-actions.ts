@@ -1,7 +1,7 @@
 'use server';
 
 import { packageRedemptionSchema, patientPackageSchema } from '@clinic/domain';
-import { getClinicScope } from '@/lib/session';
+import { getScopeWithAbility } from '@/lib/session';
 import { actionError, actionOk, type ActionResult } from '@/lib/errors';
 
 /**
@@ -14,7 +14,7 @@ import { actionError, actionOk, type ActionResult } from '@/lib/errors';
  */
 
 export async function createPackage(input: unknown): Promise<ActionResult<{ id: string }>> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('money');
   if (!scope) return actionError(new Error('unauthorized'));
 
   const parsed = patientPackageSchema.safeParse(input);
@@ -35,7 +35,7 @@ export async function createPackage(input: unknown): Promise<ActionResult<{ id: 
 }
 
 export async function updatePackage(id: string, input: unknown): Promise<ActionResult> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('money');
   if (!scope) return actionError(new Error('unauthorized'));
 
   const parsed = patientPackageSchema.safeParse(input);
@@ -58,7 +58,7 @@ export async function updatePackage(id: string, input: unknown): Promise<ActionR
  * is an ordinary thing that happens on the tenth visit of a ten-visit card.
  */
 export async function redeemSession(input: unknown): Promise<ActionResult> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('money');
   if (!scope) return actionError(new Error('unauthorized'));
 
   const parsed = packageRedemptionSchema.safeParse(input);
@@ -90,7 +90,7 @@ export async function redeemSession(input: unknown): Promise<ActionResult> {
  * wrong card has to be returnable — the audit log keeps the trace either way.
  */
 export async function undoRedemption(id: string): Promise<ActionResult> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('money');
   if (!scope) return actionError(new Error('unauthorized'));
 
   const { error } = await scope.supabase.from('package_redemptions').delete().eq('id', id);
@@ -99,7 +99,7 @@ export async function undoRedemption(id: string): Promise<ActionResult> {
 }
 
 export async function deletePackage(id: string): Promise<ActionResult> {
-  const scope = await getClinicScope();
+  const scope = await getScopeWithAbility('money');
   if (!scope) return actionError(new Error('unauthorized'));
 
   const { error } = await scope.supabase.from('patient_packages').delete().eq('id', id);

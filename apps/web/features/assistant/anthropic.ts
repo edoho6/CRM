@@ -10,6 +10,8 @@
  * than failing at the moment someone asks a question.
  */
 
+import type { OutboundRequest } from './outbound';
+
 export const ANTHROPIC_KEY_VAR = 'ANTHROPIC_API_KEY';
 
 /**
@@ -68,17 +70,16 @@ export class AssistantUnavailableError extends Error {
   }
 }
 
-export async function callModel({
-  system,
-  messages,
-  tools,
-  signal,
-}: {
-  system: string;
-  messages: Message[];
-  tools: ToolSpec[];
-  signal?: AbortSignal;
-}): Promise<ModelReply> {
+/**
+ * The only call to the API. It takes an `OutboundRequest` — a type only
+ * `outbound.ts` can build — so nothing reaches Anthropic without passing the
+ * allowlist and the name check there.
+ */
+export async function callModel(
+  request: OutboundRequest,
+  signal?: AbortSignal,
+): Promise<ModelReply> {
+  const { system, messages, tools } = request;
   const key = process.env.ANTHROPIC_API_KEY?.trim();
   if (!key) throw new AssistantUnavailableError('not_configured');
 
