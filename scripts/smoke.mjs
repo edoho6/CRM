@@ -408,19 +408,31 @@ async function collectIds(context, route, pattern, limit = 2) {
   // are put back into the URL), which destroys the first evaluation context.
   await page.waitForTimeout(600);
   await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {});
-  const ids = await page.evaluate(
-    ({ pattern, limit }) => {
-      const regex = new RegExp(pattern);
-      const found = [];
-      for (const anchor of document.querySelectorAll('main a[href]')) {
-        const match = anchor.getAttribute('href')?.match(regex);
-        if (match && !found.includes(match[1])) found.push(match[1]);
-        if (found.length >= limit) break;
-      }
-      return found;
-    },
-    { pattern, limit },
-  );
+  // Eight lists open at once; under load one may still be arriving when it is
+  // read, which destroys the evaluation. Read again after it settles, and a
+  // list that never settles yields no ids (its routes are skipped and said so)
+  // rather than ending the whole run.
+  let ids = [];
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      ids = await page.evaluate(
+        ({ pattern, limit }) => {
+          const regex = new RegExp(pattern);
+          const found = [];
+          for (const anchor of document.querySelectorAll('main a[href]')) {
+            const match = anchor.getAttribute('href')?.match(regex);
+            if (match && !found.includes(match[1])) found.push(match[1]);
+            if (found.length >= limit) break;
+          }
+          return found;
+        },
+        { pattern, limit },
+      );
+      break;
+    } catch {
+      await page.waitForLoadState('networkidle', { timeout: 15_000 }).catch(() => {});
+    }
+  }
   await page.close();
   return ids;
 }
@@ -1060,7 +1072,7 @@ const flows = {
     return { ok, detail: `gone at once ${goneAtOnce}, gone ${gone}, still gone after the re-read ${stillGone}, other rows usable ${usableDuring}/${usableBefore}` };
   },
   async writeAppointment(page) {
-    // Books tomorrow 10:00 for the first patient the list offers, sees it
+    // Books next Saturday 10:00 for the first patient the list offers, sees it
     // drawn on the day, and deletes it. A 10:00 left over from an earlier
     // run is deleted first, or the booking would collide with it.
     const toast = (pattern) => page.locator('[role="status"], [role="alert"]', { hasText: pattern }).first().waitFor({ timeout: 10_000 }).then(() => true).catch(() => false);
@@ -1767,7 +1779,13 @@ async function main() {
     }
 
     if (writeFlows) {
-      const tomorrow = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
+      // The next Saturday, not tomorrow: the sandbox's month of practice data
+      // (seed-sandbox-month) fills the working days from 10:00, so "tomorrow" was
+      // an empty day only by luck — on a Sunday the drag to 11:00 met a real
+      // booking in the same room and was, correctly, refused.
+      const bookingDay = new Date(Date.now() + 86_400_000);
+      while (bookingDay.getUTCDay() !== 6) bookingDay.setUTCDate(bookingDay.getUTCDate() + 1);
+      const tomorrow = bookingDay.toISOString().slice(0, 10);
       await visit(context, { route: '/patients?q=%D7%91%D7%93%D7%99%D7%A7%D7%94&inactive=1', locale: 'he', width: desktop, label: 'flow write-patient', after: flows.writePatient });
       await visit(context, { route: '/', locale: 'he', width: desktop, label: 'flow write-task', after: flows.writeTask });
       await visit(context, { route: `/calendar?view=day&date=${tomorrow}&new=1`, locale: 'he', width: desktop, label: 'flow write-appointment', after: flows.writeAppointment });
