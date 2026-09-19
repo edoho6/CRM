@@ -413,7 +413,7 @@ messages, prices, inventory, encounters, appointments, settings, dashboard, form
   המספר. `computeStats` ב-`dashboard/kpi-stats.ts` מקבל `timeZone` ונבדק על יום קבוע
 - **השוואת מחירים:** `shop_*` הן היחידות בלי `clinic_id`; נקראים רק שם, מחיר, קישור ומזהים — לא תיאור ולא תמונה; חנות נקראת רק ב-`status = active` ו-`robots.txt` נקרא בכל ריצה; תמונות רק מ-Commons ונבדקות בעין. הפרטים — `apps/web/features/prices/CLAUDE.md`
 - **רפואה מערבית:** `med_*` משותפות בלי `clinic_id`, טעינה רק ב-`med_import`; ציטוטים מהמקור לעולם לא מנוסחים מחדש ומינון רק מהעלון; העברית מסומנת "טרם אומת" עד `verified` על ידי אדם; תמונות נבדקות בעין; טקסט של מטופל נבדק בזיכרון ולא נרשם. הצנרת והפרטים — `apps/web/features/medicine/CLAUDE.md`
-- **הספרייה המקצועית (RAG):** הסדר קדוש — מכסה → `findPii` → שליפה → מודל רק עם ראיות → בדיקת עיגון → שופט משפטים → הסרה של מה שנפסל → יומן בלי טקסט; `disclaimer` בכל תשובה; ידע כללי רק מסומן; לסוכן אין כלים ואין גישה לטבלאות הקליניקה; הקטעים עטופים כנתונים; בלי `temperature` לדגמי Claude 5. הפרטים — `apps/web/features/library/CLAUDE.md`
+- **הספרייה המקצועית (RAG):** הסדר קדוש — מכסה → `findPii` → שם מלא של מטופל → שליפה → מודל רק עם ראיות → בדיקת עיגון → שופט משפטים → הסרה של מה שנפסל → יומן בלי טקסט; `disclaimer` בכל תשובה; ידע כללי רק מסומן; לסוכן אין כלים ואין גישה לטבלאות הקליניקה; הקטעים עטופים כנתונים; בלי `temperature` לדגמי Claude 5. הפרטים — `apps/web/features/library/CLAUDE.md`
 - **CSS משותף:** כללים שאינם טוקנים (מיקוד, placeholder, `select.ui-select`, `.table-cards`,
   `[data-table-size]`, הדפסה בסיסית) ב-`packages/ui/src/base.css`, מיובא בשני
   ה-`globals.css`; ה-`@theme` נשאר לכל אפליקציה בנפרד

@@ -594,4 +594,7 @@ export function distinctByContent<T extends { content: string }>(rows: readonly 
 export const LIBRARY_NO_SOURCES_HE = 'אין לי תשובה מבוססת לשאלה הזאת.';
 export const LIBRARY_REFUSED_PII_HE =
   'השאלה כוללת פרט מזהה (מספר זהות, טלפון, אימייל או מספר ארוך). הספרייה עונה על שאלות מקצועיות בלבד, בלי פרטים של מטופלים. אפשר לנסח מחדש בלי הפרט הזה.';
+/** A patient's first and last name together in the question (19.9); logged as refused_pii. */
+export const LIBRARY_REFUSED_NAME_HE =
+  'השאלה כוללת שם מלא של מטופל. הספרייה עונה על שאלות מקצועיות בלבד, והשם לא נשלח החוצה. אפשר לנסח מחדש בלי השם — למשל "אישה בת 40 עם…".';
 export const LIBRARY_REFUSED_QUOTA_HE = 'הגעת למכסת השאלות היומית. אפשר להמשיך מחר.';

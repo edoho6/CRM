@@ -5,6 +5,7 @@ import {
   LIBRARY_DISCLAIMER_HE,
   LIBRARY_LIMITS,
   LIBRARY_NO_SOURCES_HE,
+  LIBRARY_REFUSED_NAME_HE,
   LIBRARY_REFUSED_PII_HE,
   LIBRARY_REFUSED_QUOTA_HE,
   checkGrounding,
@@ -32,6 +33,8 @@ import {
   parseJsonReply,
 } from './claude';
 import { planSearch } from './plan';
+import { mentionsPatientFullName, type PatientName } from './patient-names';
+import { fetchAllRows } from '@/lib/fetch-all';
 import {
   ANSWER_SYSTEM,
   GENERAL_SYSTEM,
@@ -208,6 +211,25 @@ export async function askLibrary(
     if (findPii(question).length > 0 || history.some((turn) => findPii(turn.content).length > 0)) {
       await logOnce('refused_pii', []);
       return reply('refused_pii', LIBRARY_REFUSED_PII_HE);
+    }
+
+    // A patient's full name, in the question or an earlier turn, stops here too.
+    // Read through the caller's own rules; a list that cannot be read is not an
+    // empty one, so the question waits rather than leave unchecked.
+    const known = await fetchAllRows<PatientName>((lo, hi) =>
+      db
+        .from('patients')
+        .select('first_name, last_name')
+        .order('id', { ascending: true })
+        .range(lo, hi),
+    );
+    if (known.error) throw new LibraryUnavailableError('names_unreadable');
+    if (
+      mentionsPatientFullName(question, known.data) ||
+      history.some((turn) => mentionsPatientFullName(turn.content, known.data))
+    ) {
+      await logOnce('refused_pii', []);
+      return reply('refused_pii', LIBRARY_REFUSED_NAME_HE);
     }
 
     // The canon engine (17.9), once the canon is loaded: the core books only, one
