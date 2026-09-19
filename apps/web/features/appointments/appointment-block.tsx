@@ -99,15 +99,15 @@ export function AppointmentBlock({
   // the text-size setting like the grid does.
   let shown = start;
   let keyTransform: string | undefined;
+  // Lifted by the keyboard, whole days across are whole column widths — added
+  // to the logical start offset, whose percentages are of the column itself.
+  // That follows the reading direction on its own; measuring the column in
+  // render to translate by pixels read the page while drawing it.
+  const dayShift = keyOffset ? ` + ${keyOffset.days * 100}%` : '';
   if (keyOffset) {
-    // Lifted by the keyboard: the offset is whole quarter hours and days,
-    // drawn as rem down the column and as column widths across.
+    // The offset is whole quarter hours and days; the hours are rem down.
     shown = addMinutes(addDays(start, keyOffset.days), keyOffset.minutes);
-    const column = nodeRef.current?.closest<HTMLElement>('[data-day-column]');
-    const width = column?.getBoundingClientRect().width ?? 0;
-    const rtl = column ? getComputedStyle(column).direction === 'rtl' : false;
-    const x = keyOffset.days * width * (rtl ? -1 : 1);
-    keyTransform = `translate(${x}px, ${(keyOffset.minutes / slotMinutes) * slotHeightRem}rem)`;
+    keyTransform = `translateY(${(keyOffset.minutes / slotMinutes) * slotHeightRem}rem)`;
   } else if (isDragging && transform) {
     const rootPx = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
     const slotPx = rootPx * slotHeightRem;
@@ -137,7 +137,7 @@ export function AppointmentBlock({
         top: slotsToRem(top),
         height: slotsToRem(height),
         // Logical offsets keep events flowing in reading order.
-        insetInlineStart: `calc(${column * widthPercent}% + 2px)`,
+        insetInlineStart: `calc(${column * widthPercent}% + 2px${dayShift})`,
         width: `calc(${widthPercent}% - 4px)`,
         borderInlineStartColor: color,
         // Paid fills the whole box with the theme's light green (it turns

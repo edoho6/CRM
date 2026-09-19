@@ -168,7 +168,20 @@ export const SketchPad = React.forwardRef<
   // null = automatic: fingers draw until a pen has been seen.
   const [penOnly, setPenOnly] = React.useState<boolean | null>(null);
   const [penDetected, setPenDetected] = React.useState(false);
-  const [version, setVersion] = React.useState(0);
+  // What the toolbar and the canvas's attributes need to know about the strokes,
+  // which live in refs (a redraw per pointer move would be too slow as state).
+  // Copied here whenever the refs change, so the render reads state, not refs.
+  const [counts, setCounts] = React.useState({ past: 0, future: 0, strokes: 0, background: false });
+  const syncCounts = React.useCallback(
+    () =>
+      setCounts({
+        past: past.current.length,
+        future: future.current.length,
+        strokes: strokes.current.length,
+        background: Boolean(backgroundImage.current),
+      }),
+    [],
+  );
 
   const fingersDraw = penOnly === null ? !penDetected : !penOnly;
 
@@ -217,7 +230,7 @@ export const SketchPad = React.forwardRef<
       backgroundImage.current = image;
       redraw();
       // A render, so the canvas can say the picture is in (a test waits for it).
-      setVersion((v) => v + 1);
+      syncCounts();
     };
     image.onerror = () => {
       backgroundImage.current = null;
@@ -228,12 +241,12 @@ export const SketchPad = React.forwardRef<
       image.onload = null;
       image.onerror = null;
     };
-  }, [background, redraw]);
+  }, [background, redraw, syncCounts]);
 
   const commit = React.useCallback(() => {
-    setVersion((v) => v + 1);
+    syncCounts();
     onDirtyChange?.(strokes.current.length > 0 || Boolean(backgroundImage.current));
-  }, [onDirtyChange]);
+  }, [onDirtyChange, syncCounts]);
 
   const snapshot = React.useCallback(() => {
     past.current.push(strokes.current.map((stroke) => ({ ...stroke, points: [...stroke.points] })));
@@ -398,9 +411,8 @@ export const SketchPad = React.forwardRef<
     [paper],
   );
 
-  const canUndo = past.current.length > 0;
-  const canRedo = future.current.length > 0;
-  void version;
+  const canUndo = counts.past > 0;
+  const canRedo = counts.future > 0;
 
   const paperStyle: React.CSSProperties =
     paper === 'blank'
@@ -535,7 +547,7 @@ export const SketchPad = React.forwardRef<
           <ToolButton label={labels.redo} onClick={redo} disabled={!canRedo} data-sketch-redo>
             <Redo2 className="h-4 w-4 rtl:-scale-x-100" aria-hidden />
           </ToolButton>
-          <ToolButton label={labels.clear} onClick={clear} disabled={strokes.current.length === 0} data-sketch-clear>
+          <ToolButton label={labels.clear} onClick={clear} disabled={counts.strokes === 0} data-sketch-clear>
             <Trash2 className="h-4 w-4" aria-hidden />
           </ToolButton>
         </div>
@@ -563,8 +575,8 @@ export const SketchPad = React.forwardRef<
           aria-label={labels.canvas}
           tabIndex={0}
           data-autofocus
-          data-sketch-empty={strokes.current.length === 0 ? 'true' : 'false'}
-          data-sketch-background={backgroundImage.current ? 'loaded' : 'none'}
+          data-sketch-empty={counts.strokes === 0 ? 'true' : 'false'}
+          data-sketch-background={background && counts.background ? 'loaded' : 'none'}
           className={cn('block h-full w-full touch-none select-none', tool === 'eraser' ? 'cursor-cell' : 'cursor-crosshair')}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}

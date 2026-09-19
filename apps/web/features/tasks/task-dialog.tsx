@@ -101,8 +101,14 @@ export function TaskDialog({
     [patients],
   );
 
-  useEffect(() => {
-    if (!open) return;
+  // Reset when the dialog opens (or opens on another task), while rendering —
+  // an effect after it drew the previous task's fields for a frame first.
+  const [seen, setSeen] = useState<{ open: boolean; task: typeof task; defaultPatient: typeof defaultPatient } | null>(null);
+  if (!seen || seen.open !== open || seen.task !== task || seen.defaultPatient !== defaultPatient) {
+    setSeen({ open, task, defaultPatient });
+    if (open) resetFields();
+  }
+  function resetFields() {
     setTitle(task?.title ?? '');
     setNotes(task?.notes ?? '');
     if (task?.due_at) {
@@ -129,7 +135,7 @@ export function TaskDialog({
           : null,
     );
     setError(null);
-  }, [open, task, defaultPatient]);
+  }
 
   function save() {
     if (!title.trim()) {

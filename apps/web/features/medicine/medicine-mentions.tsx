@@ -30,10 +30,8 @@ export function MedicineMentions({ text, className }: { text: string; className?
   useEffect(() => {
     const value = text.trim();
     const run = ++latest.current;
-    if (value.length < 3) {
-      setMentions([]);
-      return;
-    }
+    // Too short to look up; the list below is empty for it without a reset.
+    if (value.length < 3) return;
     const timer = setTimeout(async () => {
       const result = await findMedicineMentions(value);
       if (run !== latest.current) return;
@@ -42,7 +40,7 @@ export function MedicineMentions({ text, className }: { text: string; className?
     return () => clearTimeout(timer);
   }, [text]);
 
-  if (mentions.length === 0) return null;
+  if (mentions.length === 0 || text.trim().length < 3) return null;
   return (
     <p className={cn('flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-600', className)} data-medicine-mentions>
       <span>{t('mentions.label')}:</span>

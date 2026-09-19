@@ -1,6 +1,7 @@
 'use client';
 
-import { useLayoutEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
+import { useStoredRaw, writeStored } from '@/lib/use-stored';
 import { TREATMENT_STATUS_TONES, statusTone, type StatusTone } from '@clinic/domain';
 import { useTranslations } from 'next-intl';
 import { ChevronLeft, Eye, EyeOff, RotateCcw } from 'lucide-react';
@@ -94,25 +95,18 @@ export function PatientStatusSummary({ counts }: { counts: StatusCounts }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const [layout, setLayout] = useState<TileLayout>(EMPTY_TILE_LAYOUT);
   const [arranging, setArranging] = useState(false);
-  // The remembered order, read before paint so the tiles do not reshuffle
-  // once React hydrates.
-  useLayoutEffect(() => {
-    try {
-      setLayout(parseTileLayout(localStorage.getItem(LAYOUT_STORAGE_KEY)));
-    } catch {
-      // Site data blocked: the default order, and that is the whole cost.
-    }
-  }, []);
+  // The remembered order, read as a store (lib/use-stored): the server's HTML
+  // is already painted in the default order before any script runs, so this is
+  // as early as the page can take it, and it needs no state of its own.
+  const storedLayout = useStoredRaw(LAYOUT_STORAGE_KEY);
+  const layout = useMemo<TileLayout>(
+    () => (storedLayout ? parseTileLayout(storedLayout) : EMPTY_TILE_LAYOUT),
+    [storedLayout],
+  );
 
   function saveLayout(next: TileLayout) {
-    setLayout(next);
-    try {
-      localStorage.setItem(LAYOUT_STORAGE_KEY, JSON.stringify(next));
-    } catch {
-      // As above.
-    }
+    writeStored(LAYOUT_STORAGE_KEY, JSON.stringify(next));
   }
 
   const currentStatus = searchParams.get('status');

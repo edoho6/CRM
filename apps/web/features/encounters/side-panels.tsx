@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useId, useMemo, useState } from 'react';
+import { useCallback, useId, useMemo } from 'react';
 import {
   DndContext,
   KeyboardSensor,
@@ -20,6 +20,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { GripVertical } from 'lucide-react';
 import { cn } from '@clinic/ui';
+import { useStoredRaw, writeStored } from '@/lib/use-stored';
 
 /**
  * A column of the treatment page, in the order the practitioner wants.
@@ -75,29 +76,23 @@ export function SidePanels({
   // is added or removed, which is when the stored order needs merging again.
   const knownKey = panels.map((panel) => panel.id).join(' ');
   const known = useMemo(() => knownKey.split(' '), [knownKey]);
-  const [order, setOrder] = useState<string[]>(known);
-
-  // Read after mount, so the server and the first client render agree.
-  useEffect(() => {
+  // The stored order, read as a store: the server and the hydrating render
+  // see the default, the render after it the practitioner's own (lib/use-stored).
+  const storedOrder = useStoredRaw(storageKey);
+  const order = useMemo(() => {
+    if (!storedOrder) return known;
     try {
-      const raw = localStorage.getItem(storageKey);
-      if (!raw) return;
-      const stored: unknown = JSON.parse(raw);
-      if (Array.isArray(stored)) setOrder(mergeOrder(stored.filter((v) => typeof v === 'string'), known));
+      const stored: unknown = JSON.parse(storedOrder);
+      return Array.isArray(stored)
+        ? mergeOrder(stored.filter((v): v is string => typeof v === 'string'), known)
+        : known;
     } catch {
-      // Site data blocked. The default order every time is the whole cost.
+      return known;
     }
-  }, [known, storageKey]);
+  }, [storedOrder, known]);
 
   const persist = useCallback(
-    (next: string[]) => {
-      setOrder(next);
-      try {
-        localStorage.setItem(storageKey, JSON.stringify(next));
-      } catch {
-        // As above.
-      }
-    },
+    (next: string[]) => writeStored(storageKey, JSON.stringify(next)),
     [storageKey],
   );
 

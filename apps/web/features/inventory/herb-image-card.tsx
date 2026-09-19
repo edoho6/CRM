@@ -117,7 +117,6 @@ export function HerbImageCard({
       <CardBody className="space-y-3">
         {imageUrl ? (
           <figure>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={imageUrl}
               alt={alt}
@@ -132,7 +131,6 @@ export function HerbImageCard({
           </figure>
         ) : reference ? (
           <figure>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={reference.src}
               alt={alt}

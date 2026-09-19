@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useTransition } from 'react';
+import { useState, useTransition } from 'react';
 import { useTranslations } from 'next-intl';
 import { Copy, ExternalLink } from 'lucide-react';
 import {
@@ -20,6 +20,7 @@ import {
 import { useLocale } from 'next-intl';
 import { useRouter } from '@clinic/i18n/navigation';
 import { saveBookingSettings } from './actions';
+import { useOrigin } from '@/lib/use-origin';
 
 /**
  * The public booking page, as its owner sees it.
@@ -62,12 +63,8 @@ export function BookingSettingsForm({
   const [horizon, setHorizon] = useState(String(horizonDays));
   const [verify, setVerify] = useState(verifySms);
   const [error, setError] = useState<string | null>(null);
-  const [origin, setOrigin] = useState('');
+  const origin = useOrigin();
   const [isPending, startTransition] = useTransition();
-
-  useEffect(() => {
-    setOrigin(window.location.origin);
-  }, []);
 
   const url = handle && origin ? `${origin}/${locale}/book/${handle}` : '';
 

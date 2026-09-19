@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useTransition } from 'react';
+import { useState, useTransition } from 'react';
 import { useTranslations } from 'next-intl';
 import { Plus, X } from 'lucide-react';
 import { Combobox, Popover, cn, useToast, type ComboboxOption, type ComboboxValue } from '@clinic/ui';
@@ -63,10 +63,11 @@ export function PatientTags({
   // The server's list wins whenever it arrives; the local copy only bridges
   // the moment between a click and the refresh.
   const tagIds = tags.map((tag) => tag.id).join(',');
-  useEffect(() => {
+  const [seenIds, setSeenIds] = useState(tagIds);
+  if (tagIds !== seenIds) {
+    setSeenIds(tagIds);
     setCurrent(tags);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tagIds]);
+  }
 
   function save(next: TagChip[]) {
     const previous = current;

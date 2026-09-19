@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { cn } from '@clinic/ui';
 import { unreadConversations } from '@/features/whatsapp/actions';
@@ -17,13 +17,15 @@ export function MessagesBadge({ className }: { className?: string }) {
   const t = useTranslations('messages.inbox');
   const [count, setCount] = useState(0);
 
-  const poll = useCallback(async () => {
-    const result = await unreadConversations();
-    if (result.ok) setCount(result.data);
-  }, []);
-
   useEffect(() => {
-    void poll();
+    // The answer lands in a callback, never in the effect's own turn: a count
+    // set synchronously here would draw the badge twice on every mount.
+    const poll = () => {
+      void unreadConversations().then((result) => {
+        if (result.ok) setCount(result.data);
+      });
+    };
+    poll();
     const timer = setInterval(() => void poll(), POLL_MS);
     const onVisible = () => {
       if (document.visibilityState === 'visible') void poll();
@@ -33,7 +35,7 @@ export function MessagesBadge({ className }: { className?: string }) {
       clearInterval(timer);
       document.removeEventListener('visibilitychange', onVisible);
     };
-  }, [poll]);
+  }, []);
 
   if (count === 0) return null;
   return (

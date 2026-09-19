@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useTransition } from 'react';
+import { useState, useTransition } from 'react';
 import { useTranslations } from 'next-intl';
 import { Check, Trash2, Undo2 } from 'lucide-react';
 import { Input, LtrInput, Select, Spinner, Td, useToast } from '@clinic/ui';
@@ -44,7 +44,12 @@ export function OrderListRowControls({
   // Shown at once, put back if the write fails: the row must never sit on
   // the old value until the whole page has been re-read.
   const [status, setStatus] = useState<OrderListStatus>(entry.status);
-  useEffect(() => setStatus(entry.status), [entry.status]);
+  const [seenStatus, setSeenStatus] = useState(entry.status);
+  if (entry.status !== seenStatus) {
+    // The page was re-read: its answer replaces the one shown.
+    setSeenStatus(entry.status);
+    setStatus(entry.status);
+  }
   const [isPending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
   const { toast } = useToast();

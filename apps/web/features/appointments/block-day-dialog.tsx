@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useTransition } from 'react';
+import { useState, useTransition } from 'react';
 import { useFormatter, useTranslations } from 'next-intl';
 import { CalendarOff, DoorOpen, Plus, Trash2 } from 'lucide-react';
 import {
@@ -84,8 +84,14 @@ export function BlockDayDialog({
   const key = day ? toDateKey(day) : '';
   const windows = day ? blockedWindowsFor(day, availability) : [];
 
-  useEffect(() => {
-    if (!day) return;
+  // Reset when the dialog opens on a day (or that day's closure changes), while
+  // rendering rather than in an effect that first drew the previous day's rows.
+  const [seen, setSeen] = useState<{ day: Date | null; existing: typeof existing } | null>(null);
+  if (!seen || seen.day !== day || seen.existing !== existing) {
+    setSeen({ day, existing });
+    if (day) resetFor(day);
+  }
+  function resetFor(day: Date) {
     setWholeDay(Boolean(existing?.is_closed));
     setReason(existing?.reason ?? '');
     // One empty window to start from when nothing is blocked yet; otherwise
@@ -97,9 +103,8 @@ export function BlockDayDialog({
     );
     setError(null);
     // The windows of the day are derived from `availability`, which changes
-    // only through a refresh — no need to re-run on it.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [day, existing]);
+    // only through a refresh — no need to reset on it.
+  }
 
   const invalidDraft = drafts.some((draft) => minutes(draft.to) <= minutes(draft.from));
 

@@ -47,12 +47,16 @@ export function PortalLoginForm({ locale, expired = false }: { locale: Locale; e
   const [sentTo, setSentTo] = useState<string | null>(null);
   const [secondsLeft, setSecondsLeft] = useState(0);
 
-  // The address the last send went to, and a fresh minute on the clock.
-  useEffect(() => {
-    if (state.status !== 'sent') return;
-    setSentTo(email.trim());
-    setSecondsLeft(RESEND_SECONDS);
-  }, [state, email]);
+  // The address the last send went to, and a fresh minute on the clock — taken
+  // when a new answer arrives, while rendering, not in an effect after it.
+  const [seenState, setSeenState] = useState(state);
+  if (state !== seenState) {
+    setSeenState(state);
+    if (state.status === 'sent') {
+      setSentTo(email.trim());
+      setSecondsLeft(RESEND_SECONDS);
+    }
+  }
 
   useEffect(() => {
     if (secondsLeft <= 0) return;

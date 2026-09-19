@@ -130,6 +130,32 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
 
+      # The types the migrations describe, generated from the database they just
+      # built. Kept as a download on every run; compared with the committed
+      # packages/db/src/database.types.ts (written by `pnpm db:types` from the
+      # project) and reported as a warning when they differ — a difference is
+      # either a migration whose types were not regenerated, or the project
+      # holding something the migrations do not. Not yet a failure: both
+      # sides have to have been compared once by a person first.
+      - name: Types from the migrations
+        continue-on-error: true
+        run: |
+          supabase gen types typescript --local --schema public > migrations.types.ts
+          committed=packages/db/src/database.types.ts
+          if [ ! -f "$committed" ]; then
+            echo "::notice::No committed database.types.ts yet; the generated file is in this run's downloads."
+          elif ! diff -q <(tail -n +2 "$committed") migrations.types.ts > /dev/null; then
+            echo "::warning::database.types.ts differs from what the migrations build. Run pnpm db:types, or compare with this run's download."
+            diff -u <(tail -n +2 "$committed") migrations.types.ts | head -80 || true
+          fi
+
+      - uses: actions/upload-artifact@v4
+        continue-on-error: true
+        with:
+          name: database-types
+          path: migrations.types.ts
+          if-no-files-found: ignore
+
       - name: SQL tests
         run: |
           failed=0

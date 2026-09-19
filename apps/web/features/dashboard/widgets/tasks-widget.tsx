@@ -90,14 +90,14 @@ function TasksWidget() {
   const [hiddenIds, setHiddenIds] = useState<ReadonlySet<string>>(() => new Set());
   const [busyIds, setBusyIds] = useState<ReadonlySet<string>>(() => new Set());
   const rows = (data ?? []).filter((task) => !hiddenIds.has(task.id));
-  useEffect(() => {
-    // The re-read no longer has them: nothing left to hide.
-    if (!data) return;
+  // The re-read no longer has them: nothing left to hide. Pruned while
+  // rendering, when a new answer arrives, not in an effect after it.
+  const [prunedFor, setPrunedFor] = useState(data);
+  if (data && data !== prunedFor) {
+    setPrunedFor(data);
     const present = new Set(data.map((task) => task.id));
-    setHiddenIds((current) =>
-      current.size === 0 ? current : new Set([...current].filter((id) => present.has(id))),
-    );
-  }, [data]);
+    if (hiddenIds.size > 0) setHiddenIds(new Set([...hiddenIds].filter((id) => present.has(id))));
+  }
 
   // Ticking or deleting a row removes it — and with it whatever had focus,
   // which left a keyboard user at the top of the page. Focus moves to the

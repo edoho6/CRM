@@ -74,7 +74,6 @@ export function CompareTable({
                 className="flex items-start gap-2 underline-offset-2 hover:underline"
               >
                 {column.imageUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={column.imageUrl}
                     alt=""

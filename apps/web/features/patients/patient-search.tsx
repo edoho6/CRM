@@ -33,13 +33,14 @@ export function PatientSearch({
   const [inactive, setInactive] = useState(showInactive);
   const [isPending, startTransition] = useTransition();
 
-  // The URL is the truth: when another control changes it, this one follows.
-  useEffect(() => {
-    setInactive(showInactive);
-  }, [showInactive]);
-  useEffect(() => {
-    setValue(initialQuery);
-  }, [initialQuery]);
+  // The URL is the truth: when another control changes it, this one follows —
+  // in the same render, rather than an effect that drew the old value first.
+  const [seen, setSeen] = useState({ initialQuery, showInactive });
+  if (seen.initialQuery !== initialQuery || seen.showInactive !== showInactive) {
+    setSeen({ initialQuery, showInactive });
+    if (seen.showInactive !== showInactive) setInactive(showInactive);
+    if (seen.initialQuery !== initialQuery) setValue(initialQuery);
+  }
 
   useEffect(() => {
     const timer = setTimeout(() => {

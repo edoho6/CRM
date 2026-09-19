@@ -11,6 +11,11 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
+/** The device does not change under the page. */
+const noSubscription = () => () => {};
+const readIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent);
+const notIOS = () => false;
+
 /**
  * The hint to put the app on the phone's home screen.
  *
@@ -41,7 +46,12 @@ export function InstallHint({
   className?: string;
 }) {
   const [show, setShow] = React.useState(false);
-  const [platform, setPlatform] = React.useState<'prompt' | 'ios' | 'other'>('other');
+  // Which instructions to show: the browser's own install prompt when it has
+  // offered one, the iPhone's share-sheet steps, or the general words. The
+  // device is read as a store (no effect sets it); the prompt arrives as an event.
+  const iOS = React.useSyncExternalStore(noSubscription, readIOS, notIOS);
+  const [prompted, setPrompted] = React.useState(false);
+  const platform: 'prompt' | 'ios' | 'other' = prompted ? 'prompt' : iOS ? 'ios' : 'other';
   const promptRef = React.useRef<BeforeInstallPromptEvent | null>(null);
 
   React.useEffect(() => {
@@ -60,12 +70,10 @@ export function InstallHint({
     const shell = Boolean(document.documentElement.dataset.shell) || 'Capacitor' in window;
     if (dismissed || standalone || shell || !phone) return;
 
-    const iOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-    if (iOS) setPlatform('ios');
     const onPrompt = (event: Event) => {
       event.preventDefault();
       promptRef.current = event as BeforeInstallPromptEvent;
-      setPlatform('prompt');
+      setPrompted(true);
     };
     const onInstalled = () => setShow(false);
     window.addEventListener('beforeinstallprompt', onPrompt);

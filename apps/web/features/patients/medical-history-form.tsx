@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslations } from 'next-intl';
 import { MedicineMentions } from '@/features/medicine/medicine-mentions';
@@ -37,7 +37,7 @@ export function MedicalHistoryForm({
   const [status, setStatus] = useState<'idle' | 'error'>('idle');
   const { toast } = useToast();
 
-  const { register, handleSubmit, watch } = useForm<
+  const { register, handleSubmit, control } = useForm<
     PatientMedicalHistoryValues,
     unknown,
     PatientMedicalHistoryData
@@ -53,6 +53,10 @@ export function MedicalHistoryForm({
       pregnancy_status: history?.pregnancy_status ?? '',
     },
   });
+  // The fields the form draws from, read through useWatch: the library's `watch`
+  // is a function the compiler cannot see into, and every component calling it
+  // lost its memoisation (react-hooks/incompatible-library).
+  const watched = useWatch({ control });
 
   function onSubmit(values: PatientMedicalHistoryData) {
     setStatus('idle');
@@ -79,13 +83,13 @@ export function MedicalHistoryForm({
               <Field label={t('medications')} htmlFor="medications">
                 <Textarea id="medications" rows={2} {...register('medications')} />
               </Field>
-              <MedicineMentions text={watch('medications') ?? ''} />
+              <MedicineMentions text={watched.medications ?? ''} />
             </div>
             <div className="space-y-1.5">
               <Field label={t('chronicConditions')} htmlFor="chronic_conditions">
                 <Textarea id="chronic_conditions" rows={2} {...register('chronic_conditions')} />
               </Field>
-              <MedicineMentions text={watch('chronic_conditions') ?? ''} />
+              <MedicineMentions text={watched.chronic_conditions ?? ''} />
             </div>
             <Field label={t('surgeries')} htmlFor="surgeries">
               <Textarea id="surgeries" rows={2} {...register('surgeries')} />

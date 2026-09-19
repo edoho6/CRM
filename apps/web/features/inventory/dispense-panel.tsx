@@ -364,17 +364,27 @@ export function DispensePanel({
     }
     publish(null);
     // `herbLines` is rebuilt every render; the publisher itself compares what it
-    // is given against what it has, so the extra calls cost nothing.
+    // is given against what it has, so the extra calls cost nothing. The dose
+    // fields are listed too: without them a changed dose in formula mode was not
+    // published until something else moved.
   }, [
     publish,
     mode,
     selectedFormula,
     formulaChoice,
     herbLines,
+    herbLinesTotal,
     records,
     herbs,
     locale,
     multiplier,
+    formulaBookDose,
+    preparation,
+    unit,
+    doseAmount,
+    doseUnit,
+    dosesPerDay,
+    doseTiming,
   ]);
 
   function reset() {

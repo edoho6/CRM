@@ -27,6 +27,11 @@ const KIND_META: Record<OpenFileKind, { Icon: typeof User; list: string }> = {
   medicine: { Icon: Stethoscope, list: '/reference/medicine' },
 };
 
+/** The mark the stylesheet reserves the bar's row by (lib/theme.ts), dropped with the last file. */
+function unmarkOpenFiles() {
+  delete document.documentElement.dataset.openFiles;
+}
+
 /**
  * The bar of open files, under the top bar.
  *
@@ -81,7 +86,7 @@ export function OpenFilesBar() {
     closeFile(file.kind, file.id);
     const remaining = readOpenFiles();
     setFiles(remaining);
-    if (remaining.length === 0) delete document.documentElement.dataset.openFiles;
+    if (remaining.length === 0) unmarkOpenFiles();
 
     // Closing the file you are looking at has to take you somewhere. The next
     // open one, if there is one; otherwise the list this file came from —

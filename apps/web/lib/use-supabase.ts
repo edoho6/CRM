@@ -39,26 +39,34 @@ export function useAsyncData<T>(
   const supabase = useSupabase();
   const hasInitial = options.initial !== undefined;
   const [data, setData] = useState<T | null>(hasInitial ? (options.initial as T) : null);
-  const [loading, setLoading] = useState(!hasInitial);
+  const [loading, setLoading] = useState(!hasInitial && supabase !== null);
   const [error, setError] = useState<string | null>(null);
   const [nonce, setNonce] = useState(0);
   const skipFirstFetch = useRef(hasInitial);
 
   const reload = useCallback(() => setNonce((value) => value + 1), []);
 
-  useEffect(() => {
-    if (!supabase) {
-      setLoading(false);
-      return;
+  // A new question (a reload, or a change in `deps`) is "loading" from the render
+  // that asks it — set here, not in the effect below, which only fetches and
+  // answers from its callbacks.
+  const asked = [nonce, ...deps];
+  const [seenAsked, setSeenAsked] = useState(asked);
+  if (asked.length !== seenAsked.length || asked.some((value, index) => !Object.is(value, seenAsked[index]))) {
+    setSeenAsked(asked);
+    if (supabase) {
+      setLoading(true);
+      setError(null);
     }
+  }
+
+  useEffect(() => {
+    if (!supabase) return;
     if (skipFirstFetch.current) {
       skipFirstFetch.current = false;
       return;
     }
 
     let cancelled = false;
-    setLoading(true);
-    setError(null);
 
     fetcher(supabase)
       .then((result) => {

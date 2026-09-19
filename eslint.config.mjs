@@ -80,7 +80,8 @@ const config = [
        * the commit that installs the linter.
        *
        * The count is held down by `--max-warnings` in the lint script, so this
-       * list can shrink and cannot grow.
+       * list can shrink and cannot grow. It reached zero on 19.9 — the patterns
+       * that got it there are in CLAUDE.md under "לפני commit".
        */
       'react-hooks/set-state-in-effect': 'warn',
       'react-hooks/refs': 'warn',
@@ -88,6 +89,19 @@ const config = [
       'react-hooks/immutability': 'warn',
       'react-hooks/preserve-manual-memoization': 'warn',
       'react-hooks/incompatible-library': 'warn',
+
+      /*
+       * `<img>` rather than next/image, deliberately (19.9). Every picture here
+       * is sized before it ships — the herb and medicine photos are cut to their
+       * thumbnail by the scripts that fetch them (69 kB to 3.5 kB, performance
+       * round 3), the page screenshots are webp at their drawn size — so the
+       * optimiser would only re-encode what is already small, and on Vercel it
+       * bills per source image, hundreds of them. And two cannot go through it
+       * at all: a handwritten sketch is served only to a signed-in reader, whose
+       * cookie the optimiser's fetch would not carry, and the two-step QR code
+       * is the secret itself, which has no business in an image cache.
+       */
+      '@next/next/no-img-element': 'off',
     },
   },
 

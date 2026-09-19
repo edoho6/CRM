@@ -1,8 +1,17 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { answerBlocks, displayAnswer, inlineRuns, type AnswerBlock } from '@clinic/domain';
 import { cn } from '@clinic/ui';
+
+const MOTION_QUERY = '(prefers-reduced-motion: reduce)';
+function subscribeMotion(listener: () => void) {
+  const query = window.matchMedia?.(MOTION_QUERY);
+  query?.addEventListener('change', listener);
+  return () => query?.removeEventListener('change', listener);
+}
+const readReducedMotion = () => Boolean(window.matchMedia?.(MOTION_QUERY).matches);
+const noReducedMotion = () => false;
 
 /**
  * An answer on the page: its Markdown-lite cut into headings, paragraphs
@@ -17,13 +26,15 @@ import { cn } from '@clinic/ui';
  */
 export function AnswerText({ text, reveal }: { text: string; reveal: boolean }) {
   const blocks = useMemo(() => answerBlocks(text), [text]);
-  const [shown, setShown] = useState(reveal ? 0 : blocks.length);
+  // All at once when there is nothing to reveal, or motion is turned down —
+  // decided in render; the effect only runs the reveal itself.
+  const reducedMotion = useSyncExternalStore(subscribeMotion, readReducedMotion, noReducedMotion);
+  const instant = !reveal || reducedMotion;
+  const [revealed, setShown] = useState(0);
+  const shown = instant ? blocks.length : Math.min(revealed, blocks.length);
 
   useEffect(() => {
-    if (!reveal || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
-      setShown(blocks.length);
-      return;
-    }
+    if (instant) return;
     let count = 0;
     const timer = window.setInterval(() => {
       count += 1;
@@ -31,7 +42,7 @@ export function AnswerText({ text, reveal }: { text: string; reveal: boolean }) 
       if (count >= blocks.length) window.clearInterval(timer);
     }, 140);
     return () => window.clearInterval(timer);
-  }, [reveal, blocks.length]);
+  }, [instant, blocks.length]);
 
   const revealing = shown < blocks.length;
   // Not dir="auto": that takes the first letter, and a Hebrew answer that opens with a

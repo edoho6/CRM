@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
 import { useTranslations } from 'next-intl';
 import { Monitor, Moon, Sun } from 'lucide-react';
 import { cn } from '@clinic/ui';
@@ -28,6 +28,48 @@ function apply(choice: ThemeChoice) {
   applyThemeColor(dark);
 }
 
+/*
+ * The stored choice as an external store: read in the render that draws the
+ * switch, not set from an effect after it — which drew "system" first and the
+ * real choice a moment later. The server has no storage and answers "system",
+ * as the head script's fallback does. A browser that blocks site data keeps
+ * the choice in memory for the page, so the switch still moves.
+ */
+const listeners = new Set<() => void>();
+let memoryChoice: ThemeChoice | null = null;
+
+function readChoice(): ThemeChoice {
+  try {
+    const stored = localStorage.getItem(THEME_STORAGE_KEY);
+    if (stored === 'light' || stored === 'dark') return stored;
+    return memoryChoice ?? 'system';
+  } catch {
+    // Site data blocked. The script in the head already fell back to light.
+    return memoryChoice ?? 'system';
+  }
+}
+
+function subscribe(listener: () => void) {
+  listeners.add(listener);
+  // Another tab changing the theme moves this switch too.
+  window.addEventListener('storage', listener);
+  return () => {
+    listeners.delete(listener);
+    window.removeEventListener('storage', listener);
+  };
+}
+
+function storeChoice(next: ThemeChoice) {
+  memoryChoice = next;
+  try {
+    if (next === 'system') localStorage.removeItem(THEME_STORAGE_KEY);
+    else localStorage.setItem(THEME_STORAGE_KEY, next);
+  } catch {
+    // The theme still applies for this page; it just will not be remembered.
+  }
+  for (const listener of listeners) listener();
+}
+
 const OPTIONS: { value: ThemeChoice; icon: typeof Sun; labelKey: 'light' | 'dark' | 'system' }[] = [
   { value: 'light', icon: Sun, labelKey: 'light' },
   { value: 'dark', icon: Moon, labelKey: 'dark' },
@@ -36,19 +78,7 @@ const OPTIONS: { value: ThemeChoice; icon: typeof Sun; labelKey: 'light' | 'dark
 
 export function ThemeToggle({ className }: { className?: string }) {
   const t = useTranslations('theme');
-  // 'system' until the stored value is read. The script in the head has already
-  // painted the right colours; this is only the switch catching up with it.
-  const [choice, setChoice] = useState<ThemeChoice>('system');
-
-  useEffect(() => {
-    let stored: string | null = null;
-    try {
-      stored = localStorage.getItem(THEME_STORAGE_KEY);
-    } catch {
-      // Site data blocked. The script in the head already fell back to light.
-    }
-    if (stored === 'light' || stored === 'dark') setChoice(stored);
-  }, []);
+  const choice = useSyncExternalStore(subscribe, readChoice, () => 'system' as ThemeChoice);
 
   // While following the system, a change to the OS setting has to be picked up
   // live — otherwise the app is dark at dusk only after a reload.
@@ -61,14 +91,8 @@ export function ThemeToggle({ className }: { className?: string }) {
   }, [choice]);
 
   function select(next: ThemeChoice) {
-    setChoice(next);
     apply(next);
-    try {
-      if (next === 'system') localStorage.removeItem(THEME_STORAGE_KEY);
-      else localStorage.setItem(THEME_STORAGE_KEY, next);
-    } catch {
-      // The theme still applies for this page; it just will not be remembered.
-    }
+    storeChoice(next);
   }
 
   return (

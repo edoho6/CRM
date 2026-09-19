@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState, useTransition } from 'react';
+import { useMemo, useState, useTransition } from 'react';
 import { useFormatter, useLocale, useTranslations } from 'next-intl';
 import { Check, MessageCircle, Trash2, X } from 'lucide-react';
 import {
@@ -56,6 +56,7 @@ import { DateInput } from '@/components/date-input';
 import { confirmationPath, fillReminderTemplate } from './confirmation';
 import { ConfirmationBadge } from './confirmation-status';
 import { formatDate, formatDateTime, formatTime } from '@clinic/i18n';
+import { useOrigin } from '@/lib/use-origin';
 
 export interface AppointmentDraft {
   id?: string;
@@ -176,13 +177,10 @@ export function AppointmentDialog({
   const [response, setResponse] = useState<'confirmed' | 'declined' | null>(null);
   const [respondedAt, setRespondedAt] = useState<string | null>(null);
 
-  // The site's origin, for the confirmation link in the reminder. Read after
-  // mount: reading `window` during render gives the server and the client
-  // different markup for the same booking.
-  const [origin, setOrigin] = useState('');
-  useEffect(() => {
-    setOrigin(window.location.origin);
-  }, []);
+  // The site's origin, for the confirmation link in the reminder. Empty on the
+  // server and through hydration, the real one in the render after: reading
+  // `window` straight in render gave the two different markup.
+  const origin = useOrigin();
 
   const isEditing = Boolean(draft?.id);
 
@@ -208,8 +206,14 @@ export function AppointmentDialog({
   // Reset from the draft, and only from the draft. The lists of patients and
   // rooms change identity on every server refresh — marking a reminder sent
   // triggers one — and resetting on them wiped half-typed edits mid-dialog.
-  useEffect(() => {
-    if (!draft) return;
+  // Done while rendering, when the draft changes, rather than in an effect: the
+  // effect drew the dialog once with the previous booking's fields first.
+  const [seenDraft, setSeenDraft] = useState<AppointmentDraft | null | undefined>(undefined);
+  if (draft !== seenDraft) {
+    setSeenDraft(draft);
+    if (draft) resetFrom(draft);
+  }
+  function resetFrom(draft: AppointmentDraft) {
     setPatientChoice(
       draft.patientId
         ? {
@@ -246,15 +250,14 @@ export function AppointmentDialog({
     setErrorKey(null);
     setRepeats(false);
     setSeriesResult(null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [draft]);
+  }
 
-  // Changing the address drops a room that is not in it.
-  useEffect(() => {
-    if (!roomId) return;
+  // Changing the address drops a room that is not in it — at the change itself.
+  function chooseLocation(next: string) {
+    setLocationId(next);
     const room = rooms.find((entry) => entry.id === roomId);
-    if (room?.location_id && locationId && room.location_id !== locationId) setRoomId('');
-  }, [locationId, roomId, rooms]);
+    if (room?.location_id && next && room.location_id !== next) setRoomId('');
+  }
 
   const activeTypes = useMemo(
     () => appointmentTypes.filter((type) => type.is_active || type.id === typeId),
@@ -590,7 +593,7 @@ export function AppointmentDialog({
                 <Select
                   id="location_id"
                   value={locationId}
-                  onChange={(event) => setLocationId(event.target.value)}
+                  onChange={(event) => chooseLocation(event.target.value)}
                   required
                 >
                   <option value="">{t('selectPlace')}</option>

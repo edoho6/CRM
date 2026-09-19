@@ -10,6 +10,9 @@ export type RegisterPushDevice = (input: { token: string; platform: 'ios' | 'and
 /** The cookie the sign-out action reads, to unregister the phone it is leaving. */
 export const PUSH_TOKEN_COOKIE = 'herbalist-push-token';
 
+/** Whether this is the store app does not change while the page is open. */
+const noSubscription = () => () => {};
+
 /** Raised by the settings card once permission is granted, so the registration runs at once. */
 const GRANTED_EVENT = 'herbalist:push-granted';
 
@@ -120,15 +123,20 @@ export function PushSettings({
   register: RegisterPushDevice;
   locale: string;
 }) {
-  const [permission, setPermission] = React.useState<PushPermission | 'unknown'>('unknown');
+  // Whether this is the store app at all, read from the browser as a store:
+  // null on the server and through hydration (nothing drawn), then the answer.
+  const inShell = React.useSyncExternalStore(
+    noSubscription,
+    () => Boolean(parseShellUserAgent(navigator.userAgent)),
+    () => null,
+  );
+  const [asked, setPermission] = React.useState<PushPermission | 'unknown'>('unknown');
+  const permission: PushPermission | 'unknown' = inShell === false ? 'unsupported' : asked;
   const [busy, setBusy] = React.useState(false);
   const [failed, setFailed] = React.useState(false);
 
   React.useEffect(() => {
-    if (!parseShellUserAgent(navigator.userAgent)) {
-      setPermission('unsupported');
-      return;
-    }
+    if (!inShell) return;
     let cancelled = false;
     import('./push')
       .then((push) => push.pushPermission())
@@ -141,7 +149,7 @@ export function PushSettings({
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [inShell]);
 
   async function enable() {
     setBusy(true);

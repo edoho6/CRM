@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 /**
  * Saves a form on a timer, so a treatment record cannot be lost to a closed tab.
@@ -56,18 +56,18 @@ export function useAutosave<T>({
   const valueRef = useRef(value);
   const onSaveRef = useRef(onSave);
   const enabledRef = useRef(enabled);
-  const savedSnapshotRef = useRef<string | null>(null);
+  // The first render's value is the baseline: opening a record and touching
+  // nothing must not write it back. Taken once, not re-stringified per render.
+  const [baseline] = useState(() => JSON.stringify(value));
+  const savedSnapshotRef = useRef<string | null>(baseline);
   const inFlightRef = useRef(false);
 
-  valueRef.current = value;
-  onSaveRef.current = onSave;
-  enabledRef.current = enabled;
-
-  // The first render's value is the baseline: opening a record and touching
-  // nothing must not write it back.
-  if (savedSnapshotRef.current === null) {
-    savedSnapshotRef.current = JSON.stringify(value);
-  }
+  // Refreshed after each render, before the timer or an unload can read them.
+  useLayoutEffect(() => {
+    valueRef.current = value;
+    onSaveRef.current = onSave;
+    enabledRef.current = enabled;
+  });
 
   const markSaved = useCallback(() => {
     savedSnapshotRef.current = JSON.stringify(valueRef.current);

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useTransition } from 'react';
+import { useState, useTransition } from 'react';
 import { useTranslations } from 'next-intl';
 import { CalendarSync, Copy, RefreshCw } from 'lucide-react';
 import {
@@ -17,6 +17,7 @@ import {
 } from '@clinic/ui';
 import { formatDateTime } from '@clinic/i18n';
 import { ensureCalendarFeed, regenerateCalendarFeed } from './actions';
+import { useOrigin } from '@/lib/use-origin';
 
 /**
  * The diary on the practitioner's own phone.
@@ -43,14 +44,11 @@ export function CalendarFeedCard({
   const confirm = useConfirm();
   const { toast } = useToast();
   const [current, setCurrent] = useState(token);
-  const [origin, setOrigin] = useState('');
   const [isPending, startTransition] = useTransition();
 
   // The host is only known in the browser, and a URL rendered on the server
   // would name whatever machine built the page.
-  useEffect(() => {
-    setOrigin(window.location.origin);
-  }, []);
+  const origin = useOrigin();
 
   const url = current && origin ? `${origin}/api/calendar/${current}` : '';
 

@@ -43,26 +43,26 @@ export function HerbMonographSheet({
 }) {
   const ti = useTranslations('inventory.image');
   const tc = useTranslations('common');
-  const [herb, setHerb] = useState<Herb | null>(herbId ? (loaded.get(herbId) ?? null) : null);
-  const [failed, setFailed] = useState(false);
+  // What came back, kept with the herb it is about: opening another herb shows
+  // "loading" rather than the last one's page under the new name.
+  const [fetched, setFetched] = useState<{ id: string; herb: Herb | null; failed: boolean } | null>(
+    null,
+  );
+  const herb = herbId
+    ? (loaded.get(herbId) ?? (fetched?.id === herbId ? fetched.herb : null))
+    : null;
+  const failed = Boolean(herbId && fetched?.id === herbId && fetched.failed);
 
   useEffect(() => {
-    if (!herbId) return;
-    const cached = loaded.get(herbId);
-    setFailed(false);
-    if (cached) {
-      setHerb(cached);
-      return;
-    }
-    setHerb(null);
+    if (!herbId || loaded.has(herbId)) return;
     let cancelled = false;
     loadHerbMonograph(herbId).then((result) => {
       if (cancelled) return;
       if (result.ok) {
         loaded.set(herbId, result.data);
-        setHerb(result.data);
+        setFetched({ id: herbId, herb: result.data, failed: false });
       } else {
-        setFailed(true);
+        setFetched({ id: herbId, herb: null, failed: true });
       }
     });
     return () => {

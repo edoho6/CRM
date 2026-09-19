@@ -1,6 +1,6 @@
 'use client';
 
-import { useLayoutEffect, useState } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import { useTranslations } from 'next-intl';
 import { CalendarClock, Check, ShieldCheck, Stethoscope, UserPlus, X } from 'lucide-react';
 import { Button, Card, CardBody, cn } from '@clinic/ui';
@@ -8,6 +8,9 @@ import { Link } from '@clinic/i18n/navigation';
 import { PREF_KEYS } from '@/lib/prefs';
 
 const STORAGE_KEY = PREF_KEYS.gettingStartedHidden;
+
+/** The attribute is written once, before paint, and by the dismiss button below. */
+const noSubscription = () => () => {};
 
 /**
  * The first thing a new clinic sees.
@@ -35,11 +38,13 @@ export function GettingStarted({
   // Shown by default, and hidden before paint when this browser has
   // dismissed it — the stylesheet hides it first, from the attribute the
   // pre-paint script wrote, so the card never appears and then vanishes.
-  const [hidden, setHidden] = useState(false);
-
-  useLayoutEffect(() => {
-    setHidden(document.documentElement.dataset.gettingStarted === 'hidden');
-  }, []);
+  const dismissedBefore = useSyncExternalStore(
+    noSubscription,
+    () => document.documentElement.dataset.gettingStarted === 'hidden',
+    () => false,
+  );
+  const [dismissedNow, setHidden] = useState(false);
+  const hidden = dismissedBefore || dismissedNow;
 
   const steps = [
     { key: 'hours', done: hasHours, href: '/account/schedule', icon: CalendarClock },

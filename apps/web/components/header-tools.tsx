@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, type ReactNode } from 'react';
+import { useSyncExternalStore, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 
 /**
@@ -23,6 +23,9 @@ export function HeaderToolsSlot({ id }: { id: string }) {
   return <span id={id} className="inline-flex flex-wrap items-center gap-2" />;
 }
 
+/** The slot does not come and go while a page is open; there is nothing to listen to. */
+const noSubscription = () => () => {};
+
 export function HeaderTools({
   slotId,
   children,
@@ -33,11 +36,15 @@ export function HeaderTools({
   /** Layout of the in-place fallback, before the slot is found. */
   fallbackClassName?: string;
 }) {
-  // `undefined` = not looked yet; `null` = looked and the page has no slot.
-  const [slot, setSlot] = useState<HTMLElement | null | undefined>(undefined);
-  useEffect(() => {
-    setSlot(document.getElementById(slotId));
-  }, [slotId]);
+  // `undefined` = not looked yet (the server, and hydration); `null` = looked
+  // and the page has no slot. Read as an external store — the document is one —
+  // so the look happens in the render after hydration rather than in an effect
+  // that set state and drew the header twice.
+  const slot = useSyncExternalStore<HTMLElement | null | undefined>(
+    noSubscription,
+    () => document.getElementById(slotId),
+    () => undefined,
+  );
   if (slot === undefined) return null;
   return slot ? createPortal(children, slot) : <div className={fallbackClassName}>{children}</div>;
 }

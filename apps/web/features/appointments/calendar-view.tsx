@@ -3,7 +3,6 @@
 import {
   createContext,
   useContext,
-  useEffect,
   useId,
   useLayoutEffect,
   useMemo,
@@ -220,7 +219,11 @@ export function CalendarView({
   // A block just dragged shows at its new hour before the server answers;
   // the server's own list, when it arrives, replaces the guess.
   const [moved, setMoved] = useState<Record<string, { start_at: string; end_at: string }>>({});
-  useEffect(() => setMoved({}), [appointments]);
+  const [movedFor, setMovedFor] = useState(appointments);
+  if (movedFor !== appointments) {
+    setMovedFor(appointments);
+    setMoved({});
+  }
   const shown = useMemo(
     () =>
       appointments.map((appointment) =>

@@ -80,7 +80,9 @@ export function GlobalSearch() {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
-  const [loading, setLoading] = useState(false);
+  // Which term the results on screen answer. Loading is "the term typed is not
+  // the one answered yet" — derived, not a flag an effect has to keep in step.
+  const [answeredTerm, setAnsweredTerm] = useState('');
 
   /*
    * Opens on a click or Ctrl+K, never on the pointer merely passing over it.
@@ -107,6 +109,7 @@ export function GlobalSearch() {
   function dismiss() {
     setQuery('');
     setResults([]);
+    setAnsweredTerm('');
     setOpen(false);
   }
 
@@ -201,23 +204,20 @@ export function GlobalSearch() {
 
   useEffect(() => {
     const term = query.trim();
-    if (term.length < MIN_QUERY_LENGTH) {
-      setResults([]);
-      setLoading(false);
-      return;
-    }
+    // Too short to search: the panel is not shown, and nothing needs clearing.
+    if (term.length < MIN_QUERY_LENGTH) return;
 
-    setLoading(true);
     let cancelled = false;
     const timer = setTimeout(async () => {
+      let found: SearchResult[] = [];
       try {
-        const found = await runSearch(term);
-        if (!cancelled) setResults(found);
+        found = await runSearch(term);
       } catch {
-        if (!cancelled) setResults([]);
-      } finally {
-        if (!cancelled) setLoading(false);
+        // An empty answer; the panel says there is nothing.
       }
+      if (cancelled) return;
+      setResults(found);
+      setAnsweredTerm(term);
     }, DEBOUNCE_MS);
 
     return () => {
@@ -236,6 +236,7 @@ export function GlobalSearch() {
 
   const term = query.trim();
   const showPanel = open && term.length >= MIN_QUERY_LENGTH;
+  const loading = term.length >= MIN_QUERY_LENGTH && answeredTerm !== term;
 
   /*
    * Arrow keys walk the results and Enter opens the lit one, the way the
@@ -244,9 +245,12 @@ export function GlobalSearch() {
    */
   const flat = useMemo(() => grouped.flatMap((entry) => entry.items), [grouped]);
   const [highlight, setHighlight] = useState(0);
-  useEffect(() => {
+  // A new answer starts at its first row — set while rendering, not after.
+  const [highlightFor, setHighlightFor] = useState(results);
+  if (highlightFor !== results) {
+    setHighlightFor(results);
     setHighlight(0);
-  }, [results]);
+  }
   const optionId = (result: SearchResult) => `global-search-${result.group}-${result.id}`;
 
   function onInputKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {

@@ -91,7 +91,11 @@ export function BookingFlow({
     locations.length === 1 ? locations[0]!.id : null,
   );
   const [day, setDay] = useState<string>(() => dateKeyIn(new Date(), clinic.timezone));
-  const [slots, setSlots] = useState<string[] | null>(null);
+  // The free hours, kept with the question they answer: a grid for another day
+  // or treatment is not shown under this one's name, and reads as "loading".
+  const slotsKey = `${typeId}|${practitionerId}|${day}`;
+  const [fetchedSlots, setFetchedSlots] = useState<{ key: string; slots: string[] } | null>(null);
+  const slots = fetchedSlots?.key === slotsKey ? fetchedSlots.slots : null;
   const [startAt, setStartAt] = useState<string | null>(null);
 
   const [firstName, setFirstName] = useState('');
@@ -130,19 +134,19 @@ export function BookingFlow({
   }, [clinic.horizon_days, clinic.timezone]);
 
   // The free hours of the chosen day, fetched when the day or the treatment
-  // changes. Cleared first so a stale grid never sits under a new day's name.
+  // changes. Until they arrive the grid reads as loading (the key above).
   useEffect(() => {
     if (step === 'what' || !typeId || !practitionerId) return;
     let cancelled = false;
-    setSlots(null);
+    const key = `${typeId}|${practitionerId}|${day}`;
     void fetchSlots(slug, typeId, practitionerId, day)
       .then((result) => {
-        if (!cancelled) setSlots(result);
+        if (!cancelled) setFetchedSlots({ key, slots: result });
       })
       .catch(() => {
         // An empty grid with a message, not a spinner that never stops.
         if (cancelled) return;
-        setSlots([]);
+        setFetchedSlots({ key, slots: [] });
         setError('generic');
       });
     return () => {
@@ -186,10 +190,10 @@ export function BookingFlow({
         // The hour went to someone else: back to the grid, freshly loaded.
         if (result.error === 'slot_taken') {
           setStartAt(null);
-          setSlots(null);
+          setFetchedSlots(null);
           void fetchSlots(slug, typeId, practitionerId, day)
-            .then(setSlots)
-            .catch(() => setSlots([]));
+            .then((fresh) => setFetchedSlots({ key: slotsKey, slots: fresh }))
+            .catch(() => setFetchedSlots({ key: slotsKey, slots: [] }));
         }
         return;
       }

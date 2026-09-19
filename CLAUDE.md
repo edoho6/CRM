@@ -40,7 +40,8 @@ pnpm 9 + Turborepo, Node 20.9+. ההתקנה והחיבור ל-Supabase ב-`READ
 - **מיגרציה = שני קבצים:** `supabase/migrations/<חותמת>_<שם>.sql` (מקור האמת) ועותק בשורש
   `NN_<שם>_to_run.sql` עם המספר הרץ הבא (gitignored) — המשתמש מדביק אותו בעורך ה-SQL של Supabase, ו"SQL 54"
   בשיחה הוא המספר הזה. טבלה או policy חדשה = גם תוספת ב-`supabase/tests/tenant_isolation.sql`, ועמודה
-  חדשה = עדכון ידני של `packages/db/src/types.ts`. **כל `_to_run.sql` מסתיים ב-insert ל-`public.schema_migrations`**
+  חדשה = עדכון ידני של `packages/db/src/types.ts` (ו-`pnpm db:types` מייצר את `database.types.ts` מהמסד עצמו — אחרי
+  `npx supabase@latest login`; ה-CI מייצר את אותו קובץ מהמיגרציות ומזהיר כשהם שונים). **כל `_to_run.sql` מסתיים ב-insert ל-`public.schema_migrations`**
   (migration 69) עם שם הקובץ — זה הרישום היחיד של מה כבר הודבק; אין רישום לשום דבר לפני 60. **עורך ה-SQL לא שומר
   טבלה זמנית בין פקודות** (SQL 63 נפל על "relation does not exist"): רשימה שכמה פקודות צריכות נכתבת בתוך `do $$` אחד
 - **`apps/web/CLAUDE.md`** מצרף את `AGENTS.md` ש-`next dev` מייצר מחדש: Next 16 שונה ממה שמוכר מהאימון,
@@ -426,10 +427,12 @@ messages, prices, inventory, encounters, appointments, settings, dashboard, form
 pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm check:contrast && pnpm check:tokens && pnpm check:i18n
 ```
 
-`pnpm lint` נכשל על שגיאה אחת ועל אזהרה מעבר לתקרה שב-`--max-warnings`. התקרה היא מחסום חד-כיווני:
-77 האזהרות הן אבחנות ה-React Compiler (`set-state-in-effect`, `refs`, `purity`) ו-`<img>` בלי `next/image`,
-שתיהן עבודה של סבב מאוחר יותר. **מורידים את המספר כשמתקנים, לא מעלים אותו כשמוסיפים.** שמונה מ-`purity`
-הן אותם מקומות שקוראים לשעון בזמן ציור שמתועדים ב"השעון של הדף" למטה — הליטנר מצא אותם בעצמו.
+`pnpm lint` נכשל על שגיאה ועל **אזהרה אחת** (`--max-warnings 0`, מ-19.9; היו 77). אבחנות ה-React Compiler מתוקנות,
+לא מושתקות — ארבעה דפוסים: ערך מהדפדפן (`localStorage`, `window.location`, `matchMedia`) נקרא כ-store —
+`useStoredRaw`/`writeStored` (`lib/use-stored.ts`), `useOrigin`, או `useSyncExternalStore` — ולא `setState` באפקט
+אחרי mount; איפוס כשפרופ משתנה נעשה בזמן הציור (`const [seen, setSeen] = useState(prop); if (prop !== seen) {…}`);
+תשובה של fetch נשמרת עם המפתח שהיא עונה עליו ("טוען" נגזר, לא דגל); ערך "אחרון" ב-ref מתעדכן ב-`useLayoutEffect`, לא
+בגוף הרנדר. `watch` של react-hook-form → `useWatch({ control })`. `<img>` מותר בכוונה (ההסבר ב-`eslint.config.mjs`).
 
 **סריקת התלויות ב-CI** (`pnpm audit --audit-level high`) נכשלת גם על אזהרה שפורסמה היום לחבילה שלא נגענו בה —
 כך כל ה-CI היה אדום מ-12.9 בגלל `tar` ו-`sharp` שמגיעים דרך `@capacitor/assets` (כלי האייקונים, dev בלבד). התיקון

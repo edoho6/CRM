@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, useTransition } from 'react';
+import { useMemo, useRef, useState, useTransition } from 'react';
 import { useTranslations } from 'next-intl';
 import { Camera, Images, X } from 'lucide-react';
 import { Alert, Button, Dialog, DialogContent, Spinner, useConfirm, useToast } from '@clinic/ui';
@@ -9,6 +9,7 @@ import { useRouter } from '@clinic/i18n/navigation';
 import { formatDate } from '@clinic/i18n';
 import { deleteDocument, uploadDocument } from '@/features/documents/actions';
 import { shrinkImage } from '@/lib/shrink-image';
+import { useStoredRaw, writeStored } from '@/lib/use-stored';
 import { DEFAULT_ZOOM_VIEW, ZoomFrame, type ZoomView } from './zoom-frame';
 
 /**
@@ -66,10 +67,9 @@ const clampHeight = (value: number) =>
 // those values mean nothing to this one and are simply left behind.
 const viewKey = (photoId: string) => `herbalist-tongue-view2:${photoId}`;
 
-function loadView(photoId: string): View {
+function parseView(raw: string | null): View {
+  if (!raw) return DEFAULT_VIEW;
   try {
-    const raw = localStorage.getItem(viewKey(photoId));
-    if (!raw) return DEFAULT_VIEW;
     const parsed = JSON.parse(raw) as Partial<View>;
     const number = (value: unknown, fallback: number) =>
       typeof value === 'number' && Number.isFinite(value) ? value : fallback;
@@ -81,14 +81,6 @@ function loadView(photoId: string): View {
     };
   } catch {
     return DEFAULT_VIEW;
-  }
-}
-
-function saveView(photoId: string, view: View) {
-  try {
-    localStorage.setItem(viewKey(photoId), JSON.stringify(view));
-  } catch {
-    // Site data blocked: the frame resets next time, and that is the whole cost.
   }
 }
 
@@ -121,7 +113,7 @@ export function TonguePhotos({
   const inputRef = useRef<HTMLInputElement>(null);
   const [isPending, startTransition] = useTransition();
   const [failed, setFailed] = useState(false);
-  const [view, setView] = useState<View>(DEFAULT_VIEW);
+
   const [lightbox, setLightbox] = useState<Lightbox | null>(null);
 
   const current = photos.filter((photo) => photo.encounterId === encounterId);
@@ -129,16 +121,16 @@ export function TonguePhotos({
   const latest = current[0] ?? null;
   const latestId = latest?.id ?? null;
 
-  // The remembered framing, once we know which photograph this is.
-  useEffect(() => {
-    if (latestId) setView(loadView(latestId));
-  }, [latestId]);
-
-  // Remembered on every change rather than on some "done" moment there is
-  // no such moment to hook: a wheel stops, a drag ends, a frame is pulled.
-  useEffect(() => {
-    if (latestId && view !== DEFAULT_VIEW) saveView(latestId, view);
-  }, [latestId, view]);
+  // The remembered framing of this photograph, read as a store (lib/use-stored)
+  // and written on every change — there is no "done" moment to hook: a wheel
+  // stops, a drag ends, a frame is pulled. No photograph, nothing remembered.
+  const storedView = useStoredRaw(latestId ? viewKey(latestId) : '');
+  const view = useMemo(() => parseView(storedView), [storedView]);
+  const setView = (update: (previous: View) => View) => {
+    if (!latestId) return;
+    const next = update(view);
+    if (next !== view) writeStored(viewKey(latestId), JSON.stringify(next));
+  };
 
   function handleFile(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -386,7 +378,6 @@ function LightboxContent({
                       selected && 'ring-2 ring-focus-ring ring-offset-2 ring-offset-white',
                     )}
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={inlineSrc(photo.id)}
                       alt={alt(photo)}

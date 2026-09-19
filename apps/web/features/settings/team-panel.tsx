@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useTransition } from 'react';
+import { useState, useTransition } from 'react';
 import { useFormatter, useLocale, useTranslations } from 'next-intl';
 import { Check, Copy, Link2, UserPlus, X } from 'lucide-react';
 import {
@@ -29,6 +29,7 @@ import type { ClinicInvitation } from '@clinic/db/types';
 import { useRouter } from '@clinic/i18n/navigation';
 import { describeActionError } from '@/lib/action-error';
 import { createInvitation, revokeInvitation, setMemberActive, setMemberRole } from './team-actions';
+import { useOrigin } from '@/lib/use-origin';
 
 export interface TeamMember {
   membershipId: string;
@@ -82,10 +83,7 @@ export function TeamPanel({
   const [inviteeName, setInviteeName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [fresh, setFresh] = useState<string | null>(null);
-  const [origin, setOrigin] = useState('');
-  useEffect(() => {
-    setOrigin(window.location.origin);
-  }, []);
+  const origin = useOrigin();
 
   const linkFor = (token: string) => (origin ? `${origin}/${locale}/join/${token}` : '');
   const fail = (key: string | undefined) => toast({ tone: 'danger', title: describeActionError(tAll, key) });

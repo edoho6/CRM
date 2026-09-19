@@ -43,34 +43,38 @@ export function TaskBell() {
   const [isPending, startTransition] = useTransition();
   const announced = useRef(new Set<string>());
 
-  const poll = useCallback(async () => {
-    const result = await dueTasks();
-    if (!result.ok) return;
-    setDue(result.data);
+  // The answer is taken in a callback, not in the calling turn, so the effect
+  // below does not set state synchronously and draw the bell twice on mount.
+  const poll = useCallback(() => {
+    void dueTasks().then((result) => {
+      if (!result.ok) return;
+      setDue(result.data);
 
-    const now = Date.now();
-    setPolledAt(now);
-    for (const task of result.data) {
-      if (new Date(task.due_at).getTime() - (task.remind_offset_minutes ?? 0) * 60_000 > now) continue;
-      if (task.reminded_at || announced.current.has(task.id)) continue;
-      announced.current.add(task.id);
+      const now = Date.now();
+      setPolledAt(now);
+      for (const task of result.data) {
+        if (new Date(task.due_at).getTime() - (task.remind_offset_minutes ?? 0) * 60_000 > now)
+          continue;
+        if (task.reminded_at || announced.current.has(task.id)) continue;
+        announced.current.add(task.id);
 
-      toast({ tone: 'warning', title: `${t('dueNow')}: ${task.title}` });
-      showBrowserNotification({
-        title: task.title,
-        body: task.patient ? `${t('dueNow')} · ${task.patient.full_name}` : t('dueNow'),
-        tag: task.id,
-        href: `/${document.documentElement.lang || 'he'}/tasks`,
-      });
-      void markTaskReminded(task.id);
-    }
+        toast({ tone: 'warning', title: `${t('dueNow')}: ${task.title}` });
+        showBrowserNotification({
+          title: task.title,
+          body: task.patient ? `${t('dueNow')} · ${task.patient.full_name}` : t('dueNow'),
+          tag: task.id,
+          href: `/${document.documentElement.lang || 'he'}/tasks`,
+        });
+        void markTaskReminded(task.id);
+      }
+    });
   }, [t, toast]);
 
   useEffect(() => {
-    void poll();
-    const timer = setInterval(() => void poll(), POLL_MS);
+    poll();
+    const timer = setInterval(poll, POLL_MS);
     const onVisible = () => {
-      if (document.visibilityState === 'visible') void poll();
+      if (document.visibilityState === 'visible') poll();
     };
     document.addEventListener('visibilitychange', onVisible);
     return () => {

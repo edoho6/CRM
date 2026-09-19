@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState, useTransition } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useFormatter, useLocale, useTranslations } from 'next-intl';
 import { PackagePlus, Plus } from 'lucide-react';
@@ -115,18 +115,22 @@ export function ReceiveForm({
     register,
     handleSubmit,
     reset,
-    watch,
+    control,
     setValue,
     formState: { errors },
   } = useForm<ReceiveInput, unknown, ReceiveOutput>({
     resolver: zodResolver(receiveBatchSchema),
     defaultValues: empty,
   });
+  // The fields the form draws from, read through useWatch: the library's `watch`
+  // is a function the compiler cannot see into, and every component calling it
+  // lost its memoisation (react-hooks/incompatible-library).
+  const watched = useWatch({ control });
 
-  const herbId = watch('herb_id');
-  const quantity = numberOrNull(watch('quantity'));
-  const unit = watch('unit') ?? 'gram';
-  const unitCost = numberOrNull(watch('unit_cost'));
+  const herbId = watched.herb_id;
+  const quantity = numberOrNull(watched.quantity);
+  const unit = watched.unit ?? 'gram';
+  const unitCost = numberOrNull(watched.unit_cost);
 
   const herbOptions = useMemo<ComboboxOption[]>(
     () =>
@@ -226,7 +230,7 @@ export function ReceiveForm({
             <Field label={tPrep('label')} htmlFor="preparation">
               <Select
                 id="preparation"
-                value={watch('preparation') ?? 'dried_herb'}
+                value={watched.preparation ?? 'dried_herb'}
                 onChange={(event) => onPreparationChange(event.target.value as HerbPreparation)}
               >
                 {HERB_PREPARATIONS.map((option) => (
@@ -258,7 +262,7 @@ export function ReceiveForm({
                 type="number"
                 min={0}
                 step="0.01"
-                value={watch('quantity') ?? ''}
+                value={watched.quantity ?? ''}
                 onChange={(event) => onQuantityChange(event.target.value)}
               />
             </Field>
@@ -321,7 +325,7 @@ export function ReceiveForm({
                 min={0}
                 step="0.0001"
                 inputMode="decimal"
-                value={watch('unit_cost') ?? ''}
+                value={watched.unit_cost ?? ''}
                 onChange={(event) => onUnitCostChange(event.target.value)}
               />
             </Field>
@@ -353,7 +357,7 @@ export function ReceiveForm({
             <Field label={t('expiryDate')} htmlFor="expiry_date">
               <DateInput
                 id="expiry_date"
-                value={watch('expiry_date') ?? ''}
+                value={watched.expiry_date ?? ''}
                 onChange={(event) => setValue('expiry_date', event.target.value, { shouldDirty: true })}
               />
             </Field>
@@ -361,7 +365,7 @@ export function ReceiveForm({
             <Field label={t('receivedDate')} htmlFor="received_date" required>
               <DateInput
                 id="received_date"
-                value={watch('received_date') ?? ''}
+                value={watched.received_date ?? ''}
                 onChange={(event) => setValue('received_date', event.target.value, { shouldDirty: true })}
               />
             </Field>

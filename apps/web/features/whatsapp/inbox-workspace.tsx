@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { MessagesSquare } from 'lucide-react';
 import { Alert, Button, Sheet, SheetContent, useToast } from '@clinic/ui';
@@ -48,14 +48,22 @@ export function InboxWorkspace({
   const t = useTranslations('messages.inbox');
   const tc = useTranslations('common');
   const { toast } = useToast();
-  const [conversations, setConversations] = useState(initialConversations);
+  // The thread the page opened with is read the moment it is seen, so it starts
+  // at zero unread here; the effect below tells the server.
+  const [conversations, setConversations] = useState(() =>
+    initialConversations.map((row) => (row.id === initialActiveId ? { ...row, unread: 0 } : row)),
+  );
   const [activeId, setActiveId] = useState<string | null>(initialActiveId);
   const [messages, setMessages] = useState<ThreadMessage[]>(initialMessages);
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  // The open thread, for callbacks that outlive a render; kept in step after
+  // each render (and by select() at once), not assigned while rendering.
   const activeRef = useRef(activeId);
-  activeRef.current = activeId;
+  useLayoutEffect(() => {
+    activeRef.current = activeId;
+  });
 
   const syncUrl = useCallback((id: string | null) => {
     if (typeof window === 'undefined') return;
@@ -104,9 +112,6 @@ export function InboxWorkspace({
       initialConversations.some((row) => row.id === initialActiveId && row.unread > 0)
     ) {
       void markConversationRead(initialActiveId);
-      setConversations((rows) =>
-        rows.map((row) => (row.id === initialActiveId ? { ...row, unread: 0 } : row)),
-      );
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

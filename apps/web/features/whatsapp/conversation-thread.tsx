@@ -30,6 +30,7 @@ import {
 import { WHATSAPP_WINDOW_HOURS, addDaysIn, dateKeyIn } from '@clinic/domain';
 import { CLINIC_TIME_ZONE, formatDate, formatTime } from '@clinic/i18n';
 import { Link } from '@clinic/i18n/navigation';
+import { useNow } from '@/lib/use-now';
 import { ExternalLink } from '@/components/external-link';
 import { messageErrorKey } from '@/features/messages/error-labels';
 import {
@@ -86,24 +87,18 @@ export function ConversationThread({
     listRef.current?.lastElementChild?.scrollIntoView({ block: 'nearest' });
   }, [messages.length, conversation?.id]);
 
-  const withinWindow = useMemo(() => {
-    if (!conversation?.lastInboundAt) return false;
-    return (
-      Date.now() - new Date(conversation.lastInboundAt).getTime() <
-      WHATSAPP_WINDOW_HOURS * 3_600_000
-    );
-  }, [conversation?.lastInboundAt]);
-  const hoursLeft = conversation?.lastInboundAt
-    ? Math.max(
-        0,
-        Math.ceil(
-          (new Date(conversation.lastInboundAt).getTime() +
-            WHATSAPP_WINDOW_HOURS * 3_600_000 -
-            Date.now()) /
-            3_600_000,
-        ),
-      )
-    : 0;
+  // A clock that ticks, so "3 hours left" counts down and the window closes on
+  // screen when it closes, instead of whenever the thread happens to redraw.
+  const now = useNow();
+  const lastInboundMs = conversation?.lastInboundAt
+    ? new Date(conversation.lastInboundAt).getTime()
+    : null;
+  const withinWindow =
+    lastInboundMs !== null && now - lastInboundMs < WHATSAPP_WINDOW_HOURS * 3_600_000;
+  const hoursLeft =
+    lastInboundMs !== null
+      ? Math.max(0, Math.ceil((lastInboundMs + WHATSAPP_WINDOW_HOURS * 3_600_000 - now) / 3_600_000))
+      : 0;
 
   const options = useMemo(
     () =>

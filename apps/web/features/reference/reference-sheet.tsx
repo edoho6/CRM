@@ -60,8 +60,12 @@ function cacheKey(target: ReferenceTarget): string {
 
 export function ReferenceSheetProvider({ children }: { children: React.ReactNode }) {
   const [target, setTarget] = useState<ReferenceTarget | null>(null);
-  const [card, setCard] = useState<ReferenceCard | null>(null);
-  const [failed, setFailed] = useState(false);
+  // What came back, kept with the card it is for: opening another card shows
+  // "loading", not the previous one's text under the new name.
+  const [fetched, setFetched] = useState<{ key: string; card: ReferenceCard | null; failed: boolean } | null>(null);
+  const targetKey = target ? cacheKey(target) : null;
+  const card = targetKey ? (loaded.get(targetKey) ?? (fetched?.key === targetKey ? fetched.card : null)) : null;
+  const failed = Boolean(targetKey && fetched?.key === targetKey && fetched.failed);
 
   const open = useCallback((next: ReferenceTarget) => {
     setTarget(next);
@@ -71,29 +75,25 @@ export function ReferenceSheetProvider({ children }: { children: React.ReactNode
   // above the pages — so the card closes itself when the address changes,
   // instead of staying open over the page it linked to.
   const pathname = usePathname();
-  useEffect(() => {
+  const [seenPath, setSeenPath] = useState(pathname);
+  if (pathname !== seenPath) {
+    setSeenPath(pathname);
     setTarget(null);
-  }, [pathname]);
+  }
   const api = useMemo(() => ({ open }), [open]);
 
   useEffect(() => {
     if (!target) return;
     const key = cacheKey(target);
-    setFailed(false);
-    const cached = loaded.get(key);
-    if (cached) {
-      setCard(cached);
-      return;
-    }
-    setCard(null);
+    if (loaded.has(key)) return;
     let cancelled = false;
     loadReferenceCard(target).then((result) => {
       if (cancelled) return;
       if (result.ok) {
         loaded.set(key, result.data);
-        setCard(result.data);
+        setFetched({ key, card: result.data, failed: false });
       } else {
-        setFailed(true);
+        setFetched({ key, card: null, failed: true });
       }
     });
     return () => {

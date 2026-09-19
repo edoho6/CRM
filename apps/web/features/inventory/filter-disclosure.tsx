@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useSyncExternalStore } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import { useTranslations } from 'next-intl';
 import { SlidersHorizontal } from 'lucide-react';
 import { Button, Dialog, DialogContent, DialogFooter } from '@clinic/ui';
@@ -62,12 +62,15 @@ export function FilterDisclosure({
   // Same value on the server and on the first client render, so the lid does
   // not flicker; after that it is this state and the summary that move it.
   const [expanded, setExpanded] = useState(activeCount > 0);
-  useEffect(() => {
-    // Opens, never closes. Arriving from a chip on a herb's page brings a
-    // filter with it and the panel has to show it; clearing one leaves the
-    // panel exactly where the reader put it.
+  // Opens, never closes. Arriving from a chip on a herb's page brings a
+  // filter with it and the panel has to show it; clearing one leaves the
+  // panel exactly where the reader put it. Adjusted while rendering, when the
+  // count changes, rather than in an effect that drew the closed lid first.
+  const [seenCount, setSeenCount] = useState(activeCount);
+  if (activeCount !== seenCount) {
+    setSeenCount(activeCount);
     if (activeCount > 0) setExpanded(true);
-  }, [activeCount]);
+  }
 
   const badge =
     activeCount > 0 ? (

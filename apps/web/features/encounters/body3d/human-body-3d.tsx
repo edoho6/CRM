@@ -1,7 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState, useSyncExternalStore } from 'react';
 import { useTranslations } from 'next-intl';
 import { Button, SegmentedControl, Skeleton, cn } from '@clinic/ui';
 import { BodyMap, type MappedPoint } from '@/features/reference/body-map';
@@ -14,6 +14,7 @@ import { toBodyPointMap, type BodyPointMap, type BodyPointPosition, type BodyPoi
 import { useBodyPointInstances } from './use-body-point-instances';
 import { useThemeColors } from './use-theme-colors';
 import { SceneErrorBoundary } from './scene-error-boundary';
+import { useStoredRaw, writeStored } from '@/lib/use-stored';
 
 /*
  * three.js and the renderer are a few hundred kilobytes that the treatment
@@ -33,14 +34,12 @@ type ViewMode = '2d' | '3d';
 const MODE_STORAGE_KEY = 'herbalist.bodyView';
 const CAMERA_VIEWS: CameraView[] = ['front', 'back', 'left', 'right', 'reset'];
 
-function readStoredMode(): ViewMode | null {
-  try {
-    const stored = window.localStorage.getItem(MODE_STORAGE_KEY);
-    return stored === '2d' || stored === '3d' ? stored : null;
-  } catch {
-    return null;
-  }
-}
+/** The address does not change under the page; nothing to listen to. */
+const noSubscription = () => () => {};
+const readDevEditor = () =>
+  process.env.NODE_ENV === 'development' &&
+  new URLSearchParams(window.location.search).get('pointEditor') === '1';
+const serverDevEditor = () => false;
 
 /**
  * The body panel beside the point columns: the chosen points, drawn on a
@@ -87,24 +86,17 @@ export function HumanBody3D({
   // The coordinates, as loaded — and as changed by the placement tool
   // without waiting for the page to reload.
   const [positionMap, setPositionMap] = useState<BodyPointMap>(() => toBodyPointMap(positions));
-  useEffect(() => {
+  const [mapFor, setMapFor] = useState(positions);
+  if (mapFor !== positions) {
+    setMapFor(positions);
     setPositionMap(toBodyPointMap(positions));
-  }, [positions]);
+  }
   const { instances, missingCodes } = useBodyPointInstances(points, positionMap);
 
-  const [mode, setMode] = useState<ViewMode>('3d');
-  useEffect(() => {
-    const stored = readStoredMode();
-    if (stored) setMode(stored);
-  }, []);
-  const chooseMode = (next: ViewMode) => {
-    setMode(next);
-    try {
-      window.localStorage.setItem(MODE_STORAGE_KEY, next);
-    } catch {
-      // A private window forgets the choice; the default is still sensible.
-    }
-  };
+  // 3-D until this browser has said otherwise (lib/use-stored).
+  const storedMode = useStoredRaw(MODE_STORAGE_KEY);
+  const mode: ViewMode = storedMode === '2d' ? '2d' : '3d';
+  const chooseMode = (next: ViewMode) => writeStored(MODE_STORAGE_KEY, next);
 
   const [activeKey, setActiveKey] = useState<string | null>(null);
   const [viewRequest, setViewRequest] = useState<ViewRequest | null>(null);
@@ -131,11 +123,7 @@ export function HumanBody3D({
 
   // The placement tool: offered to an admin, and in development to anyone
   // who asks for it in the address.
-  const [devEditor, setDevEditor] = useState(false);
-  useEffect(() => {
-    if (process.env.NODE_ENV !== 'development') return;
-    setDevEditor(new URLSearchParams(window.location.search).get('pointEditor') === '1');
-  }, []);
+  const devEditor = useSyncExternalStore(noSubscription, readDevEditor, serverDevEditor);
   const placerAvailable = canPlace || devEditor;
   const [placing, setPlacing] = useState(false);
   const [picked, setPicked] = useState<PickEvent | null>(null);

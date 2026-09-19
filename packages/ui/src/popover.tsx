@@ -74,24 +74,29 @@ export function Popover({
   // The panel stays mounted for one short beat after closing so it can fade
   // and settle out the way it came in; a panel that vanishes mid-blur is the
   // one abrupt moment in an otherwise animated kit.
+  // Opening and closing are taken in the render that changes `open`; only the
+  // exit's timer is an effect.
   const [mounted, setMounted] = React.useState(false);
   const [leaving, setLeaving] = React.useState(false);
-  React.useEffect(() => {
+  const [seenOpen, setSeenOpen] = React.useState(open);
+  if (open !== seenOpen) {
+    setSeenOpen(open);
     if (open) {
       setMounted(true);
       setLeaving(false);
-      return;
+    } else if (mounted) {
+      setLeaving(true);
     }
-    if (!mounted) return;
-    setLeaving(true);
+  }
+  React.useEffect(() => {
+    if (!leaving) return;
     const timer = window.setTimeout(() => {
       setMounted(false);
       setLeaving(false);
       setPosition(null);
     }, EXIT_MS);
     return () => window.clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+  }, [leaving]);
 
   const close = React.useCallback(() => setOpen(false), []);
 
@@ -312,11 +317,11 @@ export function useAnchoredPosition(
     });
   }, [anchorRef, contentRef, matchWidth, maxHeight]);
 
+  // Closed, there is no position — dropped in the render that closes it.
+  if (!open && style !== null) setStyle(null);
+
   React.useLayoutEffect(() => {
-    if (!open) {
-      setStyle(null);
-      return;
-    }
+    if (!open) return;
     place();
   }, [open, place, revision]);
 
@@ -355,19 +360,24 @@ export const FloatingList = React.forwardRef<
   // so it can fade out in place instead of disappearing.
   const [shown, setShown] = React.useState<React.CSSProperties | null>(style);
   const [leaving, setLeaving] = React.useState(false);
-  React.useLayoutEffect(() => {
+  const [seenStyle, setSeenStyle] = React.useState(style);
+  if (style !== seenStyle) {
+    setSeenStyle(style);
     if (style) {
       setShown(style);
       setLeaving(false);
-      return;
+    } else {
+      setLeaving(true);
     }
-    setLeaving(true);
+  }
+  React.useEffect(() => {
+    if (!leaving) return;
     const timer = window.setTimeout(() => {
       setShown(null);
       setLeaving(false);
     }, EXIT_MS);
     return () => window.clearTimeout(timer);
-  }, [style]);
+  }, [leaving]);
 
   if (typeof document === 'undefined' || !shown) return null;
   return createPortal(

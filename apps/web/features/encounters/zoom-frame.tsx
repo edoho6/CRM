@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Maximize2, ZoomIn, ZoomOut } from 'lucide-react';
 import { cn } from '@clinic/ui/cn';
 
@@ -131,13 +131,16 @@ export function ZoomFrame({
   const [frame, setFrame] = useState<Box | null>(null);
   const [internalView, setInternalView] = useState<ZoomView>(DEFAULT_ZOOM_VIEW);
   const view = controlledView ?? internalView;
-  // The same value, readable inside native listeners without a re-render.
+  // The same values, readable inside native listeners without a re-render.
+  // Refreshed after each render (before any listener can fire), not during it.
   const viewRef = useRef(view);
-  viewRef.current = view;
   const naturalRef = useRef(natural);
-  naturalRef.current = natural;
   const frameBoxRef = useRef(frame);
-  frameBoxRef.current = frame;
+  useLayoutEffect(() => {
+    viewRef.current = view;
+    naturalRef.current = natural;
+    frameBoxRef.current = frame;
+  });
   const drag = useRef<{
     startX: number;
     startY: number;
@@ -350,7 +353,6 @@ export function ZoomFrame({
         drag.current = null;
       }}
     >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={src}
         alt={alt}

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslations } from 'next-intl';
 import {
@@ -90,7 +90,7 @@ export function PatientForm({
   const {
     register,
     handleSubmit,
-    watch,
+    control,
     setValue,
     formState: { errors },
   } = useForm<PatientFormValues, unknown, PatientFormData>({
@@ -114,6 +114,10 @@ export function PatientForm({
       treatment_status: patient?.treatment_status ?? 'active',
     },
   });
+  // The fields the form draws from, read through useWatch: the library's `watch`
+  // is a function the compiler cannot see into, and every component calling it
+  // lost its memoisation (react-hooks/incompatible-library).
+  const watched = useWatch({ control });
 
   function onSubmit(values: PatientFormData) {
     setServerError(null);
@@ -238,7 +242,7 @@ export function PatientForm({
                 {/* Dates and IDs stay LTR so the digits don't visually reverse in Hebrew. */}
                 <DateInput
                   id="date_of_birth"
-                  value={watch('date_of_birth') ?? ''}
+                  value={watched.date_of_birth ?? ''}
                   max={today}
                   onChange={(event) =>
                     setValue('date_of_birth', event.target.value, {
