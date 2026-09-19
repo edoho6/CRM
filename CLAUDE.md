@@ -281,7 +281,7 @@ messages, prices, inventory, encounters, appointments, settings, dashboard, form
 - **זימון אונליין:** `/book/[slug]` קורא וכותב רק דרך `booking_clinic` /
   `booking_slots` / `booking_request` (anon, security definer). השעות הפנויות
   מחושבות **ב-SQL** מאותן טבלאות שהיומן קורא, כדי שהעמוד והיומן לא יחלקו
-  על "האם 10:30 פנוי"; המרוץ על השעה האחרונה נסגר ב-exclusion constraint.
+  על "האם 10:30 פנוי"; המרוץ על השעה האחרונה נסגר ב-exclusion constraint, ומול תור בחדר — בנעילה לכל מטפל שכל כתיבה ליומן לוקחת ובבדיקה חוזרת בתוכה לכתיבה מהדפים הציבוריים (migration 20260919120000; הדסק לא נחסם — שתי מיטות באותה שעה).
   `booking_codes` בלי policies בכלל — רק הפונקציות נוגעות בה
 - **היומן:** לחיצה על תור פותחת את פרטי התור ולא את הטופס; גרירה בעכבר ובמגע דרך dnd-kit, במקלדת דרך `handleBlockKeyDown` (לא KeyboardSensor); חסימת שעות ב-`schedule_blocks` והלוגיקה ב-`availability.ts` בלבד, עם בדיקות; ברירת המחדל בטלפון נקבעת בשרת. הפרטים — `apps/web/features/appointments/CLAUDE.md`
 - **רמז להתקנה על מסך הבית:** `InstallHint` מ-`@clinic/ui`, בשני ה-layouts. רק בטלפון, רק כשלא רץ כבר מהמסך
